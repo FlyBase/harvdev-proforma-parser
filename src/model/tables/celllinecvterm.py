@@ -1,0 +1,22 @@
+from sqlalchemy import *
+from model.base import Base
+from sqlalchemy.orm import relationship
+
+metadata = Base.metadata
+class CellLineCvterm(Base):
+    __tablename__ = 'cell_line_cvterm'
+    __table_args__ = (
+        UniqueConstraint('cell_line_id', 'cvterm_id', 'pub_id', 'rank'),
+    )
+
+    cell_line_cvterm_id = Column(Integer, primary_key=True, server_default=text("nextval('cell_line_cvterm_cell_line_cvterm_id_seq'::regclass)"))
+    cell_line_id = Column(ForeignKey('cell_line.cell_line_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False)
+    cvterm_id = Column(ForeignKey('cvterm.cvterm_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False)
+    pub_id = Column(ForeignKey('pub.pub_id', ondelete='CASCADE', deferrable=True, initially='DEFERRED'), nullable=False)
+    rank = Column(Integer, nullable=False, server_default=text("0"))
+
+    cell_line = relationship('CellLine')
+    cvterm = relationship('Cvterm')
+    pub = relationship('Pub')
+
+

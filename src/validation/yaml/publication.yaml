@@ -1,0 +1,24 @@
+P1:
+  type: string
+  required: False
+P2:
+  type: string
+  required: False
+P19:
+  type: [string, list]
+P22:
+  required: True
+  type: string
+  regex: ^(FBrf\d{7}|none|unattributed|new)$
+P40:
+  type: list
+  allowed: [merge, split, rename, new_char, new_al, new_transg, pheno, gene_group, noGOcur, pheno_chem, pheno_anat]
+P41:
+  type: list
+  allowed: [wt_exp, pert_exp, neur_exp, gene_model, gene_model_nomel, phys_int, cis_reg, genom_feat, disease, diseaseHP, dataset, cell_line]
+P42:
+  type: string
+P43:
+  type: string
+P44:
+  type: string

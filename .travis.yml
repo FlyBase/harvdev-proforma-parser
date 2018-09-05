@@ -1,0 +1,20 @@
+sudo: false
+dist: trusty
+
+before_install:
+    - 
+
+language: python
+python:
+    - "3.6"
+
+services: 
+    - postgresql
+
+before_script:
+    - psql -c 'create database travis_ci_test;' -U postgres
+    - psql -q -U postgres -d travis_ci_test -f ./src/test/sql/schema/test_chado_schema.sql
+    - psql -q -U postgres -d travis_ci_test -f ./src/test/sql/data/*.sql
+
+script:
+    - python src/app.py -c src/test/credentials/config.cfg -d src/test/data -l production -v

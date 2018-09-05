@@ -1,0 +1,1 @@
+from model.constructed.gene import Gene
