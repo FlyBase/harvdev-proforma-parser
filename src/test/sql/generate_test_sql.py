@@ -78,6 +78,7 @@ def main():
     # TODO Add support for multiple rows of returns.
     for entry in dict_of_test_data_to_generate:
         with open(output_dir + '/' + entry, 'w') as outfile:
+            outfile.write('SET CONSTRAINTS ALL DEFERRED;\n\n')
             for query_in_list in dict_of_test_data_to_generate[entry]:
                 for (key, value) in query_in_list.items():
                     table = value
