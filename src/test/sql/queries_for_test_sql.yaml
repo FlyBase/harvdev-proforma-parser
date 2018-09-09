@@ -10,9 +10,12 @@
 213306.jma.edit.sql:
   [
     # Foreign key constraints.
+    SELECT * FROM dbxref WHERE dbxref_id = 794528: dbxref,
+    SELECT * FROM db WHERE db_id = 4: db,
+    SELECT * FROM dbxref WHERE dbxref_id = 1663308: dbxref,
     SELECT * FROM cvterm WHERE cvterm_id = 57094: cvterm,
     SELECT * FROM dbxref WHERE dbxref_id = 794519: dbxref,
-    SELECT * FROM dbxref WHERE dbxref_id = 1663308: dbxref,
+    SELECT * FROM dbxref WHERE dbxref_id = 622281: dbxref,
 
     # Queries from pub.
     SELECT * FROM cvterm WHERE cvterm_id = 59978: cvterm,
