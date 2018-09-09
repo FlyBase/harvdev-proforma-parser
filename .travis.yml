@@ -17,4 +17,5 @@ before_script:
     - psql -q -U postgres -d travis_ci_test -f ./src/test/sql/data/*.sql
 
 script:
-    - python src/app.py -c src/test/credentials/config.cfg -d src/test/data -l production -v
+    - for f in src/test/sql/data/*.sql ; do psql -q -U postgres -d travis_ci_test -f $f ; done
+    - python src/app.py -c src/test/credentials/config.cfg -d src/test/proformae -l production -v
