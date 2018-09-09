@@ -86,7 +86,7 @@ def main():
 
                     value_statement = prepare_result_print_statement(results_list)
 
-                    final_statement = 'INSERT INTO {}({}) VALUES {}\n\n'.format(table, ', '.join(colnames), value_statement)
+                    final_statement = 'INSERT INTO {}({}) VALUES {};\n\n'.format(table, ', '.join(colnames), value_statement)
                     
                     outfile.write(final_statement)
 
