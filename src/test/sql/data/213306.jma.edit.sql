@@ -1,4 +1,4 @@
-SET CONSTRAINTS ALL DEFERRED;
+SET session_replication_role = replica;
 
 INSERT INTO cvterm(cvterm_id, cv_id, definition, dbxref_id, is_obsolete, is_relationshiptype, name) VALUES (59978, 5, NULL, 1663308, 0, 0, 'symbol');
 
@@ -13,4 +13,6 @@ INSERT INTO feature(feature_id, dbxref_id, organism_id, name, uniquename, residu
 INSERT INTO cv(cv_id, name, definition) VALUES (5, 'synonym type', NULL);
 
 INSERT INTO synonym(synonym_id, name, type_id, synonym_sgml) VALUES (1169747, 'HRS', 59978, 'HRS');
+
+SET session_replication_role = DEFAULT;
 
