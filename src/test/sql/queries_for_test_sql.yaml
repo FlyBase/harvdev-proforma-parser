@@ -10,6 +10,7 @@
 213306.jma.edit.sql:
   [
     # Queries from pub.
+    SELECT * FROM cvterm WHERE cvterm_id = 96444: cvterm,
     SELECT * FROM cvterm WHERE cvterm_id = 59978: cvterm,
     SELECT * FROM pub WHERE uniquename = 'FBrf0213306': pub,
     SELECT * FROM cv WHERE cv_id = 11: cv,

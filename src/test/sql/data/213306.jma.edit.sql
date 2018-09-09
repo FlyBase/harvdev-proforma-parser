@@ -1,5 +1,7 @@
 SET session_replication_role = replica;
 
+INSERT INTO cvterm(cvterm_id, cv_id, definition, dbxref_id, is_obsolete, is_relationshiptype, name) VALUES (96444, 11, NULL, 2680104, 0, 0, 'harv_flag');
+
 INSERT INTO cvterm(cvterm_id, cv_id, definition, dbxref_id, is_obsolete, is_relationshiptype, name) VALUES (59978, 5, NULL, 1663308, 0, 0, 'symbol');
 
 INSERT INTO pub(pub_id, title, volumetitle, volume, series_name, issue, pyear, pages, miniref, type_id, is_obsolete, publisher, pubplace, uniquename) VALUES (358057, 'Second-order conditioning in Drosophila.', NULL, '18', NULL, '4', '2011', '250--253', 'Tabone and de Belle, 2011, Learn. Mem. 18(4): 250--253', 57094, False, NULL, NULL, 'FBrf0213306');
