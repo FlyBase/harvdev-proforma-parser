@@ -1,8 +1,14 @@
+INSERT INTO dbxref(dbxref_id, db_id, accession, version, description, url) VALUES (794528, 4, 'paper', '', NULL, NULL);
+
+INSERT INTO db(db_id, name, contact_id, description, urlprefix, url) VALUES (4, 'FlyBase', 1, NULL, NULL, NULL);
+
+INSERT INTO dbxref(dbxref_id, db_id, accession, version, description, url) VALUES (1663308, 4, 'symbol', '', NULL, NULL);
+
 INSERT INTO cvterm(cvterm_id, cv_id, definition, dbxref_id, is_obsolete, is_relationshiptype, name) VALUES (57094, 1, NULL, 794528, 0, 0, 'paper');
 
 INSERT INTO dbxref(dbxref_id, db_id, accession, version, description, url) VALUES (794519, 4, 'internalnotes', '', NULL, NULL);
 
-INSERT INTO dbxref(dbxref_id, db_id, accession, version, description, url) VALUES (1663308, 4, 'symbol', '', NULL, NULL);
+INSERT INTO dbxref(dbxref_id, db_id, accession, version, description, url) VALUES (622281, 4, 'FBgn0027087', '', NULL, NULL);
 
 INSERT INTO cvterm(cvterm_id, cv_id, definition, dbxref_id, is_obsolete, is_relationshiptype, name) VALUES (59978, 5, NULL, 1663308, 0, 0, 'symbol');
 
