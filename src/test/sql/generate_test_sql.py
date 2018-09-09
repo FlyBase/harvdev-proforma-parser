@@ -24,11 +24,11 @@ def prepare_result_print_statement(result_list):
     print_statement = '('
 
     for entry in result_list:
-        if type(entry) is int or type(entry) is bool or type(entry) is datetime.datetime:
+        if type(entry) is int or type(entry) is bool:
             print_statement = '{}{}, '.format(print_statement, str(entry))
         elif entry is None:
             print_statement = '{}NULL, '.format(print_statement)
-        elif type(entry) is str:
+        elif type(entry) is str or type(entry) is datetime.datetime:
             print_statement = '{}\'{}\', '.format(print_statement, entry)  
         else:
             log.critical('Found unexpected type when attempting to write SQL output.')
@@ -83,7 +83,7 @@ def main():
                     table = value
                     results, colnames = connect(key, conn)
                     results_list = [x for x in results[0]]
-
+                    # log.info(results_list)
                     value_statement = prepare_result_print_statement(results_list)
 
                     final_statement = 'INSERT INTO {}({}) VALUES {};\n\n'.format(table, ', '.join(colnames), value_statement)
