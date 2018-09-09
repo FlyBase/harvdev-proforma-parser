@@ -1,0 +1,19 @@
+# This file contains a list of filenames and queries for generating test data.
+# The structure is:
+#
+# Desired SQL file name for output:
+# [
+#  SQL query to retrieve test data: table to query
+# ]
+#
+# Specifying the table after the query is redundant but also very easy to parse.
+213306.jma.edit.sql:
+  [
+    SELECT * FROM pub WHERE uniquename = 'FBrf0213306': pub,
+    SELECT * FROM cv WHERE cv_id = 11: cv,
+    SELECT * FROM cvterm WHERE cvterm_id = 57047: cvterm,
+    SELECT * FROM feature WHERE feature_id = 3111362: feature,
+    SELECT * FROM cv WHERE cv_id = 5: cv,
+    SELECT * FROM cvterm WHERE cvterm_id = 59978: cvterm,
+    SELECT * FROM synonym WHERE synonym_id = 1169747: synonym
+  ]

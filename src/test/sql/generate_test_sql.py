@@ -1,4 +1,4 @@
-import sys, os, subprocess, logging, argparse, psycopg2, configparser
+import sys, os, subprocess, logging, argparse, psycopg2, configparser, datetime, yaml, pprint
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(levelname)s -- %(message)s')
 log = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ def prepare_result_print_statement(result_list):
     print_statement = '('
 
     for entry in result_list:
-        if type(entry) is int or type(entry) is bool:
+        if type(entry) is int or type(entry) is bool or type(entry) is datetime.datetime:
             print_statement = '{}{}, '.format(print_statement, str(entry))
         elif entry is None:
             print_statement = '{}NULL, '.format(print_statement)
@@ -63,27 +63,32 @@ def main():
 
     output_dir = args.output
 
-    # For the following dictionary, the key should be the filename where SQL is to be written.
-    # The values should be a list of tuples (desired queries). The first part of the tuble is the query.
-    # The second part of the tuple is the name of the table from which to query.
-    # The second value could be derived from the first function, but I'm sacrificing 
-    # redundancy for the sake of explicitness and ease of adding additional queries.
-    dict_of_test_data_to_generate = {
-        '213306.jma.edit.sql' : [('SELECT * FROM pub WHERE uniquename = \'FBrf0213306\'', 'pub')]
-    }
+    try:
+        yaml_query_file = open('queries_for_test_sql.yaml', 'r')
+        dict_of_test_data_to_generate = yaml.load(yaml_query_file)
+    except FileNotFoundError:
+        log.critical('Cannot find YAML file \'queries_for_test_sql.yaml\'')
+        log.critical('Please ensure it is in the same directory as this Python script.')
+        log.critical('Exiting.')
+        sys.exit(-1)
 
+    # Uncomment the command below to print out YAML data structure.
+    # log.info(yaml.dump(dict_of_test_data_to_generate))
+
+    # TODO Add support for multiple rows of returns.
     for entry in dict_of_test_data_to_generate:
-        for query_in_list in dict_of_test_data_to_generate[entry]:
-            results, colnames = connect(query_in_list[0], conn)
-            results_list = [x for x in results[0]]
+        with open(output_dir + '/' + entry, 'w') as outfile:
+            for query_in_list in dict_of_test_data_to_generate[entry]:
+                for (key, value) in query_in_list.items():
+                    table = value
+                    results, colnames = connect(key, conn)
+                    results_list = [x for x in results[0]]
 
-            value_statement = prepare_result_print_statement(results_list)
+                    value_statement = prepare_result_print_statement(results_list)
 
-            final_statement = 'INSERT INTO {}({}) VALUES {}'.format(query_in_list[1], ', '.join(colnames), value_statement)
-
-            print(final_statement)
-            quit()
-
+                    final_statement = 'INSERT INTO {}({}) VALUES {}\n\n'.format(table, ', '.join(colnames), value_statement)
+                    
+                    outfile.write(final_statement)
 
 if __name__ == '__main__':
     main()
