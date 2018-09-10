@@ -16,5 +16,7 @@ INSERT INTO cv(cv_id, name, definition) VALUES (5, 'synonym type', NULL);
 
 INSERT INTO synonym(synonym_id, name, type_id, synonym_sgml) VALUES (1169747, 'HRS', 59978, 'HRS');
 
+INSERT INTO synonym(synonym_id, name, type_id, synonym_sgml) VALUES (1169749, 'HisRS', 59978, 'HisRS');
+
 SET session_replication_role = DEFAULT;
 
