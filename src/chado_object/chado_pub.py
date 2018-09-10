@@ -19,21 +19,26 @@ log = logging.getLogger(__name__)
 class ChadoPub(ChadoObject):
     def __init__(self, params):
         log.info('Initializing ChadoPub object.')
-        self.FBrf = params.get('FBrf')
-        self.bang_c = params.get('bang_c')
-        self.filename = params.get('filename')
-        self.P19_internal_notes = params.get('P19_internal_notes')
-        self.P40_flag_cambridge = params.get('P40_flag_cambridge')
-        self.P41_flag_harvard = params.get('P41_flag_harvard')
-        self.filename_short = params.get('filename_short')
-        self.curator_fullname = params.get('curator_fullname')
-        self.proforma_start_line_number = params.get('proforma_start_line_number')
+        # Query tracking
         self.current_query = None
+
+        # Metadata
+        self.filename = params['file_metadata'].get('filename')
+        self.filename_short = params['file_metadata'].get('filename')
+        self.curator_fullname = params['file_metadata'].get('curator_fullname')
+        self.proforma_start_line_number = params['file_metadata'].get('proforma_start_line_number')
+        
+        # Data
+        self.bang_c = params.get('bang_c')
+        self.P19_internal_notes = params['fields_values'].get('P19')
+        self.P22_FlyBase_reference_ID = params['fields_values'].get('P22')
+        self.P40_flag_cambridge = params['fields_values'].get('P40')
+        self.P41_flag_harvard = params['fields_values'].get('P41')
 
         super(ChadoPub, self).__init__()
 
     def load_content(self, session):
-        self.pub_id = super(ChadoPub, self).pub_id_from_fbrf(self.FBrf, session)
+        self.pub_id = super(ChadoPub, self).pub_id_from_fbrf(self.P22_FlyBase_reference_ID, session)
         
         if self.P19_internal_notes is not None:
             self.load_pubprops(session, 'pubprop type', 'internalnotes', self.P19_internal_notes)

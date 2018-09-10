@@ -46,12 +46,19 @@ def validation_file_schema_lookup(proforma_type):
     root_directory = os.path.abspath('src/validation/yaml')
 
     validation_file_schema_dict = {
-        'PUBLICATION PROFORMA                   Version 47:  25 Nov 2014' : ('publication.yaml', PubValidator),
-        'GENE PROFORMA                          Version 76:  04 Sept 2014' : ('gene.yaml', GeneValidator),
-        'GENE PROFORMA                          Version 77:  01 Jun 2016' : ('gene.yaml', GeneValidator)
+        '! PUBLICATION PROFORMA                   Version 47:  25 Nov 2014' : ('publication.yaml', PubValidator),
+        '! GENE PROFORMA                          Version 76:  04 Sept 2014' : ('gene.yaml', GeneValidator),
+        '! GENE PROFORMA                          Version 77:  01 Jun 2016' : ('gene.yaml', GeneValidator)
     }
 
-    (yaml_file, validator_to_use) = validation_file_schema_dict[proforma_type]
+    try:
+        (yaml_file, validator_to_use) = validation_file_schema_dict[proforma_type]
+    except KeyError:
+        log.critical('Proforma type not recognized for validation.')
+        log.critical('Type: {}'.format(proforma_type))
+        log.critical('Please contact Harvdev with this error.')
+        log.critical('Exiting.')
+        sys.exit(-1)
 
     yaml_file_location = root_directory + '/' + yaml_file
 
@@ -93,8 +100,15 @@ def validate_proforma_object(proforma_type, fields_values):
                     field_value_validation_dict[field].append(list_object[1])
                 else:
                     field_value_validation_dict[field] = [list_object[1]]
-        else:
+        elif type(value) is tuple:
             field_value_validation_dict[field] = value[1]
+        else:
+            log.critical('Unexpected value type: {} found, expected list or tuple.'.format(type(value)))
+            log.critical(field)
+            log.critical(value)
+            log.critical('Please contact Harvdev / Chris.')
+            log.critical('Exiting.')
+            sys.exit(-1)
 
     results = validator.validate(field_value_validation_dict)
 

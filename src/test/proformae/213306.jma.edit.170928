@@ -15,6 +15,7 @@ phys_int not curated; DNA-protein. jma170928.
 !
 ! G1a.  Gene symbol to use in FlyBase                       *a :HisRS
 ! G1b.  Gene symbol(s) used in reference                    *i :HRS
+HisRS
 ! G1g.  Is G1a the current symbol of a gene in FlyBase? (y/n)  :y
 ! G2b.  Gene name(s) used in reference                      *V :
 ! G30.  Class of gene, if new (SO_term ; ID)           [CV] *t :

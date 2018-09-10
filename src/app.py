@@ -67,12 +67,12 @@ def main():
     # TODO Fix efficiency of this algorithm. We're spamming entries into the set of successful files and checking dict_of_errored too much.
     # TODO Break this out into a function as well.
     for proforma_location in list_of_proformae:
-        list_of_processed_proforma_objects = process_proforma_file(proforma_location) # Processing individual proforma file.
+        list_of_processed_proforma_objects = process_proforma_file(proforma_location, curator_dict) # Processing individual proforma file.
 
         for processed_proforma_object in list_of_processed_proforma_objects:
-            metadata = processed_proforma_object.metadata
-            errors = processed_proforma_object.errors
-            filename = metadata.get('filename')
+            file_metadata = processed_proforma_object.get_file_metadata()
+            errors = processed_proforma_object.get_errors()
+            filename = file_metadata.get('filename')
 
             if filename not in dict_of_processed_files:
                     dict_of_processed_files[filename] = [] # Create a list within the dictionary entry if we don't have it already.
@@ -110,7 +110,7 @@ def main():
     for filename in dict_of_processed_files:
         log.info('Converting proforma from file %s into ChadoObjects' % (filename))
         for proforma_object_to_load in dict_of_processed_files[filename]:
-            returned_list_of_chado_objects = process_data_input(proforma_object_to_load, curator_dict) # Send along the curator dictionary.
+            returned_list_of_chado_objects = process_data_input(proforma_object_to_load)
             main_list_of_chado_objects_to_load.extend(returned_list_of_chado_objects)
  
     # Create our SQL Alchemy engine from our environmental variables.
