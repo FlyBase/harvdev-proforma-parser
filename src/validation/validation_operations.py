@@ -5,10 +5,8 @@
 .. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
 # Cerberus and yaml
-from cerberus import Validator
 import yaml
-from validation.gene import GeneValidator
-from validation.pub import PubValidator
+from validation.validator_base import ValidatorBase
 
 # Additional tools for validation
 import re
@@ -35,24 +33,18 @@ def validation_file_schema_lookup(proforma_type):
     Returns:
         yaml_file_location (str): The file location of the appropriate yaml files
 
-        validator_to_use (obj): The validator subclass to be used for validation.
-
-    Notes:
-        The lookup uses a tuple, which could theoretically hold multiple schemas for
-        'anyof' validation. This will probably be quite useful as the validation becomes
-        more complex.
     """
 
     root_directory = os.path.abspath('src/validation/yaml')
 
     validation_file_schema_dict = {
-        '! PUBLICATION PROFORMA                   Version 47:  25 Nov 2014' : ('publication.yaml', PubValidator),
-        '! GENE PROFORMA                          Version 76:  04 Sept 2014' : ('gene.yaml', GeneValidator),
-        '! GENE PROFORMA                          Version 77:  01 Jun 2016' : ('gene.yaml', GeneValidator)
+        '! PUBLICATION PROFORMA                   Version 47:  25 Nov 2014' : 'publication.yaml',
+        '! GENE PROFORMA                          Version 76:  04 Sept 2014' : 'gene.yaml',
+        '! GENE PROFORMA                          Version 77:  01 Jun 2016' : 'gene.yaml'
     }
 
     try:
-        (yaml_file, validator_to_use) = validation_file_schema_dict[proforma_type]
+        yaml_file = validation_file_schema_dict[proforma_type]
     except KeyError:
         log.critical('Proforma type not recognized for validation.')
         log.critical('Type: {}'.format(proforma_type))
@@ -62,9 +54,9 @@ def validation_file_schema_lookup(proforma_type):
 
     yaml_file_location = root_directory + '/' + yaml_file
 
-    log.info('Initializing %s using schema %s.' % (validator_to_use.get_type(), yaml_file))
+    log.info('Initializing validator using schema %s.' % (yaml_file))
 
-    return(yaml_file_location, validator_to_use)
+    return(yaml_file_location)
 
 def validate_proforma_object(proforma_type, fields_values):
     """
@@ -81,10 +73,11 @@ def validate_proforma_object(proforma_type, fields_values):
 
     log.info('Validating proforma object.')
 
-    (yaml_file_location, validator_to_use) = validation_file_schema_lookup(proforma_type)
+    (yaml_file_location) = validation_file_schema_lookup(proforma_type)
     schema_file = open(yaml_file_location, 'r')
     schema = yaml.load(schema_file)
-    validator = validator_to_use(schema)
+    log.debug('Schema used: {}'.format(schema))
+    validator = ValidatorBase(schema) # Custom validator for specific object.
 
     # Changing "fields_values" from a dictionary of tuple values to
     # a dictionary with string/list values.
@@ -110,6 +103,7 @@ def validate_proforma_object(proforma_type, fields_values):
             log.critical('Exiting.')
             sys.exit(-1)
 
+    log.debug('Field and values validated: {}'.format(field_value_validation_dict))
     results = validator.validate(field_value_validation_dict)
 
     if results is True:
