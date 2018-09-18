@@ -36,6 +36,11 @@ class ChadoGene(ChadoObject):
         self.G1b_symbol_used_in_ref = params['fields_values'].get('G1b')
         self.G2b_name_used_in_ref =  params['fields_values'].get('G2b')
 
+        # Values queried later, placed here for reference purposes.
+        self.G1a_FBgn = None
+        self.pub_id = None
+        self.symbol_in_FB_feature_id = None
+
         super(ChadoGene, self).__init__()
 
     def obtain_session(self, session):
@@ -69,7 +74,7 @@ class ChadoGene(ChadoObject):
                 log.info('\'{}\' does not match the current symbol in Chado: \'{}\', FBgn: \'{}\'. Returning is_current = \'f\''.format(G1b_entry[1], self.G1a_symbol_in_FB[1], self.G1a_FBgn))
                 return 'f'
 
-    def load_G1b_symbol(self):
+    def load_G1b_symbols(self):
     
         for G1b_entry in self.G1b_symbol_used_in_ref:
 
@@ -108,4 +113,4 @@ class ChadoGene(ChadoObject):
 
         # Optional Loading.
         if self.G1b_symbol_used_in_ref is not None:
-            self.load_G1b_symbol()
+            self.load_G1b_symbols()

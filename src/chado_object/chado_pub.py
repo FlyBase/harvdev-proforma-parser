@@ -109,4 +109,4 @@ class ChadoPub(ChadoObject):
                                 rank = new_max_rank
             )
 
-            session.add(new_notes)
+            self.session.add(new_notes)
