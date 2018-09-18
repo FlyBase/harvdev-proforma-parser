@@ -94,8 +94,8 @@ class ChadoGene(ChadoObject):
             )
 
     def load_content(self):
-
-        # Required Loading.
+        
+        # Required Querying and Loading.
         self.symbol_in_FB_feature_id = super(ChadoGene, self).feature_id_from_feature_name(self.G1a_symbol_in_FB, self.session)
         self.pub_id = super(ChadoGene, self).pub_id_from_fbrf(self.P22_FlyBase_reference_ID, self.session)
         self.G1a_FBgn = super(ChadoGene, self).uniquename_from_feature_id(self.symbol_in_FB_feature_id, self.session)
