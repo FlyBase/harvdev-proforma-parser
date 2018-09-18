@@ -37,6 +37,7 @@ def process_chado_objects_for_transaction(engine, list_of_objects_to_load, load_
     session = Session()
     error_occurred = False
     for entry in list_of_objects_to_load:
+        entry.obtain_session(session) # Send session to object.
         filename = entry.filename
         class_name = entry.__class__.__name__
         log.debug('All variables for entry:')
@@ -47,7 +48,7 @@ def process_chado_objects_for_transaction(engine, list_of_objects_to_load, load_
         log.info('Proforma object starts from line: %s' % (entry.proforma_start_line_number))
         
         try:
-            entry.load_content(session)
+            entry.load_content()
             session.flush() # For printing out SQL statements in debug mode.
         except NoResultFound:
             session.rollback()

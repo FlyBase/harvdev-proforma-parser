@@ -37,23 +37,26 @@ class ChadoPub(ChadoObject):
 
         super(ChadoPub, self).__init__()
 
-    def load_content(self, session):
-        self.pub_id = super(ChadoPub, self).pub_id_from_fbrf(self.P22_FlyBase_reference_ID, session)
+    def obtain_session(self, session):
+        self.session = session
+
+    def load_content(self):
+        self.pub_id = super(ChadoPub, self).pub_id_from_fbrf(self.P22_FlyBase_reference_ID, self.session)
         
         if self.P19_internal_notes is not None:
-            self.load_pubprops(session, 'pubprop type', 'internalnotes', self.P19_internal_notes)
+            self.load_pubprops('pubprop type', 'internalnotes', self.P19_internal_notes)
         else:
             log.info('No internal notes found, skipping internal notes transaction.')
 
         if self.P40_flag_cambridge is not None:
             for cam_entry in self.P40_flag_cambridge:
-                self.load_pubprops(session, 'pubprop type', 'cam_flag', cam_entry)
+                self.load_pubprops('pubprop type', 'cam_flag', cam_entry)
         else:
             log.info('No Cambridge flags found, skipping Cambridge flags transaction.')
 
         if self.P41_flag_harvard is not None:
             for harv_entry in self.P41_flag_harvard:
-                self.load_pubprops(session, 'pubprop type', 'harv_flag', harv_entry)
+                self.load_pubprops('pubprop type', 'harv_flag', harv_entry)
         else:
             log.info('No Harvard flags found, skipping Harvard flags transaction.')
 
@@ -64,8 +67,8 @@ class ChadoPub(ChadoObject):
         # value_to_add = curated_by_string
         # self.load_pubprops(session, 'pubprop type', 'curated_by', value_to_add)
 
-    def load_pubprops(self, session, cv_name, cv_term_name, value_to_add_tuple):
-        cv_term_id = super(ChadoPub, self).cvterm_query(cv_name, cv_term_name, session)
+    def load_pubprops(self, cv_name, cv_term_name, value_to_add_tuple):
+        cv_term_id = super(ChadoPub, self).cvterm_query(cv_name, cv_term_name, self.session)
 
         self.current_query_source = value_to_add_tuple
         self.current_query = 'Querying for FBrf \'%s\'.' % (value_to_add_tuple[1])
@@ -82,7 +85,7 @@ class ChadoPub(ChadoObject):
             Pubprop.type_id == cv_term_id
         )
             
-        exists = session.query(Pubprop.value).\
+        exists = self.session.query(Pubprop.value).\
                         filter(*filters).\
                         one_or_none()
         
@@ -90,7 +93,7 @@ class ChadoPub(ChadoObject):
             log.info('Previous %s found, update not required.' % (cv_term_name))
         else:
             log.info('Inserting new %s.' % (cv_term_name))
-            max_rank = session.query(func.max(Pubprop.rank)).\
+            max_rank = self.session.query(func.max(Pubprop.rank)).\
                 filter(*filters_for_max_rank).\
                 one()
 

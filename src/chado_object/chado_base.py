@@ -80,6 +80,17 @@ class ChadoObject(object):
 
         return results[0]
 
+    def uniquename_from_feature_id(self, feature_id, session):
+        self.current_query_source = feature_id
+        self.current_query = 'Querying for feature uniquename from feature id \'%s\'.' % (feature_id)
+        log.info(self.current_query)
+
+        results = session.query(Feature.uniquename).\
+            filter(Feature.feature_id == feature_id).\
+            one()
+
+        return results[0]
+
     def synonym_id_from_synonym_symbol(self, synonym_name_tuple, synonym_type_id, session):
         self.current_query_source = synonym_name_tuple
         self.current_query = 'Querying for synonym \'%s\'.' % (synonym_name_tuple[1])
