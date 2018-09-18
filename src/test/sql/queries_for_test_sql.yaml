@@ -18,5 +18,6 @@
     SELECT * FROM feature WHERE feature_id = 3111362: feature,
     SELECT * FROM cv WHERE cv_id = 5: cv,
     SELECT * FROM synonym WHERE synonym_id = 1169747: synonym,
-    SELECT * from synonym WHERE synonym.name = 'HisRS' : synonym
+    SELECT * from synonym WHERE synonym.name = 'HisRS' : synonym,
+    SELECT * from synonym WHERE synonym.name = 'HRS' : synonym
   ]

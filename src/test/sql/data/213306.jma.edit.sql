@@ -18,5 +18,7 @@ INSERT INTO synonym(synonym_id, name, type_id, synonym_sgml) VALUES (1169747, 'H
 
 INSERT INTO synonym(synonym_id, name, type_id, synonym_sgml) VALUES (1169749, 'HisRS', 59978, 'HisRS');
 
+INSERT INTO synonym(synonym_id, name, type_id, synonym_sgml) VALUES (1169747, 'HRS', 59978, 'HRS');
+
 SET session_replication_role = DEFAULT;
 
