@@ -31,7 +31,8 @@ parser = argparse.ArgumentParser(description='Parse proforma files and load them
 parser.add_argument('-v', '--verbose', help='Enable verbose mode.', action='store_true')
 parser.add_argument('-c', '--config', help='Specify the location of the configuration file.', required=True)
 parser.add_argument('-d', '--directory', help='Specify the directory of proformae to be loaded.', required=True)
-parser.add_argument('-l', '--load_type', help='Specify whether the load is \'test\' or \'production\'', required=True)
+parser.add_argument('-l', '--load_type', help='Specify whether the load is \'test\' or \'production\'', required=True,
+                    choices=['test', 'production'])
 args = parser.parse_args()
 
 if args.verbose:
