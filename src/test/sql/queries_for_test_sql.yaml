@@ -26,5 +26,21 @@
     AND fs.synonym_id=s.synonym_id 
     AND fs.is_current='t' 
     AND s.type_id=59978 
+    AND f.uniquename='FBgn0027087'",
+    feature: "SELECT DISTINCT f.feature_id, f.dbxref_id, f.organism_id, f.name, f.uniquename, f.residues, f.seqlen, f.md5checksum, f.type_id, f.is_analysis, f.timeaccessioned, f.timelastmodified, f.is_obsolete 
+    FROM feature f, synonym s, feature_synonym fs 
+    WHERE f.is_obsolete='f' 
+    AND f.feature_id=fs.feature_id 
+    AND fs.synonym_id=s.synonym_id 
+    AND fs.is_current='t' 
+    AND s.type_id=59978 
+    AND f.uniquename='FBgn0027087'",
+    feature_synonym: "SELECT DISTINCT fs.feature_synonym_id, fs.synonym_id, fs.feature_id, fs.pub_id, fs.is_current, fs.is_internal  
+    FROM feature f, synonym s, feature_synonym fs 
+    WHERE f.is_obsolete='f' 
+    AND f.feature_id=fs.feature_id 
+    AND fs.synonym_id=s.synonym_id 
+    AND fs.is_current='t' 
+    AND s.type_id=59978 
     AND f.uniquename='FBgn0027087'"
   ]

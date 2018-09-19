@@ -24,5 +24,9 @@ INSERT INTO feature_synonym(feature_synonym_id, synonym_id, feature_id, pub_id, 
 
 INSERT INTO synonym(synonym_id, name, type_id, synonym_sgml) VALUES (1169749, 'HisRS', 59978, 'HisRS');
 
+INSERT INTO feature(feature_id, dbxref_id, organism_id, name, uniquename, residues, seqlen, md5checksum, type_id, is_analysis, timeaccessioned, timelastmodified, is_obsolete) VALUES (3111362, 622281, 1, 'HisRS', 'FBgn0027087', NULL, 5018, NULL, 219, False, '2003-12-01 18:14:42.601074', '2016-02-04 10:11:00.737160', False);
+
+INSERT INTO feature_synonym(feature_synonym_id, synonym_id, feature_id, pub_id, is_current, is_internal) VALUES (8464008, 1169749, 3111362, 332499, True, False);
+
 SET session_replication_role = DEFAULT;
 
