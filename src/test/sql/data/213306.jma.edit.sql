@@ -18,7 +18,11 @@ INSERT INTO synonym(synonym_id, name, type_id, synonym_sgml) VALUES (1169747, 'H
 
 INSERT INTO synonym(synonym_id, name, type_id, synonym_sgml) VALUES (1169749, 'HisRS', 59978, 'HisRS');
 
-INSERT INTO synonym(synonym_id, name, type_id, synonym_sgml) VALUES (1169747, 'HRS', 59978, 'HRS');
+INSERT INTO feature_synonym(feature_synonym_id, synonym_id, feature_id, pub_id, is_current, is_internal) VALUES (10257465, 1169747, 3111362, 358057, False, False);
+
+INSERT INTO feature_synonym(feature_synonym_id, synonym_id, feature_id, pub_id, is_current, is_internal) VALUES (10257465, 1169747, 3111362, 358057, False, False);
+
+INSERT INTO synonym(synonym_id, name, type_id, synonym_sgml) VALUES (1169749, 'HisRS', 59978, 'HisRS');
 
 SET session_replication_role = DEFAULT;
 

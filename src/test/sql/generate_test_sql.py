@@ -81,10 +81,12 @@ def main():
             outfile.write('SET session_replication_role = replica;\n\n')
             for query_in_list in dict_of_test_data_to_generate[entry]:
                 for (key, value) in query_in_list.items():
-                    table = value
-                    results, colnames = connect(key, conn)
+                    table = key
+                    results, colnames = connect(value, conn)
                     results_list = [x for x in results[0]]
-                    # log.info(results_list)
+                    log.info(colnames)
+                    log.info(results_list)
+                    log.info('')
                     value_statement = prepare_result_print_statement(results_list)
 
                     final_statement = 'INSERT INTO {}({}) VALUES {};\n\n'.format(table, ', '.join(colnames), value_statement)
