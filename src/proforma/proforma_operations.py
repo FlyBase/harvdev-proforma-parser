@@ -172,6 +172,15 @@ class ProformaFile(object):
 
         # TODO Add additional format error checking here.
 
+        # If we're dealing with a !c entry.
+        if individual_proforma_line.startswith('!c'):
+            # Remove the 'c' from '!c' and process the line normally.
+            # !c flags are handled in the wrapper function one step away from here.
+            log.debug('Removing \'c\' from !c in line: %s' % individual_proforma_line)
+            log.debug('This line will also be flagged for !c processing.')
+            individual_proforma_line = individual_proforma_line[:1] + individual_proforma_line[2:]
+            log.debug('Updated line after attempted \'c\' removal: %s' % individual_proforma_line)
+            
         field = re.search(r"!\s*(\w+)", individual_proforma_line)
         if field:
             result_field = field.group(1)
@@ -270,7 +279,7 @@ class ProformaFile(object):
                     # We need the values AND we need to flag this field for banc_c processing later
                     field, value = self.get_proforma_field_and_content(current_line)
                     individual_proforma.add_field_and_value(field, value, line_number)
-                    individual_proforma.add_bang_c(field)
+                    individual_proforma.add_bang_c(field, value)
                 elif current_line.startswith('! C'):
                     # We're still in the "header" of the proforma (additional '! C' fields)
                     # Skip to the next line
@@ -304,7 +313,7 @@ class Proforma(object):
 
     def __init__(self, file_metadata, proforma_type, line_number):
         self.file_metadata = file_metadata # Store our file metadata dictionary.
-        self.errors = [] # To track whether an error has occurred. 
+        self.errors = None # Error tracking. This will become a dict if used.
         self.bang_c = None # To be implemented.
         self.proforma_start_line_number = line_number # Used later for data retrieval.
         self.proforma_type = proforma_type # Used later for data retrieval.
@@ -375,7 +384,7 @@ class Proforma(object):
                 self.fields_values[field] = (field, value, line_number) 
                 log.info('Adding field %s : value %s from line %s to the Proforma object.' % (field, value, line_number))
 
-    def add_bang_c(self, field):
+    def add_bang_c(self, field, value):
         """
         Sets the bang_c property of the object if a bang_c is found on a proforma line.
 
@@ -383,6 +392,10 @@ class Proforma(object):
             field (str): The field to be assigned to the bang_c variable.
 
         """
+        if self.bang_c is not None:
+            log.critical('Multiple !c entries attempted. This is not currently supported.')
+            self.update_errors({field: ['Multiple !c entries attempted. This is not currently supported.']})
+
         self.bang_c = field
         log.info('!c field detected for %s. Adding flag to object.' % (field))
 
@@ -393,8 +406,16 @@ class Proforma(object):
         return(self.file_metadata, self.bang_c, self.proforma_start_line_number, self.fields_values)
 
     def update_errors(self, errors):
-        if errors:
+        """
+        Adds errors to a proforma object. Creates a dictionary for self.errors if one doesn't already exist.
+
+        Args:
+            errors (dict): A dictionary containing {field : [values]} for errors. Values must be a list.
+        """
+        if self.errors is None:
             self.errors = errors
+        else:
+            self.errors.update(errors)
 
     def add_pub_data(self, pub_data):
         self.fields_values['P22'] = pub_data

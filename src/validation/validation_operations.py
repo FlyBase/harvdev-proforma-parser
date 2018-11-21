@@ -68,7 +68,7 @@ def validate_proforma_object(proforma_type, fields_values):
         field_values (dict): A dictionary of fields and values from the proforma.
 
     Returns:
-        errors (list): A list containing errors from validation.
+        errors (dict): A dictionary containing errors from validation.
     """
 
     log.info('Validating proforma object.')
