@@ -4,6 +4,8 @@
 
 .. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
+#TODO Split this file into individual files by class.
+
 # System and logging imports
 import os
 import sys
@@ -393,8 +395,9 @@ class Proforma(object):
 
         """
         if self.bang_c is not None:
-            log.critical('Multiple !c entries attempted. This is not currently supported.')
-            self.update_errors({field: ['Multiple !c entries attempted. This is not currently supported.']})
+            log.critical('Multiple !c entries found. This is not currently supported.')
+            field_total = self.bang_c + ', ' + field
+            self.update_errors({field_total: ['Multiple !c entries found. This is not currently supported.']})
 
         self.bang_c = field
         log.info('!c field detected for %s. Adding flag to object.' % (field))

@@ -112,5 +112,9 @@ class ChadoGene(ChadoObject):
             pub_id = self.pub_id)
 
         # Optional Loading.
+        if self.bang_c is not None:
+            log.info('Processing !c for field: {}'.format(self.bang_c))
+
+
         if self.G1b_symbol_used_in_ref is not None:
             self.load_G1b_symbols()
