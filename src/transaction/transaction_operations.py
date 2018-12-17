@@ -9,6 +9,7 @@ from sqlalchemy.orm import relationship, backref, sessionmaker
 from sqlalchemy.dialects import postgresql
 from sqlalchemy import func
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+from error.error_tracking import ErrorTracking
 
 import sys
 import logging
@@ -22,8 +23,6 @@ log = logging.getLogger(__name__)
 #     return query
 def process_chado_objects_for_transaction(engine, list_of_objects_to_load, load_type):
     
-    dict_of_errored_files = {}
-
     if load_type == 'production':
         log.warning('Production load specified. Changes to the production database will occur.')
     elif load_type == 'test':
@@ -54,13 +53,15 @@ def process_chado_objects_for_transaction(engine, list_of_objects_to_load, load_
             session.rollback()
             current_query = entry.current_query
             current_query_source = entry.current_query_source
-            dict_of_errored_files = insert_shared_error_lines('NoResultFound', dict_of_errored_files, filename, current_query_source, current_query)
+            # Create an error object.
+            ErrorTracking(filename, current_query_source[2], 'No results found from this query.', current_query)
             error_occurred = True
         except MultipleResultsFound:
             session.rollback()
             current_query = entry.current_query
             current_query_source = entry.current_query_source
-            dict_of_errored_files = insert_shared_error_lines('MultipleResultsFound', dict_of_errored_files, filename, current_query_source, current_query)
+            # Create an error object.
+            ErrorTracking(filename, current_query_source[2], 'Multiple results found from this query.', current_query)
             error_occurred = True
         except:
             session.rollback()
@@ -78,39 +79,6 @@ def process_chado_objects_for_transaction(engine, list_of_objects_to_load, load_
             log.critical('Unrecognized load_type specificed. Rolling back.')
             log.critical('Exiting.')
             sys.exit(-1)
-
-    return dict_of_errored_files
-
-def insert_shared_error_lines(error_type, dict_of_errored_files, filename, current_query_source, current_query):
-    if filename not in dict_of_errored_files:
-        dict_of_errored_files[filename] = []
-
-    error_list = [
-        'Transaction error',
-        current_query,
-        'Proforma line: %s' % (current_query_source[2]),
-        'Field: %s' % (current_query_source[0]),
-        'Value: %s' % (current_query_source[1])
-    ]
-
-    if error_type == 'NoResultFound':
-        no_results_found_errors = ['No results found.',
-            'Please check whether this entry is correct.',
-            ''
-        ]
-        error_list.extend(no_results_found_errors)
-    elif error_type == 'MultipleResultsFound':
-        multiple_results_found_error = 'This is most likely a developer error. Please inform Harvdev (Chris).'
-        error_list.append(multiple_results_found_error)
-
-    if error_list not in dict_of_errored_files[filename]:
-        dict_of_errored_files[filename].append(error_list)
-
-    log.error(filename)
-    for entry in error_list:
-        log.error(entry)
-
-    return dict_of_errored_files
 
 
     

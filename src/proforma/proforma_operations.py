@@ -90,9 +90,9 @@ def process_proforma_file(file_location_from_list, curator_dict):
         log.info('From file: %s' % (filename))
         log.info('From line: %s' % (proforma_start_line_number))
 
-        errors = validate_proforma_object(proforma_type, fields_values)
+        validate_proforma_object(filename, proforma_type, proforma_start_line_number, fields_values)
 
-        individual_proforma_object.update_errors(errors)
+        # individual_proforma_object.update_errors(errors)
 
         list_of_processed_proforma_objects.append(individual_proforma_object)
 

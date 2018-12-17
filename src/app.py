@@ -26,6 +26,7 @@ import argparse
 from proforma.proforma_operations import *
 from chado_object.conversions.proforma import *
 from transaction.transaction_operations import *
+from error.error_tracking import ErrorTracking
 
 parser = argparse.ArgumentParser(description='Parse proforma files and load them into Chado.')
 parser.add_argument('-v', '--verbose', help='Enable verbose mode.', action='store_true')
@@ -65,34 +66,29 @@ def main():
 
     log.info('Opening and processing the list of proformae.')
 
-    # TODO Fix efficiency of this algorithm. We're spamming entries into the set of successful files and checking dict_of_errored too much.
     # TODO Break this out into a function as well.
     for proforma_location in list_of_proformae:
         list_of_processed_proforma_objects = process_proforma_file(proforma_location, curator_dict) # Processing individual proforma file.
 
         for processed_proforma_object in list_of_processed_proforma_objects:
-            file_metadata = processed_proforma_object.get_file_metadata()
-            errors = processed_proforma_object.get_errors()
-            filename = file_metadata.get('filename')
+            filename = processed_proforma_object.get_file_metadata().get('filename')
 
             if filename not in dict_of_processed_files:
                     dict_of_processed_files[filename] = [] # Create a list within the dictionary entry if we don't have it already.
             dict_of_processed_files[filename].append(processed_proforma_object) # Add the processed proforma object as a dict entry under the filename.
 
-            if errors: # If we find errors, send them off to our error function to be sorted and stored.
-                dict_of_errored_files_validation = process_and_store_validation_errors(errors, dict_of_errored_files_validation, filename)
-
     log.info('--------------------')
     log.info('')
     log.info('Validation Summary.')
     log.info('Processed %s file(s).' % (len(dict_of_processed_files)))
-    log.info('%s file(s) failed validation:' % (len(dict_of_errored_files_validation)))
-    for errored_file in dict_of_errored_files_validation:
-        log.error(errored_file)
-        for errors in dict_of_errored_files_validation[errored_file]:
-            log.error(errors)
 
-    if len(dict_of_errored_files_validation) > 0:
+    list_of_errors_validation = [instance for instance in ErrorTracking.instances]
+
+    if len(list_of_errors_validation) > 0:
+        for error_object in list_of_errors_validation:
+            error_object.print_error_messages()
+
+    if len(list_of_errors_validation) > 0:
         log.critical('At least one errored file(s) found.')
         log.critical('Please fix or remove these file(s) before proceeding.')
         log.critical('No data was loaded into Chado.')
@@ -126,21 +122,20 @@ def main():
         sys.exit(-1)
 
     # Send our list of Chado Objects off to be loaded into the database.
-    dict_of_errored_files_transactions = process_chado_objects_for_transaction(engine, main_list_of_chado_objects_to_load, load_type)
+    process_chado_objects_for_transaction(engine, main_list_of_chado_objects_to_load, load_type)
 
     log.info('--------------------')
     log.info('')
     log.info('Transactions complete.')
     log.info('')
-    # log.info('Successfully validated %s file(s).' % (len(dict_of_processed_files)))
-    # log.info('%s file(s) failed validation:' % (len(dict_of_errored_files_transactions)))
-    for errored_file in dict_of_errored_files_transactions:
-        log.error(errored_file)
-        for list_of_errors in dict_of_errored_files_transactions[errored_file]:
-            for error in list_of_errors:
-                log.error(error)
 
-    if len(dict_of_errored_files_transactions) > 0:
+    list_of_errors_transactions = [instance for instance in ErrorTracking.instances]
+
+    if len(list_of_errors_transactions) > 0:
+        for error_object in list_of_errors_transactions:
+            error_object.print_error_messages()
+
+    if len(list_of_errors_transactions) > 0:
         log.critical('At least one errored file(s) found.')
         log.critical('Please fix or remove these file(s) before proceeding.')
         log.critical('No data was loaded into Chado.')
@@ -155,21 +150,20 @@ def main():
             log.info('bingo ....you success !....')
             log.info('')
         
+# def process_and_store_validation_errors(error_object, dict_of_errored_files_validation, filename):
+#     # Retrieve errors from valiation and transaction.
+#     # Sort and store these errors to be displayed to the user later.
 
-def process_and_store_validation_errors(error_object, dict_of_errored_files_validation, filename):
-    # Retrieve errors from valiation and transaction.
-    # Sort and store these errors to be displayed to the user later.
+#     if filename not in dict_of_errored_files_validation:
+#         dict_of_errored_files_validation[filename] = [] # Create a list within the dictionary entry if we don't have it already.
+#         # TODO Add line error here.
+#         # dict_of_errored_files_validation[filename].append('Validation error with proforma object starting at line: %s' % (line_number))
+#         for field, values in error_object.items():
+#             for value in values: # May have more than one error per field.
+#                 message = field + ': ' + value
+#                 dict_of_errored_files_validation[filename].append(message)
 
-    if filename not in dict_of_errored_files_validation:
-        dict_of_errored_files_validation[filename] = [] # Create a list within the dictionary entry if we don't have it already.
-        # TODO Add line error here.
-        # dict_of_errored_files_validation[filename].append('Validation error with proforma object starting at line: %s' % (line_number))
-        for field, values in error_object.items():
-            for value in values: # May have more than one error per field.
-                message = field + ': ' + value
-                dict_of_errored_files_validation[filename].append(message)
-
-    return dict_of_errored_files_validation
+#     return dict_of_errored_files_validation
 
 if __name__ == '__main__':
     main()

@@ -7,6 +7,7 @@
 # Cerberus and yaml
 import yaml
 from validation.validator_base import ValidatorBase
+from error.error_tracking import ErrorTracking
 
 # Additional tools for validation
 import re
@@ -16,6 +17,9 @@ import os
 import sys
 import logging
 log = logging.getLogger(__name__)
+
+# Additional modules
+from error.error_tracking import ErrorTracking
 
 def validate_proforma_file():
     log.info('Validating proforma file.')
@@ -58,7 +62,7 @@ def validation_file_schema_lookup(proforma_type):
 
     return(yaml_file_location)
 
-def validate_proforma_object(proforma_type, fields_values):
+def validate_proforma_object(filename, proforma_type, proforma_line, fields_values):
     """
     Validate a proforma object against a YAML schema using Cerberus.
     
@@ -109,10 +113,8 @@ def validate_proforma_object(proforma_type, fields_values):
     if results is True:
         log.info('Validation successful.')
     else:
-        log.error('Validation unsuccessful.')
         for field, values in validator.errors.items():
             for value in values: # May have more than one error per field.
-                message = field + ': ' + value
-                log.error(message)
-
-    return(validator.errors)
+                error_data = field + ': ' + value
+                # Create an error object.
+                ErrorTracking(filename, proforma_line, 'Validation unsuccessful', error_data)

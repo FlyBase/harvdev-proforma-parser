@@ -48,7 +48,7 @@ class ChadoGene(ChadoObject):
 
     def is_current_symbol(self, G1b_entry):
             log.info('Checking whether \'{}\' is the current symbol in Chado'.format(G1b_entry[1]))
-            self.current_query_source = G1b_entry[1]
+            self.current_query_source = G1b_entry
             self.current_query = 'Querying for \'%s\'.' % (G1b_entry[1])  
             log.info(self.current_query)
         
@@ -114,7 +114,6 @@ class ChadoGene(ChadoObject):
         # Optional Loading.
         if self.bang_c is not None:
             log.info('Processing !c for field: {}'.format(self.bang_c))
-
 
         if self.G1b_symbol_used_in_ref is not None:
             self.load_G1b_symbols()
