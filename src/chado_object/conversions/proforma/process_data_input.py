@@ -13,12 +13,13 @@ log = logging.getLogger(__name__)
 
 def create_chado_objects(ChadoObjectType, proforma_object):
 
-    (file_metadata, bang_c, proforma_start_line_number, fields_values) = proforma_object.get_data_for_loading()
+    (file_metadata, bang_c, bang_d, proforma_start_line_number, fields_values) = proforma_object.get_data_for_loading()
 
     params_to_send = {
         'file_metadata' : file_metadata,
         'fields_values' : fields_values,
         'bang_c' : bang_c,
+        'bang_d' : bang_d,
         'proforma_start_line_number' : proforma_start_line_number
     }
 

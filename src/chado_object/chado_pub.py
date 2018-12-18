@@ -20,6 +20,8 @@ class ChadoPub(ChadoObject):
     def __init__(self, params):
         log.info('Initializing ChadoPub object.')
         
+        self.proforma_start_line_number = params.get('proforma_start_line_number')
+
         # Data
         self.bang_c = params.get('bang_c')
         self.P19_internal_notes = params['fields_values'].get('P19')

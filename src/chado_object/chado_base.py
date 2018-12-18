@@ -21,13 +21,14 @@ class ChadoObject(object):
         self.current_query = None
 
         # Metadata
+        self.proforma_start_line_number = params.get('proforma_start_line_number')
         self.filename = params['file_metadata'].get('filename')
         self.filename_short = params['file_metadata'].get('filename')
         self.curator_fullname = params['file_metadata'].get('curator_fullname')
-        self.proforma_start_line_number = params['file_metadata'].get('proforma_start_line_number')
 
         # Data
         self.bang_c = params.get('bang_c')
+        self.bang_d = params.get('bang_d')
 
     # TODO Create wrapper for this to bring along non-processed values for error reporting.
     # Credit to Erik Taubeneck for this awesome trick.

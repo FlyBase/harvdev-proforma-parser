@@ -96,10 +96,6 @@ def main():
         log.info('All files successfully validated! Proceeding to transactions.')
         log.info('')
 
-    # TODO Decide whether we move forward with transactions (skipping invalid proforma)? Probably not?
-    # Subtract the errored files from the processed files.
-    # all(map( dict_of_processed_files.pop, dict_of_errored_files_validation))
-
     main_list_of_chado_objects_to_load = []
 
     for filename in dict_of_processed_files:

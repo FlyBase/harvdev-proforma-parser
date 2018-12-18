@@ -175,13 +175,13 @@ class ProformaFile(object):
         # TODO Add additional format error checking here.
 
         # If we're dealing with a !c entry.
-        if individual_proforma_line.startswith('!c'):
-            # Remove the 'c' from '!c' and process the line normally.
-            # !c flags are handled in the wrapper function one step away from here.
-            log.debug('Removing \'c\' from !c in line: %s' % individual_proforma_line)
-            log.debug('This line will also be flagged for !c processing.')
+        if individual_proforma_line.startswith('!c') or individual_proforma_line.startswith('!d'):
+            # Remove the 'c' or 'd' from '!c' or '!d' and process the line normally.
+            # !c and !d flags are handled in the wrapper function one step away from here.
+            log.debug('Removing c/d from !c/!d in line: %s' % individual_proforma_line)
+            log.debug('This line will also be flagged for !c/!d processing.')
             individual_proforma_line = individual_proforma_line[:1] + individual_proforma_line[2:]
-            log.debug('Updated line after attempted \'c\' removal: %s' % individual_proforma_line)
+            log.debug('Updated line after attempted \'c\'/\'d\' removal: %s' % individual_proforma_line)
             
         field = re.search(r"!\s*(\w+)", individual_proforma_line)
         if field:
@@ -276,12 +276,13 @@ class ProformaFile(object):
                 list_of_proforma_objects.append(individual_proforma) # add the last proforma entry to the list.
                 break # fin.
             else:
-                if current_line.startswith('!c'):
-                    # We're in a line with a bang_c indiciator.
+                if current_line.startswith('!c') or current_line.startswith('!d'):
+                    # We're in a line with a bang_c or bang_d indiciator.
                     # We need the values AND we need to flag this field for banc_c processing later
+                    type_of_bang = current_line[1]
                     field, value = self.get_proforma_field_and_content(current_line)
                     individual_proforma.add_field_and_value(field, value, line_number)
-                    individual_proforma.add_bang_c(field)
+                    individual_proforma.add_bang(field, type_of_bang)
                 elif current_line.startswith('! C'):
                     # We're still in the "header" of the proforma (additional '! C' fields)
                     # Skip to the next line
@@ -317,6 +318,7 @@ class Proforma(object):
         self.file_metadata = file_metadata # Store our file metadata dictionary.
         self.errors = None # Error tracking. This will become a dict if used.
         self.bang_c = None # Becomes the field flagged for !c (if used).
+        self.bang_d = None # Becomes the field flagged for !d (if used).
         self.proforma_start_line_number = line_number # Used later for data retrieval.
         self.proforma_type = proforma_type # Used later for data retrieval.
         
@@ -386,27 +388,39 @@ class Proforma(object):
                 self.fields_values[field] = (field, value, line_number) 
                 log.info('Adding field %s : value %s from line %s to the Proforma object.' % (field, value, line_number))
 
-    def add_bang_c(self, field):
+    def add_bang(self, field, type_of_bang):
         """
-        Sets the bang_c property of the object if a bang_c is found on a proforma line.
+        Sets the bang_c or bang_d property of the object if found on a proforma line.
 
         Args:
-            field (str): The field to be assigned to the bang_c variable.
+            field (str): The field to be assigned to the bang_c or bang_d variable.
 
         """
-        if self.bang_c is not None:
-            log.critical('Multiple !c entries found. This is not currently supported.')
-            field_total = self.bang_c + ', ' + field
-            self.update_errors({field_total: ['Multiple !c entries found. This is not currently supported.']})
+        if type_of_bang == 'c':
+            if self.bang_c is not None:
+                log.critical('Multiple !c entries found. This is not currently supported.')
+                field_total = self.bang_c + ', ' + field
+                self.update_errors({field_total: ['Multiple !d entries found. This is not currently supported.']})
+                # TODO Update error tracking.
 
-        self.bang_c = field
-        log.info('!c field detected for %s. Adding flag to object.' % (field))
+            self.bang_c = field
+            log.info('!c field detected for %s. Adding flag to object.' % (field))
+            
+        elif type_of_bang == 'd':
+            if self.bang_d is not None:
+                log.critical('Multiple !d entries found. This is not currently supported.')
+                field_total = self.bang_d + ', ' + field
+                self.update_errors({field_total: ['Multiple !d entries found. This is not currently supported.']})
+                # TODO Update to new error tracking.
+
+            self.bang_d = field
+            log.info('!d field detected for %s. Adding flag to object.' % (field))
 
     def get_data_for_processing(self):
         return(self.proforma_type, self.file_metadata['filename'], self.proforma_start_line_number, self.fields_values)
 
     def get_data_for_loading(self):
-        return(self.file_metadata, self.bang_c, self.proforma_start_line_number, self.fields_values)
+        return(self.file_metadata, self.bang_c, self.bang_d, self.proforma_start_line_number, self.fields_values)
 
     def update_errors(self, errors):
         """
