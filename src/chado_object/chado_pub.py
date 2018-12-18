@@ -19,14 +19,6 @@ log = logging.getLogger(__name__)
 class ChadoPub(ChadoObject):
     def __init__(self, params):
         log.info('Initializing ChadoPub object.')
-        # Query tracking
-        self.current_query = None
-
-        # Metadata
-        self.filename = params['file_metadata'].get('filename')
-        self.filename_short = params['file_metadata'].get('filename')
-        self.curator_fullname = params['file_metadata'].get('curator_fullname')
-        self.proforma_start_line_number = params['file_metadata'].get('proforma_start_line_number')
         
         # Data
         self.bang_c = params.get('bang_c')
@@ -35,7 +27,8 @@ class ChadoPub(ChadoObject):
         self.P40_flag_cambridge = params['fields_values'].get('P40')
         self.P41_flag_harvard = params['fields_values'].get('P41')
 
-        super(ChadoPub, self).__init__()
+        # Initiate the parent.
+        super(ChadoPub, self).__init__(params)
 
     def obtain_session(self, session):
         self.session = session

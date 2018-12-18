@@ -281,7 +281,7 @@ class ProformaFile(object):
                     # We need the values AND we need to flag this field for banc_c processing later
                     field, value = self.get_proforma_field_and_content(current_line)
                     individual_proforma.add_field_and_value(field, value, line_number)
-                    individual_proforma.add_bang_c(field, value)
+                    individual_proforma.add_bang_c(field)
                 elif current_line.startswith('! C'):
                     # We're still in the "header" of the proforma (additional '! C' fields)
                     # Skip to the next line
@@ -316,7 +316,7 @@ class Proforma(object):
     def __init__(self, file_metadata, proforma_type, line_number):
         self.file_metadata = file_metadata # Store our file metadata dictionary.
         self.errors = None # Error tracking. This will become a dict if used.
-        self.bang_c = None # To be implemented.
+        self.bang_c = None # Becomes the field flagged for !c (if used).
         self.proforma_start_line_number = line_number # Used later for data retrieval.
         self.proforma_type = proforma_type # Used later for data retrieval.
         
@@ -386,7 +386,7 @@ class Proforma(object):
                 self.fields_values[field] = (field, value, line_number) 
                 log.info('Adding field %s : value %s from line %s to the Proforma object.' % (field, value, line_number))
 
-    def add_bang_c(self, field, value):
+    def add_bang_c(self, field):
         """
         Sets the bang_c property of the object if a bang_c is found on a proforma line.
 

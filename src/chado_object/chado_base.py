@@ -15,13 +15,25 @@ from sqlalchemy.dialects import postgresql
 log = logging.getLogger(__name__)
 
 class ChadoObject(object):
-    def __init__(self):
-        pass
+    def __init__(self, params):
+
+        # Query tracking
+        self.current_query = None
+
+        # Metadata
+        self.filename = params['file_metadata'].get('filename')
+        self.filename_short = params['file_metadata'].get('filename')
+        self.curator_fullname = params['file_metadata'].get('curator_fullname')
+        self.proforma_start_line_number = params['file_metadata'].get('proforma_start_line_number')
+
+        # Data
+        self.bang_c = params.get('bang_c')
 
     # TODO Create wrapper for this to bring along non-processed values for error reporting.
     # Credit to Erik Taubeneck for this awesome trick.
     # http://skien.cc/blog/2014/02/06/sqlalchemy-and-race-conditions-follow-up/
     def get_one_or_create(self, session, model, create_method='', create_method_kwargs=None, **kwargs):
+        log.info('Running \'get one or create\' query.')
         try:
             attempt = session.query(model).filter_by(**kwargs).one()
             log.debug(attempt)

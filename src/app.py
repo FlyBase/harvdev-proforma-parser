@@ -61,12 +61,10 @@ def main():
 
     list_of_proformae = process_proforma_directory(directory_to_process)
 
-    dict_of_errored_files_validation = dict()
     dict_of_processed_files = dict()
 
     log.info('Opening and processing the list of proformae.')
 
-    # TODO Break this out into a function as well.
     for proforma_location in list_of_proformae:
         list_of_processed_proforma_objects = process_proforma_file(proforma_location, curator_dict) # Processing individual proforma file.
 
@@ -149,21 +147,6 @@ def main():
             log.info('All files successfully loaded into Chado.')
             log.info('bingo ....you success !....')
             log.info('')
-        
-# def process_and_store_validation_errors(error_object, dict_of_errored_files_validation, filename):
-#     # Retrieve errors from valiation and transaction.
-#     # Sort and store these errors to be displayed to the user later.
-
-#     if filename not in dict_of_errored_files_validation:
-#         dict_of_errored_files_validation[filename] = [] # Create a list within the dictionary entry if we don't have it already.
-#         # TODO Add line error here.
-#         # dict_of_errored_files_validation[filename].append('Validation error with proforma object starting at line: %s' % (line_number))
-#         for field, values in error_object.items():
-#             for value in values: # May have more than one error per field.
-#                 message = field + ': ' + value
-#                 dict_of_errored_files_validation[filename].append(message)
-
-#     return dict_of_errored_files_validation
 
 if __name__ == '__main__':
     main()

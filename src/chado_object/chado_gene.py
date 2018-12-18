@@ -18,18 +18,6 @@ class ChadoGene(ChadoObject):
     def __init__(self, params):
         log.info('Initializing ChadoGene object.')
 
-        # Query tracking
-        self.current_query = None
-
-        # Metadata
-        self.filename = params['file_metadata'].get('filename')
-        self.filename_short = params['file_metadata'].get('filename')
-        self.curator_fullname = params['file_metadata'].get('curator_fullname')
-        self.proforma_start_line_number = params['file_metadata'].get('proforma_start_line_number')
-        
-        # Data
-        self.bang_c = params.get('bang_c')
-
         self.P22_FlyBase_reference_ID = params['fields_values'].get('P22')
 
         self.G1a_symbol_in_FB = params['fields_values'].get('G1a')
@@ -41,7 +29,8 @@ class ChadoGene(ChadoObject):
         self.pub_id = None
         self.symbol_in_FB_feature_id = None
 
-        super(ChadoGene, self).__init__()
+        # Initiate the parent.
+        super(ChadoGene, self).__init__(params)
 
     def obtain_session(self, session):
         self.session = session
@@ -74,8 +63,29 @@ class ChadoGene(ChadoObject):
                 log.info('\'{}\' does not match the current symbol in Chado: \'{}\', FBgn: \'{}\'. Returning is_current = \'f\''.format(G1b_entry[1], self.G1a_symbol_in_FB[1], self.G1a_FBgn))
                 return 'f'
 
-    def load_G1b_symbols(self):
+    def process_G1b_symbols(self):
     
+        if self.bang_c == 'G1b':
+            # Clear the field if we have a !c
+            self.current_query = 'Removing entry for !c: \'%s\'.' % (self.bang_c)            
+            log.info(self.current_query)
+
+            # Find all FeatureSynonyms matching a specific pub, feature, and synonym type ("symbol").
+            filters = (
+            FeatureSynonym.pub_id == self.pub_id,
+            FeatureSynonym.feature_id == self.symbol_in_FB_feature_id,
+            Synonym.type_id == Cvterm.cvterm_id,
+            Cvterm.name == 'symbol',
+            FeatureSynonym.synonym_id == Synonym.synonym_id,
+            )
+
+            results = self.session.query(FeatureSynonym, Synonym.type_id, Cvterm.cvterm_id, Cvterm.name).\
+                filter(*filters).\
+                all()
+
+            for item in results:
+                self.session.delete(item.FeatureSynonym)
+
         for G1b_entry in self.G1b_symbol_used_in_ref:
 
             synonym_type_id = super(ChadoGene, self).cvterm_query('synonym type', 'symbol', self.session)
@@ -84,10 +94,21 @@ class ChadoGene(ChadoObject):
             self.current_query = 'Querying for \'%s\'.' % (G1b_entry[1])            
             log.info(self.current_query)
             
+            # Get one or create the synonym.
+            super(ChadoGene, self).get_one_or_create(
+                    self.session,
+                    Synonym,
+                    synonym_sgml = G1b_entry[1],
+                    name = G1b_entry[1],
+                    type_id = synonym_type_id
+            )
+
             self.symbol_used_in_ref_synonym_id = super(ChadoGene, self).synonym_id_from_synonym_symbol(G1b_entry, synonym_type_id, self.session)
 
+            # Check if our symbol is the current symbol for the feature.
             is_current = self.is_current_symbol(G1b_entry)
 
+            # Get one or create the feature_synonym relationship.
             super(ChadoGene, self).get_one_or_create(
                 self.session,
                 FeatureSynonym,
@@ -100,7 +121,7 @@ class ChadoGene(ChadoObject):
 
     def load_content(self):
         
-        # Required Querying and Loading.
+        # Required querying and loading.
         self.symbol_in_FB_feature_id = super(ChadoGene, self).feature_id_from_feature_name(self.G1a_symbol_in_FB, self.session)
         self.pub_id = super(ChadoGene, self).pub_id_from_fbrf(self.P22_FlyBase_reference_ID, self.session)
         self.G1a_FBgn = super(ChadoGene, self).uniquename_from_feature_id(self.symbol_in_FB_feature_id, self.session)
@@ -111,9 +132,11 @@ class ChadoGene(ChadoObject):
             feature_id = self.symbol_in_FB_feature_id,
             pub_id = self.pub_id)
 
-        # Optional Loading.
+        # Optional loading.
         if self.bang_c is not None:
-            log.info('Processing !c for field: {}'.format(self.bang_c))
+            log.info('Found !c entry: {}'.format(self.bang_c))
+        else: 
+            log.info('No !c entries found.')
 
         if self.G1b_symbol_used_in_ref is not None:
-            self.load_G1b_symbols()
+            self.process_G1b_symbols()

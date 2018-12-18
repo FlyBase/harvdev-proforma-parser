@@ -79,7 +79,3 @@ def process_chado_objects_for_transaction(engine, list_of_objects_to_load, load_
             log.critical('Unrecognized load_type specificed. Rolling back.')
             log.critical('Exiting.')
             sys.exit(-1)
-
-
-    
-
