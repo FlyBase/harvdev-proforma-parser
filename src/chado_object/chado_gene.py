@@ -109,39 +109,39 @@ class ChadoGene(ChadoObject):
 
                 for item in results:
                     self.session.delete(item.FeatureSynonym)
+            if self.G1b_symbol_used_in_ref is not None:
+                for G1b_entry in self.G1b_symbol_used_in_ref:
 
-            for G1b_entry in self.G1b_symbol_used_in_ref:
+                    synonym_type_id = super(ChadoGene, self).cvterm_query('synonym type', 'symbol', self.session)
+                    
+                    self.current_query_source = G1b_entry
+                    self.current_query = 'Querying for \'%s\'.' % (G1b_entry[1])            
+                    log.info(self.current_query)
+                    
+                    # Get one or create the synonym.
+                    super(ChadoGene, self).get_one_or_create(
+                            self.session,
+                            Synonym,
+                            synonym_sgml = G1b_entry[1],
+                            name = G1b_entry[1],
+                            type_id = synonym_type_id
+                    )
 
-                synonym_type_id = super(ChadoGene, self).cvterm_query('synonym type', 'symbol', self.session)
-                
-                self.current_query_source = G1b_entry
-                self.current_query = 'Querying for \'%s\'.' % (G1b_entry[1])            
-                log.info(self.current_query)
-                
-                # Get one or create the synonym.
-                super(ChadoGene, self).get_one_or_create(
+                    symbol_used_in_ref_synonym_id = super(ChadoGene, self).synonym_id_from_synonym_symbol(G1b_entry, synonym_type_id, self.session)
+
+                    # Check if our symbol is the current symbol for the feature.
+                    is_current = self.is_current_symbol(G1b_entry)
+
+                    # Get one or create the feature_synonym relationship.
+                    super(ChadoGene, self).get_one_or_create(
                         self.session,
-                        Synonym,
-                        synonym_sgml = G1b_entry[1],
-                        name = G1b_entry[1],
-                        type_id = synonym_type_id
-                )
-
-                symbol_used_in_ref_synonym_id = super(ChadoGene, self).synonym_id_from_synonym_symbol(G1b_entry, synonym_type_id, self.session)
-
-                # Check if our symbol is the current symbol for the feature.
-                is_current = self.is_current_symbol(G1b_entry)
-
-                # Get one or create the feature_synonym relationship.
-                super(ChadoGene, self).get_one_or_create(
-                    self.session,
-                    FeatureSynonym,
-                    feature_id = self.symbol_in_FB_feature_id,
-                    is_current = is_current,
-                    pub_id = self.pub_id,
-                    is_internal = 'FALSE', 
-                    synonym_id = symbol_used_in_ref_synonym_id
-                )
+                        FeatureSynonym,
+                        feature_id = self.symbol_in_FB_feature_id,
+                        is_current = is_current,
+                        pub_id = self.pub_id,
+                        is_internal = 'FALSE', 
+                        synonym_id = symbol_used_in_ref_synonym_id
+                    )
 
     def load_content(self):
         
@@ -167,4 +167,5 @@ class ChadoGene(ChadoObject):
         else: 
             log.info('No !d entries found.')
 
-        self.process_G1b_symbols()
+        if self.G1b_symbol_used_in_ref is not None or self.bang_c == 'G1b' or self.bang_d == 'G1b':
+            self.process_G1b_symbols()

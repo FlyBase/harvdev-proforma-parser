@@ -13,7 +13,7 @@
 ! GENE PROFORMA                          Version 77:  01 Jun 2016
 !
 ! G1a.  Gene symbol to use in FlyBase                       *a :rut
-!c G1b.  Gene symbol(s) used in reference                    *i :
+!c G1b.  Gene symbol(s) used in reference                    *i :CG9533
 ! G1g.  Is G1a the current symbol of a gene in FlyBase? (y/n)  :y
 ! G2b.  Gene name(s) used in reference                      *V :
 ! G30.  Class of gene, if new (SO_term ; ID)           [CV] *t :
