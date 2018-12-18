@@ -6,5 +6,7 @@ INSERT INTO synonym(synonym_id, name, type_id, synonym_sgml) VALUES (1172006, 'C
 
 INSERT INTO feature_synonym(feature_synonym_id, synonym_id, feature_id, pub_id, is_current, is_internal) VALUES (1712962, 1172006, 3107733, 152597, False, False);
 
+INSERT INTO feature(feature_id, dbxref_id, organism_id, name, uniquename, residues, seqlen, md5checksum, type_id, is_analysis, timeaccessioned, timelastmodified, is_obsolete) VALUES (3107733, 59487, 1, 'rut', 'FBgn0003301', NULL, 38596, NULL, 219, False, '2003-12-01 18:01:22.584491', '2012-05-21 11:24:43.131477', False);
+
 SET session_replication_role = DEFAULT;
 
