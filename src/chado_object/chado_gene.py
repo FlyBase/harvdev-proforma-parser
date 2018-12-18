@@ -70,8 +70,6 @@ class ChadoGene(ChadoObject):
             log.info('Removing the entries listed in field \'%s\'.' % (self.bang_d))    
             for G1b_entry in self.G1b_symbol_used_in_ref:
 
-                # statement: delete from feature_synonym where synonym_id=1172010 and pub_id=339330 and feature_id=3107733               
-
                 synonym_type_id = super(ChadoGene, self).cvterm_query('synonym type', 'symbol', self.session)
                 symbol_used_in_ref_synonym_id = super(ChadoGene, self).synonym_id_from_synonym_symbol(G1b_entry, synonym_type_id, self.session)
 

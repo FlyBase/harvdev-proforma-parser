@@ -6,7 +6,7 @@
 #   Table in which to INSERT final result: SQL query to retrieve test data
 # ]
 #
-213306.jma.edit.sql:
+213306.jma.edit.170928.sql:
   [
     cvterm: SELECT * FROM cvterm WHERE cvterm_id = 96444,
     cvterm: SELECT * FROM cvterm WHERE cvterm_id = 59978,
@@ -15,7 +15,6 @@
     cvterm: SELECT * FROM cvterm WHERE cvterm_id = 57047,
     feature: SELECT * FROM feature WHERE feature_id = 3111362,
     cv: SELECT * FROM cv WHERE cv_id = 5,
-    synonym: SELECT * FROM synonym WHERE synonym_id = 1169747,
     synonym: SELECT * FROM synonym WHERE name = 'HisRS',
     feature_synonym: SELECT * FROM feature_synonym WHERE feature_id = 3111362,
     feature_synonym: SELECT * FROM feature_synonym WHERE synonym_id = 1169747, 
@@ -43,4 +42,11 @@
     AND fs.is_current='t' 
     AND s.type_id=59978 
     AND f.uniquename='FBgn0027087'"
+  ]
+
+195387.sm.edit.181223.sql:
+  [
+    pub: SELECT * FROM pub WHERE uniquename = 'FBrf0195387',
+    synonym: SELECT * FROM synonym WHERE name = 'CG9533',
+    feature_synonym: SELECT * FROM feature_synonym WHERE synonym_id = 1172006, 
   ]
