@@ -167,5 +167,4 @@ class ChadoGene(ChadoObject):
         else: 
             log.info('No !d entries found.')
 
-        if self.G1b_symbol_used_in_ref is not None:
-            self.process_G1b_symbols()
+        self.process_G1b_symbols()
