@@ -15,4 +15,4 @@ before_script:
 
 script:
     - for f in src/test/sql/data/*.sql ; do psql -q -U postgres -d travis_ci_test -f $f ; done
-    - python src/app.py -c src/test/credentials/config.cfg -d src/test/proformae -l production -v
+    - python src/app.py -c src/test/credentials/travis.cfg -d src/test/proformae -l production -v
