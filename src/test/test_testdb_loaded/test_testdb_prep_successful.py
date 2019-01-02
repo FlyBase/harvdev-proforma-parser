@@ -51,6 +51,8 @@ def test():
         log.critical('Exiting.')
         sys.exit(-1)
 
+    results_count = 0
+
     for entry in dict_of_test_data_to_generate:
         for query_in_list in dict_of_test_data_to_generate[entry]:
             for (key, value) in query_in_list.items():
@@ -59,4 +61,7 @@ def test():
                 log.info(colnames)
                 log.info(results_list)
                 assert len(results_list) != 0
+                results_count += 1
                 log.info('')
+
+    log.info('Checked {} results.'.format(results_count))
