@@ -56,6 +56,9 @@ def main():
 
     log = logging.getLogger(__name__)
 
+    log.info('Using server: {}'.format(SERVER))
+    log.info('Using database: {}'.format(DB))
+
     # Obtain file list of proformae to be processed.
     directory_to_process = args.directory
 

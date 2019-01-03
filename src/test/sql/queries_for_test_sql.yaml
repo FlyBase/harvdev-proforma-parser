@@ -15,7 +15,6 @@
     cvterm: SELECT * FROM cvterm WHERE cvterm_id = 57047,
     feature: SELECT * FROM feature WHERE feature_id = 3111362,
     cv: SELECT * FROM cv WHERE cv_id = 5,
-    synonym: SELECT * FROM synonym WHERE name = 'HisRS',
     feature_synonym: SELECT * FROM feature_synonym WHERE feature_id = 3111362,
     feature_synonym: SELECT * FROM feature_synonym WHERE synonym_id = 1169747, 
     synonym: "SELECT DISTINCT s.synonym_id, s.name, s.type_id, s.synonym_sgml 
@@ -48,12 +47,9 @@
   [
     pub: "SELECT * FROM pub WHERE pub.uniquename = 'FBrf0195387'",
     feature: "SELECT * FROM feature WHERE feature.name = 'rut'",
-    feature: "SELECT * FROM feature WHERE feature.feature_id = 3107733",
     feature_pub: "SELECT * FROM feature_pub WHERE feature_pub.feature_id = 3107733 AND feature_pub.pub_id = 339330",
-    feature_synonym: "SELECT * FROM feature_synonym WHERE feature_synonym.pub_id = 339330 AND feature_synonym.feature_id = 3107733",
     synonym: "SELECT * FROM synonym WHERE synonym.type_id = 59978 and synonym.name = 'CG9533'",
     feature_synonym: "SELECT * FROM feature_synonym WHERE feature_synonym.synonym_id = 1172006",
-    feature_synonym: "SELECT * FROM feature_synonym WHERE feature_synonym.synonym_id = 1172010",
     cvterm: "SELECT * FROM cvterm WHERE cvterm.name = 'symbol'",
     cv: "SELECT * FROM cv WHERE cv.name = 'synonym type'",
     synonym: "SELECT DISTINCT s.synonym_id, s.name, s.type_id, s.synonym_sgml 
@@ -92,7 +88,6 @@
   [
     pub: "SELECT * FROM pub WHERE pub.uniquename = 'FBrf0188733'",
     feature: "SELECT * FROM feature WHERE feature.name = 'dnc'",
-    feature: "SELECT * FROM feature WHERE feature.feature_id = 3087057",
     feature_pub: "SELECT * FROM feature_pub WHERE feature_pub.feature_id = 3087057 AND feature_pub.pub_id = 332469",
     cvterm: "SELECT * FROM cvterm WHERE cvterm.name = 'symbol'",
     cv: "SELECT * FROM cv WHERE cv.name = 'synonym type'",
