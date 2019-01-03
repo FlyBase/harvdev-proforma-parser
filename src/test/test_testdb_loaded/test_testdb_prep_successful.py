@@ -50,13 +50,12 @@ def connect(sql, conn):
     cursor.execute(sql) # If we have a variable (e.g. an FBgn) be sure to include it in the execute command.
     # Grab the results.
     records = cursor.fetchall()
-    colnames = [desc[0] for desc in cursor.description]
     # Close the cursor  
     cursor.close()
     # Return a list of tuples
-    return records, colnames
+    return records
 
 @pytest.mark.parametrize('testdata', combined_list_to_test)
 def test_entries(testdata):
-    results, colnames = connect(testdata, conn)
+    results = connect(testdata, conn)
     assert len(results) != 0
