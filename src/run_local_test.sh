@@ -1,6 +1,7 @@
 #! /bin/bash
 
 export TEST_ENV="local"
+set -e
 
 dropdb testdb
 createdb testdb
