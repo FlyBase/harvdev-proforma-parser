@@ -5,9 +5,8 @@
 .. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
 import logging
-from model.base import Base
-from model.tables import *
-from model.constructed import *
+from harvdev_utils.production import *
+
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.dialects import postgresql
@@ -32,7 +31,7 @@ class ChadoObject(object):
 
     # TODO Create wrapper for this to bring along non-processed values for error reporting.
     # Credit to Erik Taubeneck for this awesome trick.
-    # http://skien.cc/blog/2014/02/06/sqlalchemy-and-race-conditions-follow-up/
+    # https://skien.cc/blog/2014/02/06/sqlalchemy-and-race-conditions-follow-up-on-commits-and-flushes/
     def get_one_or_create(self, session, model, create_method='', create_method_kwargs=None, **kwargs):
         log.info('Running \'get one or create\' query.')
         try:
@@ -47,6 +46,7 @@ class ChadoObject(object):
                 with session.begin_nested():
                     created = getattr(model, create_method, model)(**kwargs)
                     session.add(created)
+                    #TODO Add session.flush() here?
                     log.debug(created)
                     self.current_query = created
             except IntegrityError:

@@ -14,9 +14,9 @@ INSERT INTO feature(feature_id, dbxref_id, organism_id, name, uniquename, residu
 
 INSERT INTO cv(cv_id, name, definition) VALUES (5, 'synonym type', NULL);
 
-INSERT INTO feature_synonym(feature_synonym_id, synonym_id, feature_id, pub_id, is_current, is_internal) VALUES (10257473, 1169749, 3111362, 358057, True, False);
+INSERT INTO feature_synonym(feature_synonym_id, synonym_id, feature_id, pub_id, is_current, is_internal) VALUES (1709764, 1169747, 3111362, 323465, False, False);
 
-INSERT INTO feature_synonym(feature_synonym_id, synonym_id, feature_id, pub_id, is_current, is_internal) VALUES (10257472, 1169747, 3111362, 358057, False, False);
+INSERT INTO feature_synonym(feature_synonym_id, synonym_id, feature_id, pub_id, is_current, is_internal) VALUES (1709764, 1169747, 3111362, 323465, False, False);
 
 INSERT INTO synonym(synonym_id, name, type_id, synonym_sgml) VALUES (1169749, 'HisRS', 59978, 'HisRS');
 

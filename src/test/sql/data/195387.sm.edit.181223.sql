@@ -23,3 +23,4 @@ INSERT INTO feature_synonym(feature_synonym_id, synonym_id, feature_id, pub_id, 
 INSERT INTO feature_synonym(feature_synonym_id, synonym_id, feature_id, pub_id, is_current, is_internal) VALUES (4511056, 1172006, 3107733, 339330, False, False);
 
 SET session_replication_role = DEFAULT;
+

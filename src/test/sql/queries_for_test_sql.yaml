@@ -6,6 +6,8 @@
 #   Table in which to INSERT final result: SQL query to retrieve test data
 # ]
 #
+# TODO Convert test data to use only cvterm names and never ids (in case we change ids at some point in the future).
+#
 213306.jma.edit.170928.sql:
   [
     cvterm: SELECT * FROM cvterm WHERE cvterm_id = 96444,
@@ -25,14 +27,7 @@
     AND fs.is_current='t' 
     AND s.type_id=59978 
     AND f.uniquename='FBgn0027087'",
-    feature: "SELECT DISTINCT f.feature_id, f.dbxref_id, f.organism_id, f.name, f.uniquename, f.residues, f.seqlen, f.md5checksum, f.type_id, f.is_analysis, f.timeaccessioned, f.timelastmodified, f.is_obsolete 
-    FROM feature f, synonym s, feature_synonym fs 
-    WHERE f.is_obsolete='f' 
-    AND f.feature_id=fs.feature_id 
-    AND fs.synonym_id=s.synonym_id 
-    AND fs.is_current='t' 
-    AND s.type_id=59978 
-    AND f.uniquename='FBgn0027087'",
+    feature: "SELECT * FROM feature f WHERE f.uniquename='FBgn0027087'",
     feature_synonym: "SELECT DISTINCT fs.feature_synonym_id, fs.synonym_id, fs.feature_id, fs.pub_id, fs.is_current, fs.is_internal  
     FROM feature f, synonym s, feature_synonym fs 
     WHERE f.is_obsolete='f' 
@@ -60,14 +55,7 @@
     AND fs.is_current='t' 
     AND s.type_id=59978 
     AND f.uniquename='FBgn0003301'",
-    feature: "SELECT DISTINCT f.feature_id, f.dbxref_id, f.organism_id, f.name, f.uniquename, f.residues, f.seqlen, f.md5checksum, f.type_id, f.is_analysis, f.timeaccessioned, f.timelastmodified, f.is_obsolete 
-    FROM feature f, synonym s, feature_synonym fs 
-    WHERE f.is_obsolete='f' 
-    AND f.feature_id=fs.feature_id 
-    AND fs.synonym_id=s.synonym_id 
-    AND fs.is_current='t' 
-    AND s.type_id=59978 
-    AND f.uniquename='FBgn0003301'",
+    feature: "SELECT * FROM feature f WHERE f.uniquename='FBgn0003301'",
     feature_synonym: "SELECT DISTINCT fs.feature_synonym_id, fs.synonym_id, fs.feature_id, fs.pub_id, fs.is_current, fs.is_internal  
     FROM feature f, synonym s, feature_synonym fs 
     WHERE f.is_obsolete='f' 
@@ -89,8 +77,23 @@
     pub: "SELECT * FROM pub WHERE pub.uniquename = 'FBrf0188733'",
     feature: "SELECT * FROM feature WHERE feature.name = 'dnc'",
     feature_pub: "SELECT * FROM feature_pub WHERE feature_pub.feature_id = 3087057 AND feature_pub.pub_id = 332469",
-    cvterm: "SELECT * FROM cvterm WHERE cvterm.name = 'symbol'",
     cv: "SELECT * FROM cv WHERE cv.name = 'synonym type'",
+    cvterm: "SELECT * FROM cvterm WHERE cvterm.name = 'symbol'",
+    cv: "SELECT * FROM cv WHERE cv.name = 'pubprop type'",
+    cvterm: "SELECT * FROM cvterm WHERE cvterm.name = 'curated_by'",
     synonym: "SELECT * FROM synonym WHERE synonym.name = 'CG10797' AND synonym.type_id = 59978",
     feature_synonym: "SELECT * FROM feature_synonym WHERE feature_synonym.pub_id = 332469 AND feature_synonym.feature_id = 3087057 AND feature_synonym.synonym_id = 1230505"
+  ]
+
+064568.lc.edit.161225.sql:
+  [
+    pub: "SELECT * FROM pub WHERE pub.uniquename = 'FBrf0064568'",
+    feature: "SELECT feature_id from FEATURE WHERE organism_id=1 AND type_id=219 AND uniquename='FBgn0001234'",
+    feature_pub: "SELECT * FROM feature_pub WHERE feature_pub.feature_id = 3167618 AND feature_pub.pub_id = 221699",
+    cv: "SELECT * FROM cv WHERE cv.name = 'synonym type'",
+    cvterm: "SELECT * FROM cvterm WHERE cvterm.name = 'symbol'",
+    cv: "SELECT * FROM cv WHERE cv.name = 'pubprop type'",
+    cvterm: "SELECT * FROM cvterm WHERE cvterm.name = 'curated_by'",
+    synonym: "SELECT * FROM synonym WHERE synonym.name = 'hsromega' AND synonym.synonym_sgml='hsrω' and synonym.type_id = 59978",
+    feature_synonym: "SELECT * FROM feature_synonym WHERE feature_synonym.pub_id = 221699 AND feature_synonym.feature_id = 3167618 AND feature_synonym.synonym_id = 1301765"
   ]

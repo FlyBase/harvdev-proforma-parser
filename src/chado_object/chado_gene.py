@@ -5,10 +5,8 @@
 .. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
 from .chado_base import ChadoObject
+from harvdev_utils.production import *
 
-from model.base import Base
-from model.tables import *
-from model.constructed import *
 from sqlalchemy import func
 
 import logging

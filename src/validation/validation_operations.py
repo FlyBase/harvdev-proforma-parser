@@ -110,11 +110,27 @@ def validate_proforma_object(filename, proforma_type, proforma_line, fields_valu
     log.debug('Field and values validated: {}'.format(field_value_validation_dict))
     results = validator.validate(field_value_validation_dict)
 
+    # The error storage can get really funky with some of the validation schema.
+    # Errors in cases of fields with string (e.g. G1a) are simple:
+    # error "values" will be a list and you can grab the first entry and you're set (e.g. values[0])
+    # However, error values from a list with individual entries which are strings (e.g. G1b) are more complicated.
+    # "Values" becomes a list with a single dictionary with a single key with a list as the value. Whew.
+    # So everything after the elif below is to deal with this funky data structure.
     if results is True:
         log.info('Validation successful.')
     else:
         for field, values in validator.errors.items():
-            for value in values: # May have more than one error per field.
-                error_data = field + ': ' + value
-                # Create an error object.
+            log.debug('Error items below:')
+            log.debug(validator.errors.items())
+            if type(values[0]) is str:
+                error_data = field + ": " + values[0]
+                ErrorTracking(filename, proforma_line, 'Validation unsuccessful', error_data)
+            elif type(values[0]) is dict:
+                list_dict_keys = list(values[0].keys())
+                if len(list_dict_keys) > 1:
+                    log.critical('List with length > 1 unexpectedly found in validation code.')
+                    log.critical('Please contact Chris and/or Harvdev with this error.')
+                    log.critical('Exiting.')
+                    sys.exit(-1)
+                error_data = field + ": " + values[0][list_dict_keys[0]][0]
                 ErrorTracking(filename, proforma_line, 'Validation unsuccessful', error_data)

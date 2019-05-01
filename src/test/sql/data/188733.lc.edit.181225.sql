@@ -6,9 +6,13 @@ INSERT INTO feature(feature_id, dbxref_id, organism_id, name, uniquename, residu
 
 INSERT INTO feature_pub(feature_pub_id, feature_id, pub_id) VALUES (855234, 3087057, 332469);
 
+INSERT INTO cv(cv_id, name, definition) VALUES (5, 'synonym type', NULL);
+
 INSERT INTO cvterm(cvterm_id, cv_id, definition, dbxref_id, is_obsolete, is_relationshiptype, name) VALUES (59978, 5, NULL, 1663308, 0, 0, 'symbol');
 
-INSERT INTO cv(cv_id, name, definition) VALUES (5, 'synonym type', NULL);
+INSERT INTO cv(cv_id, name, definition) VALUES (11, 'pubprop type', 'types of pubprops');
+
+INSERT INTO cvterm(cvterm_id, cv_id, definition, dbxref_id, is_obsolete, is_relationshiptype, name) VALUES (92321, 11, NULL, 2413326, 0, 0, 'curated_by');
 
 INSERT INTO synonym(synonym_id, name, type_id, synonym_sgml) VALUES (1230505, 'CG10797', 59978, 'CG10797');
 

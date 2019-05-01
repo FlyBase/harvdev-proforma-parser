@@ -108,3 +108,17 @@ def test_213306_jma_edit_170928_part2():
     '''
     results = connect(query, conn)
     assert len(results) == 1
+
+def test_064568_lc_edit_161225():
+    # Testing for addition of hsr&ohgr; from field G1b, feature_synonym.
+    query = '''
+    SELECT * FROM feature_synonym, synonym 
+	WHERE feature_synonym.feature_id = 3167618 
+    AND feature_synonym.is_current = 'f' 
+    AND feature_synonym.pub_id = 221699 
+    AND feature_synonym.is_internal = 'FALSE' 
+    AND feature_synonym.synonym_id = synonym.synonym_id
+    AND synonym.sgml = 'hsrω'
+    '''
+    results = connect(query, conn)
+    assert len(results) == 1

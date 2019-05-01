@@ -25,5 +25,4 @@ class ValidatorBase(Validator):
         log.debug('Plain text validation for field: {} value: {}'.format(field, value))
         if plain_text and not re.match(r'^[a-zA-Z0-9\-:\s]*$', value):
             # Must return a self._error, otherwise the validator believes everything passed!
-            self._error(field, 'Error in validation. Only a-z, A-Z, 0-9, -, :, characters permitted.')
-            self._error(value, 'Validation failed.')
+            self._error(field, '{} did not validate. Only a-z, A-Z, 0-9, -, :, characters permitted.'.format(value))

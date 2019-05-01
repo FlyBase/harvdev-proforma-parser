@@ -5,10 +5,8 @@
 .. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
 from .chado_base import ChadoObject
+from harvdev_utils.production import *
 
-from model.base import Base
-from model.tables import *
-from model.constructed import *
 from sqlalchemy import func
 
 import logging
@@ -28,6 +26,9 @@ class ChadoPub(ChadoObject):
         self.P22_FlyBase_reference_ID = params['fields_values'].get('P22')
         self.P40_flag_cambridge = params['fields_values'].get('P40')
         self.P41_flag_harvard = params['fields_values'].get('P41')
+
+        # Values queried later, placed here for reference purposes.
+        self.pub_id = None
 
         # Initiate the parent.
         super(ChadoPub, self).__init__(params)
