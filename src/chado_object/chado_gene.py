@@ -6,6 +6,7 @@
 """
 from .chado_base import ChadoObject
 from harvdev_utils.production import *
+from harvdev_utils.chado_functions import get_or_create
 
 from sqlalchemy import func
 
@@ -117,23 +118,19 @@ class ChadoGene(ChadoObject):
                     log.info(self.current_query)
                     
                     # Get one or create the synonym.
-                    super(ChadoGene, self).get_one_or_create(
-                            self.session,
-                            Synonym,
-                            synonym_sgml = G1b_entry[1],
-                            name = G1b_entry[1],
-                            type_id = synonym_type_id
-                    )
-
-                    symbol_used_in_ref_synonym_id = super(ChadoGene, self).synonym_id_from_synonym_symbol(G1b_entry, synonym_type_id, self.session)
+                    symbol_used_in_ref_synonym_id = get_or_create(
+                        self.session, Synonym, 
+                        synonym_sgml = G1b_entry[1], 
+                        name = G1b_entry[1], 
+                        type_id = synonym_type_id, 
+                        ret_col='synonym_id')
 
                     # Check if our symbol is the current symbol for the feature.
                     is_current = self.is_current_symbol(G1b_entry)
 
                     # Get one or create the feature_synonym relationship.
-                    super(ChadoGene, self).get_one_or_create(
-                        self.session,
-                        FeatureSynonym,
+                    get_or_create(
+                        self.session, FeatureSynonym,
                         feature_id = self.symbol_in_FB_feature_id,
                         is_current = is_current,
                         pub_id = self.pub_id,
@@ -148,9 +145,8 @@ class ChadoGene(ChadoObject):
         self.pub_id = super(ChadoGene, self).pub_id_from_fbrf(self.P22_FlyBase_reference_ID, self.session)
         self.G1a_FBgn = super(ChadoGene, self).uniquename_from_feature_id(self.symbol_in_FB_feature_id, self.session)
 
-        super(ChadoGene, self).get_one_or_create(
-            self.session, 
-            FeaturePub, 
+        get_one_or_create(
+            self.session, FeaturePub, 
             feature_id = self.symbol_in_FB_feature_id,
             pub_id = self.pub_id)
 

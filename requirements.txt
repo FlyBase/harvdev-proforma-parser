@@ -24,3 +24,4 @@ texttable==0.9.1
 websocket-client==0.44.0
 wrapt==1.10.11
 pytest
+git+https://github.com/FlyBase/harvdev-utils.git@master#egg=harvdev_utils
