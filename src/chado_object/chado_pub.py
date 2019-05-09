@@ -6,6 +6,7 @@
 """
 from .chado_base import ChadoObject
 from harvdev_utils.production import *
+from harvdev_utils.chado_functions import get_or_create
 
 from sqlalchemy import func
 
@@ -70,39 +71,9 @@ class ChadoPub(ChadoObject):
         self.current_query = 'Querying for FBrf \'%s\'.' % (value_to_add_tuple[1])
         log.info(self.current_query)
 
-        filters = (
-            Pubprop.pub_id == self.pub_id,
-            Pubprop.value == value_to_add_tuple[1],
-            Pubprop.type_id == cv_term_id
+        get_or_create(
+            self.session, Pubprop,
+            pub_id = self.pub_id,
+            value = value_to_add_tuple[1],
+            type_id = cv_term_id
         )
-
-        filters_for_max_rank = (
-            Pubprop.pub_id == self.pub_id,
-            Pubprop.type_id == cv_term_id
-        )
-            
-        exists = self.session.query(Pubprop.value).\
-                        filter(*filters).\
-                        one_or_none()
-        
-        if exists is not None:
-            log.info('Previous %s found, update not required.' % (cv_term_name))
-        else:
-            log.info('Inserting new %s.' % (cv_term_name))
-            max_rank = self.session.query(func.max(Pubprop.rank)).\
-                filter(*filters_for_max_rank).\
-                one()
-
-            new_max_rank = None
-            if max_rank[0] is None: # If we've never inserted a pubprop of this type before.
-                new_max_rank = 0
-            else:
-                new_max_rank = max_rank[0] + 1
-
-            new_notes = Pubprop(pub_id = self.pub_id, 
-                                value = value_to_add_tuple[1], 
-                                type_id = cv_term_id, 
-                                rank = new_max_rank
-            )
-
-            self.session.add(new_notes)

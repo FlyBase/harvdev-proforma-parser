@@ -29,31 +29,6 @@ class ChadoObject(object):
         self.bang_c = params.get('bang_c')
         self.bang_d = params.get('bang_d')
 
-    # TODO Create wrapper for this to bring along non-processed values for error reporting.
-    # Credit to Erik Taubeneck for this awesome trick.
-    # https://skien.cc/blog/2014/02/06/sqlalchemy-and-race-conditions-follow-up-on-commits-and-flushes/
-    def get_one_or_create(self, session, model, create_method='', create_method_kwargs=None, **kwargs):
-        log.info('Running \'get one or create\' query.')
-        try:
-            attempt = session.query(model).filter_by(**kwargs).one()
-            log.debug(attempt)
-            self.current_query = attempt
-            log.info('Found previous entry for %s, insert not required.' % (kwargs))
-        except NoResultFound:
-            kwargs.update(create_method_kwargs or {})
-            log.info('Previous entry for %s not found. Adding insert.' % (kwargs))
-            try:
-                with session.begin_nested():
-                    created = getattr(model, create_method, model)(**kwargs)
-                    session.add(created)
-                    #TODO Add session.flush() here?
-                    log.debug(created)
-                    self.current_query = created
-            except IntegrityError:
-                attempt = session.query(model).filter_by(**kwargs).one()
-                log.debug(attempt)
-                self.current_query = attempt
-
     def cvterm_query(self, cv_name, cv_term_name, session):
         self.current_query = 'Querying for cv_term_name \'%s\'.' % (cv_term_name)
         log.info(self.current_query)

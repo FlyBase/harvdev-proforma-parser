@@ -10,9 +10,6 @@
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import relationship, backref, sessionmaker
 from sqlalchemy.dialects import postgresql
-from model.base import Base
-from model.tables import *
-from model.constructed import *
 # TODO Remove unused sqlalchemy modules after finishing transaction scripts.
 
 # System and logging imports

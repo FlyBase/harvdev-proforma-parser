@@ -34,15 +34,15 @@ def process_proforma_directory(location):
         Checks for duplciate filenames and fails if found.
     """
 
-    filename_list = [] # A list for storing file locations.
-
+    filename_list = []     # A list for storing file names.
+    filelocation_list = [] # A list for storing file locations.
     log.info('Searching for files to process in the directory: %s', location)
     for root, dirs, files in os.walk(location):
         for name in files:
             file_location = os.path.join(root, name)
             log.info('Adding %s to the list of files to be processed.', file_location)
-            filename_list.append(file_location)
-
+            filename_list.append(name)
+            filelocation_list.append(file_location)
     # Checking for duplicate files.
     seen_filename = set()
     duplicates = set()
@@ -60,7 +60,7 @@ def process_proforma_directory(location):
         sys.exit(1)
 
     log.info('Found %s file(s).', len(filename_list))
-    return filename_list
+    return filelocation_list
 
 # def extract_data_for_field()
 
@@ -167,31 +167,36 @@ class ProformaFile(object):
             result_field (str): The field found before the colon.
 
             result_value (str): The value found after the colon.
+
+            result_bang (str): The second character if it is c or d
         """
 
         result_field = None
-        result_value = None
-
+        result_value = ''
+        result_bang = None
         # TODO Add additional format error checking here.
 
-        # If we're dealing with a !c entry.
-        if individual_proforma_line.startswith('!c') or individual_proforma_line.startswith('!d'):
-            # Remove the 'c' or 'd' from '!c' or '!d' and process the line normally.
-            # !c and !d flags are handled in the wrapper function one step away from here.
-            log.debug('Removing c/d from !c/!d in line: %s' % individual_proforma_line)
-            log.debug('This line will also be flagged for !c/!d processing.')
-            individual_proforma_line = individual_proforma_line[:1] + individual_proforma_line[2:]
-            log.debug('Updated line after attempted \'c\'/\'d\' removal: %s' % individual_proforma_line)
-            
-        field = re.search(r"!\s*(\w+)", individual_proforma_line)
-        if field:
-            result_field = field.group(1)
+        # Do it all in one go (faster) and explain regex
+        pattern = """
+            ^!           # begining of string must be a bang
+            ([cd]?)      # possibly c or d
+            \s+          # 1 or more spaces
+            (\w+)        # The code (word,no spaces)
+            [^:]*        # verbose proforma "chatter" up to the first ":"
+            :            # : to mark start of "value"
+            (.*)$        # value up to the end of the string""" 
 
-        value = re.search(r":(.*)", individual_proforma_line)
-        if value:
-            result_value = value.group(1)
+        fields = re.search(pattern, individual_proforma_line, re.VERBOSE)
+        if fields:
+            if fields.group(2):
+                result_field = fields.group(2)
+            if fields.group(3):
+                result_value = fields.group(3)
+            if fields.group(1):
+                result_bang = fields.group(1)
 
-        return(result_field, result_value)
+        return(result_field, result_value, result_bang)
+    
     
     def next_and_current_item(self, proforma_content):
         """
@@ -276,22 +281,19 @@ class ProformaFile(object):
                 list_of_proforma_objects.append(individual_proforma) # add the last proforma entry to the list.
                 break # fin.
             else:
-                if current_line.startswith('!c') or current_line.startswith('!d'):
-                    # We're in a line with a bang_c or bang_d indiciator.
-                    # We need the values AND we need to flag this field for banc_c processing later
-                    type_of_bang = current_line[1]
-                    field, value = self.get_proforma_field_and_content(current_line)
-                    individual_proforma.add_field_and_value(field, value, line_number)
-                    individual_proforma.add_bang(field, type_of_bang)
-                elif current_line.startswith('! C'):
+                if current_line.startswith('! C'):
                     # We're still in the "header" of the proforma (additional '! C' fields)
                     # Skip to the next line
                     continue
-                elif current_line.startswith('! '):
-                    # We're in a line within a proforma. Get the field and value.
-                    # Field is a string, value is an array (to which other items may be added).
-                    field, value = self.get_proforma_field_and_content(current_line)
+                elif (current_line.startswith('!c') or 
+                    current_line.startswith('!d') or
+                    current_line.startswith('! ')):
+                    field, value, type_of_bang = self.get_proforma_field_and_content(current_line)
+                    log.debug(current_line)
+                    log.debug(line_number)
                     individual_proforma.add_field_and_value(field, value, line_number)
+                    if type_of_bang:
+                       individual_proforma.add_bang(field, type_of_bang)
                 else:
                     # We're in a line which contains a value for the previously defined field.
                     # Add the entire contents of the line to the previously defined field.
