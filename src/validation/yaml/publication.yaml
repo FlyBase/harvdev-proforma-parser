@@ -4,6 +4,13 @@ P1:
 P2:
   type: string
   required: False
+P10:
+  type: string
+  required: False
+  regex: ^(\d+)(\.+\d+\.+\d+)?$
+P12:
+  type: string
+  required: False
 P19:
   type: [string, list]
 P22:
