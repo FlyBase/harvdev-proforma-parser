@@ -18,8 +18,12 @@ class ErrorTracking(object):
 
         # This bit of code saves the filename which called the error tracking object.
         # We can use it to tailor the error message based on where it was called.
-        error_called_from = (os.path.basename(os.path.normpath(inspect.stack()[1].filename)))
-
+        try:
+            error_called_from = (os.path.basename(os.path.normpath(inspect.stack()[1].filename)))
+        except:
+            log.critical("stack {}".format(inspect.stack()))
+            log.critical("COuld not find filename in {}".format(inspect.stack()[1]))
+            error_called_from = "No idea"
         # Validation errors always report the "error line" at the start of the proforma object.
         # e.g. Where a "gene" proforma entry begins (or an allele, etc.)
         # Transaction errors always report the *actual* line where the error occurs.

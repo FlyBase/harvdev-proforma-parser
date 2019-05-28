@@ -208,16 +208,44 @@ class ProformaFile(object):
         nxt = chain(islice(nxt, 1, None), [None])
         return zip(current, nxt)
     
+
     def extract_curator_initials_and_filename_short(self):
 
         # Grab the filename after the last slash.
         filename_short = self.filename.rsplit('/', 1)[-1]
         
-        # TODO Add support for Cambridge-style filenames
-        # Extract and process the curator initials.
-        curator_initials = filename_short.split('.', 2)[1]
+        curator_initials = None
+        harv_pattern = """
+            ^            # match from the start
+            \d+          # string of integers
+            \.           # a dot
+            (\w+)        # The user initials
+            \.           # a dot
+            \w+          # type of proforma (noy kept used here)
+            \.           # a dot
+            \d+          # string of integers
+            $            # end of the string""" 
+
+        cam_pattern = """
+            ^            # match from the start
+            (\w+)        # The user initials           
+            \d+          # string of integers
+            \.           # a dot
+            \w+          # type of proforma
+            $            # end of the string"""
+
+        fields = re.search(harv_pattern, filename_short, re.VERBOSE)
+        if fields:
+            if fields.group(1):
+                curator_initials = fields.group(1) 
+        else:
+            fields = re.search(cam_pattern, filename_short, re.VERBOSE)
+            if fields:
+                if fields.group(1):
+                    curator_initials = fields.group(1) 
 
         return curator_initials, filename_short
+
 
     def extract_curator_fullname(self, curator_initials):
 
@@ -247,8 +275,11 @@ class ProformaFile(object):
 
         # Obtain curator information from the filename and the curator dictionary from the config file.
         curator_initials, filename_short = self.extract_curator_initials_and_filename_short()
-        curator_fullname = self.extract_curator_fullname(curator_initials)
-        
+        log.info('Initials are %s' % (curator_initials))
+        if curator_initials:
+            curator_fullname = self.extract_curator_fullname(curator_initials)
+        else:
+            curator_fullname = None
         # This content should remain static and be used for every proforma entry.
         file_metadata = {
         'filename' : self.filename,
@@ -266,6 +297,7 @@ class ProformaFile(object):
         # Iterate through the content looking at the current and next line.
         for current_line, next_line in self.next_and_current_item(self.proforma_file_data):
             line_number += 1
+            #log.info('next line: %s' % (next_line))
             # If we find the start of a proforma section, create a new proforma object and set the type.
             if current_line.startswith('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!') and not 'END OF RECORD FOR THIS PUBLICATION' in next_line:
                 if individual_proforma is not None:
@@ -273,17 +305,21 @@ class ProformaFile(object):
                 proforma_type = next_line
                 line_number = line_number + 1 # The proforma starts on the next line.
                 individual_proforma = Proforma(file_metadata, proforma_type, line_number) # Create a new Proforma object.
+                log.info('inv proforma is %s' % individual_proforma)
             elif proforma_type is not None and current_line == proforma_type:
                 continue # If we're on the proforma_type line, go to the next line.
             elif current_line == '!':
                 continue # If we're on a line with only an exclamation point.
-            elif 'END OF RECORD FOR THIS PUBLICATION' in next_line:
+            elif next_line and 'END OF RECORD FOR THIS PUBLICATION' in next_line:
                 list_of_proforma_objects.append(individual_proforma) # add the last proforma entry to the list.
                 break # fin.
             else:
                 if current_line.startswith('! C'):
-                    # We're still in the "header" of the proforma (additional '! C' fields)
-                    # Skip to the next line
+                    field, value, type_of_bang = self.get_proforma_field_and_content(current_line)
+                    if field == 'C1':
+                        file_metadata['curator_initials'] = value
+                        file_metadata['curator_fullname'] = self.extract_curator_fullname(file_metadata['curator_initials'])
+                    # C2 and C3 ignored for now.
                     continue
                 elif (current_line.startswith('!c') or 
                     current_line.startswith('!d') or
