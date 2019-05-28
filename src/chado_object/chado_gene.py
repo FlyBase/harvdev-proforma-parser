@@ -57,10 +57,10 @@ class ChadoGene(ChadoObject):
 
             if symbol_name_from_results == G1b_entry[1]:
                 log.info('\'{}\' matches the current symbol in Chado: \'{}\', FBgn: \'{}\'. Returning is_current = \'t\''.format(G1b_entry[1], self.G1a_symbol_in_FB[1], self.G1a_FBgn))
-                return 't'
+                return True
             else:
                 log.info('\'{}\' does not match the current symbol in Chado: \'{}\', FBgn: \'{}\'. Returning is_current = \'f\''.format(G1b_entry[1], self.G1a_symbol_in_FB[1], self.G1a_FBgn))
-                return 'f'
+                return False
 
     def process_G1b_symbols(self):
 
@@ -134,7 +134,7 @@ class ChadoGene(ChadoObject):
                         feature_id = self.symbol_in_FB_feature_id,
                         is_current = is_current,
                         pub_id = self.pub_id,
-                        is_internal = 'FALSE', 
+                        is_internal = False, 
                         synonym_id = symbol_used_in_ref_synonym_id
                     )
 
@@ -145,7 +145,7 @@ class ChadoGene(ChadoObject):
         self.pub_id = super(ChadoGene, self).pub_id_from_fbrf(self.P22_FlyBase_reference_ID, self.session)
         self.G1a_FBgn = super(ChadoGene, self).uniquename_from_feature_id(self.symbol_in_FB_feature_id, self.session)
 
-        get_one_or_create(
+        get_or_create(
             self.session, FeaturePub, 
             feature_id = self.symbol_in_FB_feature_id,
             pub_id = self.pub_id)

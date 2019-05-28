@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 #     query = query.filter(Gene.organism_id == '1').\
 #             filter(Gene.is_obsolete == 'f')
 #     return query
-def process_chado_objects_for_transaction(engine, list_of_objects_to_load, load_type):
+def process_chado_objects_for_transaction(session, list_of_objects_to_load, load_type):
     
     if load_type == 'production':
         log.warning('Production load specified. Changes to the production database will occur.')
@@ -32,8 +32,6 @@ def process_chado_objects_for_transaction(engine, list_of_objects_to_load, load_
         log.critical('Exiting.')
         sys.exit(-1)
 
-    Session = sessionmaker(bind=engine)
-    session = Session()
     error_occurred = False
     for entry in list_of_objects_to_load:
         entry.obtain_session(session) # Send session to object.
