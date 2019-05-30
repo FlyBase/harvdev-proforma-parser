@@ -1,16 +1,16 @@
 P1:
   type: string
-  required: False
+  required: True
 P2:
   type: string
   required: False
 P10:
   type: string
-  required: False
+  required: True
   regex: ^(\d+)(\.+\d+\.+\d+)?$
 P12:
   type: [string, list]
-  required: False
+  required: True
 P13:
   required: False
   type: string
@@ -24,7 +24,7 @@ P13:
             Russian and German, Serbo-Croat, Serbo-Croat(Roman), Slovak, Slovenian, Spanish, Spanish and English,
             Spanish, English and Portuguese, Swedish, Turkish, Ukrainian, Ukrainian and English]
 P16:
-  required: False
+  required: True
   type: string
 P19:
   type: [string, list]
