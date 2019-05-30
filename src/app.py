@@ -39,27 +39,43 @@ if args.verbose:
 else:
     logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(levelname)s -- %(message)s')
 
-def main():
-    # Import secure config variables.
-    config = configparser.ConfigParser()
-    config.read(args.config)
+log = logging.getLogger(__name__)
 
+# Import secure config variables.
+config = configparser.ConfigParser()
+config.read(args.config)
+
+def create_postgres_session():
     USER = config['connection']['USER']
     PASSWORD = config['connection']['PASSWORD']
     SERVER = config['connection']['SERVER']
     DB = config['connection']['DB']
 
-    curator_dict = dict(config['curators'])
-
-    log = logging.getLogger(__name__)
-
     log.info('Using server: {}'.format(SERVER))
     log.info('Using database: {}'.format(DB))
+
+    # Create our SQL Alchemy engine from our environmental variables.
+    engine_var = 'postgresql://' + USER + ":" + PASSWORD + '@' + SERVER + '/' + DB
+
+    engine = create_engine(engine_var)
+
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    return session
+
+def obtain_list_of_proformae():
 
     # Obtain file list of proformae to be processed.
     directory_to_process = args.directory
 
     list_of_proformae = process_proforma_directory(directory_to_process)
+
+    return list_of_proformae
+
+def main(session, list_of_proformae):
+
+    curator_dict = dict(config['curators'])
 
     dict_of_processed_files = dict()
 
@@ -103,11 +119,6 @@ def main():
         for proforma_object_to_load in dict_of_processed_files[filename]:
             returned_list_of_chado_objects = process_data_input(proforma_object_to_load)
             main_list_of_chado_objects_to_load.extend(returned_list_of_chado_objects)
- 
-    # Create our SQL Alchemy engine from our environmental variables.
-    engine_var = 'postgresql://' + USER + ":" + PASSWORD + '@' + SERVER + '/' + DB
-
-    engine = create_engine(engine_var)
 
     load_type = args.load_type
     if load_type not in ('test', 'production'):
@@ -116,7 +127,7 @@ def main():
         sys.exit(-1)
 
     # Send our list of Chado Objects off to be loaded into the database.
-    process_chado_objects_for_transaction(engine, main_list_of_chado_objects_to_load, load_type)
+    process_chado_objects_for_transaction(session, main_list_of_chado_objects_to_load, load_type)
 
     log.info('--------------------')
     log.info('')
@@ -145,4 +156,8 @@ def main():
             log.info('')
 
 if __name__ == '__main__':
-    main()
+    session = create_postgres_session()
+
+    list_of_proformae = obtain_list_of_proformae()
+
+    main(session, list_of_proformae)

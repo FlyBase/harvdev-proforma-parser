@@ -5,3 +5,4 @@ _static
 _templates
 test_queries
 harvdev-utils
+.pytest_cache
