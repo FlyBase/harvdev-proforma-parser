@@ -375,13 +375,16 @@ class Proforma(object):
         if value == '':  # Leave this function if the value is an empty string.
             return
 
+        # remove spaces form start and end of string
+        value = value.strip()
+
         # A list of fields where values might span multiple lines
         # but they need to be treated as a single entry.
         # Not a fan of hard-coding fields here but I can't seem to find a way around it.
         list_of_fields_with_wrapping_values = [
             'P19'
         ]
-
+ 
         # TODO Generate this list from the validation YAML.
         # A list of fields which should always be handled as lists, even if they are single values.
         # This saves a tremendous amount of downstream code in handling strings vs lists.

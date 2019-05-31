@@ -5,6 +5,7 @@
 .. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
 import logging
+from sqlalchemy.orm.exc import NoResultFound
 from harvdev_utils.production import (
     Cv, Cvterm, Feature, Pub, Synonym
 )
@@ -14,7 +15,7 @@ log = logging.getLogger(__name__)
 # tuple positions. Allows for clearer reading of code.
 FIELD_NAME = 0
 FIELD_VALUE = 1
-LINE_NUMBER = 3
+LINE_NUMBER = 2
 
 
 class ChadoObject(object):
@@ -50,38 +51,51 @@ class ChadoObject(object):
 
         return results[3]
 
-    def pub_id_from_fbrf(self, fbrf_tuple, session):
+    def pub_from_fbrf(self, fbrf_tuple, session):
+        """
+        Return pub object for a given fbrf.
+        Return None if it does not exist.
+        """
         self.current_query_source = fbrf_tuple
         self.current_query = 'Querying for FBrf \'%s\'.' % (fbrf_tuple[FIELD_VALUE])
         log.info(self.current_query)
 
-        results = session.query(Pub.uniquename, Pub.pub_id).\
-            filter(Pub.uniquename == fbrf_tuple[FIELD_VALUE]).\
-            one()
+        try:
+            pub = session.query(Pub).\
+                filter(Pub.uniquename == fbrf_tuple[FIELD_VALUE]).\
+                one()
+        except NoResultFound:
+            return None       
+        return pub
 
-        return results[1]
 
-    def feature_id_from_feature_name(self, feature_name_tuple, session):
+    def feature_from_feature_name(self, feature_name_tuple, session):
+        """
+        Return a feature object for a goven name.
+        Return None if it does not exist.
+        """
         self.current_query_source = feature_name_tuple
         self.current_query = 'Querying for feature \'%s\'.' % (feature_name_tuple[FIELD_VALUE])
         log.info(self.current_query)
 
-        results = session.query(Feature.feature_id, Feature.name).\
-            filter(Feature.name == feature_name_tuple[FIELD_VALUE]).\
-            one()
+        try:
+            feature = session.query(Feature).\
+                filter(Feature.name == feature_name_tuple[FIELD_VALUE]).\
+                one()
+        except NoResultFound:
+            return None
+        return feature
 
-        return results[0]
-
-    def uniquename_from_feature_id(self, feature_id, session):
-        self.current_query_source = feature_id
-        self.current_query = 'Querying for feature uniquename from feature id \'%s\'.' % (feature_id)
+    def feature_from_feature_name(self, feature_name, session):
+        self.current_query_source = feature_name
+        self.current_query = 'Querying for feature uniquename from feature id \'%s\'.' % (feature_name)
         log.info(self.current_query)
 
-        results = session.query(Feature.uniquename).\
-            filter(Feature.feature_id == feature_id).\
+        feature = session.query(Feature).\
+            filter(Feature.name == feature_name).\
             one()
 
-        return results[0]
+        return feature
 
     def synonym_id_from_synonym_symbol(self, synonym_name_tuple, synonym_type_id, session):
         self.current_query_source = synonym_name_tuple

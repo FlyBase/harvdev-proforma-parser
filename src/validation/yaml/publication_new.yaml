@@ -4,10 +4,19 @@ P1:
 P2:
   type: string
   required: False
+P3:
+  required: False
+  type: string
+P4:
+  required: False
+  type: string
 P10:
   type: string
   required: True
   regex: ^(\d+)(\.+\d+\.+\d+)?$
+P11a:
+  required: False
+  type: string
 P12:
   type: [string, list]
   required: True
@@ -25,6 +34,9 @@ P13:
             Spanish, English and Portuguese, Swedish, Turkish, Ukrainian, Ukrainian and English]
 P16:
   required: True
+  type: string
+P18:
+  required: False
   type: string
 P19:
   type: [string, list]
