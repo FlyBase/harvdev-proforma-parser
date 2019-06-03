@@ -4,12 +4,12 @@
 
 .. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
+import sys
+import logging
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from error.error_tracking import ErrorTracking
 from chado_object.chado_base import LINE_NUMBER
-
-import sys
-import logging
+from chado_object.chado_exceptions import ValidationError
 
 log = logging.getLogger(__name__)
 
@@ -43,6 +43,12 @@ def process_entry(entry, session, filename):
         # Create an error object.
         ErrorTracking(filename, current_query_source[LINE_NUMBER], 'Multiple results found from this query.', current_query)
         error_occurred = True
+    except ValidationError:
+        current_query = entry.current_query
+        current_query_source = entry.current_query_source
+        # Create an error object.
+        ErrorTracking(filename, current_query_source[LINE_NUMBER], 'Validation Error.', current_query)
+        error_occurred = True       
     except Exception as e:
         session.rollback()
         log.critical('Unexpected Exception {}'.format(e))

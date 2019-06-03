@@ -6,6 +6,7 @@
 """
 import re
 from .chado_base import ChadoObject, FIELD_VALUE, LINE_NUMBER
+from chado_object.chado_exceptions import ValidationError
 from error.error_tracking import ErrorTracking
 from harvdev_utils.production import (
     Cv, Cvterm, Pub, Pubprop, Pubauthor
@@ -95,11 +96,8 @@ class ChadoPub(ChadoObject):
         if not pub:  # new pub
             non_valid_P1 = ['compendium', 'journal']
             if cvterm.name in non_valid_P1:
-                ErrorTracking(self.filename,
-                              self.P1_type[LINE_NUMBER],
-                              'Cvterm "{}" Is not allowed to be one of {}'.format(self.P1_type[FIELD_VALUE], non_valid_P1),
-                              'Valid P1 failed.')
-                return None
+                self.current_query = 'Cvterm "{}": Is not allowed to be one of {}.'.format(self.P1_type[FIELD_VALUE], non_valid_P1)
+                raise ValidationError()
         else:  # P22 pub exists so check it has the same P1 or none at all.
             try:
                 old_cvterm = self.session.query(Cvterm).join(Cv).join(Pubprop).\
@@ -112,11 +110,9 @@ class ChadoPub(ChadoObject):
                 # good, does not have a previous result so happy to continue
                 return cvterm
             if old_cvterm.cvterm_id != cvterm.cvterm_id:
-                ErrorTracking(self.filename,
-                              self.P1_type[LINE_NUMBER],
-                              'Cvterm "{}" Is not the same as previous {}'.format(self.P1_type[FIELD_VALUE], old_cvterm.name),
-                              'Not alllowed to change P1 if it already had one.')
-                return None
+                self.current_query = 'Cvterm "{}" Is not the same as previous {}\n'.format(self.P1_type[FIELD_VALUE], old_cvterm.name)
+                self.current_query += 'Not allowed to change P1 if it already had one.'
+                raise ValidationError()
         return cvterm
 
     def get_pub(self):
@@ -246,6 +242,8 @@ class ChadoPub(ChadoObject):
             if fields.group(2):
                 givennames = fields.group(2)
 
+        self.current_query_source = author
+        self.current_query = "Author get/create: {}.".format(author[FIELD_VALUE])
         author = get_or_create(
             self.session, Pubauthor,
             pub_id=self.pub.pub_id,
@@ -259,8 +257,8 @@ class ChadoPub(ChadoObject):
         From a given cv and cvterm name add the pubprop with value in tuple.
         If cv or cvterm do not exist create an error and return.
         """
-        log.info("Adding pub prop for {} {} {}.".format(cv_name, cv_term_name, value_to_add_tuple[FIELD_VALUE]))
-
+        self.current_query_source = value_to_add_tuple
+        self.current_query = "Looking up cvterm: {} {}.".format(cv_name, cv_term_name)
         cv_term_id = super(ChadoPub, self).cvterm_query(cv_name, cv_term_name, self.session)
 
         self.current_query_source = value_to_add_tuple
