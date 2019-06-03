@@ -33,6 +33,7 @@ class ChadoPub(ChadoObject):
         self.P11a_page_range = params['fields_values'].get('P11a')
         self.P12_authors = params['fields_values'].get('P12')
         self.P13_language = params['fields_values'].get('P13')
+        self.P14_additional_language = params['fields_values'].get('P14')
         self.P16_title = params['fields_values'].get('P16')
         self.P18_misc_comments = params['fields_values'].get('P18')
         self.P19_internal_notes = params['fields_values'].get('P19')
@@ -40,8 +41,9 @@ class ChadoPub(ChadoObject):
         self.P23_personal_com = params['fields_values'].get('P23')
         self.P40_flag_cambridge = params['fields_values'].get('P40')
         self.P41_flag_harvard = params['fields_values'].get('P41')
+        self.P45_Not_dros = params['fields_values'].get('P45')
         # Values queried later, placed here for reference purposes.
-        self.pub_id = None
+        self.pub = None
 
         # Initiate the parent.
         super(ChadoPub, self).__init__(params)
@@ -91,6 +93,11 @@ class ChadoPub(ChadoObject):
         else:
             log.info('No language specified, skipping languages transaction.')
  
+        if self.P14_additional_language is not None:
+            self.load_pubprop('pubprop type', 'abstract_languages', self.P14_additional_language)
+        else:
+            log.info('No additional language specified, skipping additional language transaction.')
+
         if self.P19_internal_notes is not None:
             self.load_pubprop('pubprop type', 'internalnotes', self.P19_internal_notes)
         else:
@@ -112,6 +119,11 @@ class ChadoPub(ChadoObject):
                 self.load_pubprop('pubprop type', 'harv_flag', harv_entry)
         else:
             log.info('No Harvard flags found, skipping Harvard flags transaction.')
+
+        if self.P45_Not_dros is not None:
+            self.load_pubprop('pubprop type', 'not_Drospub', self.P45_Not_dros)
+        else:
+            log.info('Drosophila pub, so no need to set NOT dros flag')
 
  
 
@@ -178,14 +190,13 @@ class ChadoPub(ChadoObject):
             # rasie error
             pass
 
-        author_id = get_or_create(
+        author = get_or_create(
             self.session, Pubauthor,
-            ret_col = 'pubauthor_id',
             pub_id = self.pub.pub_id,
             surname = surname,
             givennames = givennames
         )
-        return author_id
+        return author
 
     def load_pubprop(self, cv_name, cv_term_name, value_to_add_tuple):
         """

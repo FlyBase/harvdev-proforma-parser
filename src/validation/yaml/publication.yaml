@@ -32,6 +32,18 @@ P13:
             Portuguese, Portuguese and English, Portuguese and French, Romanian, Russian, Russian and English,
             Russian and German, Serbo-Croat, Serbo-Croat(Roman), Slovak, Slovenian, Spanish, Spanish and English,
             Spanish, English and Portuguese, Swedish, Turkish, Ukrainian, Ukrainian and English]
+P14:
+  required: False
+  type: string
+  allowed: [Afrikaans, Arabic, Belarussian, Bulgarian, Catalan, Chinese, Czech, Czech and English, Danish, Dutch,
+            English, English and Dutch, English and Estonian, English and French, English and Hebrew, English and Japanese,
+            English and Russian, English and Spanish, Estonian, Farsi, Finnish, Flemish, French, French and English,
+            German, German and English, Greek, Hebrew, Hungarian, Hungarian and English, Hungarian and German, Icelandic,
+            Icelandic and English, Indonesian, Italian, Italian and English, Japanese, Jugoslavian, Korean, Latin,
+            Latin and English, Latin and German, Latin and Hungarian, Lithuanian, Malayalam, Norwegian, Polish,
+            Portuguese, Portuguese and English, Portuguese and French, Romanian, Russian, Russian and English,
+            Russian and German, Serbo-Croat, Serbo-Croat(Roman), Slovak, Slovenian, Spanish, Spanish and English,
+            Spanish, English and Portuguese, Swedish, Turkish, Ukrainian, Ukrainian and English]
 P16:
   required: False
   type: string
@@ -59,3 +71,7 @@ P43:
   type: string
 P44:
   type: string
+P45:
+  required: False
+  type: [string, list]
+  allowed: [y]

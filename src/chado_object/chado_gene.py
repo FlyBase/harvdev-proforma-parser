@@ -46,7 +46,6 @@ class ChadoGene(ChadoObject):
                 Feature.feature_id == FeatureSynonym.feature_id,
                 FeatureSynonym.synonym_id == Synonym.synonym_id,
                 FeatureSynonym.is_current == 't',
-                #Synonym.type_id == 59978, # Naughty hard cding of id.
                 Cvterm.name == 'symbol',
                 Feature.uniquename == self.gene.uniquename
             )
