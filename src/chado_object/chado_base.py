@@ -60,31 +60,11 @@ class ChadoObject(object):
         self.current_query = 'Querying for FBrf \'%s\'.' % (fbrf_tuple[FIELD_VALUE])
         log.info(self.current_query)
 
-        try:
-            pub = session.query(Pub).\
-                filter(Pub.uniquename == fbrf_tuple[FIELD_VALUE]).\
-                one()
-        except NoResultFound:
-            return None       
+        pub = session.query(Pub).\
+            filter(Pub.uniquename == fbrf_tuple[FIELD_VALUE]).\
+            one()      
         return pub
 
-
-    def feature_from_feature_name(self, feature_name_tuple, session):
-        """
-        Return a feature object for a goven name.
-        Return None if it does not exist.
-        """
-        self.current_query_source = feature_name_tuple
-        self.current_query = 'Querying for feature \'%s\'.' % (feature_name_tuple[FIELD_VALUE])
-        log.info(self.current_query)
-
-        try:
-            feature = session.query(Feature).\
-                filter(Feature.name == feature_name_tuple[FIELD_VALUE]).\
-                one()
-        except NoResultFound:
-            return None
-        return feature
 
     def feature_from_feature_name(self, feature_name, session):
         self.current_query_source = feature_name

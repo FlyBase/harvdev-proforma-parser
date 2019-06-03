@@ -1,16 +1,17 @@
 """
 .. module:: chado_pub
-   :synopsis: The "pub" ChadoObject. 
+   :synopsis: The "pub" ChadoObject.
 
 .. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
 import re
 from .chado_base import ChadoObject, FIELD_VALUE, LINE_NUMBER
 from error.error_tracking import ErrorTracking
-from harvdev_utils.production import *
+from harvdev_utils.production import (
+    Cv, Cvterm, Pub, Pubprop, Pubauthor
+)
 from harvdev_utils.chado_functions import get_or_create
 
-from sqlalchemy import func
 from sqlalchemy.orm.exc import NoResultFound
 
 import logging
@@ -18,10 +19,11 @@ from datetime import datetime
 
 log = logging.getLogger(__name__)
 
+
 class ChadoPub(ChadoObject):
     def __init__(self, params):
         log.info('Initializing ChadoPub object.')
-        
+
         self.proforma_start_line_number = params.get('proforma_start_line_number')
 
         # Data
@@ -48,35 +50,101 @@ class ChadoPub(ChadoObject):
         # Initiate the parent.
         super(ChadoPub, self).__init__(params)
 
-         
     def obtain_session(self, session):
         self.session = session
 
+    def get_P1_cvterm_and_validate(self, pub):
+        """
+        https://svn.flybase.org/flybase-cam/Peeves/doc/specs/pub/P1.txt
+        ### Checks:
+
+        To be valid:
+
+        * The value must be a valid term (i.e. does not have is_obsolete: true)
+          from flybase_controlled_vocabulary.obo and
+        * the value must be in the 'q' namespace and
+        * the value must not be either 'compendium' or 'journal'.
+
+        If !c is used:
+
+          * P22 must contain a valid FBrf and
+          * the value given in P1 must be different from the value
+            stored in Chado for the publication specified by the value given in P22.
+
+        If !c is not used:
+
+        * if P22 contains a valid FBrf, either:
+        * the value given in P1 must be identical to the value
+          stored in Chado for the publication specified by the value given in P22 or
+        * P1 must contain a valid value and no value is stored in
+
+        Chado for the publication specified by the value given in P22;
+          * if P22 is 'new', P1 must a contain valid value.
+          * if P22 is 'unattributed', P1 must be empty
+        """
+
+        # TODO: bang c/d field stuff
+        self.current_query_source = self.P1_type
+        self.current_query = 'Querying for cvterm {} with cv of pub type\'%s\'.' % (self.P1_type[FIELD_VALUE])
+
+        cvterm = self.session.query(Cvterm).join(Cv).filter(Cvterm.cv_id == Cv.cv_id,
+                                                            Cvterm.name == self.P1_type[FIELD_VALUE],
+                                                            Cv.name == 'pub type',
+                                                            Cvterm.is_obsolete == 0).one()
+
+        if not pub:  # new pub
+            non_valid_P1 = ['compendium', 'journal']
+            if cvterm.name in non_valid_P1:
+                ErrorTracking(self.filename,
+                              self.P1_type[LINE_NUMBER],
+                              'Cvterm "{}" Is not allowed to be one of {}'.format(self.P1_type[FIELD_VALUE], non_valid_P1),
+                              'Valid P1 failed.')
+                return None
+        else:  # P22 pub exists so check it has the same P1 or none at all.
+            try:
+                old_cvterm = self.session.query(Cvterm).join(Cv).join(Pubprop).\
+                                filter(Cvterm.cv_id == Cv.cv_id,
+                                       Pubprop.type_id == Cvterm.cvterm_id,
+                                       Cv.name == 'pub type',
+                                       Pubprop.pub_id == pub.pub_id,
+                                       Cvterm.is_obsolete == 0).one()
+            except NoResultFound:
+                # good, does not have a previous result so happy to continue
+                return cvterm
+            if old_cvterm.cvterm_id != cvterm.cvterm_id:
+                ErrorTracking(self.filename,
+                              self.P1_type[LINE_NUMBER],
+                              'Cvterm "{}" Is not the same as previous {}'.format(self.P1_type[FIELD_VALUE], old_cvterm.name),
+                              'Not alllowed to change P1 if it already had one.')
+                return None
+        return cvterm
+
     def get_pub(self):
         """
-        get or create pub if new.
-        returns None or the pub_id to be used.
+        get pub or create pub if new.
+        returns None or the pub to be used.
         """
         if self.P22_FlyBase_reference_ID[FIELD_VALUE] != 'new':
             pub = super(ChadoPub, self).pub_from_fbrf(self.P22_FlyBase_reference_ID, self.session)
         else:
-            log.info("creating new publication")
-            try:
-                cvterm = self.session.query(Cvterm).join(Dbxref).filter(Dbxref.accession == self.P1_type[FIELD_VALUE]).one()
-            except NoResultFound:
-                log.debug(self.P1_type)
-                log.debug(LINE_NUMBER)
-                ErrorTracking(self.filename,
-                              self.P1_type[LINE_NUMBER],
-                              'Cvterm "{}" Does not exist'.format(self.P1_type[FIELD_VALUE]),
-                              'Dbxref lookup failed.')
-                return None
-            # A trigger will swap out FBrf:temp_0 to the next rf in the sequence.
-            pub = get_or_create(self.session, Pub, title = self.P16_title[FIELD_VALUE],
-                                type_id = cvterm.cvterm_id, uniquename = 'FBrf:temp_0')
-            log.info("New pub created with fbrf {}".format(pub.uniquename))
-        return pub
+            pub = None
 
+        if self.P1_type:
+            P1_cvterm = self.get_P1_cvterm_and_validate(pub)
+
+        if self.P22_FlyBase_reference_ID[FIELD_VALUE] != 'new':
+            pub = self.pub_from_fbrf(self.P22_FlyBase_reference_ID, self.session)
+        else:
+            if not P1_cvterm:  # ErrorTracking already knows, so just return.
+                return None
+            log.info("Creating new publication")
+
+            # A trigger will swap out FBrf:temp_0 to the next rf in the sequence.
+            pub = get_or_create(self.session, Pub, title=self.P16_title[FIELD_VALUE],
+                                type_id=P1_cvterm.cvterm_id, uniquename='FBrf:temp_0')
+            log.info(pub)
+            log.info("New pub created with fbrf {}.".format(pub.uniquename))
+        return pub
 
     def bang_c_it(self):
         """
@@ -92,7 +160,7 @@ class ChadoPub(ChadoObject):
             self.load_pubprop('pubprop type', 'languages', self.P13_language)
         else:
             log.info('No language specified, skipping languages transaction.')
- 
+
         if self.P14_additional_language is not None:
             self.load_pubprop('pubprop type', 'abstract_languages', self.P14_additional_language)
         else:
@@ -123,9 +191,7 @@ class ChadoPub(ChadoObject):
         if self.P45_Not_dros is not None:
             self.load_pubprop('pubprop type', 'not_Drospub', self.P45_Not_dros)
         else:
-            log.info('Drosophila pub, so no need to set NOT dros flag')
-
- 
+            log.info('Drosophila pub, so no need to set NOT dros flag.')
 
     def update_pub(self):
         """
@@ -142,13 +208,12 @@ class ChadoPub(ChadoObject):
         if self.P4_issue_number:
             self.pub.issue = self.P4_issue_number[FIELD_VALUE]
 
-
     def load_content(self):
-        
+
         self.pub = self.get_pub()
         if not self.pub:
             return
- 
+
         # bang c first as this trumps all things
         if self.bang_c:
             self.bang_c_it()
@@ -167,12 +232,9 @@ class ChadoPub(ChadoObject):
         curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short, timestamp)
         log.info('Curator string assembled as:')
         log.info('%s' % (curated_by_string))
-        # value_to_add = curated_by_string
-        # self.load_pubprops(session, 'pubprop type', 'curated_by', value_to_add)
-
 
     def load_author(self, author):
-        pattern = r"""            
+        pattern = r"""
             ^(\S+)      # None space surname
             \s+?        # delimiting space
             (.*)?       # optional given names can havingspaces etc in them"""
@@ -181,20 +243,14 @@ class ChadoPub(ChadoObject):
         if fields:
             if fields.group(1):
                 surname = fields.group(1)
-            else:
-                #raise error
-                pass
             if fields.group(2):
                 givennames = fields.group(2)
-        else:
-            # rasie error
-            pass
 
         author = get_or_create(
             self.session, Pubauthor,
-            pub_id = self.pub.pub_id,
-            surname = surname,
-            givennames = givennames
+            pub_id=self.pub.pub_id,
+            surname=surname,
+            givennames=givennames
         )
         return author
 
@@ -203,23 +259,18 @@ class ChadoPub(ChadoObject):
         From a given cv and cvterm name add the pubprop with value in tuple.
         If cv or cvterm do not exist create an error and return.
         """
-        log.info("Adding pub prop to {} {} {}".format(cv_name, cv_term_name, value_to_add_tuple[FIELD_VALUE]))
-        try:
-            cv_term_id = super(ChadoPub, self).cvterm_query(cv_name, cv_term_name, self.session)
-        except NoResultFound:
-            ErrorTracking(self.filename,
-                          value_to_add_tuple[LINE_NUMBER],
-                          'Cvterm "{}" Does not exist'.format(cv_term_name),
-                          'For cv "{}".'.format(cv_name))
-            return None
+        log.info("Adding pub prop for {} {} {}.".format(cv_name, cv_term_name, value_to_add_tuple[FIELD_VALUE]))
+
+        cv_term_id = super(ChadoPub, self).cvterm_query(cv_name, cv_term_name, self.session)
+
         self.current_query_source = value_to_add_tuple
         self.current_query = 'Querying for FBrf \'%s\'.' % (value_to_add_tuple[FIELD_VALUE])
         log.info(self.current_query)
 
         pub_prop = get_or_create(
             self.session, Pubprop,
-            pub_id = self.pub.pub_id,
-            value = value_to_add_tuple[FIELD_VALUE],
-            type_id = cv_term_id
+            pub_id=self.pub.pub_id,
+            value=value_to_add_tuple[FIELD_VALUE],
+            type_id=cv_term_id
         )
         return pub_prop
