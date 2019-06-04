@@ -4,11 +4,10 @@ from cerberus import Validator
 # Additional tools for validation
 import re
 
-# System and logging imports
-import os
-import sys
+# logging imports
 import logging
 log = logging.getLogger(__name__)
+
 
 class ValidatorBase(Validator):
     """

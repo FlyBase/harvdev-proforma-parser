@@ -5,9 +5,8 @@
 .. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
 import re
-from .chado_base import ChadoObject, FIELD_VALUE, LINE_NUMBER
+from .chado_base import ChadoObject, FIELD_VALUE
 from chado_object.chado_exceptions import ValidationError
-from error.error_tracking import ErrorTracking
 from harvdev_utils.production import (
     Cv, Cvterm, Pub, Pubprop, Pubauthor
 )
@@ -83,7 +82,7 @@ class ChadoPub(ChadoObject):
           * if P22 is 'new', P1 must a contain valid value.
           * if P22 is 'unattributed', P1 must be empty
         """
-         # TODO: bang c/d field stuff
+        # TODO: bang c/d field stuff
         self.current_query_source = self.P1_type
         self.current_query = 'Querying for cvterm {} with cv of pub type\'%s\'.' % (self.P1_type[FIELD_VALUE])
 
@@ -92,7 +91,7 @@ class ChadoPub(ChadoObject):
                                                             Cv.name == 'pub type',
                                                             Cvterm.is_obsolete == 0).one()
 
-        if pub: 
+        if pub:
             try:
                 old_cvterm = self.session.query(Cvterm).join(Cv).join(Pubprop).\
                                 filter(Cvterm.cv_id == Cv.cv_id,
