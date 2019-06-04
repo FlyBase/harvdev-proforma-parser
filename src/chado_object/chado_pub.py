@@ -108,6 +108,7 @@ class ChadoPub(ChadoObject):
                                        Cvterm.is_obsolete == 0).one()
             except NoResultFound:
                 # good, does not have a previous result so happy to continue
+                log.info("No previous pub type???")
                 return cvterm
             if old_cvterm.cvterm_id != cvterm.cvterm_id:
                 self.current_query = 'Cvterm "{}" Is not the same as previous {}\n'.format(self.P1_type[FIELD_VALUE], old_cvterm.name)

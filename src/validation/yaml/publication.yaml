@@ -1,5 +1,6 @@
 P1:
   type: string
+  P1_text: True
   required: False
 P2:
   type: string
