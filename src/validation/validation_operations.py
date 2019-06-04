@@ -8,6 +8,7 @@
 # Cerberus and yaml
 import yaml
 from validation.validator_base import ValidatorBase
+from validation.validator_pub import ValidatorPub
 from error.error_tracking import ErrorTracking
 
 # Additional tools for validation
@@ -62,6 +63,10 @@ def validation_file_schema_lookup(proforma_type, fields_values):
     # Ignore versions just get name (deal with this later if it evers becomes a problem)
     validation_dict = {"PUBLICATION": get_validate_pub_schema,
                        "GENE": get_validate_gene_schema}
+    validator = ValidatorBase
+    # if we have specific validation stuff set it up here.
+    validation_base = {"PUBLICATION": ValidatorPub}
+
     pattern = r"""
               ^!        # start with a bang
               \s+       # one or more spaces
@@ -77,6 +82,8 @@ def validation_file_schema_lookup(proforma_type, fields_values):
 
     try:
         yaml_file = validation_dict[proforma_type_name](fields_values)
+        if proforma_type_name in validation_base:
+            validator = validation_base[proforma_type_name]
     except KeyError:
         log.critical('Proforma type not recognized for validation.')
         log.critical('Type: {}'.format(proforma_type))
@@ -88,7 +95,7 @@ def validation_file_schema_lookup(proforma_type, fields_values):
 
     log.info('Initializing validator using schema %s.' % (yaml_file))
 
-    return(yaml_file_location)
+    return(yaml_file_location, validator)
 
 
 def validate_proforma_object(filename, proforma_type, proforma_line, fields_values):
@@ -107,7 +114,7 @@ from error.error_tracking import ErrorTracking
 
     log.info('Validating proforma object.')
 
-    (yaml_file_location) = validation_file_schema_lookup(proforma_type, fields_values)
+    (yaml_file_location, validatortype) = validation_file_schema_lookup(proforma_type, fields_values)
     try:
         schema_file = open(yaml_file_location, 'r')
     except FileNotFoundError:
@@ -118,7 +125,7 @@ from error.error_tracking import ErrorTracking
        
     schema = yaml.load(schema_file)
     log.debug('Schema used: {}'.format(schema))
-    validator = ValidatorBase(schema)  # Custom validator for specific object.
+    validator = validatortype(schema)  # Custom validator for specific object.
 
     # Changing "fields_values" from a dictionary of tuple values to
     # a dictionary with string/list values.
