@@ -83,7 +83,9 @@ class ChadoPub(ChadoObject):
           * if P22 is 'new', P1 must a contain valid value.
           * if P22 is 'unattributed', P1 must be empty
         """
-
+        if pub.uniquename == 'unattributed':
+            self.current_query = 'Pub is unattributed. P1 MUST be empty we have {}'.format(self.P1_type[FIELD_VALUE])
+            raise ValidationError()
         # TODO: bang c/d field stuff
         self.current_query_source = self.P1_type
         self.current_query = 'Querying for cvterm {} with cv of pub type\'%s\'.' % (self.P1_type[FIELD_VALUE])
