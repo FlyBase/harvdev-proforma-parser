@@ -26,3 +26,11 @@ class ValidatorBase(Validator):
         if plain_text and not re.match(r'^[a-zA-Z0-9\-:\s]*$', value):
             # Must return a self._error, otherwise the validator believes everything passed!
             self._error(field, '{} did not validate. Only a-z, A-Z, 0-9, -, :, characters permitted.'.format(value))
+
+    def _validate_P1_text(self, P1_text, field, value):
+        """
+        Basically P1 not allowed to be journalor compendium.
+        """
+        non_valid_P1 = ['compendium', 'journal']
+        if P1_text and value in non_valid_P1:
+            self._error(field, '{} did not validate. {} are NOT allowed values'.format(value, non_valid_P1))
