@@ -27,3 +27,20 @@ class ValidatorPub(ValidatorBase):
         log.info("Testing P22 unat {} {} {}".format(field, other, value))
         if self.document['P22'] == 'unattributed' and value and len(value):
             self._error(field, 'Cannot set {} for an unattributed Pub. You have passed it "{}"'.format(field, value))
+
+    def _validate_P22_unattributed_allowed(self, P22_text, field, value):
+        """
+        May supercede _validate_P22_unattributed_no_value as we can do all at one go
+        only P19 and P13 allowed if unattributed.
+        Quicker this way but eeror shows up on P22 rather than another field.
+        """
+        if P22_text and value != 'unattributed':
+            return
+        allowed = ['P22','P19', 'P13']  # P22 will exist aswell obviously
+        bad_fields = []
+        for key in (self.document.keys()):
+            log.info("P22 unat allow: {} {}".format(key, self.documnet[key]))
+            if key not in allowed:
+                bad_fields.append(key)
+        if bad_fields:
+            self._error(field, 'Error P22 is unattributed so cannot set {}'.format(bad_fields))
