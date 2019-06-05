@@ -39,7 +39,7 @@ class ValidatorPub(ValidatorBase):
         allowed = ['P22','P19', 'P13']  # P22 will exist aswell obviously
         bad_fields = []
         for key in (self.document.keys()):
-            log.info("P22 unat allow: {} {}".format(key, self.documnet[key]))
+            log.info("P22 unat allow: {} {}".format(key, self.document[key]))
             if key not in allowed:
                 bad_fields.append(key)
         if bad_fields:
