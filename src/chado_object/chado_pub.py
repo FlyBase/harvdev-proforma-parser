@@ -92,7 +92,7 @@ class ChadoPub(ChadoObject):
                                                             Cvterm.is_obsolete == 0).one()
 
         if pub:
-             old_cvterm = self.session.query(Cvterm).join(Cv).join(Pubprop).\
+            old_cvterm = self.session.query(Cvterm).join(Cv).join(Pubprop).\
                             filter(Cvterm.cv_id == Cv.cv_id,
                                    Pubprop.type_id == Cvterm.cvterm_id,
                                    Cv.name == 'pub type',
