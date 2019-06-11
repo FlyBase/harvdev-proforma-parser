@@ -92,19 +92,17 @@ class ChadoPub(ChadoObject):
                                                             Cvterm.is_obsolete == 0).one()
 
         if pub:
-            try:
-                old_cvterm = self.session.query(Cvterm).join(Cv).join(Pubprop).\
-                                filter(Cvterm.cv_id == Cv.cv_id,
-                                       Pubprop.type_id == Cvterm.cvterm_id,
-                                       Cv.name == 'pub type',
-                                       Pubprop.pub_id == pub.pub_id,
-                                       Cvterm.is_obsolete == 0).one()
-            except NoResultFound:
+             old_cvterm = self.session.query(Cvterm).join(Cv).join(Pubprop).\
+                            filter(Cvterm.cv_id == Cv.cv_id,
+                                   Pubprop.type_id == Cvterm.cvterm_id,
+                                   Cv.name == 'pub type',
+                                   Pubprop.pub_id == pub.pub_id,
+                                   Cvterm.is_obsolete == 0).one_or_none()
+            if not old_cvterm:
                 # good, does not have a previous result so happy to continue
-                log.info("No previous pub type???")
                 return cvterm
             if old_cvterm.cvterm_id != cvterm.cvterm_id:
-                self.current_query = 'Cvterm "{}" Is not the same as previous {}\n'.format(self.P1_type[FIELD_VALUE], old_cvterm.name)
+                self.current_query = 'Cvterm "{}" is not the same as previous {}\n'.format(self.P1_type[FIELD_VALUE], old_cvterm.name)
                 self.current_query += 'Not allowed to change P1 if it already had one.'
                 raise ValidationError()
         return cvterm
