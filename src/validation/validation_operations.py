@@ -146,7 +146,7 @@ def validate_proforma_object(filename, proforma_type, proforma_line, fields_valu
         log.critical('Exiting.')
         sys.exit(-1)
 
-    schema = yaml.load(schema_file)
+    schema = yaml.full_load(schema_file)
     log.debug('Schema used: {}'.format(schema))
     validator = validatortype(schema)  # Custom validator for specific object.
 

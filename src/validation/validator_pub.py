@@ -15,6 +15,11 @@ class ValidatorPub(ValidatorBase):
     def _validate_P1_valid(self, P1_text, field, value):
         """
         Basically P1 not allowed to be journal or compendium.
+
+        The docstring statement below provides a schema to validate the 'P1_text' argument.
+
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
         """
         non_valid_P1 = ['compendium', 'journal']
         if P1_text and value in non_valid_P1:
@@ -23,6 +28,11 @@ class ValidatorPub(ValidatorBase):
     def _validate_P22_unattributed_no_value(self, other, field, value):
         """
         if P22 is 'unattributed' then value is not allowed to be defined
+
+        The docstring statement below provides a schema to validate the 'other' argument.
+
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
         """
         log.info("Testing P22 unat {} {} {}".format(field, other, value))
         if self.document['P22'] == 'unattributed' and value and len(value):
@@ -33,6 +43,12 @@ class ValidatorPub(ValidatorBase):
         May supercede _validate_P22_unattributed_no_value as we can do all at one go
         only P19 and P13 allowed if unattributed.
         Quicker this way but eeror shows up on P22 rather than another field.
+
+        The docstring statement below provides a schema to validate the 'P22_text' argument.
+
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
+
         """
         if P22_text and value != 'unattributed':
             return

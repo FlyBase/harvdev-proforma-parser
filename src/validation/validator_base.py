@@ -29,6 +29,11 @@ class ValidatorBase(Validator):
     def _validate_no_bangc(self, no_bangc, field, value):
         """
         Throw error if bangc is set. NOT allowed here.
+
+        The docstring statement below provides a schema to validate the 'plain_text' argument.
+
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
         """
         if not no_bangc:
             return
