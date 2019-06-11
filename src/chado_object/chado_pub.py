@@ -41,11 +41,15 @@ class ChadoPub(ChadoObject):
         self.P19_internal_notes = params['fields_values'].get('P19')
         self.P22_FlyBase_reference_ID = params['fields_values'].get('P22')
         self.P23_personal_com = params['fields_values'].get('P23')
+        self.P30_also_published_as = params['fields_values'].get('P30')
+        self.P31_related_publications = params['fields_values'].get('P31')
+        self.P32_make_secondary = params['fields_values'].get('P32')
         self.P40_flag_cambridge = params['fields_values'].get('P40')
         self.P41_flag_harvard = params['fields_values'].get('P41')
         self.P45_Not_dros = params['fields_values'].get('P45')
         # Values queried later, placed here for reference purposes.
         self.pub = None
+
 
         # Initiate the parent.
         super(ChadoPub, self).__init__(params)
@@ -92,7 +96,7 @@ class ChadoPub(ChadoObject):
                                                             Cvterm.is_obsolete == 0).one()
 
         if pub:
-             old_cvterm = self.session.query(Cvterm).join(Cv).join(Pubprop).\
+            old_cvterm = self.session.query(Cvterm).join(Cv).join(Pubprop).\
                             filter(Cvterm.cv_id == Cv.cv_id,
                                    Pubprop.type_id == Cvterm.cvterm_id,
                                    Cv.name == 'pub type',

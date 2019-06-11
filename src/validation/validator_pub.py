@@ -60,3 +60,41 @@ class ValidatorPub(ValidatorBase):
                 bad_fields.append(key)
         if bad_fields:
             self._error(field, 'Error P22 is unattributed so cannot set {}'.format(bad_fields))
+
+    def _validate_no_duplicates(self, comp_fields, field, value):
+        """
+        Check that no duplicates exist.
+        If with_field is not defined them compare to self only.
+
+        The rule's arguments are validated against this schema:
+        {'type': 'string'}
+        """
+        log.info("Running check no duplicate swith {} {} {}".format(comp_fields, field, value))
+        if type(value) is not list:
+            log.info("Was expecting a list but we have '{}' for {}".format(value, field))
+            return
+
+        # self compare and build first dict
+        dict1 = {}
+        for item in value:
+            if item in dict1:
+                self._error(field, 'Error {} has {} listed more than once'.format(field, item))
+            dict1[item] = 1
+        if not comp_fields:
+            return
+
+        for with_field in comp_fields.split():
+            log.info("Looking up {}".format(with_field))
+            # compare to list given by field
+            if with_field in self.document:
+                dict2 = {}
+                list2 = self.document[with_field]
+                if type(list2) is not list:  # Could be a single value
+                    list2 = []
+                    list2.append(self.document[with_field])
+                for item in list2:
+                    if item in dict1:
+                        self._error(field, 'Error {} in both {} and {}. Not allowed'.format(item, field, with_field))
+                    if item in dict2:
+                        self._error(field, 'Error {} listed twice for {}'.format(item, with_field))
+                    dict2[item] = 1

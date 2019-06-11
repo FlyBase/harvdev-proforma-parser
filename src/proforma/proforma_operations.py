@@ -390,11 +390,14 @@ class Proforma(object):
         # This saves a tremendous amount of downstream code in handling strings vs lists.
         # Basically, if a field *can* be a list, it will be turned into a list.
         list_of_fields_that_should_be_lists = [
+            'P12',
+            'P30',
+            'P31',
+            'P32',            
             'P40',
             'P41',
             'G1b',
             'G2b',
-            'P12',
         ]
 
         # Field values are stored in tuples of (field, value, line number).
