@@ -4,21 +4,19 @@
 
 .. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
-#TODO Split this file into individual files by class.
+# TODO Split this file into individual files by class.
 
 # System and logging imports
+import re
 import os
 import sys
 import logging
-log = logging.getLogger(__name__)
-
-# Validation
-from validation.validation_operations import validate_proforma_file
-from validation.validation_operations import validate_proforma_object
-
 # Other modules
 from itertools import tee, islice, chain
-import re
+# Validation
+from validation.validation_operations import validate_proforma_object
+log = logging.getLogger(__name__)
+
 
 def process_proforma_directory(location):
     """
@@ -27,15 +25,15 @@ def process_proforma_directory(location):
     Args:
         location (str): A directory of proforma files.
 
-    Returns: 
+    Returns:
         filenames (list): A list of filenames for a directory.
 
     Note:
         Checks for duplciate filenames and fails if found.
     """
 
-    filename_list = []     # A list for storing file names.
-    filelocation_list = [] # A list for storing file locations.
+    filename_list = []      # A list for storing file names.
+    filelocation_list = []  # A list for storing file locations.
     log.info('Searching for files to process in the directory: %s', location)
     for root, dirs, files in os.walk(location):
         for name in files:
@@ -50,7 +48,7 @@ def process_proforma_directory(location):
         if x in seen_filename:
             duplicates.add(x)
         seen_filename.add(x)
-        
+
     if len(duplicates) != 0:
         log.critical('Duplicate filenames found in proforma directory!')
         log.critical('Please remove duplicate files and re-run the loader.')
@@ -62,7 +60,6 @@ def process_proforma_directory(location):
     log.info('Found %s file(s).', len(filename_list))
     return filelocation_list
 
-# def extract_data_for_field()
 
 def process_proforma_file(file_location_from_list, curator_dict):
     """
@@ -99,7 +96,7 @@ def process_proforma_file(file_location_from_list, curator_dict):
     # After extracting the publication proforma, we'll need to associate publication information with
     # the rest of the proforma objects. This involves a second loop through the validated list.
     # Obtain the FBrf and other data from the first item in the list. Should be a pub proforma.
-    
+
     # TODO Check that this entry is a pub proforma. Also implement workaround for processing DATABASE proforma which don't have pubs.
     proforma_type, filename, proforma_start_line_number, fields_values = list_of_proforma_objects[0].get_data_for_processing()
     log.info('Found reference %s from %s.' % (fields_values['P22'][1], filename))
@@ -112,13 +109,14 @@ def process_proforma_file(file_location_from_list, curator_dict):
 
     return(list_of_processed_proforma_objects)
 
+
 class ProformaFile(object):
     """
     The main proforma class. Handles data from proforma files: opening and validation of file-level data.
     This data is "highest level" looking at overall file structure.
     Individual proforma entries within a proforma file are handled by the separate "Proforma" class.
 
-    Args: 
+    Args:
         filename (str): The filename (including directory) of a proforma.
     """
     def __init__(self, filename, curator_dict):
@@ -146,19 +144,19 @@ class ProformaFile(object):
         # Alternatively, you could process the file line-by-line.
         # However, these files are small and memory is plentiful, so we're reading everything for now.
         # The code can always be refactored if this becomes a problem.
-        with open(self.filename, encoding='utf-8') as the_file: # We only <3 utf-8!
+        with open(self.filename, encoding='utf-8') as the_file:  # We only <3 utf-8!
             for each_line in the_file:
-                if each_line.strip(): # If the line isn't blank.
-                    self.proforma_file_data.append(each_line.strip()) # Add to array and remove newlines.
+                if each_line.strip():  # If the line isn't blank.
+                    self.proforma_file_data.append(each_line.strip())  # Add to array and remove newlines.
 
         if len(self.proforma_file_data) == 0:
             log.error("Empty Proforma file found: %s" % (the_file))
-        
+
         log.info("Processed %s lines." % (len(self.proforma_file_data)))
 
     def get_proforma_field_and_content(self, individual_proforma_line):
         """
-        Extracts the value after a colon from a line of proforma data. 
+        Extracts the value after a colon from a line of proforma data.
 
         Args:
             individual_proforma_line (str): An individual line of proforma data with a colon.
@@ -177,14 +175,14 @@ class ProformaFile(object):
         # TODO Add additional format error checking here.
 
         # Do it all in one go (faster) and explain regex
-        pattern = """
+        pattern = r"""
             ^!           # begining of string must be a bang
             ([cd]?)      # possibly c or d
             \s+          # 1 or more spaces
             (\w+)        # The code (word,no spaces)
             [^:]*        # verbose proforma "chatter" up to the first ":"
             :            # : to mark start of "value"
-            (.*)$        # value up to the end of the string""" 
+            (.*)$        # value up to the end of the string"""
 
         fields = re.search(pattern, individual_proforma_line, re.VERBOSE)
         if fields:
@@ -196,8 +194,7 @@ class ProformaFile(object):
                 result_bang = fields.group(1)
 
         return(result_field, result_value, result_bang)
-    
-    
+
     def next_and_current_item(self, proforma_content):
         """
         Show the current and next item in an array.
@@ -207,15 +204,14 @@ class ProformaFile(object):
         current, nxt = tee(proforma_content, 2)
         nxt = chain(islice(nxt, 1, None), [None])
         return zip(current, nxt)
-    
 
     def extract_curator_initials_and_filename_short(self):
 
         # Grab the filename after the last slash.
         filename_short = self.filename.rsplit('/', 1)[-1]
-        
+
         curator_initials = None
-        harv_pattern = """
+        harv_pattern = r"""
             ^            # match from the start
             \d+          # string of integers
             \.           # a dot
@@ -224,11 +220,11 @@ class ProformaFile(object):
             \w+          # type of proforma (noy kept used here)
             \.           # a dot
             \d+          # string of integers
-            $            # end of the string""" 
+            $            # end of the string"""
 
-        cam_pattern = """
+        cam_pattern = r"""
             ^            # match from the start
-            (\w+)        # The user initials           
+            (\w+)        # The user initials
             \d+          # string of integers
             \.           # a dot
             \w+          # type of proforma
@@ -237,29 +233,28 @@ class ProformaFile(object):
         fields = re.search(harv_pattern, filename_short, re.VERBOSE)
         if fields:
             if fields.group(1):
-                curator_initials = fields.group(1) 
+                curator_initials = fields.group(1)
         else:
             fields = re.search(cam_pattern, filename_short, re.VERBOSE)
             if fields:
                 if fields.group(1):
-                    curator_initials = fields.group(1) 
+                    curator_initials = fields.group(1)
 
         return curator_initials, filename_short
-
 
     def extract_curator_fullname(self, curator_initials):
 
         log.info('Looking up curator based on filename initials.')
-        
+
         try:
             curator_fullname = self.curator_dict[curator_initials]
             log.info('Found curator %s -> %s' % (curator_initials, curator_fullname))
-        except:
+        except KeyError:
             log.critical('Curator not found for filename: {} using initials: {}'.format(self.filename, curator_initials))
             log.critical('Please check config file specified in the execution of this program.')
             log.critical('Exiting.')
             sys.exit(-1)
-        
+
         return curator_fullname
 
     def separate_and_identify_proforma_type(self):
@@ -282,37 +277,37 @@ class ProformaFile(object):
             curator_fullname = None
         # This content should remain static and be used for every proforma entry.
         file_metadata = {
-        'filename' : self.filename,
-        'filename_short' : filename_short,
-        'curator_initials' : curator_initials,
-        'curator_fullname' : curator_fullname
+            'filename': self.filename,
+            'filename_short': filename_short,
+            'curator_initials': curator_initials,
+            'curator_fullname': curator_fullname
         }
 
         # Variables used for the upcoming loop.
         individual_proforma = None
         proforma_type = None
         field = None
-        line_number = 0 
+        line_number = 0
 
         # Iterate through the content looking at the current and next line.
         for current_line, next_line in self.next_and_current_item(self.proforma_file_data):
             line_number += 1
-            #log.info('next line: %s' % (next_line))
+            # log.info('next line: %s' % (next_line))
             # If we find the start of a proforma section, create a new proforma object and set the type.
-            if current_line.startswith('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!') and not 'END OF RECORD FOR THIS PUBLICATION' in next_line:
+            if current_line.startswith('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!') and 'END OF RECORD FOR THIS PUBLICATION' not in next_line:
                 if individual_proforma is not None:
                     list_of_proforma_objects.append(individual_proforma)
                 proforma_type = next_line
-                line_number = line_number + 1 # The proforma starts on the next line.
-                individual_proforma = Proforma(file_metadata, proforma_type, line_number) # Create a new Proforma object.
+                line_number = line_number + 1  # The proforma starts on the next line.
+                individual_proforma = Proforma(file_metadata, proforma_type, line_number)  # Create a new Proforma object.
                 log.info('inv proforma is %s' % individual_proforma)
             elif proforma_type is not None and current_line == proforma_type:
-                continue # If we're on the proforma_type line, go to the next line.
+                continue  # If we're on the proforma_type line, go to the next line.
             elif current_line == '!':
-                continue # If we're on a line with only an exclamation point.
+                continue  # If we're on a line with only an exclamation point.
             elif next_line and 'END OF RECORD FOR THIS PUBLICATION' in next_line:
-                list_of_proforma_objects.append(individual_proforma) # add the last proforma entry to the list.
-                break # fin.
+                list_of_proforma_objects.append(individual_proforma)  # add the last proforma entry to the list.
+                break  # fin.
             else:
                 if current_line.startswith('! C'):
                     field, value, type_of_bang = self.get_proforma_field_and_content(current_line)
@@ -321,19 +316,19 @@ class ProformaFile(object):
                         file_metadata['curator_fullname'] = self.extract_curator_fullname(file_metadata['curator_initials'])
                     # C2 and C3 ignored for now.
                     continue
-                elif (current_line.startswith('!c') or 
-                    current_line.startswith('!d') or
-                    current_line.startswith('! ')):
+                elif (current_line.startswith('!c') or
+                      current_line.startswith('!d') or
+                      current_line.startswith('! ')):
                     field, value, type_of_bang = self.get_proforma_field_and_content(current_line)
                     log.debug(current_line)
                     log.debug(line_number)
                     individual_proforma.add_field_and_value(field, value, line_number)
                     if type_of_bang:
-                       individual_proforma.add_bang(field, type_of_bang)
+                        individual_proforma.add_bang(field, type_of_bang)
                 else:
                     # We're in a line which contains a value for the previously defined field.
                     # Add the entire contents of the line to the previously defined field.
-                    try: 
+                    try:
                         individual_proforma.add_field_and_value(field, current_line, line_number)
                     except AttributeError:
                         log.critical('Attribute error occurred when processing %s' % (self.filename))
@@ -341,25 +336,26 @@ class ProformaFile(object):
                         log.critical('Please check whether this file is valid proforma.')
                         log.critical('Exiting.')
                         sys.exit(-1)
-            
+
         return(list_of_proforma_objects)
+
 
 class Proforma(object):
     """
     This class handles the individual proforma entries obtained from a ProformaFile class.
 
-    Args: 
+    Args:
         filename (str): The filename (including directory) of a proforma.
     """
 
     def __init__(self, file_metadata, proforma_type, line_number):
-        self.file_metadata = file_metadata # Store our file metadata dictionary.
-        self.errors = None # Error tracking. This will become a dict if used.
-        self.bang_c = None # Becomes the field flagged for !c (if used).
-        self.bang_d = None # Becomes the field flagged for !d (if used).
-        self.proforma_start_line_number = line_number # Used later for data retrieval.
-        self.proforma_type = proforma_type # Used later for data retrieval.
-        
+        self.file_metadata = file_metadata  # Store our file metadata dictionary.
+        self.errors = None                  # Error tracking. This will become a dict if used.
+        self.bang_c = None                  # Becomes the field flagged for !c (if used).
+        self.bang_d = None                  # Becomes the field flagged for !d (if used).
+        self.proforma_start_line_number = line_number  # Used later for data retrieval.
+        self.proforma_type = proforma_type  # Used later for data retrieval.
+
         self.fields_values = {}
 
         log.info('Creating Proforma class object from individual proforma entry in: %s', self.file_metadata['filename'])
@@ -376,8 +372,11 @@ class Proforma(object):
             value (str): The value from the proforma.
         """
 
-        if value == '': # Leave this function if the value is an empty string.
+        if value == '':  # Leave this function if the value is an empty string.
             return
+
+        # remove spaces form start and end of string
+        value = value.strip()
 
         # A list of fields where values might span multiple lines
         # but they need to be treated as a single entry.
@@ -385,7 +384,7 @@ class Proforma(object):
         list_of_fields_with_wrapping_values = [
             'P19'
         ]
-
+ 
         # TODO Generate this list from the validation YAML.
         # A list of fields which should always be handled as lists, even if they are single values.
         # This saves a tremendous amount of downstream code in handling strings vs lists.
@@ -395,6 +394,7 @@ class Proforma(object):
             'P41',
             'G1b',
             'G2b',
+            'P12',
         ]
 
         # Field values are stored in tuples of (field, value, line number).
@@ -402,28 +402,29 @@ class Proforma(object):
         # This is redundant but useful because the key name will change when this gets loaded into a ChadoObject.
         # If we always bring along the field value in the tuple, we can always reference it later.
 
-        if field in self.fields_values: # If we have a previously defined key.
-            if field in list_of_fields_with_wrapping_values: # In this case, we want to concantenate the existing and new values.
+        if field in self.fields_values:  # If we have a previously defined key.
+            if field in list_of_fields_with_wrapping_values:  # In this case, we want to concantenate the existing and new values.
                 log.info('Found field %s with wrapping values over multiple lines.' % (field))
                 log.info('Concantenating field %s existing value \'%s\' with new value \'%s\'' % (field, self.fields_values[field][1], value))
-                self.fields_values[field] = (field, self.fields_values[field][1] + '\n' + value, line_number) # This is currently stored with a newline. Keeping the same system, unfortunately.
+                # This following is currently stored with a newline. Keeping the same system, unfortunately.
+                self.fields_values[field] = (field, self.fields_values[field][1] + '\n' + value, line_number)
             else:
                 if type(self.fields_values[field]) is list:
-                    self.fields_values[field].append((field, value, line_number)) # Otherwise, if it is a list already, just append the value.
+                    self.fields_values[field].append((field, value, line_number))  # Otherwise, if it is a list already, just append the value.
                     log.info('Appending field %s : value %s from line %s to the existing list for this field.' % (field, value, line_number))
-                else: 
+                else:
                     log.critical('Attempted to add an additional value: {} to field: {} from line: {}'.format(value, field, line_number))
                     log.critical('Unfortunately, this field is not current specified to support multiple values.')
                     log.critical('Please contact Harvdev if you believe this is a mistake.')
                     log.critical('Exiting.')
                     sys.exit(-1)
-        else: # If the key doesn't exist, add it.
+        else:  # If the key doesn't exist, add it.
             if field in list_of_fields_that_should_be_lists:
                 log.info('Adding field %s : value %s from line %s to the Proforma object as a new list.' % (field, value, line_number))
                 self.fields_values[field] = []
                 self.fields_values[field].append((field, value, line_number))
             else:
-                self.fields_values[field] = (field, value, line_number) 
+                self.fields_values[field] = (field, value, line_number)
                 log.info('Adding field %s : value %s from line %s to the Proforma object.' % (field, value, line_number))
 
     def add_bang(self, field, type_of_bang):
@@ -443,7 +444,7 @@ class Proforma(object):
 
             self.bang_c = field
             log.info('!c field detected for %s. Adding flag to object.' % (field))
-            
+
         elif type_of_bang == 'd':
             if self.bang_d is not None:
                 log.critical('Multiple !d entries found. This is not currently supported.')

@@ -2,7 +2,7 @@ P1:
   type: string
   P1_valid: True
   P22_unattributed_no_value: True
-  required: False
+  required: True
 P2:
   type: string
   required: False
@@ -14,14 +14,14 @@ P4:
   type: string
 P10:
   type: string
-  required: False
+  required: True
   regex: ^(\d+)(\.+\d+\.+\d+)?$
 P11a:
   required: False
   type: string
 P12:
   type: [string, list]
-  required: False
+  required: True
 P13:
   required: False
   type: string
@@ -47,7 +47,7 @@ P14:
             Russian and German, Serbo-Croat, Serbo-Croat(Roman), Slovak, Slovenian, Spanish, Spanish and English,
             Spanish, English and Portuguese, Swedish, Turkish, Ukrainian, Ukrainian and English]
 P16:
-  required: False
+  required: True
   type: string
 P18:
   required: False

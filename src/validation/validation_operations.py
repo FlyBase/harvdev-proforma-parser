@@ -4,9 +4,11 @@
 
 .. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
+
 # Cerberus and yaml
 import yaml
 from validation.validator_base import ValidatorBase
+from validation.validator_pub import ValidatorPub
 from error.error_tracking import ErrorTracking
 
 # Additional tools for validation
@@ -16,17 +18,35 @@ import re
 import os
 import sys
 import logging
+from chado_object.chado_base import (
+    FIELD_VALUE
+)
+
 log = logging.getLogger(__name__)
 
-# Additional modules
-from error.error_tracking import ErrorTracking
 
 def validate_proforma_file():
     log.info('Validating proforma file.')
 
     # TODO Add whole file validation.
 
-def validation_file_schema_lookup(proforma_type):
+
+def get_validate_pub_schema(fields_values):
+    """
+    Check for special occurances of publication being new.
+    If they are we use the publication_new.yaml file instead of
+    publication.yaml
+    """
+    if 'P22' in fields_values and fields_values['P22'][FIELD_VALUE] == "new":
+        return "publication_new.yaml"
+    return "publication.yaml"
+
+
+def get_validate_gene_schema(fields_values):
+    return "gene.yaml"
+
+
+def validation_file_schema_lookup(proforma_type, fields_values):
     """
     Reads the proforma type and returns the appropriate yaml validation file
     and the appropriate schema(s) to validation against.
@@ -40,15 +60,30 @@ def validation_file_schema_lookup(proforma_type):
     """
 
     root_directory = os.path.abspath('src/validation/yaml')
+    # Ignore versions just get name (deal with this later if it evers becomes a problem)
+    validation_dict = {"PUBLICATION": get_validate_pub_schema,
+                       "GENE": get_validate_gene_schema}
+    validator = ValidatorBase
+    # if we have specific validation stuff set it up here.
+    validation_base = {"PUBLICATION": ValidatorPub}
 
-    validation_file_schema_dict = {
-        '! PUBLICATION PROFORMA                   Version 47:  25 Nov 2014' : 'publication.yaml',
-        '! GENE PROFORMA                          Version 76:  04 Sept 2014' : 'gene.yaml',
-        '! GENE PROFORMA                          Version 77:  01 Jun 2016' : 'gene.yaml'
-    }
+    pattern = r"""
+              ^!        # start with a bang
+              \s+       # one or more spaces
+              (\w+)     # the proformat type is a word
+              \s+       # one or more spaces
+              PROFORMA  # the word proforma all CAPS
+              """
+    fields = re.search(pattern, proforma_type, re.VERBOSE)
+    proforma_type_name = None
+    if fields:
+        if fields.group(1):
+            proforma_type_name = fields.group(1)
 
     try:
-        yaml_file = validation_file_schema_dict[proforma_type]
+        yaml_file = validation_dict[proforma_type_name](fields_values)
+        if proforma_type_name in validation_base:
+            validator = validation_base[proforma_type_name]
     except KeyError:
         log.critical('Proforma type not recognized for validation.')
         log.critical('Type: {}'.format(proforma_type))
@@ -60,15 +95,40 @@ def validation_file_schema_lookup(proforma_type):
 
     log.info('Initializing validator using schema %s.' % (yaml_file))
 
-    return(yaml_file_location)
+    return(yaml_file_location, validator)
+
+def validation_field_to_dict(fields_values):
+    # Changing "fields_values" from a dictionary of tuple values to
+    # a dictionary with string/list values.
+    # If a value originally existed in the proforma as a list over multiple lines
+    # it will also become a list again here (converted from a list of tuples).
+    # This makes validation much easier.
+    field_value_validation_dict = {}
+    for field, value in fields_values.items():
+        if type(value) is list:
+            for list_object in value:
+                if field in field_value_validation_dict:
+                    field_value_validation_dict[field].append(list_object[FIELD_VALUE])
+                else:
+                    field_value_validation_dict[field] = [list_object[FIELD_VALUE]]
+        elif type(value) is tuple:
+            field_value_validation_dict[field] = value[FIELD_VALUE]
+        else:
+            log.critical('Unexpected value type: {} found, expected list or tuple.'.format(type(value)))
+            log.critical(field)
+            log.critical(value)
+            log.critical('Please contact Harvdev / Chris.')
+            log.critical('Exiting.')
+            sys.exit(-1)
+    return field_value_validation_dict
 
 def validate_proforma_object(filename, proforma_type, proforma_line, fields_values):
     """
     Validate a proforma object against a YAML schema using Cerberus.
-    
-    Args:
+
+    Args:# Error tracking modules
         proforma_type (str): The type of proforma.
-        
+
         field_values (dict): A dictionary of fields and values from the proforma.
 
     Returns:
@@ -77,35 +137,25 @@ def validate_proforma_object(filename, proforma_type, proforma_line, fields_valu
 
     log.info('Validating proforma object.')
 
-    (yaml_file_location) = validation_file_schema_lookup(proforma_type)
-    schema_file = open(yaml_file_location, 'r')
-    schema = yaml.load(schema_file)
+    (yaml_file_location, validatortype) = validation_file_schema_lookup(proforma_type, fields_values)
+    try:
+        schema_file = open(yaml_file_location, 'r')
+    except FileNotFoundError:
+        log.critical('Could not open file name "{}" generated for schema {}.'.format(yaml_file_location, proforma_type))
+        log.critical('Please contact Harvdev / Chris.')
+        log.critical('Exiting.')
+        sys.exit(-1)
+
+    schema = yaml.full_load(schema_file)
     log.debug('Schema used: {}'.format(schema))
-    validator = ValidatorBase(schema) # Custom validator for specific object.
+    validator = validatortype(schema)  # Custom validator for specific object.
 
     # Changing "fields_values" from a dictionary of tuple values to
     # a dictionary with string/list values.
     # If a value originally existed in the proforma as a list over multiple lines
     # it will also become a list again here (converted from a list of tuples).
     # This makes validation much easier.
-    field_value_validation_dict = {}
-
-    for field, value in fields_values.items():
-        if type(value) is list:
-            for list_object in value:
-                if field in field_value_validation_dict:
-                    field_value_validation_dict[field].append(list_object[1])
-                else:
-                    field_value_validation_dict[field] = [list_object[1]]
-        elif type(value) is tuple:
-            field_value_validation_dict[field] = value[1]
-        else:
-            log.critical('Unexpected value type: {} found, expected list or tuple.'.format(type(value)))
-            log.critical(field)
-            log.critical(value)
-            log.critical('Please contact Harvdev / Chris.')
-            log.critical('Exiting.')
-            sys.exit(-1)
+    field_value_validation_dict = validation_field_to_dict(fields_values)
 
     log.debug('Field and values validated: {}'.format(field_value_validation_dict))
     results = validator.validate(field_value_validation_dict)
