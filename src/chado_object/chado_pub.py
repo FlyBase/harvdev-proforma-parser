@@ -8,7 +8,7 @@ import re
 from .chado_base import ChadoObject, FIELD_VALUE
 from chado_object.chado_exceptions import ValidationError
 from harvdev_utils.production import (
-    Cv, Cvterm, Pub, Pubprop, Pubauthor
+    Cv, Cvterm, Pub, Pubprop, Pubauthor, PubRelationship
 )
 from harvdev_utils.chado_functions import get_or_create
 
@@ -116,17 +116,27 @@ class ChadoPub(ChadoObject):
         self.current_query = "Looking up pub: {}.".format(tuple[FIELD_VALUE])
         return self.session.query(Pub).filter(Pub.uniquename == tuple[FIELD_VALUE]).one()
 
-    def add_relationship(pub, cvterm):
+    def add_relationship(self, pub, cvterm):
         """
         add pub tp self.pub with cvterm specified
         """
-        pass
+        # look up the cvterm
+        self.current_query_source = pub.uniquename
+        self.current_query = "Querying for cvterm '{}' with cv of 'pub relationship type'.".format(cvterm)
+        cvterm = self.session.query(Cvterm).join(Cv).filter(Cv.name == 'pub relationship type',
+                                                            Cvterm.name == cvterm,
+                                                            Cvterm.is_obsolete == 0).one()
+        # now add the relationship
+        get_or_create(self.session, PubRelationship,
+                      subject_id=self.pub.pub_id,
+                      object_id=pub.pub_id,
+                      type_id=cvterm.cvterm_id)
 
-    def make_obsolete(pub):
+    def make_obsolete(self, pub):
         """
         Make the pub obsolete
         """
-        pass
+        pub.is_obsolete = True
 
     def process_related(self):
         """

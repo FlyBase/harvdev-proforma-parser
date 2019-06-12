@@ -64,7 +64,7 @@ class ValidatorPub(ValidatorBase):
 
     def get_unique_dict(self, field, value):
         """
-        Create dict and produce error id duplications are there
+        Create dict and produce error if duplications are there
         """
         dict1 = {}
         for item in value:
@@ -113,4 +113,5 @@ class ValidatorPub(ValidatorBase):
         dict1 = self.get_unique_dict(field, value)
         if not comp_fields:
             return
+        # check for duplicates in the list of fileds to check.
         self.check_for_duplicates(field, dict1, comp_fields)
