@@ -12,8 +12,6 @@ from harvdev_utils.production import (
 )
 from harvdev_utils.chado_functions import get_or_create
 
-from sqlalchemy.orm.exc import NoResultFound
-
 import logging
 from datetime import datetime
 
@@ -49,7 +47,6 @@ class ChadoPub(ChadoObject):
         self.P45_Not_dros = params['fields_values'].get('P45')
         # Values queried later, placed here for reference purposes.
         self.pub = None
-
 
         # Initiate the parent.
         super(ChadoPub, self).__init__(params)
@@ -110,6 +107,44 @@ class ChadoPub(ChadoObject):
                 self.current_query += 'Not allowed to change P1 if it already had one.'
                 raise ValidationError()
         return cvterm
+
+    def get_related_pub(self, tuple):
+        """
+        from the fbrf tuple get the pub
+        """
+        self.current_query_source = tuple
+        self.current_query = "Looking up pub: {}.".format(tuple[FIELD_VALUE])
+        return self.session.query(Pub).filter(Pub.uniquename == tuple[FIELD_VALUE]).one()
+
+    def add_relationship(pub, cvterm):
+        """
+        add pub tp self.pub with cvterm specified
+        """
+        pass
+
+    def make_obsolete(pub):
+        """
+        Make the pub obsolete
+        """
+        pass
+
+    def process_related(self):
+        """
+        Process P30, P31 and P32 (also pub as, related pub, make secondary)
+        Each is a list so process accordingly.
+        """
+        if self.P30_also_published_as:
+            for fbrf in self.P30_also_published_as:
+                pub = self.get_related_pub(fbrf)
+                self.add_relationship(pub, 'also_in')
+        if self.P31_related_publications:
+            for fbrf in self.P31_related_publications:
+                pub = self.get_related_pub(fbrf)
+                self.add_relationship(pub, 'related_to')
+        if self.P32_make_secondary:
+            for fbrf in self.P32_make_secondary:
+                pub = self.get_related_pub(fbrf)
+                self.make_obsolete(pub)
 
     def get_pub(self):
         """
@@ -213,7 +248,7 @@ class ChadoPub(ChadoObject):
 
         # Update the direct column data in Pub
         self.update_pub()
-
+        self.process_related()
         self.update_pubprops()
 
         if self.P12_authors is not None:
