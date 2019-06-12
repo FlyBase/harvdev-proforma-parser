@@ -63,6 +63,21 @@ P22:
 P23:
   required: False
   type: string
+P30:
+  required: False
+  type: [string, list]
+  no_duplicates: P22 P31 P32
+  regex: ^(FBrf\d{7})$
+P31:
+  required: False
+  type: [string, list]
+  no_duplicates: P22 P30 P32
+  regex: ^(FBrf\d{7})$ 
+P32:
+  required: False
+  type: [string, list]
+  no_duplicates: P22 P30 P31
+  regex: ^(FBrf\d{7})$
 P40:
   type: list
   allowed: [merge, split, rename, new_char, new_al, new_transg, pheno, gene_group, noGOcur, pheno_chem, pheno_anat]

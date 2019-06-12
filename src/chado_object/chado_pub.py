@@ -8,11 +8,9 @@ import re
 from .chado_base import ChadoObject, FIELD_VALUE
 from chado_object.chado_exceptions import ValidationError
 from harvdev_utils.production import (
-    Cv, Cvterm, Pub, Pubprop, Pubauthor
+    Cv, Cvterm, Pub, Pubprop, Pubauthor, PubRelationship
 )
 from harvdev_utils.chado_functions import get_or_create
-
-from sqlalchemy.orm.exc import NoResultFound
 
 import logging
 from datetime import datetime
@@ -41,6 +39,9 @@ class ChadoPub(ChadoObject):
         self.P19_internal_notes = params['fields_values'].get('P19')
         self.P22_FlyBase_reference_ID = params['fields_values'].get('P22')
         self.P23_personal_com = params['fields_values'].get('P23')
+        self.P30_also_published_as = params['fields_values'].get('P30')
+        self.P31_related_publications = params['fields_values'].get('P31')
+        self.P32_make_secondary = params['fields_values'].get('P32')
         self.P40_flag_cambridge = params['fields_values'].get('P40')
         self.P41_flag_harvard = params['fields_values'].get('P41')
         self.P45_Not_dros = params['fields_values'].get('P45')
@@ -92,7 +93,7 @@ class ChadoPub(ChadoObject):
                                                             Cvterm.is_obsolete == 0).one()
 
         if pub:
-             old_cvterm = self.session.query(Cvterm).join(Cv).join(Pubprop).\
+            old_cvterm = self.session.query(Cvterm).join(Cv).join(Pubprop).\
                             filter(Cvterm.cv_id == Cv.cv_id,
                                    Pubprop.type_id == Cvterm.cvterm_id,
                                    Cv.name == 'pub type',
@@ -106,6 +107,54 @@ class ChadoPub(ChadoObject):
                 self.current_query += 'Not allowed to change P1 if it already had one.'
                 raise ValidationError()
         return cvterm
+
+    def get_related_pub(self, tuple):
+        """
+        from the fbrf tuple get the pub
+        """
+        self.current_query_source = tuple
+        self.current_query = "Looking up pub: {}.".format(tuple[FIELD_VALUE])
+        return self.session.query(Pub).filter(Pub.uniquename == tuple[FIELD_VALUE]).one()
+
+    def add_relationship(self, pub, cvterm):
+        """
+        add pub tp self.pub with cvterm specified
+        """
+        # look up the cvterm
+        self.current_query_source = pub.uniquename
+        self.current_query = "Querying for cvterm '{}' with cv of 'pub relationship type'.".format(cvterm)
+        cvterm = self.session.query(Cvterm).join(Cv).filter(Cv.name == 'pub relationship type',
+                                                            Cvterm.name == cvterm,
+                                                            Cvterm.is_obsolete == 0).one()
+        # now add the relationship
+        get_or_create(self.session, PubRelationship,
+                      subject_id=self.pub.pub_id,
+                      object_id=pub.pub_id,
+                      type_id=cvterm.cvterm_id)
+
+    def make_obsolete(self, pub):
+        """
+        Make the pub obsolete
+        """
+        pub.is_obsolete = True
+
+    def process_related(self):
+        """
+        Process P30, P31 and P32 (also pub as, related pub, make secondary)
+        Each is a list so process accordingly.
+        """
+        if self.P30_also_published_as:
+            for fbrf in self.P30_also_published_as:
+                pub = self.get_related_pub(fbrf)
+                self.add_relationship(pub, 'also_in')
+        if self.P31_related_publications:
+            for fbrf in self.P31_related_publications:
+                pub = self.get_related_pub(fbrf)
+                self.add_relationship(pub, 'related_to')
+        if self.P32_make_secondary:
+            for fbrf in self.P32_make_secondary:
+                pub = self.get_related_pub(fbrf)
+                self.make_obsolete(pub)
 
     def get_pub(self):
         """
@@ -209,7 +258,7 @@ class ChadoPub(ChadoObject):
 
         # Update the direct column data in Pub
         self.update_pub()
-
+        self.process_related()
         self.update_pubprops()
 
         if self.P12_authors is not None:
