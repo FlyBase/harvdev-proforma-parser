@@ -27,6 +27,7 @@ class ChadoPub(ChadoObject):
         # Data
         self.bang_c = params.get('bang_c')
         self.P1_type = params['fields_values'].get('P1')
+        self.P2_multipub = params['fields_values'].get('P2')
         self.P3_volume_number = params['fields_values'].get('P3')
         self.P4_issue_number = params['fields_values'].get('P4')
         self.P10_pub_date = params['fields_values'].get('P10')
@@ -116,20 +117,20 @@ class ChadoPub(ChadoObject):
         self.current_query = "Looking up pub: {}.".format(tuple[FIELD_VALUE])
         return self.session.query(Pub).filter(Pub.uniquename == tuple[FIELD_VALUE]).one()
 
-    def add_relationship(self, pub, cvterm):
+    def add_relationship(self, subject_pub, object_pub, cvterm, query_source):
         """
-        add pub tp self.pub with cvterm specified
+        add relationship bewteen the two pubs with cvterm specified
         """
         # look up the cvterm
-        self.current_query_source = pub.uniquename
+        self.current_query_source = query_source
         self.current_query = "Querying for cvterm '{}' with cv of 'pub relationship type'.".format(cvterm)
         cvterm = self.session.query(Cvterm).join(Cv).filter(Cv.name == 'pub relationship type',
                                                             Cvterm.name == cvterm,
                                                             Cvterm.is_obsolete == 0).one()
         # now add the relationship
         get_or_create(self.session, PubRelationship,
-                      subject_id=self.pub.pub_id,
-                      object_id=pub.pub_id,
+                      subject_id=subject_pub.pub_id,
+                      object_id=object_pub.pub_id,
                       type_id=cvterm.cvterm_id)
 
     def make_obsolete(self, pub):
@@ -138,19 +139,72 @@ class ChadoPub(ChadoObject):
         """
         pub.is_obsolete = True
 
+    def get_parent_pub(self, pub):
+        """
+        Get the parent pub.
+        Return None if it does not have one. This is okay.
+        """
+        self.current_query_source = pub.uniquename
+        self.current_query = "Querying for cvterm 'published_in' with cv of 'pub relationship type'."
+        cvterm = self.session.query(Cvterm).join(Cv).filter(Cv.name == 'pub relationship type',
+                                                            Cvterm.name == 'published_in',
+                                                            Cvterm.is_obsolete == 0).one()
+
+        pr = self.session.query(PubRelationship).\
+            join(Pub, Pub.pub_id == PubRelationship.object_id).\
+            join(Cvterm).filter(PubRelationship.subject_id == pub.pub_id,
+                                PubRelationship.type_id == cvterm.cvterm_id).one_or_none()
+        log.debug("PR => {}".format(pr))
+        log.debug(dir(pr))
+        if not pr:
+            return None
+        return self.session.query(Pub).filter(Pub.pub_id == pr.subject_id).one()
+
+    def process_multipub(self, tuple):
+        """
+        Get P2 pub via the  miniref.
+        If P22 is new, NO further checks needed.
+        If P22 NOT new then
+              if it already has a relationship then check it is the same
+              if none exists no further checks needed.
+        Add relationship
+        """
+
+        self.current_query_source = tuple
+        self.current_query = "Querying for P2 miniref '{}'.".format(tuple[FIELD_VALUE])
+        p2_pub = self.session.query(Pub).filter(Pub.miniref == tuple[FIELD_VALUE]).one()
+
+        if self.P22_FlyBase_reference_ID[FIELD_VALUE] != 'new':
+            old_parent = self.get_parent_pub(self.pub)
+            if old_parent:
+                log.debug("old parent is {}".format(old_parent))
+                if old_parent.pub_id != p2_pub.pub_id:
+                    old_name = old_parent.miniref
+                    if not old_name:
+                        old_name = old_parent.uniquename
+                    self.current_query = 'P22 has a different parent {} than the one listed {} ()\n'.format(old_name, p2_pub.miniref, p2_pub.uniquename)
+                    self.current_query += 'Not allowed to change P2 if it already has one. without !c'
+                    raise ValidationError()
+                else:
+                    return
+        # Add the relationship as all is good.
+        self.add_relationship(self.pub, p2_pub, 'published_in', tuple)
+
     def process_related(self):
         """
         Process P30, P31 and P32 (also pub as, related pub, make secondary)
         Each is a list so process accordingly.
         """
+        if self.P2_multipub:
+            self.process_multipub(self.P2_multipub)
         if self.P30_also_published_as:
             for fbrf in self.P30_also_published_as:
                 pub = self.get_related_pub(fbrf)
-                self.add_relationship(pub, 'also_in')
+                self.add_relationship(self.pub, pub, 'also_in', self.P30_also_published_as)
         if self.P31_related_publications:
             for fbrf in self.P31_related_publications:
                 pub = self.get_related_pub(fbrf)
-                self.add_relationship(pub, 'related_to')
+                self.add_relationship(self.pub, pub, 'related_to', self.P31_related_publications)
         if self.P32_make_secondary:
             for fbrf in self.P32_make_secondary:
                 pub = self.get_related_pub(fbrf)
