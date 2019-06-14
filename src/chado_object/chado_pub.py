@@ -142,7 +142,7 @@ class ChadoPub(ChadoObject):
     def get_parent_pub(self, pub):
         """
         Get the parent pub.
-        Retrun None if it does not have one. Thuis is okay.
+        Return None if it does not have one. This is okay.
         """
         self.current_query_source = pub.uniquename
         self.current_query = "Querying for cvterm 'published_in' with cv of 'pub relationship type'."
