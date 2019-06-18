@@ -5,7 +5,6 @@
 .. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
 import logging
-from sqlalchemy.orm.exc import NoResultFound
 from harvdev_utils.production import (
     Cv, Cvterm, Feature, Pub, Synonym
 )
@@ -36,7 +35,7 @@ class ChadoObject(object):
 
     def cvterm_query(self, cv_name, cv_term_name, session):
         self.current_query = 'Querying for cv_term_name \'%s\'.' % (cv_term_name)
-        log.info(self.current_query)
+        log.debug(self.current_query)
 
         filters = (
             Cv.name == cv_name,
@@ -58,18 +57,17 @@ class ChadoObject(object):
         """
         self.current_query_source = fbrf_tuple
         self.current_query = 'Querying for FBrf \'%s\'.' % (fbrf_tuple[FIELD_VALUE])
-        log.info(self.current_query)
+        log.debug(self.current_query)
 
         pub = session.query(Pub).\
             filter(Pub.uniquename == fbrf_tuple[FIELD_VALUE]).\
-            one()      
+            one()
         return pub
-
 
     def feature_from_feature_name(self, feature_name, session):
         self.current_query_source = feature_name
         self.current_query = 'Querying for feature uniquename from feature id \'%s\'.' % (feature_name)
-        log.info(self.current_query)
+        log.debug(self.current_query)
 
         feature = session.query(Feature).\
             filter(Feature.name == feature_name).\
@@ -80,7 +78,7 @@ class ChadoObject(object):
     def synonym_id_from_synonym_symbol(self, synonym_name_tuple, synonym_type_id, session):
         self.current_query_source = synonym_name_tuple
         self.current_query = 'Querying for synonym \'%s\'.' % (synonym_name_tuple[FIELD_VALUE])
-        log.info(self.current_query)
+        log.debug(self.current_query)
 
         results = session.query(Synonym.synonym_id, Synonym.name, Synonym.type_id).\
             filter(Synonym.name == synonym_name_tuple[FIELD_VALUE]).\
