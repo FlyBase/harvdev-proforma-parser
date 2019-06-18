@@ -115,3 +115,13 @@ class ValidatorPub(ValidatorBase):
             return
         # check for duplicates in the list of fileds to check.
         self.check_for_duplicates(field, dict1, comp_fields)
+
+    def _validate_needs_pubmed_abtract(self, field, dict1, comp_fields):
+        """
+        Only used in new pubs. If pub tpye is one of a set then P34 must be set
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
+        """
+        if 'P1' in self.document and self.document['P1'] in ['paper', 'review', 'note', 'letter']:
+            if 'P34' not in self.document:
+                self._error('P34', 'P34 abstract must be set for paper, review, note or letter types.')
