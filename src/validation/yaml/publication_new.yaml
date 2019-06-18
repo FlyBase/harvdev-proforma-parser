@@ -73,6 +73,15 @@ P22:
 P23:
   required: False
   type: string
+P26:
+  required: False
+  regex: ^(\d+)$
+P28:
+  required: False
+  regex: ^(PMC\d+)$
+P29:
+  required: False
+  regex: ^(\d{10}|\d{13})$
 P30:
   required: False
   type: string

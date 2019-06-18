@@ -39,3 +39,19 @@ class ValidatorBase(Validator):
             return
         if 'bangc' in self.document and self.document['bangc'] == field:
             self._error(field, '{} not allowed with bang c'.format(field))
+
+    def _validate_need_data(self, field, dict1, comp_fields):
+        """
+        Throws error if comp_fields do NOT have data.
+        The rule's arguments are validated against this schema:
+        {'type': 'string'}
+        """
+        pass
+
+    def _validate_no_data(self, field, dict1, comp_fields):
+        """
+        Throws error if comp_fields do have data.
+        The rule's arguments are validated against this schema:
+        {'type': 'string'}
+        """
+        pass

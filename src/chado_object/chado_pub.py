@@ -43,6 +43,9 @@ class ChadoPub(ChadoObject):
         self.P19_internal_notes = params['fields_values'].get('P19')
         self.P22_FlyBase_reference_ID = params['fields_values'].get('P22')
         self.P23_personal_com = params['fields_values'].get('P23')
+        self.P26_pubmed_id = params['fields_values'].get('P26')
+        self.P28_pubmed_central_id = params['fields_values'].get('P28')
+        self.P29_isbn = params['fields_values'].get('P29')
         self.P30_also_published_as = params['fields_values'].get('P30')
         self.P31_related_publications = params['fields_values'].get('P31')
         self.P32_make_secondary = params['fields_values'].get('P32')
@@ -253,7 +256,8 @@ class ChadoPub(ChadoObject):
 
         pub_data => [[key, pubprop name, debug message],...]
         """
-        pub_data = [[self.P13_language, 'languages', 'No language specified, skipping languages transaction.'],
+        pub_data = [[self.P11b_url, 'URL', 'No URL specified, skipping URL'],
+                    [self.P13_language, 'languages', 'No language specified, skipping languages transaction.'],
                     [self.P14_additional_language, 'abstract_languages', 'No additional language specified, skipping additional language transaction.'],
                     [self.P19_internal_notes, 'internalnotes', 'No internal notes found, skipping internal notes transaction.'],
                     [self.P23_personal_com, 'perscommtext', 'No personal communication, skipping personal communication notes transaction.'],
@@ -327,24 +331,27 @@ class ChadoPub(ChadoObject):
             elif self.pub.pages:
                 if self.P11a_page_range:
                     self.current_query_source = self.P11a_page_range
-                    self.current_query = 'P11a page range "{}" does not match "{}" already in chado\n'.format(self.P11a_page_range, self.pub.pages)
+                    self.current_query = 'P11a page range "{}" does not match "{}" already in chado.\n'.format(self.P11a_page_range, self.pub.pages)
                     raise ValidationError()
 
-    def update_P11_fields(self):
+    def update_dbxrefs(self):
+        """
+        dbxref fiedls to update.
+        """
+        data = [[self.P11c_san, 'GB'],
+                [self.P11d_doi, 'DOI'],
+                [self.P26_pubmed_id, 'pubmed'],
+                [self.P28_pubmed_central_id, 'PMCID'],
+                [self.P29_isbn, 'isbn']]
+        for row in data:
+            if row[0]:
+                self.load_pubdbxref(row[1], row[0])
+
+    def extra_checks(self):
         """
         Not all tests can be done in the validator as if the P11x is blank no checks are done.
         """
-
         self.do_P11_checks()
-
-        if self.P11a_page_range:
-            self.pub.pages = self.P11a_page_range[FIELD_VALUE]
-        if self.P11b_url:
-            self.load_pubprop('pubprop type', 'URL', self.P11b_url)
-        if self.P11c_san:
-            self.load_pubdbxref('GB', self.P11c_san)
-        if self.P11d_doi:
-            self.load_pubdbxref('DOI', self.P11d_doi)
 
     def update_pub(self):
         """
@@ -352,7 +359,8 @@ class ChadoPub(ChadoObject):
         """
         if self.P10_pub_date:
             self.pub.pyear = self.P10_pub_date[FIELD_VALUE]
-        self.update_P11_fields()
+        if self.P11a_page_range:
+            self.pub.pages = self.P11a_page_range[FIELD_VALUE]
         if self.P16_title:
             self.pub.title = self.P16_title[FIELD_VALUE]
         if self.P3_volume_number:
@@ -365,6 +373,7 @@ class ChadoPub(ChadoObject):
         self.pub = self.get_pub()
         if not self.pub:
             return
+        self.extra_checks()
 
         # bang c first as this trumps all things
         if self.bang_c:
@@ -373,8 +382,10 @@ class ChadoPub(ChadoObject):
 
         # Update the direct column data in Pub
         self.update_pub()
+
         self.process_related()
         self.update_pubprops()
+        self.update_dbxrefs()
 
         if self.P12_authors is not None:
             for author in self.P12_authors:
