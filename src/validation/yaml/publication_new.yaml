@@ -4,6 +4,7 @@ P1:
   P22_unattributed_no_value: True
   required: True
   needs_pubmed_abtract: True
+  paper_journal: True
 P2:
   type: string
   required: False
@@ -20,7 +21,6 @@ P10:
 P11a:
   required: False
   type: string
-  new_paper_journal: True
   excludes: ['P11b', 'P11c', 'P11d']
 P11b:
   required: False

@@ -35,7 +35,7 @@ class ValidatorPub(ValidatorBase):
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
-        log.info("Testing P22 unat {} {} {}".format(field, other, value))
+        log.debug("Testing P22 unat {} {} {}".format(field, other, value))
         if self.document['P22'] == 'unattributed' and value and len(value):
             self._error(field, 'Cannot set {} for an unattributed Pub. You have passed it "{}"'.format(field, value))
 
@@ -104,9 +104,9 @@ class ValidatorPub(ValidatorBase):
         The rule's arguments are validated against this schema:
         {'type': 'string'}
         """
-        log.info("Running check no duplicates with {} wrt {} {}".format(comp_fields, field, value))
+        log.debug("Running check no duplicates with {} wrt {} {}".format(comp_fields, field, value))
         if type(value) is not list:
-            log.info("Was expecting a list but we have '{}' for {}".format(value, field))
+            log.debug("Was expecting a list but we have '{}' for {}".format(value, field))
             return
 
         # self compare and build first dict
@@ -126,10 +126,12 @@ class ValidatorPub(ValidatorBase):
             if 'P34' not in self.document:
                 self._error('P34', 'P34 abstract must be set for paper, review, note or letter types.')
 
-    def _validate_new_paper_journal(self, P11a_text, field, value):
+    def _validate_paper_journal(self, P1_text, field, value):
         """
         If P22 is new pub and type is a journal or paper then P11a MUST be set
         """
+        log.debug("Testing new paper journal")
         if self.document['P22'] == 'new' and self.document['P1'] in ['paper', 'journal']:
+            log.debug("new and P1 is paper or journal")
             if 'P11a' not in self.document:
                 self._error('P11a', 'P11a (pages) must be set for a new pub of type {}.'.format(self.document['P1']))
