@@ -115,23 +115,3 @@ class ValidatorPub(ValidatorBase):
             return
         # check for duplicates in the list of fileds to check.
         self.check_for_duplicates(field, dict1, comp_fields)
-
-    def _validate_needs_pubmed_abtract(self, field, dict1, comp_fields):
-        """
-        Only used in new pubs. If pub type is one of a set then P34 must be set
-        The rule's arguments are validated against this schema:
-        {'type': 'boolean'}
-        """
-        if 'P1' in self.document and self.document['P1'] in ['paper', 'review', 'note', 'letter']:
-            if 'P34' not in self.document:
-                self._error('P34', 'P34 abstract must be set for paper, review, note or letter types.')
-
-    def _validate_paper_journal(self, P1_text, field, value):
-        """
-        If P22 is new pub and type is a journal or paper then P11a MUST be set
-        """
-        log.debug("Testing new paper journal")
-        if self.document['P22'] == 'new' and self.document['P1'] in ['paper', 'journal']:
-            log.debug("new and P1 is paper or journal")
-            if 'P11a' not in self.document:
-                self._error('P11a', 'P11a (pages) must be set for a new pub of type {}.'.format(self.document['P1']))
