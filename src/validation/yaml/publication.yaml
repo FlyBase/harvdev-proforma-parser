@@ -20,15 +20,20 @@ P11a:
   required: False
   P22_unattributed_no_value: True
   type: string
+  new_paper_journal: True
+  excludes: ['P11b', 'P11c', 'P11d']
 P11b:
   required: False
   type: string
+  excludes: ['P11a', 'P11c', 'P11d']
 P11c:
   required: False
   type: string
+  excludes: ['P11a', 'P11b', 'P11d']
 P11d:
   required: False
   type: string
+  excludes: ['P11a', 'P11b', 'P11c']
 P12:
   type: [string, list]
   required: False

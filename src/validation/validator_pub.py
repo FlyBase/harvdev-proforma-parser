@@ -125,3 +125,11 @@ class ValidatorPub(ValidatorBase):
         if 'P1' in self.document and self.document['P1'] in ['paper', 'review', 'note', 'letter']:
             if 'P34' not in self.document:
                 self._error('P34', 'P34 abstract must be set for paper, review, note or letter types.')
+
+    def _validate_new_paper_journal(self, P11a_text, field, value):
+        """
+        If P22 is new pub and type is a journal or paper then P11a MUST be set
+        """
+        if self.document['P22'] == 'new' and self.document['P1'] in ['paper', 'journal']:
+            if 'P11a' not in self.document:
+                self._error('P11a', 'P11a (pages) must be set for a new pub of type {}.'.format(self.document['P1']))

@@ -289,50 +289,22 @@ class ChadoPub(ChadoObject):
 
     def do_P11_checks(self):
         """
-        Do checks for P11x fields.
-        Can be given as warnings or raises Exception
+        Check if P11 already has a value. If it matches all well and good.
+        If not throw an exception. (!c must be used here)
         """
-
-        """
-        Only one of a, b or c  can be specified.
-        """
-        """
-        P11a)
-            ### Field mandatorially has value:
-
-            Yes if P22 is 'new' and P1 contains either
-            'paper' or 'review' otherwise no.
-        """
-        if self.P22_FlyBase_reference_ID[FIELD_VALUE] == 'new' and self.P1_type in ['paper', 'journal']:
-            if not self.P11a_page_range:
-                self.current_query_source = self.P11a_page_range
-                self.current_query = 'P11a is required as the publication is new and type is {}\n'.format(self.P1_type)
-                raise ValidationError()
-
-        """
-        If P11a data is empty:
-        None of P11a through P11d have any data.
-        But give warning ONLY.
-        """
-        if (not self.P11a_page_range) and (self.P11b_url or self.P11c_san or self.P11d_doi):
-            log.warning('P11a is blank but one of P11b->d is specified???')
 
         """
         If existing pages retrieved from chado via FBrf:
         P11a:  Trying to change <chado-pages> to '<your-pages>' but it isn't yet in Chado.
                # Bang C i guess, not implenented yet ??????????? the one above
 
-        P11a:  Trying to change <chado-pages> to the value (<your-pages>) it already has in Chado.
         P11a:  Trying to set <pages> to '<your-pages>' but it is '<chado-pages>' in Chado.
         """
         if self.P22_FlyBase_reference_ID[FIELD_VALUE] != 'new':
-            if self.pub.pages and self.P11a_page_range and self.pub.pages == self.P11a_page_range[FIELD_VALUE]:
-                log.warning('Pages specified to "{}" but already set to this in chado.'.format(self.pub.pages))
-            elif self.pub.pages:
-                if self.P11a_page_range:
-                    self.current_query_source = self.P11a_page_range
-                    self.current_query = 'P11a page range "{}" does not match "{}" already in chado.\n'.format(self.P11a_page_range, self.pub.pages)
-                    raise ValidationError()
+            if self.pub.pages and self.P11a_page_range and self.pub.pages != self.P11a_page_range[FIELD_VALUE]:
+                self.current_query_source = self.P11a_page_range
+                self.current_query = 'P11a page range "{}" does not match "{}" already in chado.\n'.format(self.P11a_page_range, self.pub.pages)
+                raise ValidationError()
 
     def update_dbxrefs(self):
         """
@@ -369,7 +341,9 @@ class ChadoPub(ChadoObject):
             self.pub.issue = self.P4_issue_number[FIELD_VALUE]
 
     def load_content(self):
-
+        """
+        Main processing routine
+        """
         self.pub = self.get_pub()
         if not self.pub:
             return
@@ -428,7 +402,6 @@ class ChadoPub(ChadoObject):
         self.current_query = "Looking up cvterm: {} {}.".format(cv_name, cv_term_name)
         cv_term_id = super(ChadoPub, self).cvterm_query(cv_name, cv_term_name, self.session)
 
-        self.current_query_source = value_to_add_tuple
         self.current_query = 'Querying for FBrf \'%s\'.' % (value_to_add_tuple[FIELD_VALUE])
         log.debug(self.current_query)
 
