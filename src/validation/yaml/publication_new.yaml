@@ -11,7 +11,7 @@ P1:
     - allowed: [paper, journal]
       dependencies: P11a
     - forbidden: [paper, journal]
-  forbidden: ['journal']
+  forbidden: ['journal', 'compendium']
 P2:
   type: string
   required: False
