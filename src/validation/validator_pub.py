@@ -118,7 +118,7 @@ class ValidatorPub(ValidatorBase):
 
     def _validate_needs_pubmed_abtract(self, field, dict1, comp_fields):
         """
-        Only used in new pubs. If pub tpye is one of a set then P34 must be set
+        Only used in new pubs. If pub type is one of a set then P34 must be set
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
