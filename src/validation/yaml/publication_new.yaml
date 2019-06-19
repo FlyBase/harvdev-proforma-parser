@@ -1,6 +1,5 @@
 P1:
   type: string
-  P1_valid: True
   P22_unattributed_no_value: True
   required: True
   allof:
@@ -12,6 +11,7 @@ P1:
     - allowed: [paper, journal]
       dependencies: P11a
     - forbidden: [paper, journal]
+  forbidden: ['journal']
 P2:
   type: string
   required: False

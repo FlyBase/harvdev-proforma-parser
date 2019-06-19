@@ -13,19 +13,6 @@ class ValidatorPub(ValidatorBase):
     Subclasses of this validator can be found in the additional files within this directory.
     """
 
-    def _validate_P1_valid(self, P1_text, field, value):
-        """
-        Basically P1 not allowed to be journal or compendium.
-
-        The docstring statement below provides a schema to validate the 'P1_text' argument.
-
-        The rule's arguments are validated against this schema:
-        {'type': 'boolean'}
-        """
-        non_valid_P1 = ['compendium', 'journal']
-        if P1_text and value in non_valid_P1:
-            self._error(field, '{} did not validate. {} are NOT allowed values'.format(value, non_valid_P1))
-
     def _validate_P22_unattributed_no_value(self, other, field, value):
         """
         if P22 is 'unattributed' then value is not allowed to be defined
