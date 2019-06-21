@@ -135,12 +135,12 @@ class ValidatorPub(ValidatorBase):
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
-        if 'P44' in self.documents:
+        if 'P44' in self.document:
             return
-        if 'P41' in self.documents and 'P43' in self.documents:
-            if 'disease' in self.documents['P41'] and 'disease' in self.documents['P43']:
+        if 'P41' in self.document and 'P43' in self.document:
+            if 'disease' in self.document['P41'] and 'disease' in self.document['P43']:
                 self._error('P44', 'Error P44 must have an entry as disease flag is set in both P41 and P43.')
-            if 'diseaseHP' in self.documents['P41'] and 'diseaseHP' in self.documents['P43']:
+            if 'diseaseHP' in self.document['P41'] and 'diseaseHP' in self.document['P43']:
                 self._error('P44', 'Error P44 must have an entry as diseaseHP flag is set in both P41 and P43.')
         else:
             return

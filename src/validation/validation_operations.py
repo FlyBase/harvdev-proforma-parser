@@ -97,6 +97,7 @@ def validation_file_schema_lookup(proforma_type, fields_values):
 
     return(yaml_file_location, validator)
 
+
 def validation_field_to_dict(fields_values):
     # Changing "fields_values" from a dictionary of tuple values to
     # a dictionary with string/list values.
@@ -122,7 +123,8 @@ def validation_field_to_dict(fields_values):
             sys.exit(-1)
     return field_value_validation_dict
 
-def validate_proforma_object(filename, proforma_type, proforma_line, fields_values):
+
+def validate_proforma_object(proforma):
     """
     Validate a proforma object against a YAML schema using Cerberus.
 
@@ -134,6 +136,10 @@ def validate_proforma_object(filename, proforma_type, proforma_line, fields_valu
     Returns:
         errors (dict): A dictionary containing errors from validation.
     """
+    proforma_type = proforma.proforma_type
+    filename = proforma.file_metadata['filename']
+    proforma_line = proforma.proforma_start_line_number
+    fields_values = proforma.fields_values
 
     log.info('Validating proforma object.')
 
@@ -148,7 +154,8 @@ def validate_proforma_object(filename, proforma_type, proforma_line, fields_valu
 
     schema = yaml.full_load(schema_file)
     log.debug('Schema used: {}'.format(schema))
-    validator = validatortype(schema)  # Custom validator for specific object.
+
+    validator = validatortype(schema, proforma.file_metadata['record_type'], proforma.bang_c, proforma.bang_d)  # Custom validator for specific object.
 
     # Changing "fields_values" from a dictionary of tuple values to
     # a dictionary with string/list values.
@@ -172,7 +179,7 @@ def validate_proforma_object(filename, proforma_type, proforma_line, fields_valu
         for field, values in validator.errors.items():
             log.debug('Error items below:')
             log.debug(validator.errors.items())
-            if type(values[0]) is str:
+            if type(values[0]) is str and type(field) is str:
                 error_data = field + ": " + values[0]
                 ErrorTracking(filename, proforma_line, 'Validation unsuccessful', error_data)
             elif type(values[0]) is dict:

@@ -81,13 +81,13 @@ def process_proforma_file(file_location_from_list, curator_dict):
         # FBrf to add is only populated from the publications proforma (after validation).
         # It's added to every other type of proforma object as we loop through the list.
 
-        proforma_type, filename, proforma_start_line_number, fields_values = individual_proforma_object.get_data_for_processing()
+        # proforma_type, filename, proforma_start_line_number, fields_values = individual_proforma_object.get_data_for_processing()
 
-        log.info('Processing Proforma object type %s' % (proforma_type))
-        log.info('From file: %s' % (filename))
-        log.info('From line: %s' % (proforma_start_line_number))
+        log.info('Processing Proforma object type %s' % (individual_proforma_object.proforma_type))
+        log.info('From file: %s' % (individual_proforma_object.file_metadata['filename']))
+        log.info('From line: %s' % (individual_proforma_object.proforma_start_line_number))
 
-        validate_proforma_object(filename, proforma_type, proforma_start_line_number, fields_values)
+        validate_proforma_object(individual_proforma_object)
 
         # individual_proforma_object.update_errors(errors)
 
@@ -98,12 +98,12 @@ def process_proforma_file(file_location_from_list, curator_dict):
     # Obtain the FBrf and other data from the first item in the list. Should be a pub proforma.
 
     # TODO Check that this entry is a pub proforma. Also implement workaround for processing DATABASE proforma which don't have pubs.
-    proforma_type, filename, proforma_start_line_number, fields_values = list_of_proforma_objects[0].get_data_for_processing()
-    log.info('Found reference %s from %s.' % (fields_values['P22'][1], filename))
-    log.info('Attaching %s from field %s, line %s to all subsequent proforma objects.' % (fields_values['P22'][1], 'P22', fields_values['P22'][2]))
+    # proforma_type, filename, proforma_start_line_number, fields_values = list_of_proforma_objects[0].get_data_for_processing()
+    # log.info('Found reference %s from %s.' % (list_of_proforma_objects[0].fields_values['P22'][1], list_of_proforma_objects[0]filename))
+    # log.info('Attaching %s from field %s, line %s to all subsequent proforma objects.' % (fields_values['P22'][1], 'P22', fields_values['P22'][2]))
 
     for individual_proforma_object in list_of_processed_proforma_objects:
-        individual_proforma_object.add_pub_data(fields_values['P22'])
+        individual_proforma_object.add_pub_data(list_of_proforma_objects[0].fields_values['P22'])
 
     log.info('Successfully attached pub data to {} proforma objects'.format(len(list_of_processed_proforma_objects)))
 
@@ -211,13 +211,14 @@ class ProformaFile(object):
         filename_short = self.filename.rsplit('/', 1)[-1]
 
         curator_initials = None
+        record_type = None
         harv_pattern = r"""
             ^            # match from the start
             \d+          # string of integers
             \.           # a dot
             (\w+)        # The user initials
             \.           # a dot
-            \w+          # type of proforma (noy kept used here)
+            (\w+)        # type of proforma
             \.           # a dot
             \d+          # string of integers
             $            # end of the string"""
@@ -227,20 +228,20 @@ class ProformaFile(object):
             (\w+)        # The user initials
             \d+          # string of integers
             \.           # a dot
-            \w+          # type of proforma
+            (\w+)        # type of proforma
             $            # end of the string"""
 
         fields = re.search(harv_pattern, filename_short, re.VERBOSE)
         if fields:
-            if fields.group(1):
-                curator_initials = fields.group(1)
+            curator_initials = fields.group(1)
+            record_type = fields.group(2)
         else:
             fields = re.search(cam_pattern, filename_short, re.VERBOSE)
             if fields:
-                if fields.group(1):
-                    curator_initials = fields.group(1)
+                curator_initials = fields.group(1)
+                record_type = fields.group(2)
 
-        return curator_initials, filename_short
+        return curator_initials, record_type, filename_short
 
     def extract_curator_fullname(self, curator_initials):
 
@@ -257,7 +258,7 @@ class ProformaFile(object):
 
         return curator_fullname
 
-    def process_line(self, line_number, current_line, individual_proforma, file_metadata):
+    def process_line(self, field, line_number, current_line, individual_proforma, file_metadata):
         """
         Process the line and store in the data in the proforma object
         """
@@ -266,7 +267,9 @@ class ProformaFile(object):
             if field == 'C1':
                 file_metadata['curator_initials'] = value
                 file_metadata['curator_fullname'] = self.extract_curator_fullname(file_metadata['curator_initials'])
-            # C2 and C3 ignored for now.
+            #  TODO: C2 C3 but what to do with them amyway???
+            if field == 'C4':
+                file_metadata['record_type'] = value
             return
         elif (current_line.startswith('!c') or
               current_line.startswith('!d') or
@@ -288,6 +291,7 @@ class ProformaFile(object):
                 log.critical('Please check whether this file is valid proforma.')
                 log.critical('Exiting.')
                 sys.exit(-1)
+        return field
 
     def separate_and_identify_proforma_type(self):
         """
@@ -301,24 +305,26 @@ class ProformaFile(object):
         list_of_proforma_objects = []
 
         # Obtain curator information from the filename and the curator dictionary from the config file.
-        curator_initials, filename_short = self.extract_curator_initials_and_filename_short()
+        curator_initials, record_type, filename_short = self.extract_curator_initials_and_filename_short()
         log.info('Initials are %s' % (curator_initials))
         if curator_initials:
             curator_fullname = self.extract_curator_fullname(curator_initials)
         else:
             curator_fullname = None
+
         # This content should remain static and be used for every proforma entry.
         file_metadata = {
             'filename': self.filename,
             'filename_short': filename_short,
             'curator_initials': curator_initials,
-            'curator_fullname': curator_fullname
+            'curator_fullname': curator_fullname,
+            'record_type': record_type
         }
 
         # Variables used for the upcoming loop.
         individual_proforma = None
         proforma_type = None
-        # field = None
+        field = None
         line_number = 0
 
         # Iterate through the content looking at the current and next line.
@@ -341,7 +347,7 @@ class ProformaFile(object):
                 list_of_proforma_objects.append(individual_proforma)  # add the last proforma entry to the list.
                 break  # fin.
             else:
-                self.process_line(line_number, current_line, individual_proforma, file_metadata)
+                field = self.process_line(field, line_number, current_line, individual_proforma, file_metadata)
         return(list_of_proforma_objects)
 
 
@@ -380,14 +386,15 @@ class Proforma(object):
         if value == '':  # Leave this function if the value is an empty string.
             return
 
-        # remove spaces form start and end of string
+        # remove spaces from start and end of string
         value = value.strip()
 
         # A list of fields where values might span multiple lines
         # but they need to be treated as a single entry.
         # Not a fan of hard-coding fields here but I can't seem to find a way around it.
         list_of_fields_with_wrapping_values = [
-            'P19'
+            'P19',
+            'P34'
         ]
 
         # TODO Generate this list from the validation YAML.
@@ -396,13 +403,8 @@ class Proforma(object):
         # Basically, if a field *can* be a list, it will be turned into a list.
         list_of_fields_that_should_be_lists = [
             'P12',
-            'P30',
-            'P31',
-            'P32',
-            'P40',
-            'P41',
-            'P42',
-            'P43',
+            'P30', 'P31', 'P32',  # related/secondary pubs
+            'P40', 'P41', 'P42', 'P43',  # Flags
             'G1b',
             'G2b',
         ]
@@ -466,8 +468,8 @@ class Proforma(object):
             self.bang_d = field
             log.debug('!d field detected for %s. Adding flag to object.' % (field))
 
-    def get_data_for_processing(self):
-        return(self.proforma_type, self.file_metadata['filename'], self.proforma_start_line_number, self.fields_values)
+    # def get_data_for_processing(self):
+    #    return(self.proforma_type, self.file_metadata['filename'], self.proforma_start_line_number, self.fields_values)
 
     def get_data_for_loading(self):
         return(self.file_metadata, self.bang_c, self.bang_d, self.proforma_start_line_number, self.fields_values)
