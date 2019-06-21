@@ -455,7 +455,6 @@ class Proforma(object):
                 # TODO Update error tracking.
 
             self.bang_c = field
-            self.fields_values['bang_c'] = (field, field, line_number)  # needed for cerberus
             log.debug('!c field detected for %s. Adding flag to object.' % (field))
 
         elif type_of_bang == 'd':
