@@ -52,6 +52,9 @@ class ChadoPub(ChadoObject):
         self.P34_abstract = params['fields_values'].get('P34')
         self.P40_flag_cambridge = params['fields_values'].get('P40')
         self.P41_flag_harvard = params['fields_values'].get('P41')
+        self.P42_flag_ontologist = params['fields_values'].get('P42')
+        self.P43_flag_disease = params['fields_values'].get('P43')
+        self.P44_disease_notes = params['fields_values'].get('P44')
         self.P45_Not_dros = params['fields_values'].get('P45')
         # Values queried later, placed here for reference purposes.
         self.pub = None
@@ -248,7 +251,7 @@ class ChadoPub(ChadoObject):
         """
         Delete everything wrt this pub and itself?
         """
-        log.critial("Not coded !c yet")
+        log.critical("Not coded !c yet")
 
     def load_pubprop_singles(self):
         """
@@ -262,10 +265,28 @@ class ChadoPub(ChadoObject):
                     [self.P19_internal_notes, 'internalnotes', 'No internal notes found, skipping internal notes transaction.'],
                     [self.P23_personal_com, 'perscommtext', 'No personal communication, skipping personal communication notes transaction.'],
                     [self.P34_abstract, 'pubmed_abstract',  'No Abtract, skipping addition of abstract.'],
+                    [self.P44_disease_notes, 'diseasenotes', 'No disease notes, so skipping disease notes transactions.'],
                     [self.P45_Not_dros, 'not_Drospub', 'Drosophila pub, so no need to set NOT dros flag.']]
         for row in pub_data:
             if row[0]:
                 self.load_pubprop('pubprop type', row[1], row[0])
+            else:
+                log.debug(row[2])
+
+    def load_pubprops_lists(self):
+        """
+        Update the pubprops that can be lists
+        """
+        data_list = [
+            [self.P40_flag_cambridge, 'cam_flag', 'No Cambridge flags found, skipping Cambridge flags transaction.'],
+            [self.P41_flag_harvard, 'harv_flag', 'No Harvard flags found, skipping Harvard flags transaction.'],
+            [self.P42_flag_ontologist, 'onto_flag', 'No Ontology flags found, skipping Ontology flags transaction.'],
+            [self.P43_flag_disease, 'dis_flag', 'No Disease flags found, skipping Disease flags transaction.']]
+
+        for row in data_list:
+            if row[0]:
+                for entry in row[0]:
+                    self.load_pubprop('pubprop type', row[1], entry)
             else:
                 log.debug(row[2])
 
@@ -274,18 +295,7 @@ class ChadoPub(ChadoObject):
         Update all the pub props.
         """
         self.load_pubprop_singles()
-
-        if self.P40_flag_cambridge is not None:
-            for cam_entry in self.P40_flag_cambridge:
-                self.load_pubprop('pubprop type', 'cam_flag', cam_entry)
-        else:
-            log.debug('No Cambridge flags found, skipping Cambridge flags transaction.')
-
-        if self.P41_flag_harvard is not None:
-            for harv_entry in self.P41_flag_harvard:
-                self.load_pubprop('pubprop type', 'harv_flag', harv_entry)
-        else:
-            log.debug('No Harvard flags found, skipping Harvard flags transaction.')
+        self.load_pubprops_lists()
 
     def do_P11_checks(self):
         """

@@ -257,6 +257,38 @@ class ProformaFile(object):
 
         return curator_fullname
 
+    def process_line(self, line_number, current_line, individual_proforma, file_metadata):
+        """
+        Process the line and store in the data in the proforma object
+        """
+        if current_line.startswith('! C'):
+            field, value, type_of_bang = self.get_proforma_field_and_content(current_line)
+            if field == 'C1':
+                file_metadata['curator_initials'] = value
+                file_metadata['curator_fullname'] = self.extract_curator_fullname(file_metadata['curator_initials'])
+            # C2 and C3 ignored for now.
+            return
+        elif (current_line.startswith('!c') or
+              current_line.startswith('!d') or
+              current_line.startswith('! ')):
+            field, value, type_of_bang = self.get_proforma_field_and_content(current_line)
+            log.debug(current_line)
+            log.debug(line_number)
+            individual_proforma.add_field_and_value(field, value, line_number)
+            if type_of_bang:
+                individual_proforma.add_bang(field, value, line_number, type_of_bang)
+        else:
+            # We're in a line which contains a value for the previously defined field.
+            # Add the entire contents of the line to the previously defined field.
+            try:
+                individual_proforma.add_field_and_value(field, current_line, line_number)
+            except AttributeError:
+                log.critical('Attribute error occurred when processing %s' % (self.filename))
+                log.critical('Unable to parse line %s' % (line_number))
+                log.critical('Please check whether this file is valid proforma.')
+                log.critical('Exiting.')
+                sys.exit(-1)
+
     def separate_and_identify_proforma_type(self):
         """
         Scan the incoming data from the proforma file and identify the type.
@@ -286,7 +318,7 @@ class ProformaFile(object):
         # Variables used for the upcoming loop.
         individual_proforma = None
         proforma_type = None
-        field = None
+        # field = None
         line_number = 0
 
         # Iterate through the content looking at the current and next line.
@@ -309,34 +341,7 @@ class ProformaFile(object):
                 list_of_proforma_objects.append(individual_proforma)  # add the last proforma entry to the list.
                 break  # fin.
             else:
-                if current_line.startswith('! C'):
-                    field, value, type_of_bang = self.get_proforma_field_and_content(current_line)
-                    if field == 'C1':
-                        file_metadata['curator_initials'] = value
-                        file_metadata['curator_fullname'] = self.extract_curator_fullname(file_metadata['curator_initials'])
-                    # C2 and C3 ignored for now.
-                    continue
-                elif (current_line.startswith('!c') or
-                      current_line.startswith('!d') or
-                      current_line.startswith('! ')):
-                    field, value, type_of_bang = self.get_proforma_field_and_content(current_line)
-                    log.debug(current_line)
-                    log.debug(line_number)
-                    individual_proforma.add_field_and_value(field, value, line_number)
-                    if type_of_bang:
-                        individual_proforma.add_bang(field, type_of_bang)
-                else:
-                    # We're in a line which contains a value for the previously defined field.
-                    # Add the entire contents of the line to the previously defined field.
-                    try:
-                        individual_proforma.add_field_and_value(field, current_line, line_number)
-                    except AttributeError:
-                        log.critical('Attribute error occurred when processing %s' % (self.filename))
-                        log.critical('Unable to parse line %s' % (line_number))
-                        log.critical('Please check whether this file is valid proforma.')
-                        log.critical('Exiting.')
-                        sys.exit(-1)
-
+                self.process_line(line_number, current_line, individual_proforma, file_metadata)
         return(list_of_proforma_objects)
 
 
@@ -384,7 +389,7 @@ class Proforma(object):
         list_of_fields_with_wrapping_values = [
             'P19'
         ]
- 
+
         # TODO Generate this list from the validation YAML.
         # A list of fields which should always be handled as lists, even if they are single values.
         # This saves a tremendous amount of downstream code in handling strings vs lists.
@@ -393,9 +398,11 @@ class Proforma(object):
             'P12',
             'P30',
             'P31',
-            'P32',            
+            'P32',
             'P40',
             'P41',
+            'P42',
+            'P43',
             'G1b',
             'G2b',
         ]
@@ -423,14 +430,14 @@ class Proforma(object):
                     sys.exit(-1)
         else:  # If the key doesn't exist, add it.
             if field in list_of_fields_that_should_be_lists:
-                log.info('Adding field %s : value %s from line %s to the Proforma object as a new list.' % (field, value, line_number))
+                log.debug('Adding field %s : value %s from line %s to the Proforma object as a new list.' % (field, value, line_number))
                 self.fields_values[field] = []
                 self.fields_values[field].append((field, value, line_number))
             else:
                 self.fields_values[field] = (field, value, line_number)
-                log.info('Adding field %s : value %s from line %s to the Proforma object.' % (field, value, line_number))
+                log.debug('Adding field %s : value %s from line %s to the Proforma object.' % (field, value, line_number))
 
-    def add_bang(self, field, type_of_bang):
+    def add_bang(self, field, value, line_number, type_of_bang):
         """
         Sets the bang_c or bang_d property of the object if found on a proforma line.
 
@@ -446,7 +453,8 @@ class Proforma(object):
                 # TODO Update error tracking.
 
             self.bang_c = field
-            log.info('!c field detected for %s. Adding flag to object.' % (field))
+            self.fields_values['bang_c'] = (field, field, line_number)  # needed for cerberus
+            log.debug('!c field detected for %s. Adding flag to object.' % (field))
 
         elif type_of_bang == 'd':
             if self.bang_d is not None:
@@ -456,7 +464,7 @@ class Proforma(object):
                 # TODO Update to new error tracking.
 
             self.bang_d = field
-            log.info('!d field detected for %s. Adding flag to object.' % (field))
+            log.debug('!d field detected for %s. Adding flag to object.' % (field))
 
     def get_data_for_processing(self):
         return(self.proforma_type, self.file_metadata['filename'], self.proforma_start_line_number, self.fields_values)

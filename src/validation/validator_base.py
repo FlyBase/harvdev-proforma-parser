@@ -35,9 +35,8 @@ class ValidatorBase(Validator):
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
-        if not no_bangc:
-            return
-        if 'bangc' in self.document and self.document['bangc'] == field:
+        log.debug("NO BANG C TEST:{}".format(self.document))
+        if 'bang_c' in self.document and self.document['bang_c'] == field:
             self._error(field, '{} not allowed with bang c'.format(field))
 
     def _validate_need_data(self, field, dict1, comp_fields):

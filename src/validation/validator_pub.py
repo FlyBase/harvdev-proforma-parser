@@ -102,3 +102,45 @@ class ValidatorPub(ValidatorBase):
             return
         # check for duplicates in the list of fileds to check.
         self.check_for_duplicates(field, dict1, comp_fields)
+
+    def _validate_P1_dependencies(self, P1_text, field, value):
+        """
+        for new pubs:-
+        if P1 one of [paper, review, note, letter] then P34 MUST be set.
+        If P1 one of [paper, journal] the P11a Must be set.
+
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
+        """
+        if value in ['paper', 'journal']:
+            if 'P11a' not in self.document:
+                self._error(field, 'Error P1 is {}, therefore page_range (P11a) must be specified'.format(value))
+        if value in ['paper', 'review', 'note', 'letter']:
+            if 'P34' not in self.document:
+                self._error(field, 'Error P1 is {}, therefore an abstract (P34) must be specified'.format(value))
+
+    def _validate_disease_name(self, do_test, field, value):
+        """
+        ! P44. Disease(s) relevant to FBrf [free text] :
+        DESCRIPTION.
+        Internal free text (not web-visible) stating the human disease(s) that are modeled in the paper.
+
+        FIELD TYPE.
+
+        Free text (@@ forbidden)
+
+        REQUIRED ENTRY?
+
+        Yes if P41 and P43 contain the flag disease No otherwise
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
+        """
+        if 'P44' in self.documents:
+            return
+        if 'P41' in self.documents and 'P43' in self.documents:
+            if 'disease' in self.documents['P41'] and 'disease' in self.documents['P43']:
+                self._error('P44', 'Error P44 must have an entry as disease flag is set in both P41 and P43.')
+            if 'diseaseHP' in self.documents['P41'] and 'diseaseHP' in self.documents['P43']:
+                self._error('P44', 'Error P44 must have an entry as diseaseHP flag is set in both P41 and P43.')
+        else:
+            return
