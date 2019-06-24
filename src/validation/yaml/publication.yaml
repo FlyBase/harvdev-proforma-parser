@@ -1,8 +1,8 @@
 P1:
   type: string
-  P1_valid: True
   P22_unattributed_no_value: True
   required: False
+  forbidden: ['journal', 'compendium']
 P2:
   type: string
   required: False
@@ -18,7 +18,21 @@ P10:
   regex: ^(\d+)(\.+\d+\.+\d+)?$
 P11a:
   required: False
+  P22_unattributed_no_value: True
   type: string
+  excludes: ['P11b', 'P11c', 'P11d']
+P11b:
+  required: False
+  type: string
+  excludes: ['P11a', 'P11c', 'P11d']
+P11c:
+  required: False
+  type: string
+  excludes: ['P11a', 'P11b', 'P11d']
+P11d:
+  required: False
+  type: string
+  excludes: ['P11a', 'P11b', 'P11c']
 P12:
   type: [string, list]
   required: False
@@ -63,6 +77,15 @@ P22:
 P23:
   required: False
   type: string
+P26:
+  required: False
+  regex: ^(\d+)$
+P28:
+  required: False
+  regex: ^(PMC\d+)$
+P29:
+  required: False
+  regex: ^(\d{10}|\d{13})$
 P30:
   required: False
   type: [string, list]
@@ -78,16 +101,31 @@ P32:
   type: [string, list]
   no_duplicates: P22 P30 P31
   regex: ^(FBrf\d{7})$
+P34:
+  required: False
+  type: string
 P40:
   type: list
-  allowed: [merge, split, rename, new_char, new_al, new_transg, pheno, gene_group, noGOcur, pheno_chem, pheno_anat]
+  allowed: [GO_cur, GOcur, gene_group, gene_group::DONE, merge, n, new_al, new_allele, new_char, new_gene, new_transg,
+            no cur, noGOcur, no_cur, no_flag, nocur, nocur_abs, orthologs, pert_exp, pheno, pheno-chem, pheno_anat,
+            pheno_chem, rename, 'rename, merge', split, y]
+  #Peeves allowed: [merge, split, rename, new_char, new_al, new_transg, pheno, gene_group, noGOcur, pheno_chem, pheno_anat]
 P41:
   type: list
-  allowed: [wt_exp, pert_exp, neur_exp, gene_model, gene_model_nomel, phys_int, cis_reg, genom_feat, disease, diseaseHP, dataset, cell_line]
+  allowed: [RNAi, cell_cult, cell_cult::DONE, cell_line, cell_line::DONE, cis_reg, cis_reg::DONE, dataset, dataset::DONE,
+            disease, disease::DONE, diseaseF, diseaseHP, diseaseHP::DONE, gene_model, gene_model::DONE, gene_model_nonmel,
+            genom_feat, genom_feat::DONE, marker, marker::DONE, micr_arr, n, neur_exp, neur_exp::DONE, neuro, no, no_flag,
+            pert-exp, pert_exp, pert_exp::DONE, pert_ext, pert_xep, phys_int, phys_int::DONE, trans_assay, wt_exp, wt_exp::DONE, y]
+#Peeves allowed: [wt_exp, pert_exp, neur_exp, gene_model, gene_model_nomel, phys_int, cis_reg, genom_feat, disease, diseaseHP, dataset, cell_line, no_flag
+#                 wt_exp::DONE, pert_exp::DONE, neur_exp::DONE, gene_model::DONE, gene_model_nomel::DONE, phys_int::DONE, cis_reg::DONE, genom_feat::DONE, disease::DONE, diseaseHP::DONE, dataset::DONE, cell_line::DONE]
 P42:
-  type: string
+  type: list
+  allowed: [novel_anat, novel_anat::DONE]
 P43:
-  type: string
+  disease_name: True
+  type: list
+  allowed: [disease,disease::Done, diseaseF, diseaseF::DONE, diseaseHP, diseaseHP::DONE, dm_gen, dm_gen::DONE,
+            dm_other, dm_other::DONE, noDOcur]
 P44:
   type: string
 P45:

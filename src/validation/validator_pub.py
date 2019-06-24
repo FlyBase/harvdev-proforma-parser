@@ -13,19 +13,6 @@ class ValidatorPub(ValidatorBase):
     Subclasses of this validator can be found in the additional files within this directory.
     """
 
-    def _validate_P1_valid(self, P1_text, field, value):
-        """
-        Basically P1 not allowed to be journal or compendium.
-
-        The docstring statement below provides a schema to validate the 'P1_text' argument.
-
-        The rule's arguments are validated against this schema:
-        {'type': 'boolean'}
-        """
-        non_valid_P1 = ['compendium', 'journal']
-        if P1_text and value in non_valid_P1:
-            self._error(field, '{} did not validate. {} are NOT allowed values'.format(value, non_valid_P1))
-
     def _validate_P22_unattributed_no_value(self, other, field, value):
         """
         if P22 is 'unattributed' then value is not allowed to be defined
@@ -35,7 +22,7 @@ class ValidatorPub(ValidatorBase):
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
-        log.info("Testing P22 unat {} {} {}".format(field, other, value))
+        log.debug("Testing P22 unat {} {} {}".format(field, other, value))
         if self.document['P22'] == 'unattributed' and value and len(value):
             self._error(field, 'Cannot set {} for an unattributed Pub. You have passed it "{}"'.format(field, value))
 
@@ -104,9 +91,9 @@ class ValidatorPub(ValidatorBase):
         The rule's arguments are validated against this schema:
         {'type': 'string'}
         """
-        log.info("Running check no duplicates with {} wrt {} {}".format(comp_fields, field, value))
+        log.debug("Running check no duplicates with {} wrt {} {}".format(comp_fields, field, value))
         if type(value) is not list:
-            log.info("Was expecting a list but we have '{}' for {}".format(value, field))
+            log.debug("Was expecting a list but we have '{}' for {}".format(value, field))
             return
 
         # self compare and build first dict
@@ -115,3 +102,45 @@ class ValidatorPub(ValidatorBase):
             return
         # check for duplicates in the list of fileds to check.
         self.check_for_duplicates(field, dict1, comp_fields)
+
+    def _validate_P1_dependencies(self, P1_text, field, value):
+        """
+        for new pubs:-
+        if P1 one of [paper, review, note, letter] then P34 MUST be set.
+        If P1 one of [paper, journal] the P11a Must be set.
+
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
+        """
+        if value in ['paper', 'journal']:
+            if 'P11a' not in self.document:
+                self._error(field, 'Error P1 is {}, therefore page_range (P11a) must be specified'.format(value))
+        if value in ['paper', 'review', 'note', 'letter']:
+            if 'P34' not in self.document:
+                self._error(field, 'Error P1 is {}, therefore an abstract (P34) must be specified'.format(value))
+
+    def _validate_disease_name(self, do_test, field, value):
+        """
+        ! P44. Disease(s) relevant to FBrf [free text] :
+        DESCRIPTION.
+        Internal free text (not web-visible) stating the human disease(s) that are modeled in the paper.
+
+        FIELD TYPE.
+
+        Free text (@@ forbidden)
+
+        REQUIRED ENTRY?
+
+        Yes if P41 and P43 contain the flag disease No otherwise
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
+        """
+        if 'P44' in self.document:
+            return
+        if 'P41' in self.document and 'P43' in self.document:
+            if 'disease' in self.document['P41'] and 'disease' in self.document['P43']:
+                self._error('P44', 'Error P44 must have an entry as disease flag is set in both P41 and P43.')
+            if 'diseaseHP' in self.document['P41'] and 'diseaseHP' in self.document['P43']:
+                self._error('P44', 'Error P44 must have an entry as diseaseHP flag is set in both P41 and P43.')
+        else:
+            return

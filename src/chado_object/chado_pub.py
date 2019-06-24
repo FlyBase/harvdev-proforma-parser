@@ -8,7 +8,7 @@ import re
 from .chado_base import ChadoObject, FIELD_VALUE
 from chado_object.chado_exceptions import ValidationError
 from harvdev_utils.production import (
-    Cv, Cvterm, Pub, Pubprop, Pubauthor, PubRelationship
+    Cv, Cvterm, Pub, Pubprop, Pubauthor, PubRelationship, Db, Dbxref, PubDbxref
 )
 from harvdev_utils.chado_functions import get_or_create
 
@@ -32,6 +32,9 @@ class ChadoPub(ChadoObject):
         self.P4_issue_number = params['fields_values'].get('P4')
         self.P10_pub_date = params['fields_values'].get('P10')
         self.P11a_page_range = params['fields_values'].get('P11a')
+        self.P11b_url = params['fields_values'].get('P11b')
+        self.P11c_san = params['fields_values'].get('P11c')
+        self.P11d_doi = params['fields_values'].get('P11d')
         self.P12_authors = params['fields_values'].get('P12')
         self.P13_language = params['fields_values'].get('P13')
         self.P14_additional_language = params['fields_values'].get('P14')
@@ -40,11 +43,18 @@ class ChadoPub(ChadoObject):
         self.P19_internal_notes = params['fields_values'].get('P19')
         self.P22_FlyBase_reference_ID = params['fields_values'].get('P22')
         self.P23_personal_com = params['fields_values'].get('P23')
+        self.P26_pubmed_id = params['fields_values'].get('P26')
+        self.P28_pubmed_central_id = params['fields_values'].get('P28')
+        self.P29_isbn = params['fields_values'].get('P29')
         self.P30_also_published_as = params['fields_values'].get('P30')
         self.P31_related_publications = params['fields_values'].get('P31')
         self.P32_make_secondary = params['fields_values'].get('P32')
+        self.P34_abstract = params['fields_values'].get('P34')
         self.P40_flag_cambridge = params['fields_values'].get('P40')
         self.P41_flag_harvard = params['fields_values'].get('P41')
+        self.P42_flag_ontologist = params['fields_values'].get('P42')
+        self.P43_flag_disease = params['fields_values'].get('P43')
+        self.P44_disease_notes = params['fields_values'].get('P44')
         self.P45_Not_dros = params['fields_values'].get('P45')
         # Values queried later, placed here for reference purposes.
         self.pub = None
@@ -158,7 +168,7 @@ class ChadoPub(ChadoObject):
         log.debug(dir(pr))
         if not pr:
             return None
-        return self.session.query(Pub).filter(Pub.pub_id == pr.subject_id).one()
+        return self.session.query(Pub).filter(Pub.pub_id == pr.object_id).one()
 
     def process_multipub(self, tuple):
         """
@@ -241,48 +251,89 @@ class ChadoPub(ChadoObject):
         """
         Delete everything wrt this pub and itself?
         """
-        log.critial("Not coded !c yet")
+        log.critical("Not coded !c yet")
+
+    def load_pubprop_singles(self):
+        """
+        Process the none list pubprops.
+
+        pub_data => [[key, pubprop name, debug message],...]
+        """
+        pub_data = [[self.P11b_url, 'URL', 'No URL specified, skipping URL'],
+                    [self.P13_language, 'languages', 'No language specified, skipping languages transaction.'],
+                    [self.P14_additional_language, 'abstract_languages', 'No additional language specified, skipping additional language transaction.'],
+                    [self.P19_internal_notes, 'internalnotes', 'No internal notes found, skipping internal notes transaction.'],
+                    [self.P23_personal_com, 'perscommtext', 'No personal communication, skipping personal communication notes transaction.'],
+                    [self.P34_abstract, 'pubmed_abstract',  'No Abtract, skipping addition of abstract.'],
+                    [self.P44_disease_notes, 'diseasenotes', 'No disease notes, so skipping disease notes transactions.'],
+                    [self.P45_Not_dros, 'not_Drospub', 'Drosophila pub, so no need to set NOT dros flag.']]
+        for row in pub_data:
+            if row[0]:
+                self.load_pubprop('pubprop type', row[1], row[0])
+            else:
+                log.debug(row[2])
+
+    def load_pubprops_lists(self):
+        """
+        Update the pubprops that can be lists
+        """
+        data_list = [
+            [self.P40_flag_cambridge, 'cam_flag', 'No Cambridge flags found, skipping Cambridge flags transaction.'],
+            [self.P41_flag_harvard, 'harv_flag', 'No Harvard flags found, skipping Harvard flags transaction.'],
+            [self.P42_flag_ontologist, 'onto_flag', 'No Ontology flags found, skipping Ontology flags transaction.'],
+            [self.P43_flag_disease, 'dis_flag', 'No Disease flags found, skipping Disease flags transaction.']]
+
+        for row in data_list:
+            if row[0]:
+                for entry in row[0]:
+                    self.load_pubprop('pubprop type', row[1], entry)
+            else:
+                log.debug(row[2])
 
     def update_pubprops(self):
         """
         Update all the pub props.
         """
-        if self.P13_language is not None:
-            self.load_pubprop('pubprop type', 'languages', self.P13_language)
-        else:
-            log.info('No language specified, skipping languages transaction.')
+        self.load_pubprop_singles()
+        self.load_pubprops_lists()
 
-        if self.P14_additional_language is not None:
-            self.load_pubprop('pubprop type', 'abstract_languages', self.P14_additional_language)
-        else:
-            log.info('No additional language specified, skipping additional language transaction.')
+    def do_P11_checks(self):
+        """
+        Check if P11 already has a value. If it matches all well and good.
+        If not throw an exception. (!c must be used here)
+        """
 
-        if self.P19_internal_notes is not None:
-            self.load_pubprop('pubprop type', 'internalnotes', self.P19_internal_notes)
-        else:
-            log.info('No internal notes found, skipping internal notes transaction.')
+        """
+        If existing pages retrieved from chado via FBrf:
+        P11a:  Trying to change <chado-pages> to '<your-pages>' but it isn't yet in Chado.
+               # Bang C i guess, not implenented yet ??????????? the one above
 
-        if self.P23_personal_com is not None:
-            self.load_pubprop('pubprop type', 'perscommtext', self.P23_personal_com)
-        else:
-            log.info('No personal communication, skipping personal communication notes transaction.')
+        P11a:  Trying to set <pages> to '<your-pages>' but it is '<chado-pages>' in Chado.
+        """
+        if self.P22_FlyBase_reference_ID[FIELD_VALUE] != 'new':
+            if self.pub.pages and self.P11a_page_range and self.pub.pages != self.P11a_page_range[FIELD_VALUE]:
+                self.current_query_source = self.P11a_page_range
+                self.current_query = 'P11a page range "{}" does not match "{}" already in chado.\n'.format(self.P11a_page_range, self.pub.pages)
+                raise ValidationError()
 
-        if self.P40_flag_cambridge is not None:
-            for cam_entry in self.P40_flag_cambridge:
-                self.load_pubprop('pubprop type', 'cam_flag', cam_entry)
-        else:
-            log.info('No Cambridge flags found, skipping Cambridge flags transaction.')
+    def update_dbxrefs(self):
+        """
+        dbxref fiedls to update.
+        """
+        data = [[self.P11c_san, 'GB'],
+                [self.P11d_doi, 'DOI'],
+                [self.P26_pubmed_id, 'pubmed'],
+                [self.P28_pubmed_central_id, 'PMCID'],
+                [self.P29_isbn, 'isbn']]
+        for row in data:
+            if row[0]:
+                self.load_pubdbxref(row[1], row[0])
 
-        if self.P41_flag_harvard is not None:
-            for harv_entry in self.P41_flag_harvard:
-                self.load_pubprop('pubprop type', 'harv_flag', harv_entry)
-        else:
-            log.info('No Harvard flags found, skipping Harvard flags transaction.')
-
-        if self.P45_Not_dros is not None:
-            self.load_pubprop('pubprop type', 'not_Drospub', self.P45_Not_dros)
-        else:
-            log.info('Drosophila pub, so no need to set NOT dros flag.')
+    def extra_checks(self):
+        """
+        Not all tests can be done in the validator as if the P11x is blank no checks are done.
+        """
+        self.do_P11_checks()
 
     def update_pub(self):
         """
@@ -290,20 +341,23 @@ class ChadoPub(ChadoObject):
         """
         if self.P10_pub_date:
             self.pub.pyear = self.P10_pub_date[FIELD_VALUE]
-        if self.P16_title:
-            self.pub.title = self.P16_title[FIELD_VALUE]
         if self.P11a_page_range:
             self.pub.pages = self.P11a_page_range[FIELD_VALUE]
+        if self.P16_title:
+            self.pub.title = self.P16_title[FIELD_VALUE]
         if self.P3_volume_number:
             self.pub.volume = self.P3_volume_number[FIELD_VALUE]
         if self.P4_issue_number:
             self.pub.issue = self.P4_issue_number[FIELD_VALUE]
 
     def load_content(self):
-
+        """
+        Main processing routine
+        """
         self.pub = self.get_pub()
         if not self.pub:
             return
+        self.extra_checks()
 
         # bang c first as this trumps all things
         if self.bang_c:
@@ -312,8 +366,10 @@ class ChadoPub(ChadoObject):
 
         # Update the direct column data in Pub
         self.update_pub()
+
         self.process_related()
         self.update_pubprops()
+        self.update_dbxrefs()
 
         if self.P12_authors is not None:
             for author in self.P12_authors:
@@ -356,9 +412,8 @@ class ChadoPub(ChadoObject):
         self.current_query = "Looking up cvterm: {} {}.".format(cv_name, cv_term_name)
         cv_term_id = super(ChadoPub, self).cvterm_query(cv_name, cv_term_name, self.session)
 
-        self.current_query_source = value_to_add_tuple
         self.current_query = 'Querying for FBrf \'%s\'.' % (value_to_add_tuple[FIELD_VALUE])
-        log.info(self.current_query)
+        log.debug(self.current_query)
 
         pub_prop = get_or_create(
             self.session, Pubprop,
@@ -367,3 +422,27 @@ class ChadoPub(ChadoObject):
             type_id=cv_term_id
         )
         return pub_prop
+
+    def load_pubdbxref(self, db_name, value_to_add_tuple):
+        """
+        Add dbxref to the pub (self.pub)
+        """
+        self.current_query_source = value_to_add_tuple
+        self.current_query = "Looking up db: {}.".format(db_name)
+        db = self.session.query(Db).filter(Db.name == db_name).one()
+
+        self.current_query = "Looking up dbxref: {}.".format(value_to_add_tuple[FIELD_VALUE])
+        dbxref = get_or_create(
+            self.session, Dbxref,
+            accession=value_to_add_tuple[FIELD_VALUE],
+            db_id=db.db_id
+        )
+
+        self.current_query = 'Adding \'%s\' to \'%s\'.' % (dbxref.accession, self.pub.uniquename)
+        log.debug(self.current_query)
+
+        get_or_create(
+            self.session, PubDbxref,
+            pub_id=self.pub.pub_id,
+            dbxref_id=dbxref.dbxref_id
+        )

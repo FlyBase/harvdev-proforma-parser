@@ -14,6 +14,16 @@ class ValidatorBase(Validator):
     The custom Cerberus validator used for all proforma.
     Subclasses of this validator can be found in the additional files within this directory.
     """
+    def __init__(self, schema, record_type, bang_c, bang_d):
+        """
+        Validator needs info on what record type it is i.e. skim, biblio etc
+        Will add bangc or bang as we go along.
+        """
+        self.bang_c = bang_c
+        self.bang_d = bang_d
+        self.record_type = record_type
+        Validator.__init__(self, schema)
+
     def _validate_plain_text(self, plain_text, field, value):
         """
         The docstring statement below provides a schema to validate the 'plain_text' argument.
@@ -35,7 +45,22 @@ class ValidatorBase(Validator):
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
-        if not no_bangc:
-            return
-        if 'bangc' in self.document and self.document['bangc'] == field:
+        log.debug("NO BANG C TEST:{} record_type is:{}".format(self.bang_c, self.record_type))
+        if self.bang_c == field:
             self._error(field, '{} not allowed with bang c'.format(field))
+
+    def _validate_need_data(self, field, dict1, comp_fields):
+        """
+        Throws error if comp_fields do NOT have data.
+        The rule's arguments are validated against this schema:
+        {'type': 'string'}
+        """
+        pass
+
+    def _validate_no_data(self, field, dict1, comp_fields):
+        """
+        Throws error if comp_fields do have data.
+        The rule's arguments are validated against this schema:
+        {'type': 'string'}
+        """
+        pass
