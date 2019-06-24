@@ -5,7 +5,6 @@ services:
     build: 
       context: .
       dockerfile: Dockerfile.test
-    env_file: /data/credentials/proforma/.secure_info
     network_mode: "host"
     container_name: kea
     volumes:
