@@ -3,7 +3,6 @@ version: '3.2'
 services:
   kea:
     build: .
-    env_file: /data/credentials/proforma/.secure_info
     network_mode: "host"
     container_name: kea
     volumes:
