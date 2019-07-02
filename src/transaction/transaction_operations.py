@@ -7,7 +7,7 @@
 import sys
 import logging
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
-from error.error_tracking import ErrorTracking
+from error.error_tracking import ErrorTracking, CRITICAL_ERROR
 from chado_object.chado_base import LINE_NUMBER
 from chado_object.chado_exceptions import ValidationError
 
@@ -34,21 +34,22 @@ def process_entry(entry, session, filename):
         current_query = entry.current_query
         current_query_source = entry.current_query_source
         # Create an error object.
-        ErrorTracking(filename, current_query_source[LINE_NUMBER], 'No results found from this query.', current_query)
+        ErrorTracking(filename, None, current_query_source[LINE_NUMBER], 'No results found from this query.', current_query, CRITICAL_ERROR)
         error_occurred = True
     except MultipleResultsFound:
         session.rollback()
         current_query = entry.current_query
         current_query_source = entry.current_query_source
         # Create an error object.
-        ErrorTracking(filename, current_query_source[LINE_NUMBER], 'Multiple results found from this query.', current_query)
+        ErrorTracking(filename, None, current_query_source[LINE_NUMBER], 'Multiple results found from this query.', current_query, CRITICAL_ERROR)
         error_occurred = True
     except ValidationError:
         current_query = entry.current_query
         current_query_source = entry.current_query_source
         # Create an error object.
-        ErrorTracking(filename, current_query_source[LINE_NUMBER], 'Validation Error.', current_query)
-        error_occurred = True       
+        log.critical("Raise of Validation should not be used any more and replaced with chado's critical_error")
+        ErrorTracking(filename, None, current_query_source[LINE_NUMBER], 'Validation Error.', current_query, CRITICAL_ERROR)
+        error_occurred = True
     except Exception as e:
         session.rollback()
         log.critical('Unexpected Exception {}'.format(e))
