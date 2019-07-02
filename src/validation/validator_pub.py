@@ -1,7 +1,7 @@
 # Cerberus and yaml
 from .validator_base import ValidatorBase
 # Additional tools for validation
-
+import re
 # logging imports
 import logging
 log = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ class ValidatorPub(ValidatorBase):
         allowed = ['P22', 'P19', 'P13']  # P22 will exist aswell obviously
         bad_fields = []
         for key in (self.document.keys()):
-            log.info("P22 unat allow: {} {}".format(key, self.document[key]))
+            log.debug("P22 unat allow: {} {}".format(key, self.document[key]))
             if key not in allowed:
                 bad_fields.append(key)
         if bad_fields:
@@ -144,3 +144,116 @@ class ValidatorPub(ValidatorBase):
                 self._error('P44', 'Error P44 must have an entry as diseaseHP flag is set in both P41 and P43.')
         else:
             return
+
+    def _validate_deposited_file(self, do_test, field, value):
+        """
+        Done here as a 1 line regex to check this would be a nightmare and we also
+        have to check the file type is one of the allowed ones.
+
+        validate the deposited file which look like the following
+        File date: 2003.12.17 ; File size: 225792 ; File format: xls ; File name: Luschnig.2003.12.17-2.xls
+        File date: 2018.1.14 ; File size: 913065443 ; File format: wig ; File name: RNA-seq/Oliver_aggregated_RNA-Seq/Oliver_aggregated_RNA-Seq.tar.gz
+        File date: 2018.10.31 ; File size: 71680 ; File format: xls ; File name: Meadows.2017.9.14.VDRC_shRNA_sequences.xls
+
+        NOTE: month part of date not allowed to start with 0
+
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
+        """
+        log.debug("validiating deposited file {}".format(value))
+        valid_file_formats = ['xls', 'tsv', 'pdf', 'gif', 'jpeg', 'ppt', 'rtf', 'doc']
+        order_pattern = r"""
+            ^File\s{1}date[:]   # start with date
+            .*                  # anything
+            File\s{1}size[:]    # file size next
+            .*                  # anything
+            File\s{1}format[:]  # file format next
+            .*                  # anything
+            File\s{1}name[:]    # File name
+        """
+        fields = re.search(order_pattern, value, re.VERBOSE)
+        if not fields:
+            message = 'Error {}: One or more of "File date:", "File size:", "File format:", "File name:"'.format(field)
+            message += ' Not in the string or in the incorrect order'
+            self._error(field, message)
+
+        date_pattern = r"""
+            ^!           # begining of string must be a bang
+            File\s{1}date:   # specified start
+            \s+          # 1 or more spaces
+            \d{4}        # four year digits
+            [.]          # date seperator
+            [1-9]\d*     # month none 0 first digit then maybe another whcih can be 0
+            [.]          # date seperator
+            \d+          # day number
+            \s+          # 1 or more spaces
+            ;            # string separator
+        """
+        fields = re.search(date_pattern, value, re.VERBOSE)
+        if not fields:
+            self._error(field, 'Error {}: File date: incorrect format'.format(field))
+
+        size_pattern = r"""
+            File\s{1}size:   # file size next
+            \s+          # 1 or more spaces
+            \d+          # digits
+            \s+          # 1 or more spaces
+            ;            # string separator
+        """
+        fields = re.search(size_pattern, value, re.VERBOSE)
+        if not fields:
+            self._error(field, 'Error {}: File size: incorrect format'.format(field))
+
+        format_pattern = r"""
+            File\s{1}format:  # file format
+            \s+          # 1 or more spaces
+            (\w)+        # chars,  grab them to check they are of a valid type
+            \s+          # 1 or more spaces
+            ;            # string separator
+        """
+        fields = re.search(format_pattern, value, re.VERBOSE)
+        if not fields:
+            self._error(field, 'Error {}: File format: incorrect string format'.format(field))
+
+        if fields:
+            if fields.group(1):
+                if fields.group(1) not in valid_file_formats:
+                    log.warn("{} not in the approved format list {}: Not critial".format(field, fields.group(1)))
+
+    def _validate_pages_format(self, do_test, field, value):
+        """
+        Check for simple page numbers or variants and if two pages make sure page1 < page2.
+        generate error if page does not match format ir page1 id higher than page2.
+
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
+        """
+        simple_pages_regex = [
+            [r'^(\d+)$', 0],                    # number only
+            [r'^(\d+)[p]+$', 0],                # numbers and p or pp or even ppp etc
+            [r'^p+(\d+)$', 0],                  # pp then number
+            [r'(\d+)--(\d+)$', 0],              # nn--nn
+            [r'^s(\d+)--s(\d+)', 0],            # 's'num--'s'num
+            [r'^R(\d+)--R(\d+)', 0],            # 'R'num--'R'num
+        ]
+        # try a few simple ones first
+        page1 = None
+        page2 = None
+        found = False
+        for regex in simple_pages_regex:
+            fields = re.search(regex[0], value)
+            if fields:
+                found = True
+                if fields.group(1):
+                    page1 = int(fields.group(1))
+                try:
+                    page2 = int(fields.group(2))
+                except IndexError:
+                    pass
+            if found:
+                continue
+        if found and page1 and page2:
+            if page1 > page2:
+                self._error(field, 'Error {}: {} is higher than {}.'.format(field, page2, page2))
+        if not found:
+            self._error(field, 'Error {}: {} is of none standard format.'.format(field, value))

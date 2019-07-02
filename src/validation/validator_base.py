@@ -49,6 +49,24 @@ class ValidatorBase(Validator):
         if self.bang_c == field:
             self._error(field, '{} not allowed with bang c'.format(field))
 
+    def _validate_only_allowed(self, field_keys, field, comp_fields):
+        """
+        Check only fields in the list are allowed. (including self)
+        The rule's arguments are validated against this schema:
+        {'type': 'string'}
+        """
+
+        allowed = field_keys.split()
+        allowed.append(field)  # itself allowed
+        bad_fields = []
+        log.debug("allowed values are {}".format(allowed))
+        for key in (self.document.keys()):
+            log.debug("Only allowed check: {} {}".format(key, self.document[key]))
+            if key not in allowed:
+                bad_fields.append(key)
+        if bad_fields:
+            self._error(field, 'Error {} is set so cannot set {}'.format(field, bad_fields))
+
     def _validate_need_data(self, field, dict1, comp_fields):
         """
         Throws error if comp_fields do NOT have data.
