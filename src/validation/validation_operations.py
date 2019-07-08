@@ -180,9 +180,13 @@ def validate_proforma_object(proforma):
             log.debug('Error items below:')
             log.debug(validator.errors.items())
             log.debug("field tuple is {}".format(fields_values))
+            if type(fields_values[field][0]) is tuple:  # Some fields are lists
+                line_number = fields_values[field][0][LINE_NUMBER]
+            else:
+                line_number = fields_values[field][LINE_NUMBER]
             if type(values[0]) is str and type(field) is str:
                 error_data = field + ": " + values[0]
-                ErrorTracking(filename, proforma_start_line, fields_values[field][LINE_NUMBER], 'Validation unsuccessful', error_data)
+                ErrorTracking(filename, proforma_start_line, line_number, 'Validation unsuccessful', error_data)
             elif type(values[0]) is dict:
                 list_dict_keys = list(values[0].keys())
                 if len(list_dict_keys) > 1:
@@ -191,4 +195,4 @@ def validate_proforma_object(proforma):
                     log.critical('Exiting.')
                     sys.exit(-1)
                 error_data = field + ": " + values[0][list_dict_keys[0]][0]
-                ErrorTracking(filename, proforma_start_line, fields_values[field][LINE_NUMBER], 'Validation unsuccessful', error_data)
+                ErrorTracking(filename, proforma_start_line, line_number, 'Validation unsuccessful', error_data)

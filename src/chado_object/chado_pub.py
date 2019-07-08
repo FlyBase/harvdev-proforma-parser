@@ -147,12 +147,6 @@ class ChadoPub(ChadoObject):
                       object_id=object_pub.pub_id,
                       type_id=cvterm.cvterm_id)
 
-    def make_obsolete(self, pub):
-        """
-        Make the pub obsolete
-        """
-        pub.is_obsolete = True
-
     def get_parent_pub(self, pub):
         """
         Get the parent pub.
@@ -355,7 +349,7 @@ class ChadoPub(ChadoObject):
         if self.P4_issue_number:
             self.pub.issue = self.P4_issue_number[FIELD_VALUE]
         if self.P39_obsolete:
-            log.warning("{} is being made OBSOLETE".format(self.pub.uniquename))
+            self.warning_error(self.P39_obsolete, "Making {} obsolete.".format(self.pub.uniquename))
             self.pub.is_obsolete = True
 
     def load_content(self):
