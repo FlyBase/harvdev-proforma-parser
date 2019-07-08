@@ -49,6 +49,7 @@ class ChadoPub(ChadoObject):
         self.P31_related_publications = params['fields_values'].get('P31')
         self.P32_make_secondary = params['fields_values'].get('P32')
         self.P34_abstract = params['fields_values'].get('P34')
+        self.P38_deposited_file = params['fields_values'].get('P38')
         self.P39_obsolete = params['fields_values'].get('P39')
         self.P40_flag_cambridge = params['fields_values'].get('P40')
         self.P41_flag_harvard = params['fields_values'].get('P41')
@@ -56,8 +57,11 @@ class ChadoPub(ChadoObject):
         self.P43_flag_disease = params['fields_values'].get('P43')
         self.P44_disease_notes = params['fields_values'].get('P44')
         self.P45_Not_dros = params['fields_values'].get('P45')
+        self.P46_graphical_abstract = params['fields_values'].get('P46')
+
         # Values queried later, placed here for reference purposes.
         self.pub = None   # All other proforma need a reference to a pub
+        self.parent_pub = None  # Various checks refer to this so just get it once
         self.gene = None  # Needed reference for alleles
 
         # Initiate the parent.
@@ -203,8 +207,6 @@ class ChadoPub(ChadoObject):
         Process P30, P31 and P32 (also pub as, related pub, make secondary)
         Each is a list so process accordingly.
         """
-        if self.P2_multipub:
-            self.process_multipub(self.P2_multipub)
         if self.P30_also_published_as:
             for fbrf in self.P30_also_published_as:
                 pub = self.get_related_pub(fbrf)
@@ -264,7 +266,9 @@ class ChadoPub(ChadoObject):
                     [self.P23_personal_com, 'perscommtext', 'No personal communication, skipping personal communication notes transaction.'],
                     [self.P34_abstract, 'pubmed_abstract',  'No Abtract, skipping addition of abstract.'],
                     [self.P44_disease_notes, 'diseasenotes', 'No disease notes, so skipping disease notes transactions.'],
-                    [self.P45_Not_dros, 'not_Drospub', 'Drosophila pub, so no need to set NOT dros flag.']]
+                    [self.P45_Not_dros, 'not_Drospub', 'Drosophila pub, so no need to set NOT dros flag.'],
+                    [self.P46_graphical_abstract, 'graphical_abstract', 'No graphical abstracts, so skipping.']]
+
         for row in pub_data:
             if row[0]:
                 self.load_pubprop('pubprop type', row[1], row[0])
@@ -276,6 +280,7 @@ class ChadoPub(ChadoObject):
         Update the pubprops that can be lists
         """
         data_list = [
+            [self.P38_deposited_file, 'deposited_files', 'No deposited files, so skipping.'],
             [self.P40_flag_cambridge, 'cam_flag', 'No Cambridge flags found, skipping Cambridge flags transaction.'],
             [self.P41_flag_harvard, 'harv_flag', 'No Harvard flags found, skipping Harvard flags transaction.'],
             [self.P42_flag_ontologist, 'onto_flag', 'No Ontology flags found, skipping Ontology flags transaction.'],
@@ -294,6 +299,36 @@ class ChadoPub(ChadoObject):
         """
         self.load_pubprop_singles()
         self.load_pubprops_lists()
+
+    def graphical_abstracts_check(self):
+        """
+        Checks within field:
+
+        * field should be separable into two components using '/' as the split character
+
+        TODO:  * Should check that filename is not already in chado (associated with *any* FBrf, not just the one in P22)
+
+        Checks between fields:
+
+        * first part of relative filepath should match the parent journal abbreviation (given either in P2 or in chado),
+          with spaces/periods replaced with an underscore
+        """
+        pattern = r"""
+            (\w+)  # pub directory
+            [/]    # path divider
+            (\w+)  # filename """
+
+        fields = re.search(pattern, self.P46_graphical_abstract[FIELD_VALUE], re.VERBOSE)
+        if not fields:
+            self.warning_error(self.P46_graphical_abstract, 'P46 does not have the format */*.')
+            return
+
+        expected_dir = self.parent_pub.miniref
+        expected_dir.replace(". ", "_")
+        if expected_dir != fields.group(1):
+            message = "'{}' does not equal to what is expected, given its parent.".format(fields.group(1))
+            message += "\nWas expecting directory to be {}.".format(expected_dir)
+            self.warning_error(self.P46_graphical_abstract, message)
 
     def do_P11_checks(self):
         """
@@ -333,6 +368,7 @@ class ChadoPub(ChadoObject):
         Not all tests can be done in the validator as if the P11x is blank no checks are done.
         """
         self.do_P11_checks()
+        self.graphical_abstracts_check()
 
     def update_pub(self):
         """
@@ -357,8 +393,11 @@ class ChadoPub(ChadoObject):
         Main processing routine
         """
         self.pub = self.get_pub()
-        if not self.pub:
-            return
+
+        self.parent_pub = self.get_parent_pub(self.pub)
+        if not self.parent_pub and self.P2_multipub:
+            self.parent_pub = self.process_multipub(self.P2_multipub)
+
         self.extra_checks()
 
         # bang c first as this trumps all things

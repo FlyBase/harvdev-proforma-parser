@@ -145,7 +145,7 @@ class ValidatorPub(ValidatorBase):
         else:
             return
 
-    def _validate_deposited_file(self, do_test, field, value):
+    def single_deposited_file(self, field, value):
         """
         Done here as a 1 line regex to check this would be a nightmare and we also
         have to check the file type is one of the allowed ones.
@@ -178,8 +178,7 @@ class ValidatorPub(ValidatorBase):
             self._error(field, message)
 
         date_pattern = r"""
-            ^!           # begining of string must be a bang
-            File\s{1}date:   # specified start
+            ^File\s{1}date:   # specified start
             \s+          # 1 or more spaces
             \d{4}        # four year digits
             [.]          # date seperator
@@ -219,6 +218,22 @@ class ValidatorPub(ValidatorBase):
             if fields.group(1):
                 if fields.group(1) not in valid_file_formats:
                     log.warn("{} not in the approved format list {}: Not critial".format(field, fields.group(1)))
+
+        name_pattern = r"""
+            File\s{1}name:  # file name
+            \s+            # 1 or more spaces
+            (\w)+          # chars
+        """
+        fields = re.search(name_pattern, value, re.VERBOSE)
+        if not fields:
+            self._error(field, 'Error {}: File name: incorrect string format'.format(field))
+
+    def _validate_deposited_file(self, do_test, field, value):
+        """
+        We have an array of values so process each individually
+        """
+        for item in value:
+            self.single_deposited_file(field, item)
 
     def _validate_pages_format(self, do_test, field, value):
         """
