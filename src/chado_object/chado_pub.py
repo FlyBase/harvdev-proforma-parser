@@ -395,8 +395,6 @@ class ChadoPub(ChadoObject):
         self.pub = self.get_pub()
 
         self.parent_pub = self.get_parent_pub(self.pub)
-        if not self.parent_pub and self.P2_multipub:
-            self.parent_pub = self.process_multipub(self.P2_multipub)
 
         self.extra_checks()
 
@@ -404,6 +402,9 @@ class ChadoPub(ChadoObject):
         if self.bang_c:
             self.bang_c_it()
             return
+
+        if not self.parent_pub and self.P2_multipub:
+            self.parent_pub = self.process_multipub(self.P2_multipub)
 
         # Update the direct column data in Pub
         self.update_pub()
