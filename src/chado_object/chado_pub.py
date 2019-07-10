@@ -368,7 +368,8 @@ class ChadoPub(ChadoObject):
         Not all tests can be done in the validator as if the P11x is blank no checks are done.
         """
         self.do_P11_checks()
-        self.graphical_abstracts_check()
+        if self.P46_graphical_abstract:
+            self.graphical_abstracts_check()
 
     def update_pub(self):
         """
