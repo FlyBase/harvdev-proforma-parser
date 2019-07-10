@@ -231,6 +231,9 @@ class ValidatorPub(ValidatorBase):
     def _validate_deposited_file(self, do_test, field, value):
         """
         We have an array of values so process each individually
+
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
         """
         for item in value:
             self.single_deposited_file(field, item)
