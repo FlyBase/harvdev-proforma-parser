@@ -30,6 +30,7 @@ P10:
 P11a:
   required: False
   type: string
+  pages_format: True
   excludes: ['P11b', 'P11c', 'P11d']
 P11b:
   required: False
@@ -114,6 +115,10 @@ P32:
 P34:
   required: False
   type: string
+P38:
+  required: False
+  deposited_file: True
+  #regex: Too complex lets do it in its own function
 P40:
   type: list
   allowed: [GO_cur, GOcur, gene_group, gene_group::DONE, merge, n, new_al, new_allele, new_char, new_gene, new_transg,
@@ -142,3 +147,6 @@ P45:
   required: False
   type: [string, list]
   allowed: [y]
+P46:
+  required: False
+  type: string

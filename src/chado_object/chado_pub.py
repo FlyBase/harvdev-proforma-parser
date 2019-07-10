@@ -6,7 +6,6 @@
 """
 import re
 from .chado_base import ChadoObject, FIELD_VALUE
-from chado_object.chado_exceptions import ValidationError
 from harvdev_utils.production import (
     Cv, Cvterm, Pub, Pubprop, Pubauthor, PubRelationship, Db, Dbxref, PubDbxref
 )
@@ -50,14 +49,20 @@ class ChadoPub(ChadoObject):
         self.P31_related_publications = params['fields_values'].get('P31')
         self.P32_make_secondary = params['fields_values'].get('P32')
         self.P34_abstract = params['fields_values'].get('P34')
+        self.P38_deposited_file = params['fields_values'].get('P38')
+        self.P39_obsolete = params['fields_values'].get('P39')
         self.P40_flag_cambridge = params['fields_values'].get('P40')
         self.P41_flag_harvard = params['fields_values'].get('P41')
         self.P42_flag_ontologist = params['fields_values'].get('P42')
         self.P43_flag_disease = params['fields_values'].get('P43')
         self.P44_disease_notes = params['fields_values'].get('P44')
         self.P45_Not_dros = params['fields_values'].get('P45')
+        self.P46_graphical_abstract = params['fields_values'].get('P46')
+
         # Values queried later, placed here for reference purposes.
-        self.pub = None
+        self.pub = None   # All other proforma need a reference to a pub
+        self.parent_pub = None  # Various checks refer to this so just get it once
+        self.gene = None  # Needed reference for alleles
 
         # Initiate the parent.
         super(ChadoPub, self).__init__(params)
@@ -95,6 +100,9 @@ class ChadoPub(ChadoObject):
           * if P22 is 'unattributed', P1 must be empty
         """
         # TODO: bang c/d field stuff
+        if self.P1_type[FIELD_VALUE] in ('journal', 'compendium'):
+            self.critical_error(self.P1_type, 'Not allowed to have the value "journal" or "compendium"')
+
         self.current_query_source = self.P1_type
         self.current_query = 'Querying for cvterm {} with cv of pub type\'%s\'.' % (self.P1_type[FIELD_VALUE])
 
@@ -114,9 +122,9 @@ class ChadoPub(ChadoObject):
                 # good, does not have a previous result so happy to continue
                 return cvterm
             if old_cvterm.cvterm_id != cvterm.cvterm_id:
-                self.current_query = 'Cvterm "{}" is not the same as previous {}\n'.format(self.P1_type[FIELD_VALUE], old_cvterm.name)
-                self.current_query += 'Not allowed to change P1 if it already had one.'
-                raise ValidationError()
+                message = 'Cvterm "{}" is not the same as previous "{}". '.format(self.P1_type[FIELD_VALUE], old_cvterm.name)
+                message += 'Not allowed to change P1 if it already had one.'
+                self.critical_error(self.P1_type, message)
         return cvterm
 
     def get_related_pub(self, tuple):
@@ -142,12 +150,6 @@ class ChadoPub(ChadoObject):
                       subject_id=subject_pub.pub_id,
                       object_id=object_pub.pub_id,
                       type_id=cvterm.cvterm_id)
-
-    def make_obsolete(self, pub):
-        """
-        Make the pub obsolete
-        """
-        pub.is_obsolete = True
 
     def get_parent_pub(self, pub):
         """
@@ -192,9 +194,9 @@ class ChadoPub(ChadoObject):
                     old_name = old_parent.miniref
                     if not old_name:
                         old_name = old_parent.uniquename
-                    self.current_query = 'P22 has a different parent {} than the one listed {} ()\n'.format(old_name, p2_pub.miniref, p2_pub.uniquename)
-                    self.current_query += 'Not allowed to change P2 if it already has one. without !c'
-                    raise ValidationError()
+                    message = 'P22 has a different parent {} than the one listed {} ()\n'.format(old_name, p2_pub.miniref, p2_pub.uniquename)
+                    message += 'Not allowed to change P2 if it already has one. without !c'
+                    self.critical_error(self.P22_FlyBase_reference_ID, message)
                 else:
                     return
         # Add the relationship as all is good.
@@ -205,8 +207,6 @@ class ChadoPub(ChadoObject):
         Process P30, P31 and P32 (also pub as, related pub, make secondary)
         Each is a list so process accordingly.
         """
-        if self.P2_multipub:
-            self.process_multipub(self.P2_multipub)
         if self.P30_also_published_as:
             for fbrf in self.P30_also_published_as:
                 pub = self.get_related_pub(fbrf)
@@ -266,7 +266,9 @@ class ChadoPub(ChadoObject):
                     [self.P23_personal_com, 'perscommtext', 'No personal communication, skipping personal communication notes transaction.'],
                     [self.P34_abstract, 'pubmed_abstract',  'No Abtract, skipping addition of abstract.'],
                     [self.P44_disease_notes, 'diseasenotes', 'No disease notes, so skipping disease notes transactions.'],
-                    [self.P45_Not_dros, 'not_Drospub', 'Drosophila pub, so no need to set NOT dros flag.']]
+                    [self.P45_Not_dros, 'not_Drospub', 'Drosophila pub, so no need to set NOT dros flag.'],
+                    [self.P46_graphical_abstract, 'graphical_abstract', 'No graphical abstracts, so skipping.']]
+
         for row in pub_data:
             if row[0]:
                 self.load_pubprop('pubprop type', row[1], row[0])
@@ -278,6 +280,7 @@ class ChadoPub(ChadoObject):
         Update the pubprops that can be lists
         """
         data_list = [
+            [self.P38_deposited_file, 'deposited_files', 'No deposited files, so skipping.'],
             [self.P40_flag_cambridge, 'cam_flag', 'No Cambridge flags found, skipping Cambridge flags transaction.'],
             [self.P41_flag_harvard, 'harv_flag', 'No Harvard flags found, skipping Harvard flags transaction.'],
             [self.P42_flag_ontologist, 'onto_flag', 'No Ontology flags found, skipping Ontology flags transaction.'],
@@ -297,13 +300,44 @@ class ChadoPub(ChadoObject):
         self.load_pubprop_singles()
         self.load_pubprops_lists()
 
+    def graphical_abstracts_check(self):
+        """
+        Checks within field:
+
+        * field should be separable into two components using '/' as the split character
+
+        TODO:  * Should check that filename is not already in chado (associated with *any* FBrf, not just the one in P22)
+
+        Checks between fields:
+
+        * first part of relative filepath should match the parent journal abbreviation (given either in P2 or in chado),
+          with spaces/periods replaced with an underscore
+        """
+        pattern = r"""
+            (\w+)  # pub directory
+            [/]    # path divider
+            (\w+)  # filename """
+
+        fields = re.search(pattern, self.P46_graphical_abstract[FIELD_VALUE], re.VERBOSE)
+        if not fields:
+            self.warning_error(self.P46_graphical_abstract, 'P46 does not have the format */*.')
+            return
+
+        expected_dir = self.parent_pub.miniref
+        expected_dir.replace(". ", "_")
+        if expected_dir != fields.group(1):
+            message = "'{}' does not equal to what is expected, given its parent.".format(fields.group(1))
+            message += "\nWas expecting directory to be {}.".format(expected_dir)
+            self.warning_error(self.P46_graphical_abstract, message)
+
     def do_P11_checks(self):
         """
         Check if P11 already has a value. If it matches all well and good.
         If not throw an exception. (!c must be used here)
         """
 
-        """
+        """  CRITICAL -- Cvterm "journal" is not the same as previous personal communication to FlyBase
+
         If existing pages retrieved from chado via FBrf:
         P11a:  Trying to change <chado-pages> to '<your-pages>' but it isn't yet in Chado.
                # Bang C i guess, not implenented yet ??????????? the one above
@@ -312,9 +346,9 @@ class ChadoPub(ChadoObject):
         """
         if self.P22_FlyBase_reference_ID[FIELD_VALUE] != 'new':
             if self.pub.pages and self.P11a_page_range and self.pub.pages != self.P11a_page_range[FIELD_VALUE]:
-                self.current_query_source = self.P11a_page_range
-                self.current_query = 'P11a page range "{}" does not match "{}" already in chado.\n'.format(self.P11a_page_range, self.pub.pages)
-                raise ValidationError()
+                message = self.P11a_page_range
+                message += 'P11a page range "{}" does not match "{}" already in chado.\n'.format(self.P11a_page_range, self.pub.pages)
+                self.critical_error(self.P11a_page_range, message)
 
     def update_dbxrefs(self):
         """
@@ -334,6 +368,7 @@ class ChadoPub(ChadoObject):
         Not all tests can be done in the validator as if the P11x is blank no checks are done.
         """
         self.do_P11_checks()
+        self.graphical_abstracts_check()
 
     def update_pub(self):
         """
@@ -349,20 +384,27 @@ class ChadoPub(ChadoObject):
             self.pub.volume = self.P3_volume_number[FIELD_VALUE]
         if self.P4_issue_number:
             self.pub.issue = self.P4_issue_number[FIELD_VALUE]
+        if self.P39_obsolete:
+            self.warning_error(self.P39_obsolete, "Making {} obsolete.".format(self.pub.uniquename))
+            self.pub.is_obsolete = True
 
     def load_content(self):
         """
         Main processing routine
         """
         self.pub = self.get_pub()
-        if not self.pub:
-            return
+
+        self.parent_pub = self.get_parent_pub(self.pub)
+
         self.extra_checks()
 
         # bang c first as this trumps all things
         if self.bang_c:
             self.bang_c_it()
             return
+
+        if not self.parent_pub and self.P2_multipub:
+            self.parent_pub = self.process_multipub(self.P2_multipub)
 
         # Update the direct column data in Pub
         self.update_pub()

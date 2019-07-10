@@ -8,6 +8,7 @@ import logging
 from harvdev_utils.production import (
     Cv, Cvterm, Feature, Pub, Synonym
 )
+from error.error_tracking import ErrorTracking, CRITICAL_ERROR, WARNING_ERROR
 
 log = logging.getLogger(__name__)
 
@@ -32,6 +33,20 @@ class ChadoObject(object):
         # Data
         self.bang_c = params.get('bang_c')
         self.bang_d = params.get('bang_d')
+
+    def error_track(self, tuple, error_message, level):
+        ErrorTracking(self.filename,
+                      "Proforma entry starting on line: {}".format(self.proforma_start_line_number),
+                      "Proforma error around line: {}".format(tuple[LINE_NUMBER]),
+                      'Validation Error.',
+                      "{}: {}".format(tuple[FIELD_NAME], error_message),
+                      level)
+
+    def critical_error(self, tuple, error_message):
+        self.error_track(tuple, error_message, CRITICAL_ERROR)
+
+    def warning_error(self, tuple, error_message):
+        self.error_track(tuple, error_message, WARNING_ERROR)
 
     def cvterm_query(self, cv_name, cv_term_name, session):
         self.current_query = 'Querying for cv_term_name \'%s\'.' % (cv_term_name)
