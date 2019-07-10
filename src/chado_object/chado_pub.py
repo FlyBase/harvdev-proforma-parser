@@ -172,7 +172,7 @@ class ChadoPub(ChadoObject):
             return None
         return self.session.query(Pub).filter(Pub.pub_id == pr.object_id).one()
 
-    def process_multipub(self, tuple):
+    def process_multipub(self, old_parent, tuple):
         """
         Get P2 pub via the  miniref.
         If P22 is new, NO further checks needed.
@@ -186,21 +186,21 @@ class ChadoPub(ChadoObject):
         self.current_query = "Querying for P2 miniref '{}'.".format(tuple[FIELD_VALUE])
         p2_pub = self.session.query(Pub).filter(Pub.miniref == tuple[FIELD_VALUE]).one()
 
-        if self.P22_FlyBase_reference_ID[FIELD_VALUE] != 'new':
-            old_parent = self.get_parent_pub(self.pub)
-            if old_parent:
-                log.debug("old parent is {}".format(old_parent))
-                if old_parent.pub_id != p2_pub.pub_id:
-                    old_name = old_parent.miniref
-                    if not old_name:
-                        old_name = old_parent.uniquename
-                    message = 'P22 has a different parent {} than the one listed {} ()\n'.format(old_name, p2_pub.miniref, p2_pub.uniquename)
-                    message += 'Not allowed to change P2 if it already has one. without !c'
-                    self.critical_error(self.P22_FlyBase_reference_ID, message)
-                else:
-                    return
+        if self.P22_FlyBase_reference_ID[FIELD_VALUE] != 'new' and old_parent:
+            log.debug("old parent is {}".format(old_parent))
+            if old_parent.pub_id != p2_pub.pub_id:
+                old_name = old_parent.miniref
+                if not old_name:
+                    old_name = old_parent.uniquename
+                message = 'P22 has a different parent {} than the one listed {} ()\n'.format(old_name, p2_pub.miniref, p2_pub.uniquename)
+                message += 'Not allowed to change P2 if it already has one. without !c'
+                self.critical_error(self.P22_FlyBase_reference_ID, message)
+                return
+            else:
+                return
         # Add the relationship as all is good.
-        self.add_relationship(self.pub, p2_pub, 'published_in', tuple)
+        if self.P22_FlyBase_reference_ID[FIELD_VALUE] == 'new':
+            self.add_relationship(self.pub, p2_pub, 'published_in', tuple)
 
     def process_related(self):
         """
@@ -218,7 +218,7 @@ class ChadoPub(ChadoObject):
         if self.P32_make_secondary:
             for fbrf in self.P32_make_secondary:
                 pub = self.get_related_pub(fbrf)
-                self.make_obsolete(pub)
+                pub.is_obsolete = True
 
     def get_pub(self):
         """
@@ -404,8 +404,8 @@ class ChadoPub(ChadoObject):
             self.bang_c_it()
             return
 
-        if not self.parent_pub and self.P2_multipub:
-            self.parent_pub = self.process_multipub(self.P2_multipub)
+        if self.parent_pub and self.P2_multipub:
+            self.process_multipub(self.parent_pub, self.P2_multipub)
 
         # Update the direct column data in Pub
         self.update_pub()
