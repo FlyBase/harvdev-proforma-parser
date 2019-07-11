@@ -1,11 +1,21 @@
+#################################################################################
+# Docs..
+#
+# type: type of processing to be done on the field
+#  
+#       direct:
+#       relationship:
+#       pubprop:
 P1:
-  type: init_create
+  type: ignore
+  cvterm: pub type
   description: pub type
   initial: y
 P2:
-  type: special
+  type: relationship
   cvterm: published_in
   description: parent pub
+  verify_only_on_update: y 
 P3:
   type: direct
   name: volume
@@ -47,6 +57,7 @@ P14:
   description: additional languages  
 P16:   
   type: direct
+  name: title
   description: title
 P18:        
   type: pubprop
@@ -57,7 +68,8 @@ P19:
   cvterm: internalnotes
   description: Internal notes
 P22:
-  type: init_create
+  type: ignore
+  name: uniquename
   description: FBrf uniquename or new
 P23: 
   type: pubprop
@@ -98,6 +110,8 @@ P39:
   type: direct
   name: is_obsolete
   description: is obsolete
+  boolean: True
+  warning: True
 P40:
   type: pubprop
   cvterm: cam_flag 

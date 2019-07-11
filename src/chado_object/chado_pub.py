@@ -5,6 +5,8 @@
 .. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
 import re
+import os
+import yaml
 from .chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.production import (
     Cv, Cvterm, Pub, Pubprop, Pubauthor, PubRelationship, Db, Dbxref, PubDbxref
@@ -20,46 +22,41 @@ log = logging.getLogger(__name__)
 class ChadoPub(ChadoObject):
     def __init__(self, params):
         log.info('Initializing ChadoPub object.')
+        #########################################
+        # Set up how to process each tpe of input
+        #########################################
+        self.type_dict = {'direct': self.load_direct,
+                          'pubauthor': self.load_author,
+                          'relationship': self.load_relationship,
+                          'pubprop': self.load_pubprop,
+                          'dbxref': self.load_dbxref,
+                          'ignore': self.ignore,
+                          'obsolete': self.make_obsolete}
 
         self.proforma_start_line_number = params.get('proforma_start_line_number')
 
-        # Data
+        ############################################################
+        # Get processing info and data to be processed.
+        ############################################################
+        yml_file = os.path.join(os.path.dirname(__file__), 'yml/publication.yml')
+        self.process_data = yaml.load(open(yml_file))
+        for key in self.process_data:
+            self.process_data[key]['data'] = params['fields_values'].get(key)
+            if self.process_data[key]['data']:
+                log.debug("{}: {}".format(key, self.process_data[key]))
         self.bang_c = params.get('bang_c')
-        self.P1_type = params['fields_values'].get('P1')
-        self.P2_multipub = params['fields_values'].get('P2')
-        self.P3_volume_number = params['fields_values'].get('P3')
-        self.P4_issue_number = params['fields_values'].get('P4')
-        self.P10_pub_date = params['fields_values'].get('P10')
-        self.P11a_page_range = params['fields_values'].get('P11a')
-        self.P11b_url = params['fields_values'].get('P11b')
-        self.P11c_san = params['fields_values'].get('P11c')
-        self.P11d_doi = params['fields_values'].get('P11d')
-        self.P12_authors = params['fields_values'].get('P12')
-        self.P13_language = params['fields_values'].get('P13')
-        self.P14_additional_language = params['fields_values'].get('P14')
-        self.P16_title = params['fields_values'].get('P16')
-        self.P18_misc_comments = params['fields_values'].get('P18')
-        self.P19_internal_notes = params['fields_values'].get('P19')
-        self.P22_FlyBase_reference_ID = params['fields_values'].get('P22')
-        self.P23_personal_com = params['fields_values'].get('P23')
-        self.P26_pubmed_id = params['fields_values'].get('P26')
-        self.P28_pubmed_central_id = params['fields_values'].get('P28')
-        self.P29_isbn = params['fields_values'].get('P29')
-        self.P30_also_published_as = params['fields_values'].get('P30')
-        self.P31_related_publications = params['fields_values'].get('P31')
-        self.P32_make_secondary = params['fields_values'].get('P32')
-        self.P34_abstract = params['fields_values'].get('P34')
-        self.P38_deposited_file = params['fields_values'].get('P38')
-        self.P39_obsolete = params['fields_values'].get('P39')
-        self.P40_flag_cambridge = params['fields_values'].get('P40')
-        self.P41_flag_harvard = params['fields_values'].get('P41')
-        self.P42_flag_ontologist = params['fields_values'].get('P42')
-        self.P43_flag_disease = params['fields_values'].get('P43')
-        self.P44_disease_notes = params['fields_values'].get('P44')
-        self.P45_Not_dros = params['fields_values'].get('P45')
-        self.P46_graphical_abstract = params['fields_values'].get('P46')
 
+        #################################################
+        # various tests use this so create an easy lookup
+        #################################################
+        if self.process_data['P22']['data'][FIELD_VALUE] == "new":
+            self.newpub = True
+        else:
+            self.newpub = False
+
+        ###########################################################
         # Values queried later, placed here for reference purposes.
+        ############################################################
         self.pub = None   # All other proforma need a reference to a pub
         self.parent_pub = None  # Various checks refer to this so just get it once
         self.gene = None  # Needed reference for alleles
@@ -99,15 +96,16 @@ class ChadoPub(ChadoObject):
           * if P22 is 'new', P1 must a contain valid value.
           * if P22 is 'unattributed', P1 must be empty
         """
-        # TODO: bang c/d field stuff
-        if self.P1_type[FIELD_VALUE] in ('journal', 'compendium'):
-            self.critical_error(self.P1_type, 'Not allowed to have the value "journal" or "compendium"')
 
-        self.current_query_source = self.P1_type
-        self.current_query = 'Querying for cvterm {} with cv of pub type\'%s\'.' % (self.P1_type[FIELD_VALUE])
+        p1_data = self.process_data['P1']['data']
+        if p1_data[FIELD_VALUE] in ('journal', 'compendium'):
+            self.critical_error(p1_data, 'Not allowed to have the value "journal" or "compendium"')
+
+        self.current_query_source = p1_data
+        self.current_query = 'Querying for cvterm {} with cv of pub type\'%s\'.' % (p1_data[FIELD_VALUE])
 
         cvterm = self.session.query(Cvterm).join(Cv).filter(Cvterm.cv_id == Cv.cv_id,
-                                                            Cvterm.name == self.P1_type[FIELD_VALUE],
+                                                            Cvterm.name == p1_data[FIELD_VALUE],
                                                             Cv.name == 'pub type',
                                                             Cvterm.is_obsolete == 0).one()
 
@@ -122,9 +120,9 @@ class ChadoPub(ChadoObject):
                 # good, does not have a previous result so happy to continue
                 return cvterm
             if old_cvterm.cvterm_id != cvterm.cvterm_id:
-                message = 'Cvterm "{}" is not the same as previous "{}". '.format(self.P1_type[FIELD_VALUE], old_cvterm.name)
+                message = 'Cvterm "{}" is not the same as previous "{}". '.format(p1_data[FIELD_VALUE], old_cvterm.name)
                 message += 'Not allowed to change P1 if it already had one.'
-                self.critical_error(self.P1_type, message)
+                self.critical_error(p1_data, message)
         return cvterm
 
     def get_related_pub(self, tuple):
@@ -133,6 +131,7 @@ class ChadoPub(ChadoObject):
         """
         self.current_query_source = tuple
         self.current_query = "Looking up pub: {}.".format(tuple[FIELD_VALUE])
+        log.debug("Looking up pub: {}.".format(tuple[FIELD_VALUE]))
         return self.session.query(Pub).filter(Pub.uniquename == tuple[FIELD_VALUE]).one()
 
     def add_relationship(self, subject_pub, object_pub, cvterm, query_source):
@@ -172,7 +171,7 @@ class ChadoPub(ChadoObject):
             return None
         return self.session.query(Pub).filter(Pub.pub_id == pr.object_id).one()
 
-    def process_multipub(self, old_parent, tuple):
+    def check_multipub(self, old_parent, tuple):
         """
         Get P2 pub via the  miniref.
         If P22 is new, NO further checks needed.
@@ -186,63 +185,39 @@ class ChadoPub(ChadoObject):
         self.current_query = "Querying for P2 miniref '{}'.".format(tuple[FIELD_VALUE])
         p2_pub = self.session.query(Pub).filter(Pub.miniref == tuple[FIELD_VALUE]).one()
 
-        if self.P22_FlyBase_reference_ID[FIELD_VALUE] != 'new' and old_parent:
+        if not self.newpub and old_parent:
             log.debug("old parent is {}".format(old_parent))
             if old_parent.pub_id != p2_pub.pub_id:
                 old_name = old_parent.miniref
                 if not old_name:
                     old_name = old_parent.uniquename
-                message = 'P22 has a different parent {} than the one listed {} ()\n'.format(old_name, p2_pub.miniref, p2_pub.uniquename)
+                message = 'P22 has a different parent "{}" than the one listed "{}" "{}"\n'.format(old_name, p2_pub.miniref, p2_pub.uniquename)
                 message += 'Not allowed to change P2 if it already has one. without !c'
-                self.critical_error(self.P22_FlyBase_reference_ID, message)
+                self.critical_error(self.process_data['P22']['data'], message)
                 return
-            else:
-                return
-        # Add the relationship as all is good.
-        if self.P22_FlyBase_reference_ID[FIELD_VALUE] == 'new':
-            self.add_relationship(self.pub, p2_pub, 'published_in', tuple)
-
-    def process_related(self):
-        """
-        Process P30, P31 and P32 (also pub as, related pub, make secondary)
-        Each is a list so process accordingly.
-        """
-        if self.P30_also_published_as:
-            for fbrf in self.P30_also_published_as:
-                pub = self.get_related_pub(fbrf)
-                self.add_relationship(self.pub, pub, 'also_in', self.P30_also_published_as)
-        if self.P31_related_publications:
-            for fbrf in self.P31_related_publications:
-                pub = self.get_related_pub(fbrf)
-                self.add_relationship(self.pub, pub, 'related_to', self.P31_related_publications)
-        if self.P32_make_secondary:
-            for fbrf in self.P32_make_secondary:
-                pub = self.get_related_pub(fbrf)
-                pub.is_obsolete = True
 
     def get_pub(self):
         """
         get pub or create pub if new.
         returns None or the pub to be used.
         """
-        if self.P22_FlyBase_reference_ID[FIELD_VALUE] != 'new':
-            pub = super(ChadoPub, self).pub_from_fbrf(self.P22_FlyBase_reference_ID, self.session)
+        if not self.newpub:
+            pub = super(ChadoPub, self).pub_from_fbrf(self.process_data['P22']['data'], self.session)
         else:
             pub = None
 
-        if self.P1_type:
+        if self.process_data['P1']['data']:
             P1_cvterm = self.get_P1_cvterm_and_validate(pub)
 
-        if self.P22_FlyBase_reference_ID[FIELD_VALUE] != 'new':
-            pub = self.pub_from_fbrf(self.P22_FlyBase_reference_ID, self.session)
+        if not self.newpub:
+            pub = self.pub_from_fbrf(self.process_data['P22']['data'], self.session)
         else:
             if not P1_cvterm:  # ErrorTracking already knows, so just return.
                 return None
             log.info("Creating new publication")
 
             # A trigger will swap out FBrf:temp_0 to the next rf in the sequence.
-            pub = get_or_create(self.session, Pub, title=self.P16_title[FIELD_VALUE],
-                                type_id=P1_cvterm.cvterm_id, uniquename='FBrf:temp_0')
+            pub = get_or_create(self.session, Pub, type_id=P1_cvterm.cvterm_id, uniquename='FBrf:temp_0')
             log.info(pub)
             log.info("New pub created with fbrf {}.".format(pub.uniquename))
         return pub
@@ -253,52 +228,52 @@ class ChadoPub(ChadoObject):
         """
         log.critical("Not coded !c yet")
 
-    def load_pubprop_singles(self):
-        """
-        Process the none list pubprops.
+    # def load_pubprop_singles(self):
+    #     """
+    #     Process the none list pubprops.
 
-        pub_data => [[key, pubprop name, debug message],...]
-        """
-        pub_data = [[self.P11b_url, 'URL', 'No URL specified, skipping URL'],
-                    [self.P13_language, 'languages', 'No language specified, skipping languages transaction.'],
-                    [self.P14_additional_language, 'abstract_languages', 'No additional language specified, skipping additional language transaction.'],
-                    [self.P19_internal_notes, 'internalnotes', 'No internal notes found, skipping internal notes transaction.'],
-                    [self.P23_personal_com, 'perscommtext', 'No personal communication, skipping personal communication notes transaction.'],
-                    [self.P34_abstract, 'pubmed_abstract',  'No Abtract, skipping addition of abstract.'],
-                    [self.P44_disease_notes, 'diseasenotes', 'No disease notes, so skipping disease notes transactions.'],
-                    [self.P45_Not_dros, 'not_Drospub', 'Drosophila pub, so no need to set NOT dros flag.'],
-                    [self.P46_graphical_abstract, 'graphical_abstract', 'No graphical abstracts, so skipping.']]
+    #     pub_data => [[key, pubprop name, debug message],...]
+    #     """
+    #     pub_data = [[self.P11b_url, 'URL', 'No URL specified, skipping URL'],
+    #                 [self.P13_language, 'languages', 'No language specified, skipping languages transaction.'],
+    #                 [self.P14_additional_language, 'abstract_languages', 'No additional language specified, skipping additional language transaction.'],
+    #                 [self.P19_internal_notes, 'internalnotes', 'No internal notes found, skipping internal notes transaction.'],
+    #                 [self.P23_personal_com, 'perscommtext', 'No personal communication, skipping personal communication notes transaction.'],
+    #                 [self.P34_abstract, 'pubmed_abstract',  'No Abtract, skipping addition of abstract.'],
+    #                 [self.P44_disease_notes, 'diseasenotes', 'No disease notes, so skipping disease notes transactions.'],
+    #                 [self.P45_Not_dros, 'not_Drospub', 'Drosophila pub, so no need to set NOT dros flag.'],
+    #                 [self.P46_graphical_abstract, 'graphical_abstract', 'No graphical abstracts, so skipping.']]
 
-        for row in pub_data:
-            if row[0]:
-                self.load_pubprop('pubprop type', row[1], row[0])
-            else:
-                log.debug(row[2])
+    #     for row in pub_data:
+    #         if row[0]:
+    #             self.load_pubprop('pubprop type', row[1], row[0])
+    #         else:
+    #             log.debug(row[2])
 
-    def load_pubprops_lists(self):
-        """
-        Update the pubprops that can be lists
-        """
-        data_list = [
-            [self.P38_deposited_file, 'deposited_files', 'No deposited files, so skipping.'],
-            [self.P40_flag_cambridge, 'cam_flag', 'No Cambridge flags found, skipping Cambridge flags transaction.'],
-            [self.P41_flag_harvard, 'harv_flag', 'No Harvard flags found, skipping Harvard flags transaction.'],
-            [self.P42_flag_ontologist, 'onto_flag', 'No Ontology flags found, skipping Ontology flags transaction.'],
-            [self.P43_flag_disease, 'dis_flag', 'No Disease flags found, skipping Disease flags transaction.']]
+    # def load_pubprops_lists(self):
+    #     """
+    #     Update the pubprops that can be lists
+    #     """
+    #     data_list = [
+    #         [self.P38_deposited_file, 'deposited_files', 'No deposited files, so skipping.'],
+    #         [self.P40_flag_cambridge, 'cam_flag', 'No Cambridge flags found, skipping Cambridge flags transaction.'],
+    #         [self.P41_flag_harvard, 'harv_flag', 'No Harvard flags found, skipping Harvard flags transaction.'],
+    #         [self.P42_flag_ontologist, 'onto_flag', 'No Ontology flags found, skipping Ontology flags transaction.'],
+    #         [self.P43_flag_disease, 'dis_flag', 'No Disease flags found, skipping Disease flags transaction.']]
 
-        for row in data_list:
-            if row[0]:
-                for entry in row[0]:
-                    self.load_pubprop('pubprop type', row[1], entry)
-            else:
-                log.debug(row[2])
+    #     for row in data_list:
+    #         if row[0]:
+    #             for entry in row[0]:
+    #                 self.load_pubprop('pubprop type', row[1], entry)
+    #         else:
+    #             log.debug(row[2])
 
-    def update_pubprops(self):
-        """
-        Update all the pub props.
-        """
-        self.load_pubprop_singles()
-        self.load_pubprops_lists()
+    # def update_pubprops(self):
+    #     """
+    #     Update all the pub props.
+    #     """
+    #     self.load_pubprop_singles()
+    #     self.load_pubprops_lists()
 
     def graphical_abstracts_check(self):
         """
@@ -317,10 +292,10 @@ class ChadoPub(ChadoObject):
             (\w+)  # pub directory
             [/]    # path divider
             (\w+)  # filename """
-
-        fields = re.search(pattern, self.P46_graphical_abstract[FIELD_VALUE], re.VERBOSE)
+        P46_data = self.process_data['P46']['data']
+        fields = re.search(pattern, P46_data[FIELD_VALUE], re.VERBOSE)
         if not fields:
-            self.warning_error(self.P46_graphical_abstract, 'P46 does not have the format */*.')
+            self.warning_error(P46_data, 'P46 does not have the format */*.')
             return
 
         expected_dir = self.parent_pub.miniref
@@ -328,7 +303,7 @@ class ChadoPub(ChadoObject):
         if expected_dir != fields.group(1):
             message = "'{}' does not equal to what is expected, given its parent.".format(fields.group(1))
             message += "\nWas expecting directory to be {}.".format(expected_dir)
-            self.warning_error(self.P46_graphical_abstract, message)
+            self.warning_error(P46_data, message)
 
     def do_P11_checks(self):
         """
@@ -344,55 +319,78 @@ class ChadoPub(ChadoObject):
 
         P11a:  Trying to set <pages> to '<your-pages>' but it is '<chado-pages>' in Chado.
         """
-        if self.P22_FlyBase_reference_ID[FIELD_VALUE] != 'new':
-            if self.pub.pages and self.P11a_page_range and self.pub.pages != self.P11a_page_range[FIELD_VALUE]:
-                message = self.P11a_page_range
-                message += 'P11a page range "{}" does not match "{}" already in chado.\n'.format(self.P11a_page_range, self.pub.pages)
-                self.critical_error(self.P11a_page_range, message)
+        p11a = self.process_data['P11a']['data']
+        if not self.newpub and self.bang_c != 'P11a':
+            if self.pub.pages and p11a and self.pub.pages != p11a[FIELD_VALUE]:
+                message = 'P11a page range "{}" does not match "{}" already in chado.\n'.format(p11a[FIELD_VALUE], self.pub.pages)
+                self.critical_error(p11a, message)
 
-    def update_dbxrefs(self):
-        """
-        dbxref fiedls to update.
-        """
-        data = [[self.P11c_san, 'GB'],
-                [self.P11d_doi, 'DOI'],
-                [self.P26_pubmed_id, 'pubmed'],
-                [self.P28_pubmed_central_id, 'PMCID'],
-                [self.P29_isbn, 'isbn']]
-        for row in data:
-            if row[0]:
-                self.load_pubdbxref(row[1], row[0])
+    # def update_dbxrefs(self):
+    #     """
+    #     dbxref fiedls to update.
+    #     """
+    #     data = [[self.P11c_san, 'GB'],
+    #             [self.P11d_doi, 'DOI'],
+    #             [self.P26_pubmed_id, 'pubmed'],
+    #             [self.P28_pubmed_central_id, 'PMCID'],
+    #             [self.P29_isbn, 'isbn']]
+    #     for row in data:
+    #         if row[0]:
+    #             self.load_pubdbxref(row[1], row[0])
 
     def extra_checks(self):
         """
-        Not all tests can be done in the validator as if the P11x is blank no checks are done.
+        Not all tests can be done in the validator do extra ones here.
         """
         self.do_P11_checks()
-        if self.P46_graphical_abstract:
+        if self.process_data['P2']['data']:
+            self.check_multipub(self.parent_pub, self.process_data['P2']['data'])
+        if self.process_data['P46']['data']:
             self.graphical_abstracts_check()
 
-    def update_pub(self):
-        """
-        Add direct fields to the pub.
-        """
-        if self.P10_pub_date:
-            self.pub.pyear = self.P10_pub_date[FIELD_VALUE]
-        if self.P11a_page_range:
-            self.pub.pages = self.P11a_page_range[FIELD_VALUE]
-        if self.P16_title:
-            self.pub.title = self.P16_title[FIELD_VALUE]
-        if self.P3_volume_number:
-            self.pub.volume = self.P3_volume_number[FIELD_VALUE]
-        if self.P4_issue_number:
-            self.pub.issue = self.P4_issue_number[FIELD_VALUE]
-        if self.P39_obsolete:
-            self.warning_error(self.P39_obsolete, "Making {} obsolete.".format(self.pub.uniquename))
-            self.pub.is_obsolete = True
+    def load_direct(self, key):
+        if 'boolean' in self.process_data[key]:
+            setattr(self.pub, self.process_data[key]['name'], True)
+            if 'warning' in self.process_data[key]:
+                message = "Making {} {}.".format(self.process_data['P22']['data'][FIELD_VALUE], self.process_data[key]['name'])
+                self.warning_error(self.process_data[key]['data'], message)
+        else:
+            setattr(self.pub, self.process_data[key]['name'], self.process_data[key]['data'][FIELD_VALUE])
+
+    def load_relationship(self, key):
+        for fbrf in self.process_data[key]['data']:
+            if 'verify_only_on_update' not in self.process_data[key] or self.newpub:
+                pub = self.get_related_pub(fbrf)
+                self.add_relationship(self.pub, pub, self.process_data[key]['cvterm'], self.process_data[key]['data'])
+
+    def load_dbxref(self, key):
+        self.load_pubdbxref(self.process_data[key]['cvterm'], self.process_data[key]['data'])
+
+    def ignore(self, key):
+        pass
+
+    def make_obsolete(self, key):
+        log.debug("Inside make obsolete.")
+        for fbrf in self.process_data[key]['data']:
+            log.debug("Make obsolete {}".format(fbrf))
+            pub = self.get_related_pub(fbrf)
+            pub.is_obsolete = True
+
+    def load_pubprop(self, key):
+        log.debug("loading pubprops")
+        if type(self.process_data[key]['data']) is list:
+            for row in self.process_data[key]['data']:
+                log.debug("loading {} {}".format(self.process_data[key]['cvterm'], row[FIELD_VALUE]))
+                self.load_single_pubprop('pubprop type', self.process_data[key]['cvterm'], row)
+        else:
+            log.debug("loading {} {}".format(self.process_data[key]['cvterm'], self.process_data[key]['data'][FIELD_VALUE]))
+            self.load_single_pubprop('pubprop type', self.process_data[key]['cvterm'], self.process_data[key]['data'])
 
     def load_content(self):
         """
         Main processing routine
         """
+
         self.pub = self.get_pub()
 
         self.parent_pub = self.get_parent_pub(self.pub)
@@ -404,49 +402,40 @@ class ChadoPub(ChadoObject):
             self.bang_c_it()
             return
 
-        if self.parent_pub and self.P2_multipub:
-            self.process_multipub(self.parent_pub, self.P2_multipub)
-
-        # Update the direct column data in Pub
-        self.update_pub()
-
-        self.process_related()
-        self.update_pubprops()
-        self.update_dbxrefs()
-
-        if self.P12_authors is not None:
-            for author in self.P12_authors:
-                self.load_author(author)
+        for key in self.process_data:
+            if self.process_data[key]['data']:
+                log.debug("Processing {}".format(self.process_data[key]['data']))
+                self.type_dict[self.process_data[key]['type']](key)
 
         timestamp = datetime.now().strftime('%c')
         curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short, timestamp)
         log.info('Curator string assembled as:')
         log.info('%s' % (curated_by_string))
 
-    def load_author(self, author):
+    def load_author(self, key):
         pattern = r"""
             ^(\S+)      # None space surname
             \s+?        # delimiting space
             (.*)?       # optional given names can havingspaces etc in them"""
-        fields = re.search(pattern, author[FIELD_VALUE], re.VERBOSE)
-        givennames = None
-        if fields:
-            if fields.group(1):
-                surname = fields.group(1)
-            if fields.group(2):
-                givennames = fields.group(2)
+        for author in self.process_data[key]['data']:
+            fields = re.search(pattern, author[FIELD_VALUE], re.VERBOSE)
+            givennames = None
+            if fields:
+                if fields.group(1):
+                    surname = fields.group(1)
+                if fields.group(2):
+                    givennames = fields.group(2)
 
-        self.current_query_source = author
-        self.current_query = "Author get/create: {}.".format(author[FIELD_VALUE])
-        author = get_or_create(
-            self.session, Pubauthor,
-            pub_id=self.pub.pub_id,
-            surname=surname,
-            givennames=givennames
-        )
-        return author
+            self.current_query_source = author
+            self.current_query = "Author get/create: {}.".format(author[FIELD_VALUE])
+            author = get_or_create(
+                self.session, Pubauthor,
+                pub_id=self.pub.pub_id,
+                surname=surname,
+                givennames=givennames
+            )
 
-    def load_pubprop(self, cv_name, cv_term_name, value_to_add_tuple):
+    def load_single_pubprop(self, cv_name, cv_term_name, value_to_add_tuple):
         """
         From a given cv and cvterm name add the pubprop with value in tuple.
         If cv or cvterm do not exist create an error and return.
