@@ -22,9 +22,9 @@ log = logging.getLogger(__name__)
 class ChadoPub(ChadoObject):
     def __init__(self, params):
         log.info('Initializing ChadoPub object.')
-        #########################################
-        # Set up how to process each tpe of input
-        #########################################
+        ##########################################
+        # Set up how to process each type of input
+        ##########################################
         self.type_dict = {'direct': self.load_direct,
                           'pubauthor': self.load_author,
                           'relationship': self.load_relationship,
@@ -37,6 +37,7 @@ class ChadoPub(ChadoObject):
 
         ############################################################
         # Get processing info and data to be processed.
+        # Please see the yml/publication.yml file for more details
         ############################################################
         yml_file = os.path.join(os.path.dirname(__file__), 'yml/publication.yml')
         self.process_data = yaml.load(open(yml_file))
@@ -228,53 +229,6 @@ class ChadoPub(ChadoObject):
         """
         log.critical("Not coded !c yet")
 
-    # def load_pubprop_singles(self):
-    #     """
-    #     Process the none list pubprops.
-
-    #     pub_data => [[key, pubprop name, debug message],...]
-    #     """
-    #     pub_data = [[self.P11b_url, 'URL', 'No URL specified, skipping URL'],
-    #                 [self.P13_language, 'languages', 'No language specified, skipping languages transaction.'],
-    #                 [self.P14_additional_language, 'abstract_languages', 'No additional language specified, skipping additional language transaction.'],
-    #                 [self.P19_internal_notes, 'internalnotes', 'No internal notes found, skipping internal notes transaction.'],
-    #                 [self.P23_personal_com, 'perscommtext', 'No personal communication, skipping personal communication notes transaction.'],
-    #                 [self.P34_abstract, 'pubmed_abstract',  'No Abtract, skipping addition of abstract.'],
-    #                 [self.P44_disease_notes, 'diseasenotes', 'No disease notes, so skipping disease notes transactions.'],
-    #                 [self.P45_Not_dros, 'not_Drospub', 'Drosophila pub, so no need to set NOT dros flag.'],
-    #                 [self.P46_graphical_abstract, 'graphical_abstract', 'No graphical abstracts, so skipping.']]
-
-    #     for row in pub_data:
-    #         if row[0]:
-    #             self.load_pubprop('pubprop type', row[1], row[0])
-    #         else:
-    #             log.debug(row[2])
-
-    # def load_pubprops_lists(self):
-    #     """
-    #     Update the pubprops that can be lists
-    #     """
-    #     data_list = [
-    #         [self.P38_deposited_file, 'deposited_files', 'No deposited files, so skipping.'],
-    #         [self.P40_flag_cambridge, 'cam_flag', 'No Cambridge flags found, skipping Cambridge flags transaction.'],
-    #         [self.P41_flag_harvard, 'harv_flag', 'No Harvard flags found, skipping Harvard flags transaction.'],
-    #         [self.P42_flag_ontologist, 'onto_flag', 'No Ontology flags found, skipping Ontology flags transaction.'],
-    #         [self.P43_flag_disease, 'dis_flag', 'No Disease flags found, skipping Disease flags transaction.']]
-
-    #     for row in data_list:
-    #         if row[0]:
-    #             for entry in row[0]:
-    #                 self.load_pubprop('pubprop type', row[1], entry)
-    #         else:
-    #             log.debug(row[2])
-
-    # def update_pubprops(self):
-    #     """
-    #     Update all the pub props.
-    #     """
-    #     self.load_pubprop_singles()
-    #     self.load_pubprops_lists()
-
     def graphical_abstracts_check(self):
         """
         Checks within field:
@@ -325,19 +279,6 @@ class ChadoPub(ChadoObject):
                 message = 'P11a page range "{}" does not match "{}" already in chado.\n'.format(p11a[FIELD_VALUE], self.pub.pages)
                 self.critical_error(p11a, message)
 
-    # def update_dbxrefs(self):
-    #     """
-    #     dbxref fiedls to update.
-    #     """
-    #     data = [[self.P11c_san, 'GB'],
-    #             [self.P11d_doi, 'DOI'],
-    #             [self.P26_pubmed_id, 'pubmed'],
-    #             [self.P28_pubmed_central_id, 'PMCID'],
-    #             [self.P29_isbn, 'isbn']]
-    #     for row in data:
-    #         if row[0]:
-    #             self.load_pubdbxref(row[1], row[0])
-
     def extra_checks(self):
         """
         Not all tests can be done in the validator do extra ones here.
@@ -349,6 +290,14 @@ class ChadoPub(ChadoObject):
             self.graphical_abstracts_check()
 
     def load_direct(self, key):
+        """
+        Direct fields are those that are directly connected to the pub.
+        So things like: title, pages, volume etc
+
+        Params: key: key into the dict (self.process_data) that contains
+                     the data and info on what to do with it including extra
+                     terms like warning or boolean.
+        """
         if 'boolean' in self.process_data[key]:
             setattr(self.pub, self.process_data[key]['name'], True)
             if 'warning' in self.process_data[key]:
@@ -364,19 +313,33 @@ class ChadoPub(ChadoObject):
                 self.add_relationship(self.pub, pub, self.process_data[key]['cvterm'], self.process_data[key]['data'])
 
     def load_dbxref(self, key):
-        self.load_pubdbxref(self.process_data[key]['cvterm'], self.process_data[key]['data'])
+        self.load_pubdbxref(self.process_data[key]['dbname'], self.process_data[key]['data'])
 
     def ignore(self, key):
+        """
+        Some fields no processing but are merely used to define things for checks.
+        i.e. P22, this is processed to either fetch an existing pub or is set to new
+             so will already have been processed as we get the pub object first.
+        So we purposefully ignore it now as it has had all the processing needed already done.
+        """
         pass
 
     def make_obsolete(self, key):
-        log.debug("Inside make obsolete.")
+        """
+        Makes related pubs obsolete, NOT the pub itself.
+        """
         for fbrf in self.process_data[key]['data']:
             log.debug("Make obsolete {}".format(fbrf))
             pub = self.get_related_pub(fbrf)
             pub.is_obsolete = True
 
     def load_pubprop(self, key):
+        """
+        Loads all the pug prop.
+        Params: key: key to the dict self.process_data
+        self.process_data[key]['cvterm'] contains the cvterm to be used in the pupprob.
+        self.process_data[key]['data'] contains the value(s) to be added.
+        """
         log.debug("loading pubprops")
         if type(self.process_data[key]['data']) is list:
             for row in self.process_data[key]['data']:

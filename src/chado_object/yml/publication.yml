@@ -1,11 +1,34 @@
-#################################################################################
-# Docs..
+#########################################################################################
+# Documentation for Publication yml
 #
-# type: type of processing to be done on the field
-#  
-#       direct:
-#       relationship:
-#       pubprop:
+# type: dependent on...
+#
+#       direct:       Needs 'name' of field in chado database.
+#       relationship: Needs 'cvterm' of the relationship.
+#       pubprop:      Needs 'cvterm' of the property to add
+#       ignore:       Nothing.
+#                     NOTE: P1 has other values but becouse it is used in the creation of
+#                           new pub or checking for existing pubs, or changing with !c
+#                           additional info like cvterm etc are needed.
+#       dbxref:       Needs 'dbname' of the db.
+#       pubauthor:    Nothing.
+#
+# So a direct type gets added to the pub directly, i.e. it is the same as the field name 
+# in chado and therefore aonly needs the name of that field to be able to change/add it.
+#
+# Relationships are stored in the pub_relationship table and need a cvterm to define how
+# they are related.
+#
+# Dbxrefs are stored in the pub_dbxref table.
+#
+# Description is just in there to help out.
+#
+# Other terms are used to allow specific fields to do special things in the code instead
+# of creating more types. 
+# i.e. verify_only_on_update in P2
+#      Will not add new relationship each time it is seen (only on creation of new pubs)
+#      It instead is used to make sure if pub already has a parent it matches this. 
+#########################################################################################
 P1:
   type: ignore
   cvterm: pub type
@@ -38,11 +61,11 @@ P11b:
   description: url  
 P11c:
   type: dbxref
-  cvterm: GB
+  dbname: GB
   description: san
 P11d:
   type: dbxref
-  cvterm: DOI
+  dbname: DOI
   description: doi
 P12:
   type: pubauthor
@@ -77,15 +100,15 @@ P23:
   description: personnal communication  
 P26:
   type: dbxref
-  cvterm: pubmed
+  dbname: pubmed
   description: pubmed id
 P28:
   type: dbxref
-  cvterm: PMCID
+  dbname: PMCID
   description: pubmed central id
 P29:
   type: dbxref
-  cvterm: isbn
+  dbname: isbn
   description: isbn
 P30:
   type: relationship
