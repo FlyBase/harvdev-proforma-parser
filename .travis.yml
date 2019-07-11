@@ -6,8 +6,6 @@ python:
     - "3.6"
 cache: pip
 
-before-script:
-    - git clone git@github.com:FlyBase/harvdev-proforma-setup.git
-
 script:
+    - git clone git@github.com:FlyBase/harvdev-proforma-setup.git
     - echo 'hi!'
