@@ -1,5 +1,7 @@
 sudo: false
 dist: trusty
+git:
+    clone: false
 
 language: python
 python:
@@ -7,5 +9,8 @@ python:
 cache: pip
 
 script:
+    - export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
+    - echo "TRAVIS_BRANCH=$TRAVIS_BRANCH, PR=$PR, BRANCH=$BRANCH"
     - git clone git@github.com:FlyBase/harvdev-proforma-setup.git
-    - echo 'hi.'
+    - cd harvdev-proforma-setup
+    - ./build_test_travis.sh
