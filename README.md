@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/FlyBase/harvdev-proforma-parser.svg?token=7Nvc5gEdzuNraK13EL3s&branch=develop)](https://travis-ci.com/FlyBase/harvdev-proforma-parser)
+
 # Harvdev Proforma Parser
 
 ## Requirements
