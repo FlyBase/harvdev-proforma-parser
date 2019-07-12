@@ -14,4 +14,4 @@ script:
     - git checkout travis
     - ./build_test_travis.sh
     - pip install -r build_dir/harvdev-proforma-parser/requirements-test.txt
-    - python ./test_scripts/run_tests.py -p -d
+    - python ./test_scripts/run_tests.py -p
