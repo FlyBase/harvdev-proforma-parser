@@ -16,4 +16,4 @@ script:
     - cd harvdev-proforma-setup
     - git checkout travis
     - ./build_test_travis.sh
-    - ./test_scripts/run_tests.py -p -d
+    - python ./test_scripts/run_tests.py -p -d
