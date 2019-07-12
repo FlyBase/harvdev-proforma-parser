@@ -4,7 +4,6 @@ git:
 language: python
 python:
     - "3.6"
-cache: pip
 
 script:
     # We find our current branch harvdev-proforma-parser using the two lines below.
