@@ -14,5 +14,4 @@ script:
     - git clone git@github.com:FlyBase/harvdev-proforma-setup.git
     - cd harvdev-proforma-setup
     - git checkout travis
-    - pip install -r requirements-test.txt
     - ./build_test_travis.sh
