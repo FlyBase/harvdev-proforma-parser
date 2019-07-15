@@ -45,7 +45,6 @@ class ValidatorBase(Validator):
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
-        log.debug("NO BANG C TEST:{} record_type is:{}".format(self.bang_c, self.record_type))
         if self.bang_c == field:
             self._error(field, '{} not allowed with bang c'.format(field))
 
