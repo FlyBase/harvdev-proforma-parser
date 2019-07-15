@@ -310,6 +310,9 @@ class ChadoPub(ChadoObject):
                 message = "Making {} {}.".format(self.process_data['P22']['data'][FIELD_VALUE], self.process_data[key]['name'])
                 self.warning_error(self.process_data[key]['data'], message)
         else:
+            old_attr = getattr(self.pub, self.process_data[key]['name'])
+            if old_attr:
+                self.warning_error(self.process_data[key]['data'], "No !c but still overwriting existing value of {}".format(old_attr))
             setattr(self.pub, self.process_data[key]['name'], self.process_data[key]['data'][FIELD_VALUE])
 
     def load_relationship(self, key):
