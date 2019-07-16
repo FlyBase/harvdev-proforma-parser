@@ -473,7 +473,7 @@ class ChadoPub(ChadoObject):
     ########################################################################################
     def bang_c_it(self):
         """
-        Correction. Change the values.
+        Correction. Remove all existing value(s) and replace with the value(s) in this field.
         """
         log.debug("Bang C processing {}".format(self.bang_c))
         key = self.bang_c
