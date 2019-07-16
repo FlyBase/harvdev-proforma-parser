@@ -255,7 +255,7 @@ class ChadoPub(ChadoObject):
         P46_data = self.process_data['P46']['data']
         fields = re.search(pattern, P46_data[FIELD_VALUE], re.VERBOSE)
         if not fields:
-            self.warning_error(P46_data, 'P46 does not have the format */*.')
+            self.critical_error(P46_data, 'P46 does not have the format */*.')
             return
 
         expected_dir = self.parent_pub.miniref
@@ -398,9 +398,10 @@ class ChadoPub(ChadoObject):
         Return surname and fivennames for the author string
         """
         pattern = r"""
-            ^(\S+)      # None space surname
-            \s+?        # delimiting space
-            (.*)?       # optional given names can havingspaces etc in them"""
+            ^(\S+)     # None space surname
+            \t+?       # tab
+            (.*)?      # optional given names can havingspaces etc in them"""
+
         givennames = None
         surname = None
         fields = re.search(pattern, author[FIELD_VALUE], re.VERBOSE)
