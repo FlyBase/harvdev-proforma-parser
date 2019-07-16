@@ -491,7 +491,7 @@ class ChadoPub(ChadoObject):
 
     def bang_d_it(self):
         """
-        Remove specific values.
+        Remove specific values indicated in the proforma field.
         """
         log.debug("Bang D processing {}".format(self.bang_c))
         key = self.bang_d
