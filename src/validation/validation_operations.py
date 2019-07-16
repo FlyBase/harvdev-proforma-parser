@@ -153,7 +153,7 @@ def validate_proforma_object(proforma):
         sys.exit(-1)
 
     schema = yaml.full_load(schema_file)
-    log.debug('Schema used: {}'.format(schema))
+    log.debug('Schema used: {}'.format(yaml_file_location))
 
     validator = validatortype(schema, proforma.file_metadata['record_type'], proforma.bang_c, proforma.bang_d)  # Custom validator for specific object.
 

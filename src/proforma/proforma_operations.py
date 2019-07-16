@@ -277,14 +277,14 @@ class ProformaFile(object):
             field, value, type_of_bang = self.get_proforma_field_and_content(current_line)
             log.debug(current_line)
             log.debug(line_number)
-            individual_proforma.add_field_and_value(field, value, line_number)
+            individual_proforma.add_field_and_value(field, value, line_number, type_of_bang)
             if type_of_bang:
                 individual_proforma.add_bang(field, value, line_number, type_of_bang)
         else:
             # We're in a line which contains a value for the previously defined field.
             # Add the entire contents of the line to the previously defined field.
             try:
-                individual_proforma.add_field_and_value(field, current_line, line_number)
+                individual_proforma.add_field_and_value(field, current_line, line_number, False)
             except AttributeError:
                 log.critical('Attribute error occurred when processing %s' % (self.filename))
                 log.critical('Unable to parse line %s' % (line_number))
@@ -373,7 +373,7 @@ class Proforma(object):
         log.info('Proforma type defined as: %s' % (proforma_type))
         log.info('Proforma object begins at line: %s' % (line_number))
 
-    def add_field_and_value(self, field, value, line_number):
+    def add_field_and_value(self, field, value, line_number, type_of_bang):
         """
         Adds the field and value from a proforma into a dictionary.
 
@@ -383,7 +383,7 @@ class Proforma(object):
             value (str): The value from the proforma.
         """
 
-        if value == '':  # Leave this function if the value is an empty string.
+        if value == '' and not type_of_bang:  # Leave this function if the value is an empty string.
             return
 
         # remove spaces from start and end of string

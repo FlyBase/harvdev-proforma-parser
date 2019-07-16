@@ -33,6 +33,14 @@ class ChadoPub(ChadoObject):
                           'ignore': self.ignore,
                           'obsolete': self.make_obsolete}
 
+        self.delete_dict = {'direct': self.delete_direct,
+                            'pubauthor': self.delete_author,
+                            'relationship': self.delete_relationships,
+                            'pubprop': self.delete_pubprop,
+                            'dbxref': self.delete_dbxref,
+                            'ignore': self.delete_ignore,
+                            'obsolete': self.delete_obsolete}
+
         self.proforma_start_line_number = params.get('proforma_start_line_number')
 
         ############################################################
@@ -45,7 +53,6 @@ class ChadoPub(ChadoObject):
             self.process_data[key]['data'] = params['fields_values'].get(key)
             if self.process_data[key]['data']:
                 log.debug("{}: {}".format(key, self.process_data[key]))
-        self.bang_c = params.get('bang_c')
 
         #################################################
         # various tests use this so create an easy lookup
@@ -126,14 +133,20 @@ class ChadoPub(ChadoObject):
                 self.critical_error(p1_data, message)
         return cvterm
 
-    def get_related_pub(self, tuple):
+    def get_related_pub(self, tuple, uniquename=True):
         """
         from the fbrf tuple get the pub
         """
         self.current_query_source = tuple
         self.current_query = "Looking up pub: {}.".format(tuple[FIELD_VALUE])
         log.debug("Looking up pub: {}.".format(tuple[FIELD_VALUE]))
-        return self.session.query(Pub).filter(Pub.uniquename == tuple[FIELD_VALUE]).one()
+        pub = None
+        if uniquename:
+            pub = self.session.query(Pub).filter(Pub.uniquename == tuple[FIELD_VALUE]).one()
+        else:
+            if tuple[FIELD_VALUE]:
+                pub = self.session.query(Pub).filter(Pub.miniref == tuple[FIELD_VALUE]).one()
+        return pub
 
     def add_relationship(self, subject_pub, object_pub, cvterm, query_source):
         """
@@ -167,7 +180,6 @@ class ChadoPub(ChadoObject):
             join(Cvterm).filter(PubRelationship.subject_id == pub.pub_id,
                                 PubRelationship.type_id == cvterm.cvterm_id).one_or_none()
         log.debug("PR => {}".format(pr))
-        log.debug(dir(pr))
         if not pr:
             return None
         return self.session.query(Pub).filter(Pub.pub_id == pr.object_id).one()
@@ -222,12 +234,6 @@ class ChadoPub(ChadoObject):
             log.info(pub)
             log.info("New pub created with fbrf {}.".format(pub.uniquename))
         return pub
-
-    def bang_c_it(self):
-        """
-        Delete everything wrt this pub and itself?
-        """
-        log.critical("Not coded !c yet")
 
     def graphical_abstracts_check(self):
         """
@@ -284,7 +290,7 @@ class ChadoPub(ChadoObject):
         Not all tests can be done in the validator do extra ones here.
         """
         self.do_P11_checks()
-        if self.process_data['P2']['data']:
+        if self.process_data['P2']['data'] and self.bang_c != 'P2' and self.bang_d != 'P2':
             self.check_multipub(self.parent_pub, self.process_data['P2']['data'])
         if self.process_data['P46']['data']:
             self.graphical_abstracts_check()
@@ -304,12 +310,23 @@ class ChadoPub(ChadoObject):
                 message = "Making {} {}.".format(self.process_data['P22']['data'][FIELD_VALUE], self.process_data[key]['name'])
                 self.warning_error(self.process_data[key]['data'], message)
         else:
+            old_attr = getattr(self.pub, self.process_data[key]['name'])
+            if old_attr:
+                self.warning_error(self.process_data[key]['data'], "No !c but still overwriting existing value of {}".format(old_attr))
             setattr(self.pub, self.process_data[key]['name'], self.process_data[key]['data'][FIELD_VALUE])
 
     def load_relationship(self, key):
-        for fbrf in self.process_data[key]['data']:
-            if 'verify_only_on_update' not in self.process_data[key] or self.newpub:
-                pub = self.get_related_pub(fbrf)
+        if type(self.process_data[key]['data']) is list:
+            for fbrf in self.process_data[key]['data']:
+                if 'verify_only_on_update' not in self.process_data[key] or self.newpub:
+                    pub = self.get_related_pub(fbrf)
+                    self.add_relationship(self.pub, pub, self.process_data[key]['cvterm'], self.process_data[key]['data'])
+        else:  # P2 can only change with !c or has no parent pub
+            log.debug("not list {}".format(key))
+            parent_pub = self.get_parent_pub(self.pub)
+            if self.bang_c == key or not parent_pub:
+                fbrf = self.process_data[key]['data']
+                pub = self.get_related_pub(fbrf, uniquename=False)
                 self.add_relationship(self.pub, pub, self.process_data[key]['cvterm'], self.process_data[key]['data'])
 
     def load_dbxref(self, key):
@@ -363,7 +380,8 @@ class ChadoPub(ChadoObject):
         # bang c first as this trumps all things
         if self.bang_c:
             self.bang_c_it()
-            return
+        if self.bang_d:
+            self.bang_d_it()
 
         for key in self.process_data:
             if self.process_data[key]['data']:
@@ -375,20 +393,27 @@ class ChadoPub(ChadoObject):
         log.info('Curator string assembled as:')
         log.info('%s' % (curated_by_string))
 
-    def load_author(self, key):
+    def get_author(self, author):
+        """
+        Return surname and fivennames for the author string
+        """
         pattern = r"""
             ^(\S+)      # None space surname
             \s+?        # delimiting space
             (.*)?       # optional given names can havingspaces etc in them"""
-        for author in self.process_data[key]['data']:
-            fields = re.search(pattern, author[FIELD_VALUE], re.VERBOSE)
-            givennames = None
-            if fields:
-                if fields.group(1):
-                    surname = fields.group(1)
-                if fields.group(2):
-                    givennames = fields.group(2)
+        givennames = None
+        surname = None
+        fields = re.search(pattern, author[FIELD_VALUE], re.VERBOSE)
+        if fields:
+            if fields.group(1):
+                surname = fields.group(1)
+            if fields.group(2):
+                givennames = fields.group(2)
+        return givennames, surname
 
+    def load_author(self, key):
+        for author in self.process_data[key]['data']:
+            givennames, surname = self.get_author(author)
             self.current_query_source = author
             self.current_query = "Author get/create: {}.".format(author[FIELD_VALUE])
             author = get_or_create(
@@ -441,3 +466,130 @@ class ChadoPub(ChadoObject):
             pub_id=self.pub.pub_id,
             dbxref_id=dbxref.dbxref_id
         )
+
+    ########################################################################################
+    # Deletion bangc and bangd methods.
+    # NOTE: After correction or deletion
+    ########################################################################################
+    def bang_c_it(self):
+        """
+        Correction. Remove all existing value(s) and replace with the value(s) in this field.
+        """
+        log.debug("Bang C processing {}".format(self.bang_c))
+        key = self.bang_c
+        self.delete_dict[self.process_data[key]['type']](key, bangc=True)
+        delete_blank = False
+        if type(self.process_data[key]['data']) is list:
+            for item in self.process_data[key]['data']:
+                if not item[FIELD_VALUE]:
+                    delete_blank = True
+        else:
+            if not self.process_data[key]['data'][FIELD_VALUE]:
+                delete_blank = True
+        if delete_blank:
+            self.process_data[key]['data'] = None
+
+    def bang_d_it(self):
+        """
+        Remove specific values indicated in the proforma field.
+        """
+        log.debug("Bang D processing {}".format(self.bang_c))
+        key = self.bang_d
+
+        #####################################
+        # check bang_d has a value to delete
+        #####################################
+        if type(self.process_data[key]['data']) is not list:
+            if not self.process_data[key]['data'][FIELD_VALUE]:
+                log.error("BANGD: {}".format(self.process_data[key]['data']))
+                self.critical_error(self.process_data[key]['data'], "Must specify a value with !d.")
+                self.process_data[key]['data'] = None
+                return
+        else:
+            for item in self.process_data[key]['data']:
+                if not item[FIELD_VALUE]:
+                    log.error("BANGD: {}".format(item))
+                    self.critical_error(item, "Must specify a value with !d.")
+                    self.process_data[key]['data'] = None
+                    return
+
+        self.delete_dict[self.process_data[key]['type']](key, bangc=False)
+        self.process_data[key]['data'] = None
+
+    def delete_direct(self, key, bangc=True):
+        try:
+            new_value = self.process_data[key]['data'][FIELD_VALUE]
+        except KeyError:
+            new_value = None
+        setattr(self.pub, self.process_data[key]['name'], new_value)
+        # NOTE: direct is a replacement so might aswell delete data to stop it being processed again.
+        self.process_data[key]['data'] = None
+
+    def delete_author(self, key, bangc=True):
+        if bangc:
+            count = self.session.query(Pubauthor).filter(Pubauthor.pub_id == self.pub.pub_id).delete()
+            log.debug("removed {} pub authors".format(count))
+        else:  # bangd just remove the ones listed
+            for author in self.process_data[key]['data']:
+                givennames, surname = self.get_author(author)
+                log.debug("Removing {} - {} for {}".format(givennames, surname, self.pub.uniquename))
+                pubauthor = self.session.query(Pubauthor).filter(Pubauthor.pub_id == self.pub.pub_id,
+                                                                 Pubauthor.givennames == givennames,
+                                                                 Pubauthor.surname == surname).one_or_none()
+                if not pubauthor:
+                    self.critical_error(author, "Cannot delete Author that does not exist")
+                else:
+                    self.session.delete(pubauthor)
+                    log.debug("{} removed".format(pubauthor))
+
+    def delete_relationship(self, cvterm, item, uniquename):
+        if uniquename:
+            object_pub = self.session.query(Pub).filter(Pub.uniquename == item[FIELD_VALUE]).one_or_none()
+        else:
+            object_pub = self.session.query(Pub).filter(Pub.miniref == item[FIELD_VALUE]).one_or_none()
+        if not object_pub:
+            self.critical_error(item, "Publication '{}' not found.".format(item[FIELD_VALUE]))
+            return
+        pubrel = self.session.query(PubRelationship).filter(PubRelationship.subject_id == self.pub.pub_id,
+                                                            PubRelationship.object_id == object_pub.pub_id,
+                                                            PubRelationship.type_id == cvterm.cvterm_id).one_or_none()
+        if not pubrel:
+            self.critical_error(item, "Publication '{}' not linked via {}.".format(item[FIELD_VALUE], cvterm.name))
+            return
+        self.session.delete(pubrel)
+        log.debug("{} removed".format(pubrel))
+
+    def delete_relationships(self, key, bangc=True):
+        cvterm = self.session.query(Cvterm).join(Cv).filter(Cv.name == 'pub relationship type',
+                                                            Cvterm.name == self.process_data[key]['cvterm'],
+                                                            Cvterm.is_obsolete == 0).one()
+        if bangc:
+            count = self.session.query(PubRelationship).filter(PubRelationship.subject_id == self.pub.pub_id,
+                                                               PubRelationship.type_id == cvterm.cvterm_id).delete()
+            log.debug("removed {} Pub relationships".format(count))
+        else:
+            if type(self.process_data[key]['data']) is list:
+                for item in self.process_data[key]['data']:
+                    if not item[FIELD_VALUE]:
+                        self.critical_error(item, "Must specify a value with !d.")
+                        self.process_data[key]['data'] = None
+                        return
+                    self.delete_relationship(cvterm, item, True)
+            else:  # P2 is not a list
+                if not self.process_data[key]['data'][FIELD_VALUE]:
+                    self.critical_error(self.process_data[key]['data'], "Must specify a value with !d.")
+                    self.process_data[key]['data'] = None
+                    return
+                self.delete_relationship(cvterm, self.process_data[key]['data'], False)
+
+    def delete_pubprop(self, key, bangc=True):
+        pass
+
+    def delete_dbxref(self, key, bangc=True):
+        pass
+
+    def delete_ignore(self, key, bangc=True):
+        pass
+
+    def delete_obsolete(self, key, bangc=True):
+        pass
