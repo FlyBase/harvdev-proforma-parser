@@ -94,7 +94,7 @@ class ChadoPub(ChadoObject):
             stored in Chado for the publication specified by the value given in P22.
 
         If !c is not used:
-key
+
         * if P22 contains a valid FBrf, either:
         * the value given in P1 must be identical to the value
           stored in Chado for the publication specified by the value given in P22 or
