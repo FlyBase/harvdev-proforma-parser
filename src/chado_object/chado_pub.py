@@ -255,7 +255,7 @@ class ChadoPub(ChadoObject):
         P46_data = self.process_data['P46']['data']
         fields = re.search(pattern, P46_data[FIELD_VALUE], re.VERBOSE)
         if not fields:
-            self.warning_error(P46_data, 'P46 does not have the format */*.')
+            self.critical_error(P46_data, 'P46 does not have the format */*.')
             return
 
         expected_dir = self.parent_pub.miniref
@@ -397,18 +397,16 @@ class ChadoPub(ChadoObject):
         """
         Return surname and fivennames for the author string
         """
-        pattern = r"""
-            ^(\S+)      # None space surname
-            \s+?        # delimiting space
-            (.*)?       # optional given names can havingspaces etc in them"""
-        givennames = None
-        surname = None
-        fields = re.search(pattern, author[FIELD_VALUE], re.VERBOSE)
-        if fields:
-            if fields.group(1):
-                surname = fields.group(1)
-            if fields.group(2):
-                givennames = fields.group(2)
+        names = author[FIELD_VALUE].split('\t')
+        if len(names) > 2:
+            self.critical_error(author, "Author has more than 1 tab in it, this is not allowed.")
+        elif len(names) == 2:
+            surname = names[0]
+            givennames = names[1]
+        else:
+            surname = names[0]
+            givennames = None
+        
         return givennames, surname
 
     def load_author(self, key):
