@@ -46,7 +46,7 @@ class ValidatorBase(Validator):
         {'type': 'boolean'}
         """
         if self.bang_c == field:
-            self._error(field, '{} not allowed with bang c'.format(field))
+            self._error(field, '{} not allowed with bang c or bang d'.format(field))
 
     def _validate_only_allowed(self, field_keys, field, comp_fields):
         """

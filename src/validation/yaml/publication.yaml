@@ -102,6 +102,7 @@ P32:
   type: [string, list]
   no_duplicates: P22 P30 P31
   regex: ^(FBrf\d{7})$
+  no_bangc: True
 P34:
   required: False
   type: string
