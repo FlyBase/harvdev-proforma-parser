@@ -7,7 +7,7 @@
 import re
 import os
 import yaml
-from .chado_base import ChadoObject, FIELD_VALUE
+from .chado_base import ChadoObject, FIELD_VALUE, FIELD_NAME
 from harvdev_utils.production import (
     Cv, Cvterm, Pub, Pubprop, Pubauthor, PubRelationship, Db, Dbxref, PubDbxref
 )
@@ -36,7 +36,7 @@ class ChadoPub(ChadoObject):
         self.delete_dict = {'direct': self.delete_direct,
                             'pubauthor': self.delete_author,
                             'relationship': self.delete_relationships,
-                            'pubprop': self.delete_pubprop,
+                            'pubprop': self.delete_pubprops,
                             'dbxref': self.delete_dbxref,
                             'ignore': self.delete_ignore,
                             'obsolete': self.delete_obsolete}
@@ -110,7 +110,7 @@ class ChadoPub(ChadoObject):
             self.critical_error(p1_data, 'Not allowed to have the value "journal" or "compendium"')
 
         self.current_query_source = p1_data
-        self.current_query = 'Querying for cvterm {} with cv of pub type\'%s\'.' % (p1_data[FIELD_VALUE])
+        self.current_query = 'Querying for cvterm %s with cv of pub type\'%s\'.' % ('pub type', p1_data[FIELD_VALUE])
 
         cvterm = self.session.query(Cvterm).join(Cv).filter(Cvterm.cv_id == Cv.cv_id,
                                                             Cvterm.name == p1_data[FIELD_VALUE],
@@ -352,7 +352,7 @@ class ChadoPub(ChadoObject):
 
     def load_pubprop(self, key):
         """
-        Loads all the pug prop.
+        Loads all the pub props.
         Params: key: key to the dict self.process_data
         self.process_data[key]['cvterm'] contains the cvterm to be used in the pupprob.
         self.process_data[key]['data'] contains the value(s) to be added.
@@ -406,7 +406,6 @@ class ChadoPub(ChadoObject):
         else:
             surname = names[0]
             givennames = None
-        
         return givennames, surname
 
     def load_author(self, key):
@@ -482,7 +481,7 @@ class ChadoPub(ChadoObject):
                 if not item[FIELD_VALUE]:
                     delete_blank = True
         else:
-            if not self.process_data[key]['data'][FIELD_VALUE]:
+            if not self.process_data[key]['data'] or not self.process_data[key]['data'][FIELD_VALUE]:
                 delete_blank = True
         if delete_blank:
             self.process_data[key]['data'] = None
@@ -541,6 +540,10 @@ class ChadoPub(ChadoObject):
                     log.debug("{} removed".format(pubauthor))
 
     def delete_relationship(self, cvterm, item, uniquename):
+        if not item[FIELD_VALUE]:
+            self.critical_error(item, "Must specify a value with !d.")
+            self.process_data[item[FIELD_NAME]]['data'] = None
+            return
         if uniquename:
             object_pub = self.session.query(Pub).filter(Pub.uniquename == item[FIELD_VALUE]).one_or_none()
         else:
@@ -568,26 +571,117 @@ class ChadoPub(ChadoObject):
         else:
             if type(self.process_data[key]['data']) is list:
                 for item in self.process_data[key]['data']:
-                    if not item[FIELD_VALUE]:
-                        self.critical_error(item, "Must specify a value with !d.")
-                        self.process_data[key]['data'] = None
-                        return
                     self.delete_relationship(cvterm, item, True)
             else:  # P2 is not a list
-                if not self.process_data[key]['data'][FIELD_VALUE]:
-                    self.critical_error(self.process_data[key]['data'], "Must specify a value with !d.")
-                    self.process_data[key]['data'] = None
-                    return
                 self.delete_relationship(cvterm, self.process_data[key]['data'], False)
 
-    def delete_pubprop(self, key, bangc=True):
-        pass
+    def delete_pubprop(self, cvterm, item):
+        """
+        Delete specific pubprop specified by the value and cvterm.
+        Give critical error if there is no value or value not found.
+        """
+        if not item[FIELD_VALUE]:
+            self.critical_error(item, "Must specify a value with !d.")
+            self.process_data[item[FIELD_NAME]]['data'] = None
+            return
+        pubprop = self.session.query(Pubprop).filter(Pubprop.pub_id == self.pub.pub_id,
+                                                     Pubprop.value == item[FIELD_VALUE],
+                                                     Pubprop.type_id == cvterm.cvterm_id).one_or_none()
+        if not pubprop:
+            message = "Publication '{}' has no pubprop of type {} and value {}.".format(self.pub.uniquename, cvterm.name, item[FIELD_VALUE])
+            self.critical_error(item, message)
+            self.process_data[item[FIELD_NAME]]['data'] = None
+            return
+
+        self.session.delete(pubprop)
+        log.debug("{} removed".format(pubprop))
+
+    def delete_pubprops(self, key, bangc=True):
+        """
+        Delete the pubprops specified by self.process_data[key]['cvterm']
+        and if not bangc then by just the one with the value.
+        """
+        cv_term = self.session.query(Cvterm).join(Cv).filter(Cv.name == 'pubprop type',
+                                                             Cvterm.name == self.process_data[key]['cvterm'],
+                                                             Cvterm.is_obsolete == 0).one()
+
+        if bangc:
+            count = self.session.query(Pubprop).filter(Pubprop.pub_id == self.pub.pub_id,
+                                                       Pubprop.type_id == cv_term.cvterm_id).delete()
+            log.debug("removed {} Pub Props for {}.".format(count, key))
+        else:
+            if type(self.process_data[key]['data']) is list:
+                for item in self.process_data[key]['data']:
+                    self.delete_pubprop(cv_term, item)
+            else:
+                self.delete_pubprop(cv_term, self.process_data[key]['data'])
 
     def delete_dbxref(self, key, bangc=True):
-        pass
+        """
+        Bangc and bangd for dbxrefs.
+        """
+        db = self.session.query(Db).filter(Db.name == self.process_data[key]['dbname']).one()
+        if bangc:
+            # delete only the pub_dbxref or dbxref is no others exist.
+            count = 0
+            for item in self.session.query(PubDbxref).filter(PubDbxref.pub_id == self.pub.pub_id,
+                                                             PubDbxref.dbxref_id == Dbxref.dbxref_id,
+                                                             Dbxref.db_id == db.db_id):
+                count += 1
+                self.session.delete(item)
+            log.debug("removed {} Pub dbxref for {}.".format(count, key))
+        else:
+            if not self.process_data[key]['data']:
+                self.critical_error(item, "Must specify a value with !d.")
+                self.process_data[key]['data'] = None
+                return
+            dbxref = self.session.query(PubDbxref).join(Pub).join(Dbxref).filter(Pub.pub_id == PubDbxref.pub_id,
+                                                                                 Pub.pub_id == self.pub.pub_id,
+                                                                                 PubDbxref.dbxref_id == Dbxref.dbxref_id,
+                                                                                 Dbxref.db_id == db.db_id,
+                                                                                 Dbxref.accession == self.process_data[key]['data'][FIELD_VALUE]).one_or_none()
+            if not dbxref:
+                message = "Publication '{}'".format(self.pub.uniquename)
+                message += " has no dbxref of db '{}'".format(self.process_data[key]['dbname'])
+                message += " and accession '{}'.".format(self.process_data[key]['data'][FIELD_VALUE])
+                message += " So unable to remove it"
+                self.critical_error(self.process_data[key]['data'], message)
+                return
+
+            self.session.delete(dbxref)
+            log.debug("{} removed".format(dbxref))
 
     def delete_ignore(self, key, bangc=True):
-        pass
+        """
+        Presently P1 only.
+        P22 cannot be banged.
+        Cannot be blank as it is a required field.
+
+        Bang operations done first so reset the data to prevent harm later on, incase
+        they get processed again.
+
+        Bangc and Bangd are the same here as we have to have a value and each one has only one.
+        """
+        if not self.process_data[key]['data']:
+            self.critical_error(self.process_data[key]['data'], "Must specify a value with !d or !c for this field.")
+            self.process_data[key]['data'] = None
+            return
+        if key == 'P22':
+            self.critical_error(self.process_data[key]['data'], "Bang operations NOT allowed with P22")
+            self.process_data[key]['data'] = None
+            return
+        cvterm = self.session.query(Cvterm).join(Cv).filter(Cvterm.cv_id == Cv.cv_id,
+                                                            Cvterm.name == self.process_data[key]['data'][FIELD_VALUE],
+                                                            Cv.name == 'pub type',
+                                                            Cvterm.is_obsolete == 0).one_or_none()
+        if not cvterm:
+            self.critical_error(self.process_data[key]['data'], "cvterm for '{}' not found.".format(self.process_data[key]['data'][FIELD_VALUE]))
+            self.process_data[key]['data'] = None
+            return
+        log.debug("Changed type of pub to {}".format(self.process_data[key]['data'][FIELD_VALUE]))
+        self.pub.type_id = cvterm.cvterm_id
+
+        self.process_data[key]['data'] = None
 
     def delete_obsolete(self, key, bangc=True):
         pass
