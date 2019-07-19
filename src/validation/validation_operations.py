@@ -59,7 +59,9 @@ def validation_file_schema_lookup(proforma_type, fields_values):
 
     """
 
-    root_directory = os.path.abspath('src/validation/yaml')
+    #root_directory = os.path.abspath('src/validation/yaml')
+    root_directory = os.path.dirname(os.path.abspath(__file__))
+    root_directory += '/yaml'
     # Ignore versions just get name (deal with this later if it evers becomes a problem)
     validation_dict = {"PUBLICATION": get_validate_pub_schema,
                        "GENE": get_validate_gene_schema}
@@ -164,7 +166,7 @@ def validate_proforma_object(proforma):
     # This makes validation much easier.
     field_value_validation_dict = validation_field_to_dict(fields_values)
 
-    log.debug('Field and values validated: {}'.format(field_value_validation_dict))
+    log.debug('Field and values to be used for validation: {}'.format(field_value_validation_dict))
     results = validator.validate(field_value_validation_dict)
 
     # The error storage can get really funky with some of the validation schema.
@@ -178,8 +180,8 @@ def validate_proforma_object(proforma):
     else:
         for field, values in validator.errors.items():
             log.debug('Error items below:')
-            log.debug(validator.errors.items())
-            log.debug("field tuple is {}".format(fields_values))
+            log.debug("Field is {}, values is {}".format(field, values))
+            log.debug("Fields_values is {}".format(fields_values[field]))
             if type(fields_values[field][0]) is tuple:  # Some fields are lists
                 line_number = fields_values[field][0][LINE_NUMBER]
             else:

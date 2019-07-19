@@ -26,7 +26,12 @@ class ErrorTracking(object):
         # This bit of code saves the filename which called the error tracking object.
         # We can use it to tailor the error message based on where it was called.
         try:
-            error_called_from = (os.path.basename(os.path.normpath(inspect.stack()[1].filename)))
+            stack = inspect.stack()[1]
+            # depeneding on python version, stack gives different structure, so test for this.
+            if type(stack) != tuple:
+                error_called_from = (os.path.basename(os.path.normpath(inspect.stack()[1].filename)))
+            else:
+                error_called_from = (os.path.basename(os.path.normpath(stack[1])))
         except Exception as e:
             log.critical('Unexpected Exception {}'.format(e))
             log.critical("stack {}".format(inspect.stack()))
