@@ -1,7 +1,18 @@
 P1:
   type: string
   P22_unattributed_no_value: True
-  required: False
+  required: True
+  P1_dependencies: True
+  # Nice example here so not deleting it but better error messaging using P1_dependencies
+  # allof:
+  # - oneof:
+  #   - allowed: [paper, review, note, letter]
+  #     dependencies: P34
+  #   - forbidden: [paper, review, note, letter]
+  # - oneof:
+  #   - allowed: [paper, journal]
+  #     dependencies: P11a
+  #   - forbidden: [paper, journal]
   forbidden: ['journal', 'compendium']
 P2:
   type: string
@@ -14,12 +25,12 @@ P4:
   type: string
 P10:
   type: string
-  required: False
+  required: True
   regex: ^(\d+)(\.+\d+\.+\d+)?$
 P11a:
   required: False
-  P22_unattributed_no_value: True
   type: string
+  pages_format: True
   excludes: ['P11b', 'P11c', 'P11d']
 P11b:
   required: False
@@ -28,7 +39,6 @@ P11b:
 P11c:
   required: False
   type: string
-  pages_format: True
   excludes: ['P11a', 'P11b', 'P11d']
 P11d:
   required: False
@@ -36,7 +46,7 @@ P11d:
   excludes: ['P11a', 'P11b', 'P11c']
 P12:
   type: [string, list]
-  required: False
+  required: True
 P13:
   required: False
   type: string
@@ -62,7 +72,7 @@ P14:
             Russian and German, Serbo-Croat, Serbo-Croat(Roman), Slovak, Slovenian, Spanish, Spanish and English,
             Spanish, English and Portuguese, Swedish, Turkish, Ukrainian, Ukrainian and English]
 P16:
-  required: False
+  required: True
   type: string
 P18:
   required: False
@@ -89,20 +99,19 @@ P29:
   regex: ^(\d{10}|\d{13})$
 P30:
   required: False
-  type: [string, list]
+  type: string
   no_duplicates: P22 P31 P32
   regex: ^(FBrf\d{7})$
 P31:
   required: False
-  type: [string, list]
+  type: string
   no_duplicates: P22 P30 P32
   regex: ^(FBrf\d{7})$ 
 P32:
   required: False
-  type: [string, list]
+  type: string
   no_duplicates: P22 P30 P31
   regex: ^(FBrf\d{7})$
-  no_bangc: True
 P34:
   required: False
   type: string
@@ -110,11 +119,6 @@ P38:
   required: False
   deposited_file: True
   #regex: Too complex lets do it in its own function
-P39:
-  required: False
-  dependencies: [P22, P2]
-  only_allowed: P22 P2
-  allowed: [y, Y]
 P40:
   type: list
   allowed: [GO_cur, GOcur, gene_group, gene_group::DONE, merge, n, new_al, new_allele, new_char, new_gene, new_transg,
@@ -131,11 +135,11 @@ P41:
 #                 wt_exp::DONE, pert_exp::DONE, neur_exp::DONE, gene_model::DONE, gene_model_nomel::DONE, phys_int::DONE, cis_reg::DONE, genom_feat::DONE, disease::DONE, diseaseHP::DONE, dataset::DONE, cell_line::DONE]
 P42:
   type: list
-  allowed: [novel_anat, novel_anat::DONE]
+  allowed: [novel_anat, 'novel_anat::DONE']
 P43:
   disease_name: True
   type: list
-  allowed: [disease,disease::Done, diseaseF, diseaseF::DONE, diseaseHP, diseaseHP::DONE, dm_gen, dm_gen::DONE,
+  allowed: [disease, disease::Done, diseaseF, diseaseF::DONE, diseaseHP, diseaseHP::DONE, dm_gen, dm_gen::DONE,
             dm_other, dm_other::DONE, noDOcur]
 P44:
   type: string

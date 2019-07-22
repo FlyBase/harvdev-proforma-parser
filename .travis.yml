@@ -1,20 +1,16 @@
-sudo: false
-dist: trusty
-
-before_install:
-    - 
+git:
+    clone: false
 
 language: python
 python:
     - "3.6"
 
-services: 
-    - postgresql
-
-before_script:
-    - psql -c 'create database travis_ci_test;' -U postgres
-    - psql -q -U postgres -d travis_ci_test -f ./src/test/sql/schema/test_chado_schema.sql
-    - psql -q -U postgres -d travis_ci_test -f ./src/test/sql/data/*.sql
-
 script:
-    - python src/app.py -c src/test/credentials/config.cfg -d src/test/data -l production -v
+    # We find our current branch harvdev-proforma-parser using the two lines below.
+    - export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
+    - echo "TRAVIS_BRANCH=$TRAVIS_BRANCH, PR=$PR, BRANCH=$BRANCH"
+    - git clone git@github.com:FlyBase/harvdev-proforma-setup.git
+    - cd harvdev-proforma-setup
+    - ./build_test_travis_python.sh
+    - pip install -r requirements.txt
+    - python ./test_scripts/run_tests.py -p

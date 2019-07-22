@@ -1,14 +1,16 @@
 G1a:
   type: string
   plain_text: True
+  required: True
 G1b:
   type: list
-  plain_text: True
+  schema:
+    type: string
+    plain_text: True
 G1g:
   type: string
 G2b:
   type: list
-  plain_text: True
 G15:
   type: string
 G30:

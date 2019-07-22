@@ -2,7 +2,9 @@ version: '3.2'
 
 services:
   kea:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile.test
     network_mode: "host"
     container_name: kea
     volumes:

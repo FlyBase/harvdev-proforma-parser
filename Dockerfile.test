@@ -9,10 +9,12 @@ RUN apk add --no-cache \
 
 WORKDIR /usr/src/app
 
-ADD requirements.txt .
-
-RUN pip install -r requirements.txt
-
 ADD . .
+
+RUN pip install -r requirements-test.txt
+
+RUN cd /usr/src/app/harvdev-utils && \
+    python3 setup.py install
+
 
 CMD ["python3", "-u", "src/app.py"]
