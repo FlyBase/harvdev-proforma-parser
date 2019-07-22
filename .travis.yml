@@ -11,6 +11,5 @@ script:
     - echo "TRAVIS_BRANCH=$TRAVIS_BRANCH, PR=$PR, BRANCH=$BRANCH"
     - git clone git@github.com:FlyBase/harvdev-proforma-setup.git
     - cd harvdev-proforma-setup
-    - ./build_test_travis.sh
-    - pip install -r build_dir/harvdev-proforma-parser/requirements-test.txt
-    - python ./test_scripts/run_tests.py -p
+    - ./build_test_travis_python.sh
+    - python ./test_scripts/run_tests.py -o
