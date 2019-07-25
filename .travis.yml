@@ -1,0 +1,16 @@
+git:
+    clone: false
+
+language: python
+python:
+    - "3.6"
+
+script:
+    # We find our current branch harvdev-proforma-parser using the two lines below.
+    - export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
+    - echo "TRAVIS_BRANCH=$TRAVIS_BRANCH, PR=$PR, BRANCH=$BRANCH"
+    - git clone git@github.com:FlyBase/harvdev-proforma-setup.git
+    - cd harvdev-proforma-setup
+    - ./build_test_travis_python.sh
+    - pip install -r requirements.txt
+    - python ./test_scripts/run_tests.py -p

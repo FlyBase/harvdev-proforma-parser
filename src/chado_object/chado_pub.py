@@ -5,7 +5,9 @@
 .. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
 import re
-from .chado_base import ChadoObject, FIELD_VALUE
+import os
+import yaml
+from .chado_base import ChadoObject, FIELD_VALUE, FIELD_NAME
 from harvdev_utils.production import (
     Cv, Cvterm, Pub, Pubprop, Pubauthor, PubRelationship, Db, Dbxref, PubDbxref
 )
@@ -20,46 +22,49 @@ log = logging.getLogger(__name__)
 class ChadoPub(ChadoObject):
     def __init__(self, params):
         log.info('Initializing ChadoPub object.')
+        ##########################################
+        # Set up how to process each type of input
+        ##########################################
+        self.type_dict = {'direct': self.load_direct,
+                          'pubauthor': self.load_author,
+                          'relationship': self.load_relationship,
+                          'pubprop': self.load_pubprop,
+                          'dbxref': self.load_dbxref,
+                          'ignore': self.ignore,
+                          'obsolete': self.make_obsolete}
+
+        self.delete_dict = {'direct': self.delete_direct,
+                            'pubauthor': self.delete_author,
+                            'relationship': self.delete_relationships,
+                            'pubprop': self.delete_pubprops,
+                            'dbxref': self.delete_dbxref,
+                            'ignore': self.delete_ignore,
+                            'obsolete': self.delete_obsolete}
 
         self.proforma_start_line_number = params.get('proforma_start_line_number')
 
-        # Data
-        self.bang_c = params.get('bang_c')
-        self.P1_type = params['fields_values'].get('P1')
-        self.P2_multipub = params['fields_values'].get('P2')
-        self.P3_volume_number = params['fields_values'].get('P3')
-        self.P4_issue_number = params['fields_values'].get('P4')
-        self.P10_pub_date = params['fields_values'].get('P10')
-        self.P11a_page_range = params['fields_values'].get('P11a')
-        self.P11b_url = params['fields_values'].get('P11b')
-        self.P11c_san = params['fields_values'].get('P11c')
-        self.P11d_doi = params['fields_values'].get('P11d')
-        self.P12_authors = params['fields_values'].get('P12')
-        self.P13_language = params['fields_values'].get('P13')
-        self.P14_additional_language = params['fields_values'].get('P14')
-        self.P16_title = params['fields_values'].get('P16')
-        self.P18_misc_comments = params['fields_values'].get('P18')
-        self.P19_internal_notes = params['fields_values'].get('P19')
-        self.P22_FlyBase_reference_ID = params['fields_values'].get('P22')
-        self.P23_personal_com = params['fields_values'].get('P23')
-        self.P26_pubmed_id = params['fields_values'].get('P26')
-        self.P28_pubmed_central_id = params['fields_values'].get('P28')
-        self.P29_isbn = params['fields_values'].get('P29')
-        self.P30_also_published_as = params['fields_values'].get('P30')
-        self.P31_related_publications = params['fields_values'].get('P31')
-        self.P32_make_secondary = params['fields_values'].get('P32')
-        self.P34_abstract = params['fields_values'].get('P34')
-        self.P38_deposited_file = params['fields_values'].get('P38')
-        self.P39_obsolete = params['fields_values'].get('P39')
-        self.P40_flag_cambridge = params['fields_values'].get('P40')
-        self.P41_flag_harvard = params['fields_values'].get('P41')
-        self.P42_flag_ontologist = params['fields_values'].get('P42')
-        self.P43_flag_disease = params['fields_values'].get('P43')
-        self.P44_disease_notes = params['fields_values'].get('P44')
-        self.P45_Not_dros = params['fields_values'].get('P45')
-        self.P46_graphical_abstract = params['fields_values'].get('P46')
+        ############################################################
+        # Get processing info and data to be processed.
+        # Please see the yml/publication.yml file for more details
+        ############################################################
+        yml_file = os.path.join(os.path.dirname(__file__), 'yml/publication.yml')
+        self.process_data = yaml.load(open(yml_file))
+        for key in self.process_data:
+            self.process_data[key]['data'] = params['fields_values'].get(key)
+            if self.process_data[key]['data']:
+                log.debug("{}: {}".format(key, self.process_data[key]))
 
+        #################################################
+        # various tests use this so create an easy lookup
+        #################################################
+        if self.process_data['P22']['data'][FIELD_VALUE] == "new":
+            self.newpub = True
+        else:
+            self.newpub = False
+
+        ###########################################################
         # Values queried later, placed here for reference purposes.
+        ############################################################
         self.pub = None   # All other proforma need a reference to a pub
         self.parent_pub = None  # Various checks refer to this so just get it once
         self.gene = None  # Needed reference for alleles
@@ -99,15 +104,16 @@ class ChadoPub(ChadoObject):
           * if P22 is 'new', P1 must a contain valid value.
           * if P22 is 'unattributed', P1 must be empty
         """
-        # TODO: bang c/d field stuff
-        if self.P1_type[FIELD_VALUE] in ('journal', 'compendium'):
-            self.critical_error(self.P1_type, 'Not allowed to have the value "journal" or "compendium"')
 
-        self.current_query_source = self.P1_type
-        self.current_query = 'Querying for cvterm {} with cv of pub type\'%s\'.' % (self.P1_type[FIELD_VALUE])
+        p1_data = self.process_data['P1']['data']
+        if p1_data[FIELD_VALUE] in ('journal', 'compendium'):
+            self.critical_error(p1_data, 'Not allowed to have the value "journal" or "compendium"')
+
+        self.current_query_source = p1_data
+        self.current_query = 'Querying for cvterm %s with cv of pub type\'%s\'.' % ('pub type', p1_data[FIELD_VALUE])
 
         cvterm = self.session.query(Cvterm).join(Cv).filter(Cvterm.cv_id == Cv.cv_id,
-                                                            Cvterm.name == self.P1_type[FIELD_VALUE],
+                                                            Cvterm.name == p1_data[FIELD_VALUE],
                                                             Cv.name == 'pub type',
                                                             Cvterm.is_obsolete == 0).one()
 
@@ -122,18 +128,25 @@ class ChadoPub(ChadoObject):
                 # good, does not have a previous result so happy to continue
                 return cvterm
             if old_cvterm.cvterm_id != cvterm.cvterm_id:
-                message = 'Cvterm "{}" is not the same as previous "{}". '.format(self.P1_type[FIELD_VALUE], old_cvterm.name)
+                message = 'Cvterm "{}" is not the same as previous "{}". '.format(p1_data[FIELD_VALUE], old_cvterm.name)
                 message += 'Not allowed to change P1 if it already had one.'
-                self.critical_error(self.P1_type, message)
+                self.critical_error(p1_data, message)
         return cvterm
 
-    def get_related_pub(self, tuple):
+    def get_related_pub(self, tuple, uniquename=True):
         """
         from the fbrf tuple get the pub
         """
         self.current_query_source = tuple
         self.current_query = "Looking up pub: {}.".format(tuple[FIELD_VALUE])
-        return self.session.query(Pub).filter(Pub.uniquename == tuple[FIELD_VALUE]).one()
+        log.debug("Looking up pub: {}.".format(tuple[FIELD_VALUE]))
+        pub = None
+        if uniquename:
+            pub = self.session.query(Pub).filter(Pub.uniquename == tuple[FIELD_VALUE]).one()
+        else:
+            if tuple[FIELD_VALUE]:
+                pub = self.session.query(Pub).filter(Pub.miniref == tuple[FIELD_VALUE]).one()
+        return pub
 
     def add_relationship(self, subject_pub, object_pub, cvterm, query_source):
         """
@@ -167,12 +180,11 @@ class ChadoPub(ChadoObject):
             join(Cvterm).filter(PubRelationship.subject_id == pub.pub_id,
                                 PubRelationship.type_id == cvterm.cvterm_id).one_or_none()
         log.debug("PR => {}".format(pr))
-        log.debug(dir(pr))
         if not pr:
             return None
         return self.session.query(Pub).filter(Pub.pub_id == pr.object_id).one()
 
-    def process_multipub(self, tuple):
+    def check_multipub(self, old_parent, tuple):
         """
         Get P2 pub via the  miniref.
         If P22 is new, NO further checks needed.
@@ -186,119 +198,42 @@ class ChadoPub(ChadoObject):
         self.current_query = "Querying for P2 miniref '{}'.".format(tuple[FIELD_VALUE])
         p2_pub = self.session.query(Pub).filter(Pub.miniref == tuple[FIELD_VALUE]).one()
 
-        if self.P22_FlyBase_reference_ID[FIELD_VALUE] != 'new':
-            old_parent = self.get_parent_pub(self.pub)
-            if old_parent:
-                log.debug("old parent is {}".format(old_parent))
-                if old_parent.pub_id != p2_pub.pub_id:
-                    old_name = old_parent.miniref
-                    if not old_name:
-                        old_name = old_parent.uniquename
-                    message = 'P22 has a different parent {} than the one listed {} ()\n'.format(old_name, p2_pub.miniref, p2_pub.uniquename)
-                    message += 'Not allowed to change P2 if it already has one. without !c'
-                    self.critical_error(self.P22_FlyBase_reference_ID, message)
-                else:
-                    return
-        # Add the relationship as all is good.
-        self.add_relationship(self.pub, p2_pub, 'published_in', tuple)
-
-    def process_related(self):
-        """
-        Process P30, P31 and P32 (also pub as, related pub, make secondary)
-        Each is a list so process accordingly.
-        """
-        if self.P30_also_published_as:
-            for fbrf in self.P30_also_published_as:
-                pub = self.get_related_pub(fbrf)
-                self.add_relationship(self.pub, pub, 'also_in', self.P30_also_published_as)
-        if self.P31_related_publications:
-            for fbrf in self.P31_related_publications:
-                pub = self.get_related_pub(fbrf)
-                self.add_relationship(self.pub, pub, 'related_to', self.P31_related_publications)
-        if self.P32_make_secondary:
-            for fbrf in self.P32_make_secondary:
-                pub = self.get_related_pub(fbrf)
-                self.make_obsolete(pub)
+        if not self.newpub and old_parent:
+            log.debug("old parent is {}".format(old_parent))
+            if old_parent.pub_id != p2_pub.pub_id:
+                old_name = old_parent.miniref
+                if not old_name:
+                    old_name = old_parent.uniquename
+                message = 'P22 has a different parent "{}" than the one listed "{}" "{}"\n'.format(old_name, p2_pub.miniref, p2_pub.uniquename)
+                message += 'Not allowed to change P2 if it already has one. without !c'
+                self.critical_error(self.process_data['P22']['data'], message)
+                return
 
     def get_pub(self):
         """
         get pub or create pub if new.
         returns None or the pub to be used.
         """
-        if self.P22_FlyBase_reference_ID[FIELD_VALUE] != 'new':
-            pub = super(ChadoPub, self).pub_from_fbrf(self.P22_FlyBase_reference_ID, self.session)
+        if not self.newpub:
+            pub = super(ChadoPub, self).pub_from_fbrf(self.process_data['P22']['data'], self.session)
         else:
             pub = None
 
-        if self.P1_type:
+        if self.process_data['P1']['data']:
             P1_cvterm = self.get_P1_cvterm_and_validate(pub)
 
-        if self.P22_FlyBase_reference_ID[FIELD_VALUE] != 'new':
-            pub = self.pub_from_fbrf(self.P22_FlyBase_reference_ID, self.session)
+        if not self.newpub:
+            pub = self.pub_from_fbrf(self.process_data['P22']['data'], self.session)
         else:
             if not P1_cvterm:  # ErrorTracking already knows, so just return.
                 return None
             log.info("Creating new publication")
 
             # A trigger will swap out FBrf:temp_0 to the next rf in the sequence.
-            pub = get_or_create(self.session, Pub, title=self.P16_title[FIELD_VALUE],
-                                type_id=P1_cvterm.cvterm_id, uniquename='FBrf:temp_0')
+            pub = get_or_create(self.session, Pub, type_id=P1_cvterm.cvterm_id, uniquename='FBrf:temp_0')
             log.info(pub)
             log.info("New pub created with fbrf {}.".format(pub.uniquename))
         return pub
-
-    def bang_c_it(self):
-        """
-        Delete everything wrt this pub and itself?
-        """
-        log.critical("Not coded !c yet")
-
-    def load_pubprop_singles(self):
-        """
-        Process the none list pubprops.
-
-        pub_data => [[key, pubprop name, debug message],...]
-        """
-        pub_data = [[self.P11b_url, 'URL', 'No URL specified, skipping URL'],
-                    [self.P13_language, 'languages', 'No language specified, skipping languages transaction.'],
-                    [self.P14_additional_language, 'abstract_languages', 'No additional language specified, skipping additional language transaction.'],
-                    [self.P19_internal_notes, 'internalnotes', 'No internal notes found, skipping internal notes transaction.'],
-                    [self.P23_personal_com, 'perscommtext', 'No personal communication, skipping personal communication notes transaction.'],
-                    [self.P34_abstract, 'pubmed_abstract',  'No Abtract, skipping addition of abstract.'],
-                    [self.P44_disease_notes, 'diseasenotes', 'No disease notes, so skipping disease notes transactions.'],
-                    [self.P45_Not_dros, 'not_Drospub', 'Drosophila pub, so no need to set NOT dros flag.'],
-                    [self.P46_graphical_abstract, 'graphical_abstract', 'No graphical abstracts, so skipping.']]
-
-        for row in pub_data:
-            if row[0]:
-                self.load_pubprop('pubprop type', row[1], row[0])
-            else:
-                log.debug(row[2])
-
-    def load_pubprops_lists(self):
-        """
-        Update the pubprops that can be lists
-        """
-        data_list = [
-            [self.P38_deposited_file, 'deposited_files', 'No deposited files, so skipping.'],
-            [self.P40_flag_cambridge, 'cam_flag', 'No Cambridge flags found, skipping Cambridge flags transaction.'],
-            [self.P41_flag_harvard, 'harv_flag', 'No Harvard flags found, skipping Harvard flags transaction.'],
-            [self.P42_flag_ontologist, 'onto_flag', 'No Ontology flags found, skipping Ontology flags transaction.'],
-            [self.P43_flag_disease, 'dis_flag', 'No Disease flags found, skipping Disease flags transaction.']]
-
-        for row in data_list:
-            if row[0]:
-                for entry in row[0]:
-                    self.load_pubprop('pubprop type', row[1], entry)
-            else:
-                log.debug(row[2])
-
-    def update_pubprops(self):
-        """
-        Update all the pub props.
-        """
-        self.load_pubprop_singles()
-        self.load_pubprops_lists()
 
     def graphical_abstracts_check(self):
         """
@@ -317,10 +252,10 @@ class ChadoPub(ChadoObject):
             (\w+)  # pub directory
             [/]    # path divider
             (\w+)  # filename """
-
-        fields = re.search(pattern, self.P46_graphical_abstract[FIELD_VALUE], re.VERBOSE)
+        P46_data = self.process_data['P46']['data']
+        fields = re.search(pattern, P46_data[FIELD_VALUE], re.VERBOSE)
         if not fields:
-            self.warning_error(self.P46_graphical_abstract, 'P46 does not have the format */*.')
+            self.critical_error(P46_data, 'P46 does not have the format */*.')
             return
 
         expected_dir = self.parent_pub.miniref
@@ -328,7 +263,7 @@ class ChadoPub(ChadoObject):
         if expected_dir != fields.group(1):
             message = "'{}' does not equal to what is expected, given its parent.".format(fields.group(1))
             message += "\nWas expecting directory to be {}.".format(expected_dir)
-            self.warning_error(self.P46_graphical_abstract, message)
+            self.warning_error(P46_data, message)
 
     def do_P11_checks(self):
         """
@@ -344,55 +279,98 @@ class ChadoPub(ChadoObject):
 
         P11a:  Trying to set <pages> to '<your-pages>' but it is '<chado-pages>' in Chado.
         """
-        if self.P22_FlyBase_reference_ID[FIELD_VALUE] != 'new':
-            if self.pub.pages and self.P11a_page_range and self.pub.pages != self.P11a_page_range[FIELD_VALUE]:
-                message = self.P11a_page_range
-                message += 'P11a page range "{}" does not match "{}" already in chado.\n'.format(self.P11a_page_range, self.pub.pages)
-                self.critical_error(self.P11a_page_range, message)
-
-    def update_dbxrefs(self):
-        """
-        dbxref fiedls to update.
-        """
-        data = [[self.P11c_san, 'GB'],
-                [self.P11d_doi, 'DOI'],
-                [self.P26_pubmed_id, 'pubmed'],
-                [self.P28_pubmed_central_id, 'PMCID'],
-                [self.P29_isbn, 'isbn']]
-        for row in data:
-            if row[0]:
-                self.load_pubdbxref(row[1], row[0])
+        p11a = self.process_data['P11a']['data']
+        if not self.newpub and self.bang_c != 'P11a':
+            if self.pub.pages and p11a and self.pub.pages != p11a[FIELD_VALUE]:
+                message = 'P11a page range "{}" does not match "{}" already in chado.\n'.format(p11a[FIELD_VALUE], self.pub.pages)
+                self.critical_error(p11a, message)
 
     def extra_checks(self):
         """
-        Not all tests can be done in the validator as if the P11x is blank no checks are done.
+        Not all tests can be done in the validator do extra ones here.
         """
         self.do_P11_checks()
-        if self.P46_graphical_abstract:
+        if self.process_data['P2']['data'] and self.bang_c != 'P2' and self.bang_d != 'P2':
+            self.check_multipub(self.parent_pub, self.process_data['P2']['data'])
+        if self.process_data['P46']['data']:
             self.graphical_abstracts_check()
 
-    def update_pub(self):
+    def load_direct(self, key):
         """
-        Add direct fields to the pub.
+        Direct fields are those that are directly connected to the pub.
+        So things like: title, pages, volume etc
+
+        Params: key: key into the dict (self.process_data) that contains
+                     the data and info on what to do with it including extra
+                     terms like warning or boolean.
         """
-        if self.P10_pub_date:
-            self.pub.pyear = self.P10_pub_date[FIELD_VALUE]
-        if self.P11a_page_range:
-            self.pub.pages = self.P11a_page_range[FIELD_VALUE]
-        if self.P16_title:
-            self.pub.title = self.P16_title[FIELD_VALUE]
-        if self.P3_volume_number:
-            self.pub.volume = self.P3_volume_number[FIELD_VALUE]
-        if self.P4_issue_number:
-            self.pub.issue = self.P4_issue_number[FIELD_VALUE]
-        if self.P39_obsolete:
-            self.warning_error(self.P39_obsolete, "Making {} obsolete.".format(self.pub.uniquename))
-            self.pub.is_obsolete = True
+        if 'boolean' in self.process_data[key]:
+            setattr(self.pub, self.process_data[key]['name'], True)
+            if 'warning' in self.process_data[key]:
+                message = "Making {} {}.".format(self.process_data['P22']['data'][FIELD_VALUE], self.process_data[key]['name'])
+                self.warning_error(self.process_data[key]['data'], message)
+        else:
+            old_attr = getattr(self.pub, self.process_data[key]['name'])
+            if old_attr:
+                self.warning_error(self.process_data[key]['data'], "No !c but still overwriting existing value of {}".format(old_attr))
+            setattr(self.pub, self.process_data[key]['name'], self.process_data[key]['data'][FIELD_VALUE])
+
+    def load_relationship(self, key):
+        if type(self.process_data[key]['data']) is list:
+            for fbrf in self.process_data[key]['data']:
+                if 'verify_only_on_update' not in self.process_data[key] or self.newpub:
+                    pub = self.get_related_pub(fbrf)
+                    self.add_relationship(self.pub, pub, self.process_data[key]['cvterm'], self.process_data[key]['data'])
+        else:  # P2 can only change with !c or has no parent pub
+            log.debug("not list {}".format(key))
+            parent_pub = self.get_parent_pub(self.pub)
+            if self.bang_c == key or not parent_pub:
+                fbrf = self.process_data[key]['data']
+                pub = self.get_related_pub(fbrf, uniquename=False)
+                self.add_relationship(self.pub, pub, self.process_data[key]['cvterm'], self.process_data[key]['data'])
+
+    def load_dbxref(self, key):
+        self.load_pubdbxref(self.process_data[key]['dbname'], self.process_data[key]['data'])
+
+    def ignore(self, key):
+        """
+        Some fields no processing but are merely used to define things for checks.
+        i.e. P22, this is processed to either fetch an existing pub or is set to new
+             so will already have been processed as we get the pub object first.
+        So we purposefully ignore it now as it has had all the processing needed already done.
+        """
+        pass
+
+    def make_obsolete(self, key):
+        """
+        Makes related pubs obsolete, NOT the pub itself.
+        """
+        for fbrf in self.process_data[key]['data']:
+            log.debug("Make obsolete {}".format(fbrf))
+            pub = self.get_related_pub(fbrf)
+            pub.is_obsolete = True
+
+    def load_pubprop(self, key):
+        """
+        Loads all the pub props.
+        Params: key: key to the dict self.process_data
+        self.process_data[key]['cvterm'] contains the cvterm to be used in the pupprob.
+        self.process_data[key]['data'] contains the value(s) to be added.
+        """
+        log.debug("loading pubprops")
+        if type(self.process_data[key]['data']) is list:
+            for row in self.process_data[key]['data']:
+                log.debug("loading {} {}".format(self.process_data[key]['cvterm'], row[FIELD_VALUE]))
+                self.load_single_pubprop('pubprop type', self.process_data[key]['cvterm'], row)
+        else:
+            log.debug("loading {} {}".format(self.process_data[key]['cvterm'], self.process_data[key]['data'][FIELD_VALUE]))
+            self.load_single_pubprop('pubprop type', self.process_data[key]['cvterm'], self.process_data[key]['data'])
 
     def load_content(self):
         """
         Main processing routine
         """
+
         self.pub = self.get_pub()
 
         self.parent_pub = self.get_parent_pub(self.pub)
@@ -402,51 +380,47 @@ class ChadoPub(ChadoObject):
         # bang c first as this trumps all things
         if self.bang_c:
             self.bang_c_it()
-            return
+        if self.bang_d:
+            self.bang_d_it()
 
-        if not self.parent_pub and self.P2_multipub:
-            self.parent_pub = self.process_multipub(self.P2_multipub)
-
-        # Update the direct column data in Pub
-        self.update_pub()
-
-        self.process_related()
-        self.update_pubprops()
-        self.update_dbxrefs()
-
-        if self.P12_authors is not None:
-            for author in self.P12_authors:
-                self.load_author(author)
+        for key in self.process_data:
+            if self.process_data[key]['data']:
+                log.debug("Processing {}".format(self.process_data[key]['data']))
+                self.type_dict[self.process_data[key]['type']](key)
 
         timestamp = datetime.now().strftime('%c')
         curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short, timestamp)
         log.info('Curator string assembled as:')
         log.info('%s' % (curated_by_string))
 
-    def load_author(self, author):
-        pattern = r"""
-            ^(\S+)      # None space surname
-            \s+?        # delimiting space
-            (.*)?       # optional given names can havingspaces etc in them"""
-        fields = re.search(pattern, author[FIELD_VALUE], re.VERBOSE)
-        givennames = None
-        if fields:
-            if fields.group(1):
-                surname = fields.group(1)
-            if fields.group(2):
-                givennames = fields.group(2)
+    def get_author(self, author):
+        """
+        Return surname and fivennames for the author string
+        """
+        names = author[FIELD_VALUE].split('\t')
+        if len(names) > 2:
+            self.critical_error(author, "Author has more than 1 tab in it, this is not allowed.")
+        elif len(names) == 2:
+            surname = names[0]
+            givennames = names[1]
+        else:
+            surname = names[0]
+            givennames = None
+        return givennames, surname
 
-        self.current_query_source = author
-        self.current_query = "Author get/create: {}.".format(author[FIELD_VALUE])
-        author = get_or_create(
-            self.session, Pubauthor,
-            pub_id=self.pub.pub_id,
-            surname=surname,
-            givennames=givennames
-        )
-        return author
+    def load_author(self, key):
+        for author in self.process_data[key]['data']:
+            givennames, surname = self.get_author(author)
+            self.current_query_source = author
+            self.current_query = "Author get/create: {}.".format(author[FIELD_VALUE])
+            author = get_or_create(
+                self.session, Pubauthor,
+                pub_id=self.pub.pub_id,
+                surname=surname,
+                givennames=givennames
+            )
 
-    def load_pubprop(self, cv_name, cv_term_name, value_to_add_tuple):
+    def load_single_pubprop(self, cv_name, cv_term_name, value_to_add_tuple):
         """
         From a given cv and cvterm name add the pubprop with value in tuple.
         If cv or cvterm do not exist create an error and return.
@@ -489,3 +463,225 @@ class ChadoPub(ChadoObject):
             pub_id=self.pub.pub_id,
             dbxref_id=dbxref.dbxref_id
         )
+
+    ########################################################################################
+    # Deletion bangc and bangd methods.
+    # NOTE: After correction or deletion
+    ########################################################################################
+    def bang_c_it(self):
+        """
+        Correction. Remove all existing value(s) and replace with the value(s) in this field.
+        """
+        log.debug("Bang C processing {}".format(self.bang_c))
+        key = self.bang_c
+        self.delete_dict[self.process_data[key]['type']](key, bangc=True)
+        delete_blank = False
+        if type(self.process_data[key]['data']) is list:
+            for item in self.process_data[key]['data']:
+                if not item[FIELD_VALUE]:
+                    delete_blank = True
+        else:
+            if not self.process_data[key]['data'] or not self.process_data[key]['data'][FIELD_VALUE]:
+                delete_blank = True
+        if delete_blank:
+            self.process_data[key]['data'] = None
+
+    def bang_d_it(self):
+        """
+        Remove specific values indicated in the proforma field.
+        """
+        log.debug("Bang D processing {}".format(self.bang_c))
+        key = self.bang_d
+
+        #####################################
+        # check bang_d has a value to delete
+        #####################################
+        if type(self.process_data[key]['data']) is not list:
+            if not self.process_data[key]['data'][FIELD_VALUE]:
+                log.error("BANGD: {}".format(self.process_data[key]['data']))
+                self.critical_error(self.process_data[key]['data'], "Must specify a value with !d.")
+                self.process_data[key]['data'] = None
+                return
+        else:
+            for item in self.process_data[key]['data']:
+                if not item[FIELD_VALUE]:
+                    log.error("BANGD: {}".format(item))
+                    self.critical_error(item, "Must specify a value with !d.")
+                    self.process_data[key]['data'] = None
+                    return
+
+        self.delete_dict[self.process_data[key]['type']](key, bangc=False)
+        self.process_data[key]['data'] = None
+
+    def delete_direct(self, key, bangc=True):
+        try:
+            new_value = self.process_data[key]['data'][FIELD_VALUE]
+        except KeyError:
+            new_value = None
+        setattr(self.pub, self.process_data[key]['name'], new_value)
+        # NOTE: direct is a replacement so might aswell delete data to stop it being processed again.
+        self.process_data[key]['data'] = None
+
+    def delete_author(self, key, bangc=True):
+        if bangc:
+            count = self.session.query(Pubauthor).filter(Pubauthor.pub_id == self.pub.pub_id).delete()
+            log.debug("removed {} pub authors".format(count))
+        else:  # bangd just remove the ones listed
+            for author in self.process_data[key]['data']:
+                givennames, surname = self.get_author(author)
+                log.debug("Removing {} - {} for {}".format(givennames, surname, self.pub.uniquename))
+                pubauthor = self.session.query(Pubauthor).filter(Pubauthor.pub_id == self.pub.pub_id,
+                                                                 Pubauthor.givennames == givennames,
+                                                                 Pubauthor.surname == surname).one_or_none()
+                if not pubauthor:
+                    self.critical_error(author, "Cannot delete Author that does not exist")
+                else:
+                    self.session.delete(pubauthor)
+                    log.debug("{} removed".format(pubauthor))
+
+    def delete_relationship(self, cvterm, item, uniquename):
+        if not item[FIELD_VALUE]:
+            self.critical_error(item, "Must specify a value with !d.")
+            self.process_data[item[FIELD_NAME]]['data'] = None
+            return
+        if uniquename:
+            object_pub = self.session.query(Pub).filter(Pub.uniquename == item[FIELD_VALUE]).one_or_none()
+        else:
+            object_pub = self.session.query(Pub).filter(Pub.miniref == item[FIELD_VALUE]).one_or_none()
+        if not object_pub:
+            self.critical_error(item, "Publication '{}' not found.".format(item[FIELD_VALUE]))
+            return
+        pubrel = self.session.query(PubRelationship).filter(PubRelationship.subject_id == self.pub.pub_id,
+                                                            PubRelationship.object_id == object_pub.pub_id,
+                                                            PubRelationship.type_id == cvterm.cvterm_id).one_or_none()
+        if not pubrel:
+            self.critical_error(item, "Publication '{}' not linked via {}.".format(item[FIELD_VALUE], cvterm.name))
+            return
+        self.session.delete(pubrel)
+        log.debug("{} removed".format(pubrel))
+
+    def delete_relationships(self, key, bangc=True):
+        cvterm = self.session.query(Cvterm).join(Cv).filter(Cv.name == 'pub relationship type',
+                                                            Cvterm.name == self.process_data[key]['cvterm'],
+                                                            Cvterm.is_obsolete == 0).one()
+        if bangc:
+            count = self.session.query(PubRelationship).filter(PubRelationship.subject_id == self.pub.pub_id,
+                                                               PubRelationship.type_id == cvterm.cvterm_id).delete()
+            log.debug("removed {} Pub relationships".format(count))
+        else:
+            if type(self.process_data[key]['data']) is list:
+                for item in self.process_data[key]['data']:
+                    self.delete_relationship(cvterm, item, True)
+            else:  # P2 is not a list
+                self.delete_relationship(cvterm, self.process_data[key]['data'], False)
+
+    def delete_pubprop(self, cvterm, item):
+        """
+        Delete specific pubprop specified by the value and cvterm.
+        Give critical error if there is no value or value not found.
+        """
+        if not item[FIELD_VALUE]:
+            self.critical_error(item, "Must specify a value with !d.")
+            self.process_data[item[FIELD_NAME]]['data'] = None
+            return
+        pubprop = self.session.query(Pubprop).filter(Pubprop.pub_id == self.pub.pub_id,
+                                                     Pubprop.value == item[FIELD_VALUE],
+                                                     Pubprop.type_id == cvterm.cvterm_id).one_or_none()
+        if not pubprop:
+            message = "Publication '{}' has no pubprop of type {} and value {}.".format(self.pub.uniquename, cvterm.name, item[FIELD_VALUE])
+            self.critical_error(item, message)
+            self.process_data[item[FIELD_NAME]]['data'] = None
+            return
+
+        self.session.delete(pubprop)
+        log.debug("{} removed".format(pubprop))
+
+    def delete_pubprops(self, key, bangc=True):
+        """
+        Delete the pubprops specified by self.process_data[key]['cvterm']
+        and if not bangc then by just the one with the value.
+        """
+        cv_term = self.session.query(Cvterm).join(Cv).filter(Cv.name == 'pubprop type',
+                                                             Cvterm.name == self.process_data[key]['cvterm'],
+                                                             Cvterm.is_obsolete == 0).one()
+
+        if bangc:
+            count = self.session.query(Pubprop).filter(Pubprop.pub_id == self.pub.pub_id,
+                                                       Pubprop.type_id == cv_term.cvterm_id).delete()
+            log.debug("removed {} Pub Props for {}.".format(count, key))
+        else:
+            if type(self.process_data[key]['data']) is list:
+                for item in self.process_data[key]['data']:
+                    self.delete_pubprop(cv_term, item)
+            else:
+                self.delete_pubprop(cv_term, self.process_data[key]['data'])
+
+    def delete_dbxref(self, key, bangc=True):
+        """
+        Bangc and bangd for dbxrefs.
+        """
+        db = self.session.query(Db).filter(Db.name == self.process_data[key]['dbname']).one()
+        if bangc:
+            # delete only the pub_dbxref or dbxref is no others exist.
+            count = 0
+            for item in self.session.query(PubDbxref).filter(PubDbxref.pub_id == self.pub.pub_id,
+                                                             PubDbxref.dbxref_id == Dbxref.dbxref_id,
+                                                             Dbxref.db_id == db.db_id):
+                count += 1
+                self.session.delete(item)
+            log.debug("removed {} Pub dbxref for {}.".format(count, key))
+        else:
+            if not self.process_data[key]['data']:
+                self.critical_error(item, "Must specify a value with !d.")
+                self.process_data[key]['data'] = None
+                return
+            dbxref = self.session.query(PubDbxref).join(Pub).join(Dbxref).filter(Pub.pub_id == PubDbxref.pub_id,
+                                                                                 Pub.pub_id == self.pub.pub_id,
+                                                                                 PubDbxref.dbxref_id == Dbxref.dbxref_id,
+                                                                                 Dbxref.db_id == db.db_id,
+                                                                                 Dbxref.accession == self.process_data[key]['data'][FIELD_VALUE]).one_or_none()
+            if not dbxref:
+                message = "Publication '{}'".format(self.pub.uniquename)
+                message += " has no dbxref of db '{}'".format(self.process_data[key]['dbname'])
+                message += " and accession '{}'.".format(self.process_data[key]['data'][FIELD_VALUE])
+                message += " So unable to remove it"
+                self.critical_error(self.process_data[key]['data'], message)
+                return
+
+            self.session.delete(dbxref)
+            log.debug("{} removed".format(dbxref))
+
+    def delete_ignore(self, key, bangc=True):
+        """
+        Presently P1 only.
+        P22 cannot be banged.
+        Cannot be blank as it is a required field.
+
+        Bang operations done first so reset the data to prevent harm later on, incase
+        they get processed again.
+
+        Bangc and Bangd are the same here as we have to have a value and each one has only one.
+        """
+        if not self.process_data[key]['data']:
+            self.critical_error(self.process_data[key]['data'], "Must specify a value with !d or !c for this field.")
+            self.process_data[key]['data'] = None
+            return
+        if key == 'P22':
+            self.critical_error(self.process_data[key]['data'], "Bang operations NOT allowed with P22")
+            self.process_data[key]['data'] = None
+            return
+        cvterm = self.session.query(Cvterm).join(Cv).filter(Cvterm.cv_id == Cv.cv_id,
+                                                            Cvterm.name == self.process_data[key]['data'][FIELD_VALUE],
+                                                            Cv.name == 'pub type',
+                                                            Cvterm.is_obsolete == 0).one_or_none()
+        if not cvterm:
+            self.critical_error(self.process_data[key]['data'], "cvterm for '{}' not found.".format(self.process_data[key]['data'][FIELD_VALUE]))
+            self.process_data[key]['data'] = None
+            return
+        log.debug("Changed type of pub to {}".format(self.process_data[key]['data'][FIELD_VALUE]))
+        self.pub.type_id = cvterm.cvterm_id
+
+        self.process_data[key]['data'] = None
+
+    def delete_obsolete(self, key, bangc=True):
+        pass

@@ -7,3 +7,4 @@ test_queries
 harvdev-utils
 .pytest_cache
 .idea/
+id_travis_rsa
