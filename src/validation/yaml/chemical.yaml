@@ -1,0 +1,13 @@
+CH1g:
+  type: string
+  required: True
+CH1f:
+  type: string
+  required: True
+  regex: ^(FBch\d{7}|new)$
+CH2a:
+  required: False
+  type: string
+CH2b:
+  required: True
+  type: string

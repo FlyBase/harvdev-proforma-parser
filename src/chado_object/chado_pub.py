@@ -2,7 +2,7 @@
 .. module:: chado_pub
    :synopsis: The "pub" ChadoObject.
 
-.. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
+.. moduleauthor:: Ian Longden <ilongden@morgan.harvard.edu>
 """
 import re
 import os
