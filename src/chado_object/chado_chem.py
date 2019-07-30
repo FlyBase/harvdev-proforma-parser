@@ -23,9 +23,8 @@ log = logging.getLogger(__name__)
 
 class ChadoChem(ChadoObject):
     # TODO
-    # Warn for mismatch between names in CH1g and CH2a.
-    # Warn for mismatch between ID; name in CH1g.
-    # In initial YAML validator, regex for proper ChEBI name.
+    #  Warn for mismatch between database ID; database name in CH1g.
+    #  In initial YAML validator, regex for proper ChEBI name and other db identifiers.
 
     def __init__(self, params):
         log.info('Initializing ChadoChem object.')
@@ -111,7 +110,6 @@ class ChadoChem(ChadoObject):
 
         organism_id = organism.organism_id
 
-        log.info('here')
         # Look up description id.
         description = self.session.query(Cvterm).join(Cv). \
             filter(Cvterm.cv_id == Cv.cv_id,
@@ -126,13 +124,13 @@ class ChadoChem(ChadoObject):
 
         # If we already have an entry and this should be be a new entry.
         if entry_already_exists and self.new_chemical_entry:
-            self.critical_error(self.process_data['CH2a']['data'][FIELD_VALUE],
+            self.critical_error(self.process_data['CH2a']['data'],
                                 'An entry already exists in the database with this name.')
         # If we're not dealing with a new entry.
         # Verify that the FBch and Name specified in the proforma match.
         elif entry_already_exists:
             if entry_already_exists.uniquename != self.process_data['CH1f']['data'][FIELD_VALUE]:
-                self.critical_error(self.process_data['CH1f']['data'][FIELD_VALUE],
+                self.critical_error(self.process_data['CH1f']['data'],
                                     'Name and FBch in this proforma do not match.')
         else:
             chemical = get_or_create(self.session, Feature, organism_id=organism_id,
@@ -159,13 +157,13 @@ class ChadoChem(ChadoObject):
         ch = ChEBI()
         results = ch.getLiteEntity(self.process_data['CH1g']['data'][FIELD_VALUE])
         if not results:
-            self.critical_error(self.process_data['CH1g']['data'][FIELD_VALUE],
+            self.critical_error(self.process_data['CH1g']['data'],
                                 'No results found when querying ChEBI for {}'
                                 .format(self.process_data['CH1g']['data'][FIELD_VALUE]))
             return
         name_from_chebi = results[0].chebiAsciiName
         if name_from_chebi != self.process_data['CH2a']['data'][FIELD_VALUE]:
-            self.warning_error(self.process_data['CH2a']['data'][FIELD_VALUE],
+            self.warning_error(self.process_data['CH2a']['data'],
                                'ChEBI name does not match name specified for FlyBase: {} -> {}'
                                .format(self.process_data['CH1g']['data'][FIELD_VALUE], self.process_data['CH2a']['data'][FIELD_VALUE]))
         else:

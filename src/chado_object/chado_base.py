@@ -29,7 +29,6 @@ class ChadoObject(object):
         self.filename = params['file_metadata'].get('filename')
         self.filename_short = params['file_metadata'].get('filename')
         self.curator_fullname = params['file_metadata'].get('curator_fullname')
-        self.pub
 
         # Data
         self.bang_c = params.get('bang_c')
