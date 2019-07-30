@@ -81,7 +81,7 @@ def process_proforma_file(file_location_from_list, curator_dict):
         # FBrf to add is only populated from the publications proforma (after validation).
         # It's added to every other type of proforma object as we loop through the list.
 
-        # proforma_type, filename, proforma_start_line_number, fields_values = individual_proforma_object.get_data_for_processing()
+        proforma_type, filename, proforma_start_line_number, fields_values = individual_proforma_object.get_data_for_processing()
 
         log.info('Processing Proforma object type %s' % (individual_proforma_object.proforma_type))
         log.info('From file: %s' % (individual_proforma_object.file_metadata['filename']))
@@ -97,18 +97,20 @@ def process_proforma_file(file_location_from_list, curator_dict):
     # the rest of the proforma objects. This involves a second loop through the validated list.
     # Obtain the FBrf and other data from the first item in the list. Should be a pub proforma.
 
-    # TODO Check that this entry is a pub proforma. Also implement workaround for processing DATABASE proforma which don't have pubs.
-    # proforma_type, filename, proforma_start_line_number, fields_values = list_of_proforma_objects[0].get_data_for_processing()
-    # log.info('Found reference %s from %s.' % (list_of_proforma_objects[0].fields_values['P22'][1], list_of_proforma_objects[0]filename))
-    # log.info('Attaching %s from field %s, line %s to all subsequent proforma objects.' % (fields_values['P22'][1], 'P22', fields_values['P22'][2]))
+    # TODO Check that this entry is a pub proforma. Also implement workaround for processing DATABASE proforma which
+    #  don't have pubs.
+    proforma_type, filename, proforma_start_line_number, fields_values = list_of_proforma_objects[0].get_data_for_processing()
+    log.info('Found reference %s.' %
+             (list_of_proforma_objects[0].fields_values['P22'][1]))
+    log.info('Attaching %s from field %s, line %s to all subsequent proforma objects.' %
+             (fields_values['P22'][1], 'P22', fields_values['P22'][2]))
 
     for individual_proforma_object in list_of_processed_proforma_objects:
         individual_proforma_object.add_pub_data(list_of_proforma_objects[0].fields_values['P22'])
 
     log.info('Successfully attached pub data to {} proforma objects'.format(len(list_of_processed_proforma_objects)))
 
-    return(list_of_processed_proforma_objects)
-
+    return list_of_processed_proforma_objects
 
 class ProformaFile(object):
     """
@@ -469,8 +471,8 @@ class Proforma(object):
             self.bang_d = field
             log.debug('!d field detected for %s. Adding flag to object.' % (field))
 
-    # def get_data_for_processing(self):
-    #    return(self.proforma_type, self.file_metadata['filename'], self.proforma_start_line_number, self.fields_values)
+    def get_data_for_processing(self):
+        return self.proforma_type, self.file_metadata['filename'], self.proforma_start_line_number, self.fields_values
 
     def get_data_for_loading(self):
         return(self.file_metadata, self.bang_c, self.bang_d, self.proforma_start_line_number, self.fields_values)

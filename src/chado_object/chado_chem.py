@@ -46,6 +46,7 @@ class ChadoChem(ChadoObject):
         yml_file = os.path.join(os.path.dirname(__file__), 'yml/chemical.yml')
         self.process_data = yaml.load(open(yml_file))
         for key in self.process_data:
+        # TODO try/catch critical error here if params contains a field not found in the yaml.
             self.process_data[key]['data'] = params['fields_values'].get(key)
             if self.process_data[key]['data']:
                 log.debug("{}: {}".format(key, self.process_data[key]))
@@ -77,7 +78,7 @@ class ChadoChem(ChadoObject):
 
         self.pub = super(ChadoChem, self).pub_from_fbrf(self.process_data['P22']['data'], self.session)
 
-        self.chemical_feature_id = self.get_or_create_chemical()
+        self.get_or_create_chemical()
 
         # Bang c first, as it supersedes all things.
         # if self.bang_c:
@@ -85,10 +86,10 @@ class ChadoChem(ChadoObject):
         # if self.bang_d:
         #     self.bang_d_it()
 
-        for key in self.process_data:
-            if self.process_data[key]['data']:
-                log.debug("Processing {}".format(self.process_data[key]['data']))
-                self.type_dict[self.process_data[key]['type']](key)
+        # for key in self.process_data:
+        #     if self.process_data[key]['data']:
+        #         log.debug("Processing {}".format(self.process_data[key]['data']))
+        #         self.type_dict[self.process_data[key]['type']](key)
 
         timestamp = datetime.now().strftime('%c')
         curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (
@@ -97,52 +98,58 @@ class ChadoChem(ChadoObject):
         log.info('%s' % curated_by_string)
 
     def get_or_create_chemical(self):
-        # Look up organism id.
-        organism_id = self.session.query(Organism). \
-            filter(Organism.genus == 'Drosophila',
-                   Organism.species == 'melanogaster').one()
-
-        # Look up description id.
-        description_id = self.session.query(Cvterm).join(Cv). \
-            filter(Cvterm.cv_id == Cv.cv_id,
-                   Cvterm.name == 'description',
-                   Cv.name == 'property type',
-                   Cvterm.is_obsolete == 0).one()
 
         # Validate the identifier in an external database.
         # Also looks for conflicts between the external name and
         # the name specified for FlyBase.
         self.validate_identifier()
 
+        # Look up organism id.
+        organism = self.session.query(Organism). \
+            filter(Organism.genus == 'Drosophila',
+                   Organism.species == 'melanogaster').one()
+
+        organism_id = organism.organism_id
+
+        log.info('here')
+        # Look up description id.
+        description = self.session.query(Cvterm).join(Cv). \
+            filter(Cvterm.cv_id == Cv.cv_id,
+                   Cvterm.name == 'description',
+                   Cv.name == 'property type',
+                   Cvterm.is_obsolete == 0).one()
+
+        description_id = description.cvterm_id
+
         # Check if we already have an existing entry by name.
-        entry_already_exists = self.session.query(Feature). \
-            filter(Feature.name == self.process_data['CH2a']['data'],
-                   Feature.type_id == description_id,
-                   Feature.organism_id == organism_id).oneornone()
+        entry_already_exists = self.chemical_feature_lookup(organism_id, description_id)
 
         # If we already have an entry and this should be be a new entry.
         if entry_already_exists and self.new_chemical_entry:
-            self.critical_error(self.process_data['CH2a']['data'],
+            self.critical_error(self.process_data['CH2a']['data'][FIELD_VALUE],
                                 'An entry already exists in the database with this name.')
-            return
         # If we're not dealing with a new entry.
         # Verify that the FBch and Name specified in the proforma match.
         elif entry_already_exists:
-            if entry_already_exists.uniquename != self.process_data['CH1f']['data']:
-                self.critical_error(self.process_data['CH1f']['data'],
+            if entry_already_exists.uniquename != self.process_data['CH1f']['data'][FIELD_VALUE]:
+                self.critical_error(self.process_data['CH1f']['data'][FIELD_VALUE],
                                     'Name and FBch in this proforma do not match.')
-                return
-            else:
-                return entry_already_exists.feature_id
-        # If we don't have an existing entry, make a new one.
         else:
-            chemical = get_or_create(self.session.Feature, organism_id=organism_id,
-                                     name=self.process_data['CH2a']['data'],
+            chemical = get_or_create(self.session, Feature, organism_id=organism_id,
+                                     name=self.process_data['CH2a']['data'][FIELD_VALUE],
                                      type_id=description_id,
                                      uniquename='FBch:temp_0')
-            log.info("New chemical entry created: {}".format(chemical.uniquename))
+            new_entry = self.chemical_feature_lookup(organism_id, description_id)
 
-            return chemical.feature_id
+            log.info("New chemical entry created: {}".format(new_entry.uniquename))
+
+    def chemical_feature_lookup(self, organism_id, description_id):
+        entry = self.session.query(Feature). \
+            filter(Feature.name == self.process_data['CH2a']['data'][FIELD_VALUE],
+                   Feature.type_id == description_id,
+                   Feature.organism_id == organism_id).one_or_none()
+
+        return entry
 
     def validate_identifier(self):
         # TODO Check identifier and use proper database.
@@ -150,16 +157,19 @@ class ChadoChem(ChadoObject):
         # TODO Regex to extract ChEBI identifier in case ; and name is used.
 
         ch = ChEBI()
-        results = ch.getLiteEntity(self.process_data['CH1g']['data'])
+        results = ch.getLiteEntity(self.process_data['CH1g']['data'][FIELD_VALUE])
         if not results:
-            self.critical_error(self.process_data['CH1g']['data'],
+            self.critical_error(self.process_data['CH1g']['data'][FIELD_VALUE],
                                 'No results found when querying ChEBI for {}'
-                                .format(self.process_data['CH1g']['data']))
+                                .format(self.process_data['CH1g']['data'][FIELD_VALUE]))
             return
-        name_from_chebi = results.chebiAsciiName
-        if name_from_chebi != self.process_data['CH2a']['data']:
-            self.warning_error(self.process_data['CH2a']['data'],
+        name_from_chebi = results[0].chebiAsciiName
+        if name_from_chebi != self.process_data['CH2a']['data'][FIELD_VALUE]:
+            self.warning_error(self.process_data['CH2a']['data'][FIELD_VALUE],
                                'ChEBI name does not match name specified for FlyBase: {} -> {}'
-                               .format(self.process_data['CH1g']['data'], self.process_data['CH2a']['data']))
+                               .format(self.process_data['CH1g']['data'][FIELD_VALUE], self.process_data['CH2a']['data'][FIELD_VALUE]))
+        else:
+            log.info('Queried name \'{}\' matches name used in proforma \'{}\''
+                     .format(name_from_chebi, self.process_data['CH2a']['data'][FIELD_VALUE]))
 
         return
