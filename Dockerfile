@@ -2,10 +2,10 @@ FROM flybase/harvdev-docker:latest
 
 WORKDIR /usr/src/app
 
-ADD requirements.txt .
+COPY requirements.txt .
 
 RUN pip install -r requirements.txt
 
-ADD . .
+COPY . .
 
 CMD ["python3", "-u", "src/app.py"]
