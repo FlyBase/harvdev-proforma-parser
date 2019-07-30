@@ -262,12 +262,13 @@ class ProformaFile(object):
         """
         Process the line and store in the data in the proforma object
         """
-        if current_line.startswith('! C'):
+        # Can't use startswith ('! C') due to CHEMICAL proforma.
+        if re.match(r'^! C[0-9]', current_line):
             field, value, type_of_bang = self.get_proforma_field_and_content(current_line)
             if field == 'C1':
                 file_metadata['curator_initials'] = value
                 file_metadata['curator_fullname'] = self.extract_curator_fullname(file_metadata['curator_initials'])
-            #  TODO: C2 C3 but what to do with them amyway???
+            #  TODO: C2 C3 but what to do with them anyway???
             if field == 'C4':
                 file_metadata['record_type'] = value
             return
@@ -275,8 +276,8 @@ class ProformaFile(object):
               current_line.startswith('!d') or
               current_line.startswith('! ')):
             field, value, type_of_bang = self.get_proforma_field_and_content(current_line)
-            log.debug(current_line)
-            log.debug(line_number)
+            log.debug('Current line: {}'.format(current_line))
+            log.debug('Line number: {}'.format(line_number))
             individual_proforma.add_field_and_value(field, value, line_number, type_of_bang)
             if type_of_bang:
                 individual_proforma.add_bang(field, value, line_number, type_of_bang)
@@ -338,7 +339,7 @@ class ProformaFile(object):
                 proforma_type = next_line
                 line_number = line_number + 1  # The proforma starts on the next line.
                 individual_proforma = Proforma(file_metadata, proforma_type, line_number)  # Create a new Proforma object.
-                log.info('inv proforma is %s' % individual_proforma)
+                log.debug('Individual proforma object is %s' % individual_proforma)
             elif proforma_type is not None and current_line == proforma_type:
                 continue  # If we're on the proforma_type line, go to the next line.
             elif current_line == '!':
@@ -348,7 +349,7 @@ class ProformaFile(object):
                 break  # fin.
             else:
                 field = self.process_line(field, line_number, current_line, individual_proforma, file_metadata)
-        return(list_of_proforma_objects)
+        return list_of_proforma_objects
 
 
 class Proforma(object):
@@ -370,8 +371,8 @@ class Proforma(object):
         self.fields_values = {}
 
         log.info('Creating Proforma class object from individual proforma entry in: %s', self.file_metadata['filename'])
-        log.info('Proforma type defined as: %s' % (proforma_type))
-        log.info('Proforma object begins at line: %s' % (line_number))
+        log.info('Proforma type defined as: %s' % proforma_type)
+        log.info('Proforma object begins at line: %s' % line_number)
 
     def add_field_and_value(self, field, value, line_number, type_of_bang):
         """

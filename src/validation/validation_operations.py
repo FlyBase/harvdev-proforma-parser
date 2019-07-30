@@ -44,8 +44,10 @@ def get_validate_pub_schema(fields_values):
 def get_validate_gene_schema(fields_values):
     return "gene.yaml"
 
+
 def get_validate_chemical_schema(fields_values):
     return "chemical.yaml"
+
 
 def validation_file_schema_lookup(proforma_type, fields_values):
     """

@@ -32,10 +32,10 @@ class ChadoChem(ChadoObject):
         ##########################################
         # Set up how to process each type of input
         ##########################################
-        self.type_dict = {'direct': self.load_direct}
+        #self.type_dict = {'direct': self.load_direct}
 
-        self.delete_dict = {'direct': self.delete_direct,
-                            'obsolete': self.delete_obsolete}
+        #self.delete_dict = {'direct': self.delete_direct,
+        #               'obsolete': self.delete_obsolete}
 
         self.proforma_start_line_number = params.get('proforma_start_line_number')
 
