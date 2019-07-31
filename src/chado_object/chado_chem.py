@@ -23,8 +23,9 @@ log = logging.getLogger(__name__)
 
 class ChadoChem(ChadoObject):
     # TODO
-    #  Warn for mismatch between database ID; database name in CH1g.
-    #  In initial YAML validator, regex for proper ChEBI name and other db identifiers.
+    #  - Warn for mismatch between database ID; database name in CH1g.
+    #  - In initial YAML validator, regex for proper ChEBI name and other db identifiers.
+    #  - CHEBI or NCBI Chemical ID stored as synonym.
 
     def __init__(self, params):
         log.info('Initializing ChadoChem object.')
@@ -111,16 +112,16 @@ class ChadoChem(ChadoObject):
         organism_id = organism.organism_id
 
         # Look up description id.
-        description = self.session.query(Cvterm).join(Cv). \
+        chemical = self.session.query(Cvterm).join(Cv). \
             filter(Cvterm.cv_id == Cv.cv_id,
-                   Cvterm.name == 'description',
-                   Cv.name == 'property type',
+                   Cvterm.name == 'chemical',
+                   Cv.name == 'FlyBase miscellaneous CV',
                    Cvterm.is_obsolete == 0).one()
 
-        description_id = description.cvterm_id
+        chemical_id = chemical.cvterm_id
 
         # Check if we already have an existing entry by name.
-        entry_already_exists = self.chemical_feature_lookup(organism_id, description_id)
+        entry_already_exists = self.chemical_feature_lookup(organism_id, chemical_id)
 
         # If we already have an entry and this should be be a new entry.
         if entry_already_exists and self.new_chemical_entry:
@@ -135,9 +136,9 @@ class ChadoChem(ChadoObject):
         else:
             chemical = get_or_create(self.session, Feature, organism_id=organism_id,
                                      name=self.process_data['CH2a']['data'][FIELD_VALUE],
-                                     type_id=description_id,
+                                     type_id=chemical_id,
                                      uniquename='FBch:temp_0')
-            new_entry = self.chemical_feature_lookup(organism_id, description_id)
+            new_entry = self.chemical_feature_lookup(organism_id, chemical_id)
 
             log.info("New chemical entry created: {}".format(new_entry.uniquename))
 
