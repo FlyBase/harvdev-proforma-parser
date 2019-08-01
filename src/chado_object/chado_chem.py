@@ -60,7 +60,7 @@ class ChadoChem(ChadoObject):
         #####################################################
         # Checking whether we're working with a new chemical.
         #####################################################
-        if self.process_data['CH1g']['data'][FIELD_VALUE] == "new":
+        if self.process_data['CH1f']['data'][FIELD_VALUE] == "new":
             self.new_chemical_entry = True
         else:
             self.new_chemical_entry = False
@@ -105,13 +105,15 @@ class ChadoChem(ChadoObject):
         self.validate_identifier()
 
         # Look up organism id.
+        log.debug(self.current_query)
         organism = self.session.query(Organism). \
             filter(Organism.genus == 'Drosophila',
                    Organism.species == 'melanogaster').one()
 
         organism_id = organism.organism_id
 
-        # Look up description id.
+        # Look up chemical cv term id.
+        log.debug(self.current_query)
         chemical = self.session.query(Cvterm).join(Cv). \
             filter(Cvterm.cv_id == Cv.cv_id,
                    Cvterm.name == 'chemical',
