@@ -7,6 +7,7 @@
 """
 from ...chado_gene import ChadoGene
 from ...chado_pub import ChadoPub
+from ...chado_chem import ChadoChem
 
 import logging, sys
 log = logging.getLogger(__name__)
@@ -59,6 +60,7 @@ def process_data_input(proforma_object):
         '! PUBLICATION PROFORMA                   Version 47:  25 Nov 2014' : (ChadoPub),
         '! GENE PROFORMA                          Version 76:  04 Sept 2014' : (ChadoGene),
         '! GENE PROFORMA                          Version 77:  01 Jun 2016' : (ChadoGene),
+        '! CHEMICAL PROFORMA                     Version 1: 01 Mar 2019' : (ChadoChem)
     }
 
     try: 

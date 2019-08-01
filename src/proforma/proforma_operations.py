@@ -81,7 +81,7 @@ def process_proforma_file(file_location_from_list, curator_dict):
         # FBrf to add is only populated from the publications proforma (after validation).
         # It's added to every other type of proforma object as we loop through the list.
 
-        # proforma_type, filename, proforma_start_line_number, fields_values = individual_proforma_object.get_data_for_processing()
+        proforma_type, filename, proforma_start_line_number, fields_values = individual_proforma_object.get_data_for_processing()
 
         log.info('Processing Proforma object type %s' % (individual_proforma_object.proforma_type))
         log.info('From file: %s' % (individual_proforma_object.file_metadata['filename']))
@@ -97,18 +97,20 @@ def process_proforma_file(file_location_from_list, curator_dict):
     # the rest of the proforma objects. This involves a second loop through the validated list.
     # Obtain the FBrf and other data from the first item in the list. Should be a pub proforma.
 
-    # TODO Check that this entry is a pub proforma. Also implement workaround for processing DATABASE proforma which don't have pubs.
-    # proforma_type, filename, proforma_start_line_number, fields_values = list_of_proforma_objects[0].get_data_for_processing()
-    # log.info('Found reference %s from %s.' % (list_of_proforma_objects[0].fields_values['P22'][1], list_of_proforma_objects[0]filename))
-    # log.info('Attaching %s from field %s, line %s to all subsequent proforma objects.' % (fields_values['P22'][1], 'P22', fields_values['P22'][2]))
+    # TODO Check that this entry is a pub proforma. Also implement workaround for processing DATABASE proforma which
+    #  don't have pubs.
+    proforma_type, filename, proforma_start_line_number, fields_values = list_of_proforma_objects[0].get_data_for_processing()
+    log.info('Found reference %s.' %
+             (list_of_proforma_objects[0].fields_values['P22'][1]))
+    log.info('Attaching %s from field %s, line %s to all subsequent proforma objects.' %
+             (fields_values['P22'][1], 'P22', fields_values['P22'][2]))
 
     for individual_proforma_object in list_of_processed_proforma_objects:
         individual_proforma_object.add_pub_data(list_of_proforma_objects[0].fields_values['P22'])
 
     log.info('Successfully attached pub data to {} proforma objects'.format(len(list_of_processed_proforma_objects)))
 
-    return(list_of_processed_proforma_objects)
-
+    return list_of_processed_proforma_objects
 
 class ProformaFile(object):
     """
@@ -262,12 +264,13 @@ class ProformaFile(object):
         """
         Process the line and store in the data in the proforma object
         """
-        if current_line.startswith('! C'):
+        # Can't use startswith ('! C') due to CHEMICAL proforma.
+        if re.match(r'^! C[0-9]', current_line):
             field, value, type_of_bang = self.get_proforma_field_and_content(current_line)
             if field == 'C1':
                 file_metadata['curator_initials'] = value
                 file_metadata['curator_fullname'] = self.extract_curator_fullname(file_metadata['curator_initials'])
-            #  TODO: C2 C3 but what to do with them amyway???
+            #  TODO: C2 C3 but what to do with them anyway???
             if field == 'C4':
                 file_metadata['record_type'] = value
             return
@@ -275,8 +278,8 @@ class ProformaFile(object):
               current_line.startswith('!d') or
               current_line.startswith('! ')):
             field, value, type_of_bang = self.get_proforma_field_and_content(current_line)
-            log.debug(current_line)
-            log.debug(line_number)
+            log.debug('Current line: {}'.format(current_line))
+            log.debug('Line number: {}'.format(line_number))
             individual_proforma.add_field_and_value(field, value, line_number, type_of_bang)
             if type_of_bang:
                 individual_proforma.add_bang(field, value, line_number, type_of_bang)
@@ -338,7 +341,7 @@ class ProformaFile(object):
                 proforma_type = next_line
                 line_number = line_number + 1  # The proforma starts on the next line.
                 individual_proforma = Proforma(file_metadata, proforma_type, line_number)  # Create a new Proforma object.
-                log.info('inv proforma is %s' % individual_proforma)
+                log.debug('Individual proforma object is %s' % individual_proforma)
             elif proforma_type is not None and current_line == proforma_type:
                 continue  # If we're on the proforma_type line, go to the next line.
             elif current_line == '!':
@@ -348,7 +351,7 @@ class ProformaFile(object):
                 break  # fin.
             else:
                 field = self.process_line(field, line_number, current_line, individual_proforma, file_metadata)
-        return(list_of_proforma_objects)
+        return list_of_proforma_objects
 
 
 class Proforma(object):
@@ -370,8 +373,8 @@ class Proforma(object):
         self.fields_values = {}
 
         log.info('Creating Proforma class object from individual proforma entry in: %s', self.file_metadata['filename'])
-        log.info('Proforma type defined as: %s' % (proforma_type))
-        log.info('Proforma object begins at line: %s' % (line_number))
+        log.info('Proforma type defined as: %s' % proforma_type)
+        log.info('Proforma object begins at line: %s' % line_number)
 
     def add_field_and_value(self, field, value, line_number, type_of_bang):
         """
@@ -468,8 +471,8 @@ class Proforma(object):
             self.bang_d = field
             log.debug('!d field detected for %s. Adding flag to object.' % (field))
 
-    # def get_data_for_processing(self):
-    #    return(self.proforma_type, self.file_metadata['filename'], self.proforma_start_line_number, self.fields_values)
+    def get_data_for_processing(self):
+        return self.proforma_type, self.file_metadata['filename'], self.proforma_start_line_number, self.fields_values
 
     def get_data_for_loading(self):
         return(self.file_metadata, self.bang_c, self.bang_d, self.proforma_start_line_number, self.fields_values)

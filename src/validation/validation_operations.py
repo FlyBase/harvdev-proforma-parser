@@ -41,9 +41,12 @@ def get_validate_pub_schema(fields_values):
         return "publication_new.yaml"
     return "publication.yaml"
 
-
 def get_validate_gene_schema(fields_values):
     return "gene.yaml"
+
+
+def get_validate_chemical_schema(fields_values):
+    return "chemical.yaml"
 
 
 def validation_file_schema_lookup(proforma_type, fields_values):
@@ -62,9 +65,10 @@ def validation_file_schema_lookup(proforma_type, fields_values):
     #root_directory = os.path.abspath('src/validation/yaml')
     root_directory = os.path.dirname(os.path.abspath(__file__))
     root_directory += '/yaml'
-    # Ignore versions just get name (deal with this later if it evers becomes a problem)
+    # Ignore versions just get name (deal with this later if it ever becomes a problem)
     validation_dict = {"PUBLICATION": get_validate_pub_schema,
-                       "GENE": get_validate_gene_schema}
+                       "GENE": get_validate_gene_schema,
+                       "CHEMICAL": get_validate_chemical_schema}
     validator = ValidatorBase
     # if we have specific validation stuff set it up here.
     validation_base = {"PUBLICATION": ValidatorPub}
