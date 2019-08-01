@@ -8,7 +8,6 @@ import sys
 import logging
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from sqlalchemy import event
-from weakref import WeakSet
 
 from error.error_tracking import ErrorTracking, CRITICAL_ERROR
 from chado_object.chado_base import LINE_NUMBER
