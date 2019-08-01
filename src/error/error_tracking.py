@@ -27,7 +27,7 @@ class ErrorTracking(object):
         # We can use it to tailor the error message based on where it was called.
         try:
             stack = inspect.stack()[1]
-            # depeneding on python version, stack gives different structure, so test for this.
+            # depending on python version, stack gives different structure, so test for this.
             if type(stack) != tuple:
                 error_called_from = (os.path.basename(os.path.normpath(inspect.stack()[1].filename)))
             else:

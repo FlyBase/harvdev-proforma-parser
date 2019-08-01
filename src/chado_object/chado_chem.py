@@ -20,7 +20,6 @@ from datetime import datetime
 
 log = logging.getLogger(__name__)
 
-
 class ChadoChem(ChadoObject):
     # TODO
     #  - Warn for mismatch between database ID; database name in CH1g.

@@ -7,6 +7,9 @@
 import sys
 import logging
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+from sqlalchemy import event
+from weakref import WeakSet
+
 from error.error_tracking import ErrorTracking, CRITICAL_ERROR
 from chado_object.chado_base import LINE_NUMBER
 from chado_object.chado_exceptions import ValidationError
@@ -20,41 +23,49 @@ log = logging.getLogger(__name__)
 #             filter(Gene.is_obsolete == 'f')
 #     return query
 
-
 def process_entry(entry, session, filename):
     """
     Process Entry and deal with excpetions etc and just return if an error was seen.
     """
     error_occurred = False
+    executed_queries = [] # List for tracking all the executed queries.
+
+    engine = session.get_bind()
+    @event.listens_for(engine, "before_cursor_execute")
+    def comment_sql_calls(conn, cursor, statement, parameters,
+                          context, executemany):
+        # Add all executed queries to a list.
+        executed_queries.append(statement % parameters)
+
     try:
         entry.load_content()
         session.flush()  # For printing out SQL statements in debug mode.
-    except NoResultFound:
+    except NoResultFound as e:
         session.rollback()
-        current_query = entry.current_query
-        current_query_source = entry.current_query_source
         # Create an error object.
-        ErrorTracking(filename, None, current_query_source[LINE_NUMBER], 'No results found from this query.', current_query, CRITICAL_ERROR)
+        ErrorTracking(filename, None, None, 'Unexpected internal parser error. NoResultFound. Please contact Harvdev. '
+                                            'Last query below:', executed_queries[-1], CRITICAL_ERROR)
         error_occurred = True
     except MultipleResultsFound:
         session.rollback()
-        current_query = entry.current_query
-        current_query_source = entry.current_query_source
         # Create an error object.
-        ErrorTracking(filename, None, current_query_source[LINE_NUMBER], 'Multiple results found from this query.', current_query, CRITICAL_ERROR)
+        ErrorTracking(filename, None, None, 'Unexpected internal parser error. MultipleResultsFound. Please contact '
+                                            'Harvdev. Last query below:', executed_queries[-1], CRITICAL_ERROR)
         error_occurred = True
     except ValidationError:
         current_query = entry.current_query
         current_query_source = entry.current_query_source
         # Create an error object.
-        log.critical("Raise of Validation should not be used any more and replaced with chado's critical_error")
+        log.critical("Raise of Validation should not be used any more and replaced with Chado's critical_error")
         ErrorTracking(filename, None, current_query_source[LINE_NUMBER], 'Validation Error.', current_query, CRITICAL_ERROR)
         error_occurred = True
     except Exception as e:
         session.rollback()
-        log.critical('Unexpected Exception {}'.format(e))
-        log.critical('Critical transaction error occured, rolling back and exiting.')
-        raise
+        log.critical(entry.current_query)
+        log.critical('Unexpected exception {}'.format(e))
+        # Create an error object.
+        ErrorTracking(filename, None, None, 'Unexpected internal parser error. Exception: {}. Please contact Harvdev. '
+                                            'Last query below:'.format(e), executed_queries[-1], CRITICAL_ERROR)
     return error_occurred
 
 
@@ -69,7 +80,7 @@ def process_chado_objects_for_transaction(session, list_of_objects_to_load, load
     elif load_type == 'test':
         log.warning('Test load specified. Changes will not be written to the production database.')
     else:
-        log.critical('Unrecognized load_type specificed.')
+        log.critical('Unrecognized load_type specified.')
         log.critical('Exiting.')
         sys.exit(-1)
 
