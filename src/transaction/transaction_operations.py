@@ -8,6 +8,7 @@ import sys
 import logging
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from sqlalchemy import event
+import traceback
 
 from error.error_tracking import ErrorTracking, CRITICAL_ERROR
 from chado_object.chado_base import LINE_NUMBER
@@ -34,37 +35,31 @@ def process_entry(entry, session, filename):
     def comment_sql_calls(conn, cursor, statement, parameters,
                           context, executemany):
         # Add all executed queries to a list.
-        executed_queries.append(statement % parameters)
+        try:
+            executed_queries.append(statement % parameters)
+        except TypeError: # If we don't have parameters to insert.
+            executed_queries.append(statement)
 
     try:
         entry.load_content()
         session.flush()  # For printing out SQL statements in debug mode.
-    except NoResultFound as e:
-        session.rollback()
+    except NoResultFound:
         # Create an error object.
-        ErrorTracking(filename, None, None, 'Unexpected internal parser error. NoResultFound. Please contact Harvdev. '
-                                            'Last query below:', executed_queries[-1], CRITICAL_ERROR)
+        ErrorTracking(filename, None, None, 'Unexpected internal parser error. Please contact Harvdev. \n{} '
+                                            'Last query below:'.format(traceback.format_exc()), executed_queries[-1], CRITICAL_ERROR)
         error_occurred = True
     except MultipleResultsFound:
-        session.rollback()
         # Create an error object.
-        ErrorTracking(filename, None, None, 'Unexpected internal parser error. MultipleResultsFound. Please contact '
-                                            'Harvdev. Last query below:', executed_queries[-1], CRITICAL_ERROR)
-        error_occurred = True
-    except ValidationError:
-        current_query = entry.current_query
-        current_query_source = entry.current_query_source
-        # Create an error object.
-        log.critical("Raise of Validation should not be used any more and replaced with Chado's critical_error")
-        ErrorTracking(filename, None, current_query_source[LINE_NUMBER], 'Validation Error.', current_query, CRITICAL_ERROR)
+        ErrorTracking(filename, None, None, 'Unexpected internal parser error. Please contact Harvdev. \n{} '
+                                            'Last query below:'.format(traceback.format_exc()), executed_queries[-1], CRITICAL_ERROR)
         error_occurred = True
     except Exception as e:
-        session.rollback()
         log.critical(entry.current_query)
         log.critical('Unexpected exception {}'.format(e))
         # Create an error object.
-        ErrorTracking(filename, None, None, 'Unexpected internal parser error. Exception: {}. Please contact Harvdev. '
-                                            'Last query below:'.format(e), executed_queries[-1], CRITICAL_ERROR)
+        ErrorTracking(filename, None, None, 'Unexpected internal parser error. Please contact Harvdev. \n{} '
+                                            'Last query below:'.format(traceback.format_exc()), executed_queries[-1], CRITICAL_ERROR)
+        error_occurred = True
     return error_occurred
 
 
@@ -97,6 +92,15 @@ def process_chado_objects_for_transaction(session, list_of_objects_to_load, load
 
         error_occurred |= process_entry(entry, session, filename)
 
+    # Check for critical errors.
+    list_of_errors_transactions = [instance for instance in ErrorTracking.instances]
+
+    if len(list_of_errors_transactions) > 0:
+        for instance in ErrorTracking.instances:
+            if instance.error_level == CRITICAL_ERROR:
+                error_occurred = True
+                break
+
     if not error_occurred:
         if load_type == 'production':
             session.commit()
@@ -108,3 +112,6 @@ def process_chado_objects_for_transaction(session, list_of_objects_to_load, load
             log.critical('Unrecognized load_type specificed. Rolling back.')
             log.critical('Exiting.')
             sys.exit(-1)
+    elif error_occurred:
+        log.critical('Rolling back all transactions due to a critical error.')
+        session.rollback()

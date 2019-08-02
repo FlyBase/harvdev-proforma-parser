@@ -66,8 +66,8 @@ def create_postgres_session():
 
 def get_error_summary():
     """
-    Get the numbers and types or errore generated.
-    Return the counts of critical and warning erros.
+    Get the numbers and types or errors generated.
+    Return the counts of critical and warning errors.
     """
     critical_count = 0
     warning_count = 0
@@ -147,8 +147,8 @@ def process_errors(load_type):
     if len(list_of_errors_transactions) > 0:
         critical_count, warning_count = get_error_summary()
         if critical_count:
-            log.critical('{} critical errors were found.'.format(critical_count))
-            log.critical('{} warning errors were found.'.format(warning_count))
+            log.critical('{} critical error(s) were found.'.format(critical_count))
+            log.critical('{} warning error(s) were found.'.format(warning_count))
             log.critical('Please the correct at least the critical ones or remove these file(s) before proceeding.')
             log.critical('No data was loaded into Chado.')
             log.critical('Exiting.')

@@ -70,13 +70,11 @@ class ChadoObject(object):
         Return pub object for a given fbrf.
         Return None if it does not exist.
         """
-        self.current_query_source = fbrf_tuple
-        self.current_query = 'Querying for FBrf \'%s\'.' % (fbrf_tuple[FIELD_VALUE])
-        log.debug(self.current_query)
+        log.debug('Querying for FBrf \'%s\'.' % (fbrf_tuple[FIELD_VALUE]))
 
         pub = session.query(Pub).\
             filter(Pub.uniquename == fbrf_tuple[FIELD_VALUE]).\
-            one()
+            one_or_none()
         return pub
 
     def feature_from_feature_name(self, feature_name, session):
