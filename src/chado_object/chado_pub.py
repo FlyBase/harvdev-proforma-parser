@@ -99,7 +99,6 @@ class ChadoPub(ChadoObject):
         * the value given in P1 must be identical to the value
           stored in Chado for the publication specified by the value given in P22 or
         * P1 must contain a valid value and no value is stored in
-
         Chado for the publication specified by the value given in P22;
           * if P22 is 'new', P1 must a contain valid value.
           * if P22 is 'unattributed', P1 must be empty
@@ -114,9 +113,12 @@ class ChadoPub(ChadoObject):
                                                             Cv.name == 'pub type',
                                                             Cvterm.is_obsolete == 0).one_or_none()
 
+        # TODO Ian, can you check this logic for missing P1 / cvterm?
+        #  Does it need to return empty without an error message if P22 is unattributed?
+        #  I have it erroring below, but I think we need to bypass this error if P22 is unattributed.
+        #  Unless you're handling that logic elsewhere...
         if not cvterm:
-            self.critical_error(p1_data, 'Querying for cvterm %s with cv of pub type\'%s\'.'
-                                % ('pub type', p1_data[FIELD_VALUE]))
+            self.critical_error(p1_data, 'Missing P1 type of publication.')
             return
 
         if pub:
@@ -683,9 +685,14 @@ class ChadoPub(ChadoObject):
                                                             Cv.name == 'pub type',
                                                             Cvterm.is_obsolete == 0).one_or_none()
         if not cvterm:
-            self.critical_error(self.process_data[key]['data'], "cvterm for '{}' not found.".format(self.process_data[key]['data'][FIELD_VALUE]))
-            self.process_data[key]['data'] = None
-            return
+            if self.process_data['P1']['data'][FIELD_VALUE] is None:
+                self.critical_error(self.process_data[key]['data'],
+                                    'Cannot bangc the P1 field with a blank value.')
+                return
+            else:
+                self.critical_error(self.process_data[key]['data'], "cvterm for '{}' not found.".format(self.process_data[key]['data'][FIELD_VALUE]))
+                self.process_data[key]['data'] = None
+                return
         log.debug("Changed type of pub to {}".format(self.process_data[key]['data'][FIELD_VALUE]))
         self.pub.type_id = cvterm.cvterm_id
 

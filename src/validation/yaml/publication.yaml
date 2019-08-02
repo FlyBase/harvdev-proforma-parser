@@ -3,9 +3,11 @@ P1:
   P22_unattributed_no_value: True
   required: False
   forbidden: ['journal', 'compendium']
+  nullable: True
 P2:
   type: string
   required: False
+  nullable: True
 P3:
   required: False
   type: string
@@ -75,9 +77,11 @@ P22:
   P22_unattributed_allowed: True
   type: string
   regex: ^(FBrf\d{7}|none|unattributed|new)$
+  nullable: True
 P23:
   required: False
   type: string
+  nullable: True
 P26:
   required: False
   regex: ^(\d+)$
@@ -87,6 +91,7 @@ P28:
 P29:
   required: False
   regex: ^(\d{10}|\d{13})$
+  nullable: True
 P30:
   required: False
   type: [string, list]

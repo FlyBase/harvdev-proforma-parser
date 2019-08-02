@@ -172,7 +172,7 @@ class ProformaFile(object):
         """
 
         result_field = None
-        result_value = ''
+        result_value = None
         result_bang = None
         # TODO Add additional format error checking here.
 
@@ -386,11 +386,12 @@ class Proforma(object):
             value (str): The value from the proforma.
         """
 
-        if value == '' and not type_of_bang:  # Leave this function if the value is an empty string.
+        if value is None and not type_of_bang:  # Leave this function if the value is an empty string.
             return
 
-        # remove spaces from start and end of string
-        value = value.strip()
+        if value is not None:
+            # remove spaces from start and end of string
+            value = value.strip()
 
         # A list of fields where values might span multiple lines
         # but they need to be treated as a single entry.
