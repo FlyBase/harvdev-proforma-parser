@@ -236,7 +236,8 @@ class ValidatorPub(ValidatorBase):
         {'type': 'boolean'}
         """
         for item in value:
-            self.single_deposited_file(field, item)
+            if item is not None:
+                self.single_deposited_file(field, item)
 
     def _validate_pages_format(self, do_test, field, value):
         """

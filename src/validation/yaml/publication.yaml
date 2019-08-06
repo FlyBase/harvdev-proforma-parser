@@ -70,6 +70,7 @@ P18:
   type: string
 P19:
   type: [string, list]
+  nullable: True
 P22:
   required: True
   no_bangc: True

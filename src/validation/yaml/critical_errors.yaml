@@ -12,3 +12,8 @@ P22:
   - null value not allowed
   - P22 not allowed with bang c or bang d
   - Error P22 is unattributed so cannot set
+P30:
+  - in both P30 and P22. Not allowed
+  - in both P30 and P31. Not allowed
+P31:
+  - in both P31 and P22. Not allowed

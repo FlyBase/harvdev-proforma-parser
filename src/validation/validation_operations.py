@@ -221,7 +221,7 @@ def check_and_raise_errors(filename, proforma_start_line, line_number, error_fie
     if error_field in critical_errors: # If we have a key in critical_errors, e.g. P22
         for x in critical_errors[error_field]:
             if x in error_value:
-                log.debug('Found critical error {} in Cerberus error value {}'.format(x, error_value))
+                log.debug('Found critical error: \'{}\' in Cerberus error value: \'{}\''.format(x, error_value))
                 ErrorTracking(filename, proforma_start_line, line_number, 'Validation unsuccessful', error_data,
                               CRITICAL_ERROR)
                 log.critical(error_data)
