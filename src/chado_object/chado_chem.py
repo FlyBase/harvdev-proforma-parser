@@ -20,7 +20,6 @@ from datetime import datetime
 
 log = logging.getLogger(__name__)
 
-
 class ChadoChem(ChadoObject):
     # TODO
     #  - Warn for mismatch between database ID; database name in CH1g.
@@ -116,7 +115,7 @@ class ChadoChem(ChadoObject):
         log.debug(self.current_query)
         chemical = self.session.query(Cvterm).join(Cv). \
             filter(Cvterm.cv_id == Cv.cv_id,
-                   Cvterm.name == 'chemical',
+                   Cvterm.name == 'chemical entity',
                    Cv.name == 'FlyBase miscellaneous CV',
                    Cvterm.is_obsolete == 0).one()
 

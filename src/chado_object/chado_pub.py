@@ -99,7 +99,6 @@ class ChadoPub(ChadoObject):
         * the value given in P1 must be identical to the value
           stored in Chado for the publication specified by the value given in P22 or
         * P1 must contain a valid value and no value is stored in
-
         Chado for the publication specified by the value given in P22;
           * if P22 is 'new', P1 must a contain valid value.
           * if P22 is 'unattributed', P1 must be empty
@@ -109,13 +108,14 @@ class ChadoPub(ChadoObject):
         if p1_data[FIELD_VALUE] in ('journal', 'compendium'):
             self.critical_error(p1_data, 'Not allowed to have the value "journal" or "compendium"')
 
-        self.current_query_source = p1_data
-        self.current_query = 'Querying for cvterm %s with cv of pub type\'%s\'.' % ('pub type', p1_data[FIELD_VALUE])
-
         cvterm = self.session.query(Cvterm).join(Cv).filter(Cvterm.cv_id == Cv.cv_id,
                                                             Cvterm.name == p1_data[FIELD_VALUE],
                                                             Cv.name == 'pub type',
-                                                            Cvterm.is_obsolete == 0).one()
+                                                            Cvterm.is_obsolete == 0).one_or_none()
+
+        if not cvterm:
+            self.critical_error(p1_data, 'Missing P1 type of publication.')
+            return
 
         if pub:
             old_cvterm = self.session.query(Cvterm).join(Cv).join(Pubprop).\
@@ -137,12 +137,13 @@ class ChadoPub(ChadoObject):
         """
         from the fbrf tuple get the pub
         """
-        self.current_query_source = tuple
-        self.current_query = "Looking up pub: {}.".format(tuple[FIELD_VALUE])
         log.debug("Looking up pub: {}.".format(tuple[FIELD_VALUE]))
         pub = None
         if uniquename:
-            pub = self.session.query(Pub).filter(Pub.uniquename == tuple[FIELD_VALUE]).one()
+            pub = self.session.query(Pub).filter(Pub.uniquename == tuple[FIELD_VALUE]).one_or_none()
+            if not pub:
+                self.critical_error(tuple, 'Pub does not exist in the database.')
+                return
         else:
             if tuple[FIELD_VALUE]:
                 pub = self.session.query(Pub).filter(Pub.miniref == tuple[FIELD_VALUE]).one()
@@ -169,7 +170,6 @@ class ChadoPub(ChadoObject):
         Get the parent pub.
         Return None if it does not have one. This is okay.
         """
-        self.current_query_source = pub.uniquename
         self.current_query = "Querying for cvterm 'published_in' with cv of 'pub relationship type'."
         cvterm = self.session.query(Cvterm).join(Cv).filter(Cv.name == 'pub relationship type',
                                                             Cvterm.name == 'published_in',
@@ -216,6 +216,9 @@ class ChadoPub(ChadoObject):
         """
         if not self.newpub:
             pub = super(ChadoPub, self).pub_from_fbrf(self.process_data['P22']['data'], self.session)
+            if not pub:
+                self.critical_error(self.process_data['P22']['data'], 'Pub does not exist in the database.')
+                return
         else:
             pub = None
 
@@ -320,6 +323,8 @@ class ChadoPub(ChadoObject):
             for fbrf in self.process_data[key]['data']:
                 if 'verify_only_on_update' not in self.process_data[key] or self.newpub:
                     pub = self.get_related_pub(fbrf)
+                    if not pub:
+                        return
                     self.add_relationship(self.pub, pub, self.process_data[key]['cvterm'], self.process_data[key]['data'])
         else:  # P2 can only change with !c or has no parent pub
             log.debug("not list {}".format(key))
@@ -373,9 +378,10 @@ class ChadoPub(ChadoObject):
 
         self.pub = self.get_pub()
 
-        self.parent_pub = self.get_parent_pub(self.pub)
+        if self.pub: # Only proceed if we have a pub. Otherwise we had an error.
+            self.parent_pub = self.get_parent_pub(self.pub)
 
-        self.extra_checks()
+            self.extra_checks()
 
         # bang c first as this trumps all things
         if self.bang_c:
@@ -675,9 +681,14 @@ class ChadoPub(ChadoObject):
                                                             Cv.name == 'pub type',
                                                             Cvterm.is_obsolete == 0).one_or_none()
         if not cvterm:
-            self.critical_error(self.process_data[key]['data'], "cvterm for '{}' not found.".format(self.process_data[key]['data'][FIELD_VALUE]))
-            self.process_data[key]['data'] = None
-            return
+            if self.process_data['P1']['data'][FIELD_VALUE] is None:
+                self.critical_error(self.process_data[key]['data'],
+                                    'Cannot bangc the P1 field with a blank value.')
+                return
+            else:
+                self.critical_error(self.process_data[key]['data'], "cvterm for '{}' not found.".format(self.process_data[key]['data'][FIELD_VALUE]))
+                self.process_data[key]['data'] = None
+                return
         log.debug("Changed type of pub to {}".format(self.process_data[key]['data'][FIELD_VALUE]))
         self.pub.type_id = cvterm.cvterm_id
 

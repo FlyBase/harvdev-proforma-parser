@@ -21,9 +21,6 @@ LINE_NUMBER = 2
 class ChadoObject(object):
     def __init__(self, params):
 
-        # Query tracking
-        self.current_query = None
-
         # Metadata
         self.proforma_start_line_number = params.get('proforma_start_line_number')
         self.filename = params['file_metadata'].get('filename')
@@ -49,8 +46,7 @@ class ChadoObject(object):
         self.error_track(tuple, error_message, WARNING_ERROR)
 
     def cvterm_query(self, cv_name, cv_term_name, session):
-        self.current_query = 'Querying for cv_term_name \'%s\'.' % (cv_term_name)
-        log.debug(self.current_query)
+        log.debug('Querying for cv_term_name \'%s\'.' % cv_term_name)
 
         filters = (
             Cv.name == cv_name,
@@ -70,19 +66,15 @@ class ChadoObject(object):
         Return pub object for a given fbrf.
         Return None if it does not exist.
         """
-        self.current_query_source = fbrf_tuple
-        self.current_query = 'Querying for FBrf \'%s\'.' % (fbrf_tuple[FIELD_VALUE])
-        log.debug(self.current_query)
+        log.debug('Querying for FBrf \'%s\'.' % (fbrf_tuple[FIELD_VALUE]))
 
         pub = session.query(Pub).\
             filter(Pub.uniquename == fbrf_tuple[FIELD_VALUE]).\
-            one()
+            one_or_none()
         return pub
 
     def feature_from_feature_name(self, feature_name, session):
-        self.current_query_source = feature_name
-        self.current_query = 'Querying for feature uniquename from feature id \'%s\'.' % (feature_name)
-        log.debug(self.current_query)
+        log.debug('Querying for feature uniquename from feature id \'%s\'.' % feature_name)
 
         feature = session.query(Feature).\
             filter(Feature.name == feature_name).\
@@ -91,9 +83,7 @@ class ChadoObject(object):
         return feature
 
     def synonym_id_from_synonym_symbol(self, synonym_name_tuple, synonym_type_id, session):
-        self.current_query_source = synonym_name_tuple
-        self.current_query = 'Querying for synonym \'%s\'.' % (synonym_name_tuple[FIELD_VALUE])
-        log.debug(self.current_query)
+        log.debug('Querying for synonym \'%s\'.' % synonym_name_tuple[FIELD_VALUE])
 
         results = session.query(Synonym.synonym_id, Synonym.name, Synonym.type_id).\
             filter(Synonym.name == synonym_name_tuple[FIELD_VALUE]).\

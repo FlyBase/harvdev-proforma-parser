@@ -6,6 +6,7 @@ P1:
 P2:
   type: string
   required: False
+  nullable: True
 P3:
   required: False
   type: string
@@ -78,6 +79,7 @@ P22:
 P23:
   required: False
   type: string
+  nullable: True
 P26:
   required: False
   regex: ^(\d+)$
@@ -87,6 +89,7 @@ P28:
 P29:
   required: False
   regex: ^(\d{10}|\d{13})$
+  nullable: True
 P30:
   required: False
   type: [string, list]
