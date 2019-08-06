@@ -2,5 +2,7 @@ CH1g:
   - null value not allowed
 P1:
   - null value not allowed
+  - unallowed value journal
+  - unallowed value compendium
 P22:
   - null value not allowed
