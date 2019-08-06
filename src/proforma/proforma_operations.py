@@ -386,6 +386,7 @@ class Proforma(object):
             value (str): The value from the proforma.
         """
 
+        # Needed to remove the following check to allow empty values to properly fail validation.
         if value is None and not type_of_bang:  # Leave this function if the value is an empty string.
             return
 
