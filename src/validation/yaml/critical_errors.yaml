@@ -1,6 +1,6 @@
 # Important note:
 # The value doesn't need to *exactly* match the entire error.
-# It just needs to be part of the error.
+# It just needs to match part of the error text.
 CH1g:
   - null value not allowed
 P1:
@@ -10,3 +10,4 @@ P1:
   - Cannot set P1 for an unattributed Pub
 P22:
   - null value not allowed
+  - P22 not allowed with bang c or bang d
