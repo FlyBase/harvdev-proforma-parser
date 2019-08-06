@@ -3,7 +3,6 @@ P1:
   P22_unattributed_no_value: True
   required: False
   forbidden: ['journal', 'compendium']
-  nullable: True
 P2:
   type: string
   required: False
@@ -77,7 +76,6 @@ P22:
   P22_unattributed_allowed: True
   type: string
   regex: ^(FBrf\d{7}|none|unattributed|new)$
-  nullable: True
 P23:
   required: False
   type: string

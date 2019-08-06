@@ -113,10 +113,6 @@ class ChadoPub(ChadoObject):
                                                             Cv.name == 'pub type',
                                                             Cvterm.is_obsolete == 0).one_or_none()
 
-        # TODO Ian, can you check this logic for missing P1 / cvterm?
-        #  Does it need to return empty without an error message if P22 is unattributed?
-        #  I have it erroring below, but I think we need to bypass this error if P22 is unattributed.
-        #  Unless you're handling that logic elsewhere...
         if not cvterm:
             self.critical_error(p1_data, 'Missing P1 type of publication.')
             return

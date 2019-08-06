@@ -54,8 +54,6 @@ def process_entry(entry, session, filename):
                                             'Last query below:'.format(traceback.format_exc()), executed_queries[-1], CRITICAL_ERROR)
         error_occurred = True
     except Exception as e:
-        log.critical(entry.current_query)
-        log.critical('Unexpected exception {}'.format(e))
         # Create an error object.
         ErrorTracking(filename, None, None, 'Unexpected internal parser error. Please contact Harvdev. \n{} '
                                             'Last query below:'.format(traceback.format_exc()), executed_queries[-1], CRITICAL_ERROR)

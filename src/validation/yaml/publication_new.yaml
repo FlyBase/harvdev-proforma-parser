@@ -3,7 +3,6 @@ P1:
   P22_unattributed_no_value: True
   required: True
   P1_dependencies: True
-  nullable: True
   # Nice example here so not deleting it but better error messaging using P1_dependencies
   # allof:
   # - oneof:
@@ -87,7 +86,6 @@ P22:
   P22_unattributed_allowed: True
   type: string
   regex: ^(FBrf\d{7}|none|unattributed|new)$
-  nullable: True
 P23:
   required: False
   type: string
