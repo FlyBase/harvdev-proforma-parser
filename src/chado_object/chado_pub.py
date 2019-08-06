@@ -365,11 +365,15 @@ class ChadoPub(ChadoObject):
         log.debug("loading pubprops")
         if type(self.process_data[key]['data']) is list:
             for row in self.process_data[key]['data']:
-                log.debug("loading {} {}".format(self.process_data[key]['cvterm'], row[FIELD_VALUE]))
-                self.load_single_pubprop('pubprop type', self.process_data[key]['cvterm'], row)
+                if row[FIELD_VALUE] is not None:
+                    log.debug("loading {} {}".format(self.process_data[key]['cvterm'], row[FIELD_VALUE]))
+                    self.load_single_pubprop('pubprop type', self.process_data[key]['cvterm'], row)
         else:
-            log.debug("loading {} {}".format(self.process_data[key]['cvterm'], self.process_data[key]['data'][FIELD_VALUE]))
-            self.load_single_pubprop('pubprop type', self.process_data[key]['cvterm'], self.process_data[key]['data'])
+            if self.process_data[key]['data'][FIELD_VALUE] is not None:
+                log.debug("loading {} {}".format(self.process_data[key]['cvterm'],
+                                                 self.process_data[key]['data'][FIELD_VALUE]))
+                self.load_single_pubprop('pubprop type', self.process_data[key]['cvterm'],
+                                         self.process_data[key]['data'])
 
     def load_content(self):
         """

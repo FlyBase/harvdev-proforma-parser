@@ -9,7 +9,7 @@
 import yaml
 from validation.validator_base import ValidatorBase
 from validation.validator_pub import ValidatorPub
-from error.error_tracking import ErrorTracking
+from error.error_tracking import ErrorTracking, CRITICAL_ERROR, WARNING_ERROR
 
 # Additional tools for validation
 import re
@@ -181,6 +181,8 @@ def validate_proforma_object(proforma):
     # So everything after the elif below is to deal with this funky data structure.
     if results is True:
         log.info('Validation successful.')
+        # No critical errors.
+        return False
     else:
         for field, values in validator.errors.items():
             log.debug('Error items below:')
@@ -191,8 +193,10 @@ def validate_proforma_object(proforma):
             else:
                 line_number = fields_values[field][LINE_NUMBER]
             if type(values[0]) is str and type(field) is str:
-                error_data = field + ": " + values[0]
-                ErrorTracking(filename, proforma_start_line, line_number, 'Validation unsuccessful', error_data)
+                error_field = field
+                error_value = values[0]
+                critical_error_occurred = check_and_raise_errors(filename, proforma_start_line, line_number, error_field, error_value)
+                return critical_error_occurred
             elif type(values[0]) is dict:
                 list_dict_keys = list(values[0].keys())
                 if len(list_dict_keys) > 1:
@@ -200,5 +204,21 @@ def validate_proforma_object(proforma):
                     log.critical('Please contact Chris and/or Harvdev with this error.')
                     log.critical('Exiting.')
                     sys.exit(-1)
-                error_data = field + ": " + values[0][list_dict_keys[0]][0]
-                ErrorTracking(filename, proforma_start_line, line_number, 'Validation unsuccessful', error_data)
+                error_field = field
+                error_value = values[0][list_dict_keys[0]][0]
+                critical_error_occurred = check_and_raise_errors(filename, proforma_start_line, line_number, error_field, error_value)
+                return critical_error_occurred
+
+
+def check_and_raise_errors(filename, proforma_start_line, line_number, error_field, error_value):
+    # Open list of critical errors.
+    critical_error_file = open(os.path.dirname(os.path.abspath(__file__)) + '/yaml/critical_errors.yaml', 'r')
+    critical_errors = yaml.full_load(critical_error_file)
+
+    if error_field in critical_errors and error_value in critical_errors[error_field]:
+        error_data = error_field + ': ' + error_value
+        log.critical(error_data)
+        ErrorTracking(filename, proforma_start_line, line_number, 'Validation unsuccessful', error_data, CRITICAL_ERROR)
+        return True
+
+    return False

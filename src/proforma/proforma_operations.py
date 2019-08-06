@@ -87,11 +87,16 @@ def process_proforma_file(file_location_from_list, curator_dict):
         log.info('From file: %s' % (individual_proforma_object.file_metadata['filename']))
         log.info('From line: %s' % (individual_proforma_object.proforma_start_line_number))
 
-        validate_proforma_object(individual_proforma_object)
+        critical_error_occurred = validate_proforma_object(individual_proforma_object)
 
-        # individual_proforma_object.update_errors(errors)
-
-        list_of_processed_proforma_objects.append(individual_proforma_object)
+        if critical_error_occurred is False:
+            list_of_processed_proforma_objects.append(individual_proforma_object)
+        else:
+            log.critical('Critical error found in {}.'.format(individual_proforma_object.proforma_type))
+            log.critical('Starting at line {} from file {}.'
+                         .format(individual_proforma_object.proforma_start_line_number,
+                                 individual_proforma_object.file_metadata['filename']))
+            log.critical('Proforma object will not be processed into a Chado object.')
 
     # After extracting the publication proforma, we'll need to associate publication information with
     # the rest of the proforma objects. This involves a second loop through the validated list.
@@ -387,8 +392,8 @@ class Proforma(object):
         """
 
         # Needed to remove the following check to allow empty values to properly fail validation.
-        if value is None and not type_of_bang:  # Leave this function if the value is an empty string.
-            return
+        # if value is None and not type_of_bang:  # Leave this function if the value is an empty string.
+        #     return
 
         if value is not None:
             # remove spaces from start and end of string
