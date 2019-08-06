@@ -38,7 +38,6 @@ class ValidatorPub(ValidatorBase):
         {'type': 'boolean'}
 
         """
-        log.debug('P22_text is {}'.format(P22_text))
         if P22_text and value != 'unattributed':
             return
         allowed = ['P22', 'P19', 'P13']  # P22 will exist as well obviously

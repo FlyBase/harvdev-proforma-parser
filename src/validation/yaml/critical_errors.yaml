@@ -1,5 +1,5 @@
 # Important note:
-# The value doesn't need to *exactly* match the entire error.
+# The value doesn't need to *exactly* match the entire Cerberus error.
 # It just needs to match part of the error text.
 CH1g:
   - null value not allowed
@@ -11,3 +11,4 @@ P1:
 P22:
   - null value not allowed
   - P22 not allowed with bang c or bang d
+  - Error P22 is unattributed so cannot set
