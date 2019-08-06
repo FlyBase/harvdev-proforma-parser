@@ -1,8 +1,12 @@
+# Important note:
+# The value doesn't need to *exactly* match the entire error.
+# It just needs to be part of the error.
 CH1g:
   - null value not allowed
 P1:
   - null value not allowed
   - unallowed value journal
   - unallowed value compendium
+  - Cannot set P1 for an unattributed Pub
 P22:
   - null value not allowed

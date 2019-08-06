@@ -215,10 +215,18 @@ def check_and_raise_errors(filename, proforma_start_line, line_number, error_fie
     critical_error_file = open(os.path.dirname(os.path.abspath(__file__)) + '/yaml/critical_errors.yaml', 'r')
     critical_errors = yaml.full_load(critical_error_file)
 
-    if error_field in critical_errors and error_value in critical_errors[error_field]:
-        error_data = error_field + ': ' + error_value
-        log.critical(error_data)
-        ErrorTracking(filename, proforma_start_line, line_number, 'Validation unsuccessful', error_data, CRITICAL_ERROR)
-        return True
+    error_data = error_field + ': ' + error_value
 
-    return False
+    # We want to search for partial matches of error_value against the critical_errors lists:
+    if error_field in critical_errors: # If we have a key in critical_errors, e.g. P22
+        for x in critical_errors[error_field]:
+            if x in error_value:
+                log.debug('Found critical error {} in Cerberus error value {}'.format(x, error_value))
+                ErrorTracking(filename, proforma_start_line, line_number, 'Validation unsuccessful', error_data,
+                              CRITICAL_ERROR)
+                log.critical(error_data)
+                return True
+    else:
+        ErrorTracking(filename, proforma_start_line, line_number, 'Validation unsuccessful', error_data, WARNING_ERROR)
+        log.warning(error_data)
+        return False

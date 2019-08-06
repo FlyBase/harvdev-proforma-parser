@@ -30,7 +30,7 @@ class ValidatorPub(ValidatorBase):
         """
         May supercede _validate_P22_unattributed_no_value as we can do all at one go
         only P19 and P13 allowed if unattributed.
-        Quicker this way but eeror shows up on P22 rather than another field.
+        Quicker this way but error shows up on P22 rather than another field.
 
         The docstring statement below provides a schema to validate the 'P22_text' argument.
 
@@ -38,9 +38,10 @@ class ValidatorPub(ValidatorBase):
         {'type': 'boolean'}
 
         """
+        log.debug('P22_text is {}'.format(P22_text))
         if P22_text and value != 'unattributed':
             return
-        allowed = ['P22', 'P19', 'P13']  # P22 will exist aswell obviously
+        allowed = ['P22', 'P19', 'P13']  # P22 will exist as well obviously
         bad_fields = []
         for key in (self.document.keys()):
             log.debug("P22 unat allow: {} {}".format(key, self.document[key]))
