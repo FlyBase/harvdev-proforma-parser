@@ -126,7 +126,7 @@ class ChadoPub(ChadoObject):
         """
         from the fbrf tuple get the pub
         """
-        if tuple[FIELD_VALUE] is not None:
+        if self.has_data(tuple):
             log.debug("Looking up pub: {}.".format(tuple[FIELD_VALUE]))
             pub = None
             if uniquename:
