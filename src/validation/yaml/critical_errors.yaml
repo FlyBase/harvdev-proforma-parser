@@ -9,7 +9,7 @@ P1:
   - unallowed value compendium
   - Cannot set P1 for an unattributed Pub
 P11a:
-  - must not be present with 'P11a'
+  - must not be present with
 P22:
   - null value not allowed
   - P22 not allowed with bang c or bang d

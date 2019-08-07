@@ -7,7 +7,6 @@
 
 # Cerberus and yaml
 import yaml
-from validation.validator_base import ValidatorBase
 from validation.validator_pub import ValidatorPub
 from error.error_tracking import ErrorTracking, CRITICAL_ERROR, WARNING_ERROR
 import pprint
@@ -164,8 +163,7 @@ def validate_proforma_object(proforma):
     # pp = pprint.PrettyPrinter(indent=4)
     # pp.pprint(schema['P45'])
 
-    validator = validatortype(schema,
-                              record_type=proforma.file_metadata['record_type'],
+    validator = validatortype(record_type=proforma.file_metadata['record_type'],
                               bang_c=proforma.bang_c,
                               bang_d=proforma.bang_d)  # Custom validator for specific object.
 
@@ -177,7 +175,7 @@ def validate_proforma_object(proforma):
     field_value_validation_dict = validation_field_to_dict(fields_values)
 
     log.debug('Field and values to be used for validation: {}'.format(field_value_validation_dict))
-    results = validator.validate(field_value_validation_dict)
+    results = validator.validate(field_value_validation_dict, schema)
 
     # The error storage can get really funky with some of the validation schema.
     # Errors in cases of fields with string (e.g. G1a) are simple:
@@ -198,22 +196,29 @@ def validate_proforma_object(proforma):
                 line_number = fields_values[field][0][LINE_NUMBER]
             else:
                 line_number = fields_values[field][LINE_NUMBER]
-            if type(values[0]) is str and type(field) is str:
-                error_field = field
-                error_value = values[0]
-                critical_error_occurred = check_and_raise_errors(filename, proforma_start_line, line_number, error_field, error_value)
-                return critical_error_occurred
-            elif type(values[0]) is dict:
-                list_dict_keys = list(values[0].keys())
-                if len(list_dict_keys) > 1:
-                    log.critical('List with length > 1 unexpectedly found in validation code.')
-                    log.critical('Please contact Chris and/or Harvdev with this error.')
-                    log.critical('Exiting.')
-                    sys.exit(-1)
-                error_field = field
-                error_value = values[0][list_dict_keys[0]][0]
-                critical_error_occurred = check_and_raise_errors(filename, proforma_start_line, line_number, error_field, error_value)
-                return critical_error_occurred
+            critical_error_occurred = check_and_raise_errors(filename, proforma_start_line, line_number, field,
+                                                             values)
+            return critical_error_occurred
+            # if type(fields_values[field][0]) is tuple:  # Some fields are lists
+            #     line_number = fields_values[field][0][LINE_NUMBER]
+            # else:
+            #     line_number = fields_values[field][LINE_NUMBER]
+            # if type(values[0]) is str and type(field) is str:
+            #     error_field = field
+            #     error_value = values[0]
+            #     critical_error_occurred = check_and_raise_errors(filename, proforma_start_line, line_number, error_field, error_value)
+            #     return critical_error_occurred
+            # elif type(values[0]) is dict:
+            #     list_dict_keys = list(values[0].keys())
+            #     if len(list_dict_keys) > 1:
+            #         log.critical('List with length > 1 unexpectedly found in validation code.')
+            #         log.critical('Please contact Chris and/or Harvdev with this error.')
+            #         log.critical('Exiting.')
+            #         sys.exit(-1)
+            #     error_field = field
+            #     error_value = values[0][list_dict_keys[0]][0]
+            #     critical_error_occurred = check_and_raise_errors(filename, proforma_start_line, line_number, error_field, error_value)
+            #     return critical_error_occurred
 
 
 def check_and_raise_errors(filename, proforma_start_line, line_number, error_field, error_value):
@@ -221,12 +226,15 @@ def check_and_raise_errors(filename, proforma_start_line, line_number, error_fie
     critical_error_file = open(os.path.dirname(os.path.abspath(__file__)) + '/yaml/critical_errors.yaml', 'r')
     critical_errors = yaml.full_load(critical_error_file)
 
-    error_data = error_field + ': ' + error_value
+    if type(error_value) is list:
+        error_data = error_field + ': ' + " ".join(str(x) for x in error_value)
+    else:
+        error_data = error_field + ': ' + error_value
 
     # We want to search for partial matches of error_value against the critical_errors lists:
     if error_field in critical_errors: # If we have a key in critical_errors, e.g. P22
         for x in critical_errors[error_field]:
-            if x in error_value:
+            if x in error_data:
                 log.debug('Found critical error: \'{}\' in Cerberus error value: \'{}\''.format(x, error_value))
                 ErrorTracking(filename, proforma_start_line, line_number, 'Validation unsuccessful', error_data,
                               CRITICAL_ERROR)

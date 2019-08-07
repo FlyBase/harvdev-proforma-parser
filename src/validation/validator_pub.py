@@ -306,6 +306,7 @@ class ValidatorPub(Validator):
             [r'^(\d+)[p]+$', 0],                # numbers and p or pp or even ppp etc
             [r'^p+(\d+)$', 0],                  # pp then number
             [r'(\d+)--(\d+)$', 0],              # nn--nn
+            [r'(\d+) - (\d+)$', 0],             # nn - nn
             [r'^s(\d+)--s(\d+)', 0],            # 's'num--'s'num
             [r'^R(\d+)--R(\d+)', 0],            # 'R'num--'R'num
         ]
@@ -329,4 +330,4 @@ class ValidatorPub(Validator):
             if page1 > page2:
                 self._error(field, 'Error {}: {} is higher than {}.'.format(field, page2, page2))
         if not found:
-            self._error(field, 'Error {}: {} is of none standard format.'.format(field, value))
+            self._error(field, 'Error {}: {} is of non-standard format.'.format(field, value))
