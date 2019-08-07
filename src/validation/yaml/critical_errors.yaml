@@ -9,7 +9,13 @@ P1:
   - unallowed value compendium
   - Cannot set P1 for an unattributed Pub
 P11a:
-  - must not be present with
+  - when using field P11a
+P11b:
+  - when using field P11b
+P11c:
+  - when using field P11c
+P11d:
+  - when using field P11d
 P22:
   - null value not allowed
   - P22 not allowed with bang c or bang d

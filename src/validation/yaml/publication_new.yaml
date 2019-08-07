@@ -35,71 +35,23 @@ P11a:
   required: False
   nullable: True
   type: string
-  allof:
-    - anyof:
-      - dependencies:
-          P11b:
-      - excludes: 'P11b'
-    - anyof:
-      - dependencies:
-          P11c:
-      - excludes: 'P11c'
-    - anyof:
-      - dependencies:
-          P11d:
-      - excludes: 'P11d'
+  excludes_other_P11: True
 P11b:
   required: False
   nullable: True
   type: string
-  allof:
-    - anyof:
-      - dependencies:
-          P11a:
-      - excludes: 'P11a'
-    - anyof:
-      - dependencies:
-          P11c:
-      - excludes: 'P11c'
-    - anyof:
-      - dependencies:
-          P11d:
-      - excludes: 'P11d'
+  excludes_other_P11: True
 P11c:
   pages_format: True
   required: False
   nullable: True
   type: string
-  allof:
-    - anyof:
-      - dependencies:
-          P11a:
-      - excludes: 'P11a'
-    - anyof:
-      - dependencies:
-          P11b:
-      - excludes: 'P11b'
-    - anyof:
-      - dependencies:
-          P11d:
-      - excludes: 'P11d'
+  excludes_other_P11: True
 P11d:
   required: False
   nullable: True
   type: string
-  allof:
-    - anyof:
-      - dependencies:
-          P11a:
-      - excludes: 'P11a'
-    - anyof:
-      - dependencies:
-          P11b:
-      - excludes: 'P11b'
-    - anyof:
-      - dependencies:
-          P11c:
-      - excludes: 'P11c'
+  excludes_other_P11: True
 P12:
   required: True
   nullable: True
@@ -164,19 +116,19 @@ P30:
   no_duplicates: P22 P31 P32
   regex: ^(FBrf\d{7})$
   nullable: True
-  type: string
+  type: [string, list]
 P31:
   required: False
   no_duplicates: P22 P30 P32
   regex: ^(FBrf\d{7})$
   nullable: True
-  type: string
+  type: [string, list]
 P32:
   required: False
   no_duplicates: P22 P30 P31
   regex: ^(FBrf\d{7})$
   nullable: True
-  type: string
+  type: [string, list]
 P34:
   required: False
   type: string
@@ -188,16 +140,18 @@ P39:
   required: False
   nullable: True
 P40:
-  nullable: True
-  type: list
-  allowed: [GO_cur, GOcur, gene_group, gene_group::DONE, merge, n, new_al, new_allele, new_char, new_gene, new_transg,
+  anyof:
+  - nullable: True
+  - type: list
+    allowed: [GO_cur, GOcur, gene_group, gene_group::DONE, merge, n, new_al, new_allele, new_char, new_gene, new_transg,
             no cur, noGOcur, no_cur, no_flag, nocur, nocur_abs, orthologs, pert_exp, pheno, pheno-chem, pheno_anat,
             pheno_chem, rename, 'rename, merge', split, y]
   #Peeves allowed: [merge, split, rename, new_char, new_al, new_transg, pheno, gene_group, noGOcur, pheno_chem, pheno_anat]
 P41:
-  nullable: True
-  type: list
-  allowed: [RNAi, cell_cult, cell_cult::DONE, cell_line, cell_line::DONE, cis_reg, cis_reg::DONE, dataset, dataset::DONE,
+  anyof:
+  - nullable: True
+  - type: list
+    allowed: [RNAi, cell_cult, cell_cult::DONE, cell_line, cell_line::DONE, cis_reg, cis_reg::DONE, dataset, dataset::DONE,
             disease, disease::DONE, diseaseF, diseaseHP, diseaseHP::DONE, gene_model, gene_model::DONE, gene_model_nonmel,
             genom_feat, genom_feat::DONE, marker, marker::DONE, micr_arr, n, neur_exp, neur_exp::DONE, neuro, no, no_flag,
             pert-exp, pert_exp, pert_exp::DONE, pert_ext, pert_xep, phys_int, phys_int::DONE, trans_assay, wt_exp, wt_exp::DONE, y]

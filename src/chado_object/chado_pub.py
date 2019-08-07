@@ -392,8 +392,8 @@ class ChadoPub(ChadoObject):
             self.bang_d_it()
 
         for key in self.process_data:
-                log.debug("Processing {}".format(self.process_data[key]['data']))
-                self.type_dict[self.process_data[key]['type']](key)
+            log.debug("Processing {}".format(self.process_data[key]['data']))
+            self.type_dict[self.process_data[key]['type']](key)
 
         timestamp = datetime.now().strftime('%c')
         curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short, timestamp)
@@ -416,16 +416,16 @@ class ChadoPub(ChadoObject):
         return givennames, surname
 
     def load_author(self, key):
-        for author in self.process_data[key]['data']:
-            givennames, surname = self.get_author(author)
-            self.current_query_source = author
-            self.current_query = "Author get/create: {}.".format(author[FIELD_VALUE])
-            author = get_or_create(
-                self.session, Pubauthor,
-                pub_id=self.pub.pub_id,
-                surname=surname,
-                givennames=givennames
-            )
+        if self.bang_d != 'P12':
+            for author in self.process_data[key]['data']:
+                givennames, surname = self.get_author(author)
+                log.debug("Author get/create: {}.".format(author[FIELD_VALUE]))
+                author = get_or_create(
+                    self.session, Pubauthor,
+                    pub_id=self.pub.pub_id,
+                    surname=surname,
+                    givennames=givennames
+                )
 
     def load_single_pubprop(self, cv_name, cv_term_name, value_to_add_tuple):
         """
@@ -493,25 +493,32 @@ class ChadoPub(ChadoObject):
         """
         Remove specific values indicated in the proforma field.
         """
-        log.debug("Bang D processing {}".format(self.bang_c))
+        log.debug("Bang D processing {}".format(self.bang_d))
         key = self.bang_d
 
         #####################################
         # check bang_d has a value to delete
         #####################################
-        if type(self.process_data[key]['data']) is not list:
-            if not self.process_data[key]['data'][FIELD_VALUE]:
-                log.error("BANGD: {}".format(self.process_data[key]['data']))
-                self.critical_error(self.process_data[key]['data'], "Must specify a value with !d.")
-                self.process_data[key]['data'] = None
-                return
-        else:
-            for item in self.process_data[key]['data']:
-                if not item[FIELD_VALUE]:
-                    log.error("BANGD: {}".format(item))
-                    self.critical_error(item, "Must specify a value with !d.")
+
+        # TODO Bring line number info along with bang c/d info for error reporting.
+        if key in self.process_data:
+            if type(self.process_data[key]['data']) is not list:
+                if not self.process_data[key]['data'][FIELD_VALUE]:
+                    log.error("BANGD: {}".format(self.process_data[key]['data']))
+                    self.critical_error(self.process_data[key]['data'], "Must specify a value with !d.")
                     self.process_data[key]['data'] = None
                     return
+            else:
+                for item in self.process_data[key]['data']:
+                    if not item[FIELD_VALUE]:
+                        log.error("BANGD: {}".format(item))
+                        self.critical_error(item, "Must specify a value with !d.")
+                        self.process_data[key]['data'] = None
+                        return
+        else:
+            # Faking the tuple because we don't have a field value or line number.
+            self.critical_error((key, key, key), "Must specify a value with !d.")
+            return
 
         self.delete_dict[self.process_data[key]['type']](key, bangc=False)
         self.process_data[key]['data'] = None

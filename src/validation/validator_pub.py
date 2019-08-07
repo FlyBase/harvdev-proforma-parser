@@ -293,6 +293,29 @@ class ValidatorPub(Validator):
             if item is not None:
                 self.single_deposited_file(field, item)
 
+    def _validate_excludes_other_P11(self, do_test, field, value):
+        """
+        Check for only one field with data for P11 betweeen a,b,c, and d.
+
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
+        """
+
+        if value is not None:
+
+            list_of_fields = ['P11a', 'P11b', 'P11c', 'P11d']
+            list_of_fields.remove(field)
+
+            unallowed_fields = []
+
+            for key in self.document.keys():
+                if self.document[key] is not None and key in list_of_fields:
+                    unallowed_fields.append(key)
+
+            if unallowed_fields:
+                self._error(field, 'Cannot set field(s) {} when using field {}.'.format(unallowed_fields, field))
+
+
     def _validate_pages_format(self, do_test, field, value):
         """
         Check for simple page numbers or variants and if two pages make sure page1 < page2.
@@ -314,20 +337,21 @@ class ValidatorPub(Validator):
         page1 = None
         page2 = None
         found = False
-        for regex in simple_pages_regex:
-            fields = re.search(regex[0], value)
-            if fields:
-                found = True
-                if fields.group(1):
-                    page1 = int(fields.group(1))
-                try:
-                    page2 = int(fields.group(2))
-                except IndexError:
-                    pass
-            if found:
-                continue
-        if found and page1 and page2:
-            if page1 > page2:
-                self._error(field, 'Error {}: {} is higher than {}.'.format(field, page2, page2))
-        if not found:
-            self._error(field, 'Error {}: {} is of non-standard format.'.format(field, value))
+        if value is not None:
+            for regex in simple_pages_regex:
+                fields = re.search(regex[0], value)
+                if fields:
+                    found = True
+                    if fields.group(1):
+                        page1 = int(fields.group(1))
+                    try:
+                        page2 = int(fields.group(2))
+                    except IndexError:
+                        pass
+                if found:
+                    continue
+            if found and page1 and page2:
+                if page1 > page2:
+                    self._error(field, 'Error {}: {} is higher than {}.'.format(field, page2, page2))
+            if not found:
+                self._error(field, 'Error {}: {} is of non-standard format.'.format(field, value))
