@@ -10,6 +10,7 @@ import yaml
 from validation.validator_base import ValidatorBase
 from validation.validator_pub import ValidatorPub
 from error.error_tracking import ErrorTracking, CRITICAL_ERROR, WARNING_ERROR
+import pprint
 
 # Additional tools for validation
 import re
@@ -69,9 +70,9 @@ def validation_file_schema_lookup(proforma_type, fields_values):
     validation_dict = {"PUBLICATION": get_validate_pub_schema,
                        "GENE": get_validate_gene_schema,
                        "CHEMICAL": get_validate_chemical_schema}
-    validator = ValidatorBase
     # if we have specific validation stuff set it up here.
     validation_base = {"PUBLICATION": ValidatorPub}
+    validator = None
 
     pattern = r"""
               ^!        # start with a bang
@@ -101,7 +102,7 @@ def validation_file_schema_lookup(proforma_type, fields_values):
 
     log.info('Initializing validator using schema %s.' % (yaml_file))
 
-    return(yaml_file_location, validator)
+    return yaml_file_location, validator
 
 
 def validation_field_to_dict(fields_values):
@@ -160,8 +161,13 @@ def validate_proforma_object(proforma):
 
     schema = yaml.full_load(schema_file)
     log.debug('Schema used: {}'.format(yaml_file_location))
+    # pp = pprint.PrettyPrinter(indent=4)
+    # pp.pprint(schema['P45'])
 
-    validator = validatortype(schema, proforma.file_metadata['record_type'], proforma.bang_c, proforma.bang_d)  # Custom validator for specific object.
+    validator = validatortype(schema,
+                              record_type=proforma.file_metadata['record_type'],
+                              bang_c=proforma.bang_c,
+                              bang_d=proforma.bang_d)  # Custom validator for specific object.
 
     # Changing "fields_values" from a dictionary of tuple values to
     # a dictionary with string/list values.

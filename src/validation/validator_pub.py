@@ -6,12 +6,66 @@ import re
 import logging
 log = logging.getLogger(__name__)
 
+from cerberus import Validator
 
-class ValidatorPub(ValidatorBase):
+
+class ValidatorPub(Validator):
     """
     The custom Cerberus validator used for all proforma.
     Subclasses of this validator can be found in the additional files within this directory.
     """
+
+    def __init__(self, *args, **kwargs):
+        self.bang_c = kwargs['bang_c']
+        self.bang_d = kwargs['bang_d']
+        self.record_type = kwargs['record_type']
+        super(ValidatorPub, self).__init__(*args, **kwargs)
+
+    def _validate_no_bangc(self, no_bangc, field, value):
+        """
+        Throw error if bangc is set. NOT allowed here.
+
+        The docstring statement below provides a schema to validate the 'plain_text' argument.
+
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
+        """
+        if self.bang_c == field:
+            self._error(field, '{} not allowed with bang c or bang d'.format(field))
+
+    def _validate_only_allowed(self, field_keys, field, comp_fields):
+        """
+        Check only fields in the list are allowed. (including self)
+        The rule's arguments are validated against this schema:
+        {'type': 'string'}
+        """
+
+        allowed = field_keys.split()
+        allowed.append(field)  # itself allowed
+        bad_fields = []
+        log.debug("allowed values are {}".format(allowed))
+        for key in (self.document.keys()):
+            log.debug("Only allowed check: {} {}".format(key, self.document[key]))
+            if key not in allowed:
+                bad_fields.append(key)
+        if bad_fields:
+            self._error(field, 'Error {} is set so cannot set {}'.format(field, bad_fields))
+
+    def _validate_need_data(self, field, dict1, comp_fields):
+        """
+        Throws error if comp_fields do NOT have data.
+        The rule's arguments are validated against this schema:
+        {'type': 'string'}
+        """
+        pass
+
+    def _validate_no_data(self, field, dict1, comp_fields):
+        """
+        Throws error if comp_fields do have data.
+        The rule's arguments are validated against this schema:
+        {'type': 'string'}
+        """
+        pass
 
     def _validate_P22_unattributed_no_value(self, other, field, value):
         """
@@ -77,9 +131,9 @@ class ValidatorPub(ValidatorBase):
                     list2.append(self.document[with_field])
                 log.debug("{} => {}".format(with_field, list2))
                 for item in list2:
-                    if item in dict1:
+                    if item in dict1 and item is not None:
                         self._error(field, 'Error {} in both {} and {}. Not allowed'.format(item, field, with_field))
-                    if item in dict2:
+                    if item in dict2 and item is not None:
                         self._error(field, 'Error {} listed twice for {}'.format(item, with_field))
                     dict2[item] = 1
 
