@@ -415,7 +415,7 @@ class Proforma(object):
             'P12',
             'P30', 'P31', 'P32',  # related/secondary pubs
             'P38',
-            'P40', 'P41', 'P42', 'P43' # Flags
+            'P40', 'P41', 'P42', 'P43', # Flags
             'G1b',
             'G2b',
         ]
