@@ -1,0 +1,28 @@
+# Important note:
+# The value doesn't need to *exactly* match the entire Cerberus error.
+# It just needs to match part of the error text.
+CH1g:
+  - null value not allowed
+P1:
+  - null value not allowed
+  - unallowed value journal
+  - unallowed value compendium
+  - Cannot set P1 for an unattributed Pub
+P11a:
+  - when using field P11a
+P11b:
+  - when using field P11b
+P11c:
+  - when using field P11c
+P11d:
+  - when using field P11d
+P22:
+  - null value not allowed
+  - P22 not allowed with bang c or bang d
+  - Error P22 is unattributed so cannot set
+P30:
+  - in both P30 and P22. Not allowed
+  - in both P30 and P31. Not allowed
+  - listed more than once
+P31:
+  - in both P31 and P22. Not allowed

@@ -7,9 +7,9 @@
 
 # Cerberus and yaml
 import yaml
-from validation.validator_base import ValidatorBase
 from validation.validator_pub import ValidatorPub
-from error.error_tracking import ErrorTracking
+from error.error_tracking import ErrorTracking, CRITICAL_ERROR, WARNING_ERROR
+import pprint
 
 # Additional tools for validation
 import re
@@ -69,9 +69,9 @@ def validation_file_schema_lookup(proforma_type, fields_values):
     validation_dict = {"PUBLICATION": get_validate_pub_schema,
                        "GENE": get_validate_gene_schema,
                        "CHEMICAL": get_validate_chemical_schema}
-    validator = ValidatorBase
     # if we have specific validation stuff set it up here.
     validation_base = {"PUBLICATION": ValidatorPub}
+    validator = None
 
     pattern = r"""
               ^!        # start with a bang
@@ -101,7 +101,7 @@ def validation_file_schema_lookup(proforma_type, fields_values):
 
     log.info('Initializing validator using schema %s.' % (yaml_file))
 
-    return(yaml_file_location, validator)
+    return yaml_file_location, validator
 
 
 def validation_field_to_dict(fields_values):
@@ -161,7 +161,9 @@ def validate_proforma_object(proforma):
     schema = yaml.full_load(schema_file)
     log.debug('Schema used: {}'.format(yaml_file_location))
 
-    validator = validatortype(schema, proforma.file_metadata['record_type'], proforma.bang_c, proforma.bang_d)  # Custom validator for specific object.
+    validator = validatortype(record_type=proforma.file_metadata['record_type'],
+                              bang_c=proforma.bang_c,
+                              bang_d=proforma.bang_d)  # Custom validator for specific object.
 
     # Changing "fields_values" from a dictionary of tuple values to
     # a dictionary with string/list values.
@@ -171,7 +173,7 @@ def validate_proforma_object(proforma):
     field_value_validation_dict = validation_field_to_dict(fields_values)
 
     log.debug('Field and values to be used for validation: {}'.format(field_value_validation_dict))
-    results = validator.validate(field_value_validation_dict)
+    results = validator.validate(field_value_validation_dict, schema)
 
     # The error storage can get really funky with some of the validation schema.
     # Errors in cases of fields with string (e.g. G1a) are simple:
@@ -181,6 +183,8 @@ def validate_proforma_object(proforma):
     # So everything after the elif below is to deal with this funky data structure.
     if results is True:
         log.info('Validation successful.')
+        # No critical errors.
+        return False
     else:
         for field, values in validator.errors.items():
             log.debug('Error items below:')
@@ -190,15 +194,35 @@ def validate_proforma_object(proforma):
                 line_number = fields_values[field][0][LINE_NUMBER]
             else:
                 line_number = fields_values[field][LINE_NUMBER]
-            if type(values[0]) is str and type(field) is str:
-                error_data = field + ": " + values[0]
-                ErrorTracking(filename, proforma_start_line, line_number, 'Validation unsuccessful', error_data)
-            elif type(values[0]) is dict:
-                list_dict_keys = list(values[0].keys())
-                if len(list_dict_keys) > 1:
-                    log.critical('List with length > 1 unexpectedly found in validation code.')
-                    log.critical('Please contact Chris and/or Harvdev with this error.')
-                    log.critical('Exiting.')
-                    sys.exit(-1)
-                error_data = field + ": " + values[0][list_dict_keys[0]][0]
-                ErrorTracking(filename, proforma_start_line, line_number, 'Validation unsuccessful', error_data)
+            critical_error_occurred = check_and_raise_errors(filename, proforma_start_line, line_number, field,
+                                                             values)
+            return critical_error_occurred
+
+
+def check_and_raise_errors(filename, proforma_start_line, line_number, error_field, error_value):
+    # Open list of critical errors.
+    critical_error_file = open(os.path.dirname(os.path.abspath(__file__)) + '/yaml/critical_errors.yaml', 'r')
+    critical_errors = yaml.full_load(critical_error_file)
+
+    if type(error_value) is list:
+        error_data = error_field + ': ' + " ".join(str(x) for x in error_value)
+    else:
+        error_data = error_field + ': ' + error_value
+
+    # We want to search for partial matches of error_value against the critical_errors lists:
+    if error_field in critical_errors: # If we have a key in critical_errors, e.g. P22
+        for critical_error_entry in critical_errors[error_field]:
+            if critical_error_entry in error_data:
+                log.debug('Found critical error: \'{}\' in Cerberus error value: \'{}\''.format(critical_error_entry, error_value))
+                ErrorTracking(filename, proforma_start_line, line_number, 'Validation unsuccessful', error_data,
+                              CRITICAL_ERROR)
+                log.critical(error_data)
+                return True
+        # If we don't have the critical error in our dictionary, raise a warning instead.
+        ErrorTracking(filename, proforma_start_line, line_number, 'Validation unsuccessful', error_data, WARNING_ERROR)
+        log.warning(error_data)
+        return False
+    else:
+        ErrorTracking(filename, proforma_start_line, line_number, 'Validation unsuccessful', error_data, WARNING_ERROR)
+        log.warning(error_data)
+        return False

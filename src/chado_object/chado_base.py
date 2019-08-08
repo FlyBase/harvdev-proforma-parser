@@ -5,6 +5,7 @@
 .. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
 import logging
+import yaml
 from harvdev_utils.production import (
     Cv, Cvterm, Feature, Pub, Synonym
 )
@@ -30,6 +31,53 @@ class ChadoObject(object):
         # Data
         self.bang_c = params.get('bang_c')
         self.bang_d = params.get('bang_d')
+        self.process_data = None
+
+    def load_reference_yaml(self, filename, params):
+        # TODO Change bang_c "blank" processing to not require an empty process_data[key]['data'] entry.
+        process_data = yaml.load(open(filename))
+        keys_to_remove = []
+        for key in process_data:
+            if key in params['fields_values']:
+                if type(params['fields_values'][key]) is list:
+                    # Skip if the first value in the list contains None.
+                    if params['fields_values'][key][0][FIELD_VALUE] is None and self.bang_c != key:
+                        log.debug("Skipping field {} -- it's value is empty in the proforma.".format(key))
+                        keys_to_remove.append(key)
+                else:
+                    # Skip if the value contains None.
+                    if params['fields_values'][key][FIELD_VALUE] is None and self.bang_c != key:
+                        log.debug("Skipping field {} -- it's value is empty in the proforma.".format(key))
+                        keys_to_remove.append(key)
+
+                # If the key exists and it has a non-None value, add it.
+                process_data[key]['data'] = params['fields_values'][key]
+                log.debug("{}: {}".format(key, process_data[key]))
+            else:
+                # If the key is missing from the proforma.
+                log.debug("Skipping field {} -- it's absent from the proforma.".format(key))
+                keys_to_remove.append(key)
+
+        # Remove all unused keys from the dictionary.
+        # This has to be a second loop so we don't modify the first loop while it's running.
+        for key in keys_to_remove:
+            log.debug("Removing unused key {} from the process_data dictionary".format(key))
+            process_data.pop(key)
+
+        return process_data
+
+    def has_data(self, key):
+        # Checks whether a key exists and contains a FIELD_VALUE that isn't None.
+        if key in self.process_data:
+            log.debug('Checking whether we have data (not-None) in {}'.format(self.process_data[key]))
+            if self.process_data[key]['data'] is not None:
+                if type(self.process_data[key]['data']) is list:
+                    if self.process_data[key]['data'][0][FIELD_VALUE] is not None:
+                        return True
+                else:
+                    if self.process_data[key]['data'][FIELD_VALUE] is not None:
+                        return True
+        return False
 
     def error_track(self, tuple, error_message, level):
         ErrorTracking(self.filename,

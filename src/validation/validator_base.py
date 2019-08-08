@@ -8,13 +8,12 @@ import re
 import logging
 log = logging.getLogger(__name__)
 
-
 class ValidatorBase(Validator):
     """
     The custom Cerberus validator used for all proforma.
     Subclasses of this validator can be found in the additional files within this directory.
     """
-    def __init__(self, schema, record_type, bang_c, bang_d):
+    def __init__(self, record_type, bang_c, bang_d):
         """
         Validator needs info on what record type it is i.e. skim, biblio etc
         Will add bangc or bang as we go along.
@@ -22,7 +21,6 @@ class ValidatorBase(Validator):
         self.bang_c = bang_c
         self.bang_d = bang_d
         self.record_type = record_type
-        Validator.__init__(self, schema)
 
     def _validate_plain_text(self, plain_text, field, value):
         """

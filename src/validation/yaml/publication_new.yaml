@@ -15,39 +15,47 @@ P1:
   #   - forbidden: [paper, journal]
   forbidden: ['journal', 'compendium']
 P2:
-  type: string
   required: False
   nullable: True
+  type: string
 P3:
   required: False
+  nullable: True
   type: string
 P4:
   required: False
+  nullable: True
   type: string
 P10:
   type: string
   required: True
   regex: ^(\d+)(\.+\d+\.+\d+)?$
 P11a:
-  required: False
-  type: string
   pages_format: True
-  excludes: ['P11b', 'P11c', 'P11d']
+  required: False
+  nullable: True
+  type: string
+  excludes_other_P11: True
 P11b:
   required: False
+  nullable: True
   type: string
-  excludes: ['P11a', 'P11c', 'P11d']
+  excludes_other_P11: True
 P11c:
+  pages_format: True
   required: False
+  nullable: True
   type: string
-  excludes: ['P11a', 'P11b', 'P11d']
+  excludes_other_P11: True
 P11d:
   required: False
+  nullable: True
   type: string
-  excludes: ['P11a', 'P11b', 'P11c']
+  excludes_other_P11: True
 P12:
-  type: [string, list]
   required: True
+  nullable: True
+  type: [string, list]
 P13:
   required: False
   type: string
@@ -77,8 +85,10 @@ P16:
   type: string
 P18:
   required: False
+  nullable: True
   type: string
 P19:
+  nullable: True
   type: [string, list]
 P22:
   required: True
@@ -88,11 +98,12 @@ P22:
   regex: ^(FBrf\d{7}|none|unattributed|new)$
 P23:
   required: False
-  type: string
   nullable: True
+  type: string
 P26:
   required: False
   regex: ^(\d+)$
+  nullable: True
 P28:
   required: False
   regex: ^(PMC\d+)$
@@ -102,19 +113,22 @@ P29:
   nullable: True
 P30:
   required: False
-  type: string
   no_duplicates: P22 P31 P32
   regex: ^(FBrf\d{7})$
+  nullable: True
+  type: [string, list]
 P31:
   required: False
-  type: string
   no_duplicates: P22 P30 P32
-  regex: ^(FBrf\d{7})$ 
+  regex: ^(FBrf\d{7})$
+  nullable: True
+  type: [string, list]
 P32:
   required: False
-  type: string
   no_duplicates: P22 P30 P31
   regex: ^(FBrf\d{7})$
+  nullable: True
+  type: [string, list]
 P34:
   required: False
   type: string
@@ -122,23 +136,32 @@ P38:
   required: False
   deposited_file: True
   #regex: Too complex lets do it in its own function
+P39:
+  required: False
+  nullable: True
 P40:
-  type: list
-  allowed: [GO_cur, GOcur, gene_group, gene_group::DONE, merge, n, new_al, new_allele, new_char, new_gene, new_transg,
+  anyof:
+  - nullable: True
+  - type: list
+    allowed: [GO_cur, GOcur, gene_group, gene_group::DONE, merge, n, new_al, new_allele, new_char, new_gene, new_transg,
             no cur, noGOcur, no_cur, no_flag, nocur, nocur_abs, orthologs, pert_exp, pheno, pheno-chem, pheno_anat,
             pheno_chem, rename, 'rename, merge', split, y]
   #Peeves allowed: [merge, split, rename, new_char, new_al, new_transg, pheno, gene_group, noGOcur, pheno_chem, pheno_anat]
 P41:
-  type: list
-  allowed: [RNAi, cell_cult, cell_cult::DONE, cell_line, cell_line::DONE, cis_reg, cis_reg::DONE, dataset, dataset::DONE,
+  anyof:
+  - nullable: True
+  - type: list
+    allowed: [RNAi, cell_cult, cell_cult::DONE, cell_line, cell_line::DONE, cis_reg, cis_reg::DONE, dataset, dataset::DONE,
             disease, disease::DONE, diseaseF, diseaseHP, diseaseHP::DONE, gene_model, gene_model::DONE, gene_model_nonmel,
             genom_feat, genom_feat::DONE, marker, marker::DONE, micr_arr, n, neur_exp, neur_exp::DONE, neuro, no, no_flag,
             pert-exp, pert_exp, pert_exp::DONE, pert_ext, pert_xep, phys_int, phys_int::DONE, trans_assay, wt_exp, wt_exp::DONE, y]
 #Peeves allowed: [wt_exp, pert_exp, neur_exp, gene_model, gene_model_nomel, phys_int, cis_reg, genom_feat, disease, diseaseHP, dataset, cell_line, no_flag
 #                 wt_exp::DONE, pert_exp::DONE, neur_exp::DONE, gene_model::DONE, gene_model_nomel::DONE, phys_int::DONE, cis_reg::DONE, genom_feat::DONE, disease::DONE, diseaseHP::DONE, dataset::DONE, cell_line::DONE]
 P42:
-  type: list
-  allowed: [novel_anat, 'novel_anat::DONE']
+  oneof:
+  - nullable: True
+  - type: list
+    allowed: [novel_anat, novel_anat::DONE]
 P43:
   disease_name: True
   type: list
@@ -148,7 +171,7 @@ P44:
   type: string
 P45:
   required: False
-  type: [string, list]
+  nullable: True
   allowed: [y]
 P46:
   required: False

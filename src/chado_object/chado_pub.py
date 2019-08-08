@@ -6,7 +6,6 @@
 """
 import re
 import os
-import yaml
 from .chado_base import ChadoObject, FIELD_VALUE, FIELD_NAME
 from harvdev_utils.production import (
     Cv, Cvterm, Pub, Pubprop, Pubauthor, PubRelationship, Db, Dbxref, PubDbxref
@@ -43,34 +42,24 @@ class ChadoPub(ChadoObject):
 
         self.proforma_start_line_number = params.get('proforma_start_line_number')
 
-        ############################################################
-        # Get processing info and data to be processed.
-        # Please see the yml/publication.yml file for more details
-        ############################################################
-        yml_file = os.path.join(os.path.dirname(__file__), 'yml/publication.yml')
-        self.process_data = yaml.load(open(yml_file))
-        for key in self.process_data:
-            self.process_data[key]['data'] = params['fields_values'].get(key)
-            if self.process_data[key]['data']:
-                log.debug("{}: {}".format(key, self.process_data[key]))
-
-        #################################################
-        # various tests use this so create an easy lookup
-        #################################################
-        if self.process_data['P22']['data'][FIELD_VALUE] == "new":
-            self.newpub = True
-        else:
-            self.newpub = False
-
         ###########################################################
         # Values queried later, placed here for reference purposes.
         ############################################################
         self.pub = None   # All other proforma need a reference to a pub
         self.parent_pub = None  # Various checks refer to this so just get it once
         self.gene = None  # Needed reference for alleles
+        self.newpub = False # Modified later for new publications.
 
         # Initiate the parent.
         super(ChadoPub, self).__init__(params)
+
+        ############################################################
+        # Get processing info and data to be processed.
+        # Please see the yml/publication.yml file for more details
+        ############################################################
+        yml_file = os.path.join(os.path.dirname(__file__), 'yml/publication.yml')
+        # Populated self.process_data with all possible keys.
+        self.process_data = self.load_reference_yaml(yml_file, params)
 
     def obtain_session(self, session):
         self.session = session
@@ -137,25 +126,27 @@ class ChadoPub(ChadoObject):
         """
         from the fbrf tuple get the pub
         """
-        log.debug("Looking up pub: {}.".format(tuple[FIELD_VALUE]))
-        pub = None
-        if uniquename:
-            pub = self.session.query(Pub).filter(Pub.uniquename == tuple[FIELD_VALUE]).one_or_none()
-            if not pub:
-                self.critical_error(tuple, 'Pub does not exist in the database.')
-                return
+        if tuple is not None and tuple[FIELD_VALUE] is not None:
+            log.debug("Looking up pub: {}.".format(tuple[FIELD_VALUE]))
+            pub = None
+            if uniquename:
+                pub = self.session.query(Pub).filter(Pub.uniquename == tuple[FIELD_VALUE]).one_or_none()
+                if not pub:
+                    self.critical_error(tuple, 'Pub does not exist in the database.')
+                    return
+            else:
+                if tuple[FIELD_VALUE]:
+                    pub = self.session.query(Pub).filter(Pub.miniref == tuple[FIELD_VALUE]).one()
+            return pub
         else:
-            if tuple[FIELD_VALUE]:
-                pub = self.session.query(Pub).filter(Pub.miniref == tuple[FIELD_VALUE]).one()
-        return pub
+            return
 
     def add_relationship(self, subject_pub, object_pub, cvterm, query_source):
         """
         add relationship bewteen the two pubs with cvterm specified
         """
         # look up the cvterm
-        self.current_query_source = query_source
-        self.current_query = "Querying for cvterm '{}' with cv of 'pub relationship type'.".format(cvterm)
+        log.debug("Querying for cvterm '{}' with cv of 'pub relationship type'.".format(cvterm))
         cvterm = self.session.query(Cvterm).join(Cv).filter(Cv.name == 'pub relationship type',
                                                             Cvterm.name == cvterm,
                                                             Cvterm.is_obsolete == 0).one()
@@ -170,7 +161,7 @@ class ChadoPub(ChadoObject):
         Get the parent pub.
         Return None if it does not have one. This is okay.
         """
-        self.current_query = "Querying for cvterm 'published_in' with cv of 'pub relationship type'."
+        log.debug("Querying for cvterm 'published_in' with cv of 'pub relationship type'.")
         cvterm = self.session.query(Cvterm).join(Cv).filter(Cv.name == 'pub relationship type',
                                                             Cvterm.name == 'published_in',
                                                             Cvterm.is_obsolete == 0).one()
@@ -194,8 +185,7 @@ class ChadoPub(ChadoObject):
         Add relationship
         """
 
-        self.current_query_source = tuple
-        self.current_query = "Querying for P2 miniref '{}'.".format(tuple[FIELD_VALUE])
+        log.debug("Querying for P2 miniref '{}'.".format(tuple[FIELD_VALUE]))
         p2_pub = self.session.query(Pub).filter(Pub.miniref == tuple[FIELD_VALUE]).one()
 
         if not self.newpub and old_parent:
@@ -222,7 +212,7 @@ class ChadoPub(ChadoObject):
         else:
             pub = None
 
-        if self.process_data['P1']['data']:
+        if self.has_data('P1'):
             P1_cvterm = self.get_P1_cvterm_and_validate(pub)
 
         if not self.newpub:
@@ -292,10 +282,11 @@ class ChadoPub(ChadoObject):
         """
         Not all tests can be done in the validator do extra ones here.
         """
-        self.do_P11_checks()
-        if self.process_data['P2']['data'] and self.bang_c != 'P2' and self.bang_d != 'P2':
+        if self.has_data('P11'):
+            self.do_P11_checks()
+        if self.has_data('P2') and self.bang_c != 'P2' and self.bang_d != 'P2':
             self.check_multipub(self.parent_pub, self.process_data['P2']['data'])
-        if self.process_data['P46']['data']:
+        if self.has_data('P46'):
             self.graphical_abstracts_check()
 
     def load_direct(self, key):
@@ -307,35 +298,39 @@ class ChadoPub(ChadoObject):
                      the data and info on what to do with it including extra
                      terms like warning or boolean.
         """
-        if 'boolean' in self.process_data[key]:
-            setattr(self.pub, self.process_data[key]['name'], True)
-            if 'warning' in self.process_data[key]:
-                message = "Making {} {}.".format(self.process_data['P22']['data'][FIELD_VALUE], self.process_data[key]['name'])
-                self.warning_error(self.process_data[key]['data'], message)
-        else:
-            old_attr = getattr(self.pub, self.process_data[key]['name'])
-            if old_attr:
-                self.warning_error(self.process_data[key]['data'], "No !c but still overwriting existing value of {}".format(old_attr))
-            setattr(self.pub, self.process_data[key]['name'], self.process_data[key]['data'][FIELD_VALUE])
+        if self.has_data(key):
+            if 'boolean' in self.process_data[key]:
+                setattr(self.pub, self.process_data[key]['name'], True)
+                if 'warning' in self.process_data[key]:
+                    message = "Making {} {}.".format(self.process_data['P22']['data'][FIELD_VALUE], self.process_data[key]['name'])
+                    self.warning_error(self.process_data[key]['data'], message)
+            else:
+                old_attr = getattr(self.pub, self.process_data[key]['name'])
+                if old_attr:
+                    self.warning_error(self.process_data[key]['data'], "No !c but still overwriting existing value of {}".format(old_attr))
+                setattr(self.pub, self.process_data[key]['name'], self.process_data[key]['data'][FIELD_VALUE])
 
     def load_relationship(self, key):
-        if type(self.process_data[key]['data']) is list:
-            for fbrf in self.process_data[key]['data']:
-                if 'verify_only_on_update' not in self.process_data[key] or self.newpub:
-                    pub = self.get_related_pub(fbrf)
+            if type(self.process_data[key]['data']) is list:
+                for fbrf in self.process_data[key]['data']:
+                    if 'verify_only_on_update' not in self.process_data[key] or self.newpub:
+                        pub = self.get_related_pub(fbrf)
+                        if not pub:
+                            return
+                        self.add_relationship(self.pub, pub, self.process_data[key]['cvterm'], self.process_data[key]['data'])
+            else:  # P2 can only change with !c or has no parent pub
+                log.debug("not list {}".format(key))
+                parent_pub = self.get_parent_pub(self.pub)
+                if self.bang_c == key or not parent_pub:
+                    fbrf = self.process_data[key]['data']
+                    pub = self.get_related_pub(fbrf, uniquename=False)
                     if not pub:
                         return
                     self.add_relationship(self.pub, pub, self.process_data[key]['cvterm'], self.process_data[key]['data'])
-        else:  # P2 can only change with !c or has no parent pub
-            log.debug("not list {}".format(key))
-            parent_pub = self.get_parent_pub(self.pub)
-            if self.bang_c == key or not parent_pub:
-                fbrf = self.process_data[key]['data']
-                pub = self.get_related_pub(fbrf, uniquename=False)
-                self.add_relationship(self.pub, pub, self.process_data[key]['cvterm'], self.process_data[key]['data'])
 
     def load_dbxref(self, key):
-        self.load_pubdbxref(self.process_data[key]['dbname'], self.process_data[key]['data'])
+        if self.has_data(key):
+            self.load_pubdbxref(self.process_data[key]['dbname'], self.process_data[key]['data'])
 
     def ignore(self, key):
         """
@@ -351,9 +346,10 @@ class ChadoPub(ChadoObject):
         Makes related pubs obsolete, NOT the pub itself.
         """
         for fbrf in self.process_data[key]['data']:
-            log.debug("Make obsolete {}".format(fbrf))
-            pub = self.get_related_pub(fbrf)
-            pub.is_obsolete = True
+            if fbrf[FIELD_VALUE] is not None:
+                log.debug("Make obsolete {}".format(fbrf))
+                pub = self.get_related_pub(fbrf)
+                pub.is_obsolete = True
 
     def load_pubprop(self, key):
         """
@@ -362,19 +358,26 @@ class ChadoPub(ChadoObject):
         self.process_data[key]['cvterm'] contains the cvterm to be used in the pupprob.
         self.process_data[key]['data'] contains the value(s) to be added.
         """
-        log.debug("loading pubprops")
-        if type(self.process_data[key]['data']) is list:
-            for row in self.process_data[key]['data']:
-                log.debug("loading {} {}".format(self.process_data[key]['cvterm'], row[FIELD_VALUE]))
-                self.load_single_pubprop('pubprop type', self.process_data[key]['cvterm'], row)
-        else:
-            log.debug("loading {} {}".format(self.process_data[key]['cvterm'], self.process_data[key]['data'][FIELD_VALUE]))
-            self.load_single_pubprop('pubprop type', self.process_data[key]['cvterm'], self.process_data[key]['data'])
+        if self.has_data(key):
+            log.debug("loading pubprops")
+            if type(self.process_data[key]['data']) is list:
+                for row in self.process_data[key]['data']:
+                    if row[FIELD_VALUE] is not None:
+                        log.debug("loading {} {}".format(self.process_data[key]['cvterm'], row[FIELD_VALUE]))
+                        self.load_single_pubprop('pubprop type', self.process_data[key]['cvterm'], row)
+            else:
+                if self.process_data[key]['data'][FIELD_VALUE] is not None:
+                    log.debug("loading {} {}".format(self.process_data[key]['cvterm'],
+                                                     self.process_data[key]['data'][FIELD_VALUE]))
+                    self.load_single_pubprop('pubprop type', self.process_data[key]['cvterm'],
+                                             self.process_data[key]['data'])
 
     def load_content(self):
         """
         Main processing routine
         """
+        if self.process_data['P22']['data'][FIELD_VALUE] == "new":
+            self.newpub = True
 
         self.pub = self.get_pub()
 
@@ -383,16 +386,15 @@ class ChadoPub(ChadoObject):
 
             self.extra_checks()
 
-        # bang c first as this trumps all things
+        # bang c first as this supersedes all things
         if self.bang_c:
             self.bang_c_it()
         if self.bang_d:
             self.bang_d_it()
 
         for key in self.process_data:
-            if self.process_data[key]['data']:
-                log.debug("Processing {}".format(self.process_data[key]['data']))
-                self.type_dict[self.process_data[key]['type']](key)
+            log.debug("Processing {}".format(self.process_data[key]['data']))
+            self.type_dict[self.process_data[key]['type']](key)
 
         timestamp = datetime.now().strftime('%c')
         curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short, timestamp)
@@ -415,28 +417,26 @@ class ChadoPub(ChadoObject):
         return givennames, surname
 
     def load_author(self, key):
-        for author in self.process_data[key]['data']:
-            givennames, surname = self.get_author(author)
-            self.current_query_source = author
-            self.current_query = "Author get/create: {}.".format(author[FIELD_VALUE])
-            author = get_or_create(
-                self.session, Pubauthor,
-                pub_id=self.pub.pub_id,
-                surname=surname,
-                givennames=givennames
-            )
+        if self.bang_d != 'P12':
+            for author in self.process_data[key]['data']:
+                givennames, surname = self.get_author(author)
+                log.debug("Author get/create: {}.".format(author[FIELD_VALUE]))
+                author = get_or_create(
+                    self.session, Pubauthor,
+                    pub_id=self.pub.pub_id,
+                    surname=surname,
+                    givennames=givennames
+                )
 
     def load_single_pubprop(self, cv_name, cv_term_name, value_to_add_tuple):
         """
         From a given cv and cvterm name add the pubprop with value in tuple.
         If cv or cvterm do not exist create an error and return.
         """
-        self.current_query_source = value_to_add_tuple
-        self.current_query = "Looking up cvterm: {} {}.".format(cv_name, cv_term_name)
+        log.debug("Looking up cvterm: {} {}.".format(cv_name, cv_term_name))
         cv_term_id = super(ChadoPub, self).cvterm_query(cv_name, cv_term_name, self.session)
 
-        self.current_query = 'Querying for FBrf \'%s\'.' % (value_to_add_tuple[FIELD_VALUE])
-        log.debug(self.current_query)
+        log.debug('Querying for FBrf \'%s\'.' % (value_to_add_tuple[FIELD_VALUE]))
 
         pub_prop = get_or_create(
             self.session, Pubprop,
@@ -450,19 +450,17 @@ class ChadoPub(ChadoObject):
         """
         Add dbxref to the pub (self.pub)
         """
-        self.current_query_source = value_to_add_tuple
-        self.current_query = "Looking up db: {}.".format(db_name)
+        log.debug("Looking up db: {}.".format(db_name))
         db = self.session.query(Db).filter(Db.name == db_name).one()
 
-        self.current_query = "Looking up dbxref: {}.".format(value_to_add_tuple[FIELD_VALUE])
+        log.debug("Looking up dbxref: {}.".format(value_to_add_tuple[FIELD_VALUE]))
         dbxref = get_or_create(
             self.session, Dbxref,
             accession=value_to_add_tuple[FIELD_VALUE],
             db_id=db.db_id
         )
 
-        self.current_query = 'Adding \'%s\' to \'%s\'.' % (dbxref.accession, self.pub.uniquename)
-        log.debug(self.current_query)
+        log.debug('Adding \'%s\' to \'%s\'.' % (dbxref.accession, self.pub.uniquename))
 
         get_or_create(
             self.session, PubDbxref,
@@ -496,25 +494,32 @@ class ChadoPub(ChadoObject):
         """
         Remove specific values indicated in the proforma field.
         """
-        log.debug("Bang D processing {}".format(self.bang_c))
+        log.debug("Bang D processing {}".format(self.bang_d))
         key = self.bang_d
 
         #####################################
         # check bang_d has a value to delete
         #####################################
-        if type(self.process_data[key]['data']) is not list:
-            if not self.process_data[key]['data'][FIELD_VALUE]:
-                log.error("BANGD: {}".format(self.process_data[key]['data']))
-                self.critical_error(self.process_data[key]['data'], "Must specify a value with !d.")
-                self.process_data[key]['data'] = None
-                return
-        else:
-            for item in self.process_data[key]['data']:
-                if not item[FIELD_VALUE]:
-                    log.error("BANGD: {}".format(item))
-                    self.critical_error(item, "Must specify a value with !d.")
+
+        # TODO Bring line number info along with bang c/d info for error reporting.
+        if key in self.process_data:
+            if type(self.process_data[key]['data']) is not list:
+                if not self.process_data[key]['data'][FIELD_VALUE]:
+                    log.error("BANGD: {}".format(self.process_data[key]['data']))
+                    self.critical_error(self.process_data[key]['data'], "Must specify a value with !d.")
                     self.process_data[key]['data'] = None
                     return
+            else:
+                for item in self.process_data[key]['data']:
+                    if not item[FIELD_VALUE]:
+                        log.error("BANGD: {}".format(item))
+                        self.critical_error(item, "Must specify a value with !d.")
+                        self.process_data[key]['data'] = None
+                        return
+        else:
+            # Faking the tuple because we don't have a field value or line number.
+            self.critical_error((key, key, key), "Must specify a value with !d.")
+            return
 
         self.delete_dict[self.process_data[key]['type']](key, bangc=False)
         self.process_data[key]['data'] = None
@@ -531,7 +536,7 @@ class ChadoPub(ChadoObject):
     def delete_author(self, key, bangc=True):
         if bangc:
             count = self.session.query(Pubauthor).filter(Pubauthor.pub_id == self.pub.pub_id).delete()
-            log.debug("removed {} pub authors".format(count))
+            log.debug("Removed {} pub authors".format(count))
         else:  # bangd just remove the ones listed
             for author in self.process_data[key]['data']:
                 givennames, surname = self.get_author(author)
@@ -540,7 +545,7 @@ class ChadoPub(ChadoObject):
                                                                  Pubauthor.givennames == givennames,
                                                                  Pubauthor.surname == surname).one_or_none()
                 if not pubauthor:
-                    self.critical_error(author, "Cannot delete Author that does not exist")
+                    self.critical_error(author, "Cannot delete Author that does not exist.")
                 else:
                     self.session.delete(pubauthor)
                     log.debug("{} removed".format(pubauthor))

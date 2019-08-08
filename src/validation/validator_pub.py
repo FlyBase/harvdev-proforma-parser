@@ -6,12 +6,66 @@ import re
 import logging
 log = logging.getLogger(__name__)
 
+from cerberus import Validator
 
-class ValidatorPub(ValidatorBase):
+
+class ValidatorPub(Validator):
     """
     The custom Cerberus validator used for all proforma.
     Subclasses of this validator can be found in the additional files within this directory.
     """
+
+    def __init__(self, *args, **kwargs):
+        self.bang_c = kwargs['bang_c']
+        self.bang_d = kwargs['bang_d']
+        self.record_type = kwargs['record_type']
+        super(ValidatorPub, self).__init__(*args, **kwargs)
+
+    def _validate_no_bangc(self, no_bangc, field, value):
+        """
+        Throw error if bangc is set. NOT allowed here.
+
+        The docstring statement below provides a schema to validate the 'plain_text' argument.
+
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
+        """
+        if self.bang_c == field:
+            self._error(field, '{} not allowed with bang c or bang d'.format(field))
+
+    def _validate_only_allowed(self, field_keys, field, comp_fields):
+        """
+        Check only fields in the list are allowed. (including self)
+        The rule's arguments are validated against this schema:
+        {'type': 'string'}
+        """
+
+        allowed = field_keys.split()
+        allowed.append(field)  # itself allowed
+        bad_fields = []
+        log.debug("allowed values are {}".format(allowed))
+        for key in (self.document.keys()):
+            log.debug("Only allowed check: {} {}".format(key, self.document[key]))
+            if key not in allowed:
+                bad_fields.append(key)
+        if bad_fields:
+            self._error(field, 'Error {} is set so cannot set {}'.format(field, bad_fields))
+
+    def _validate_need_data(self, field, dict1, comp_fields):
+        """
+        Throws error if comp_fields do NOT have data.
+        The rule's arguments are validated against this schema:
+        {'type': 'string'}
+        """
+        pass
+
+    def _validate_no_data(self, field, dict1, comp_fields):
+        """
+        Throws error if comp_fields do have data.
+        The rule's arguments are validated against this schema:
+        {'type': 'string'}
+        """
+        pass
 
     def _validate_P22_unattributed_no_value(self, other, field, value):
         """
@@ -30,7 +84,7 @@ class ValidatorPub(ValidatorBase):
         """
         May supercede _validate_P22_unattributed_no_value as we can do all at one go
         only P19 and P13 allowed if unattributed.
-        Quicker this way but eeror shows up on P22 rather than another field.
+        Quicker this way but error shows up on P22 rather than another field.
 
         The docstring statement below provides a schema to validate the 'P22_text' argument.
 
@@ -40,7 +94,7 @@ class ValidatorPub(ValidatorBase):
         """
         if P22_text and value != 'unattributed':
             return
-        allowed = ['P22', 'P19', 'P13']  # P22 will exist aswell obviously
+        allowed = ['P22', 'P19', 'P13']  # P22 will exist as well obviously
         bad_fields = []
         for key in (self.document.keys()):
             log.debug("P22 unat allow: {} {}".format(key, self.document[key]))
@@ -77,9 +131,9 @@ class ValidatorPub(ValidatorBase):
                     list2.append(self.document[with_field])
                 log.debug("{} => {}".format(with_field, list2))
                 for item in list2:
-                    if item in dict1:
+                    if item in dict1 and item is not None:
                         self._error(field, 'Error {} in both {} and {}. Not allowed'.format(item, field, with_field))
-                    if item in dict2:
+                    if item in dict2 and item is not None:
                         self._error(field, 'Error {} listed twice for {}'.format(item, with_field))
                     dict2[item] = 1
 
@@ -236,7 +290,31 @@ class ValidatorPub(ValidatorBase):
         {'type': 'boolean'}
         """
         for item in value:
-            self.single_deposited_file(field, item)
+            if item is not None:
+                self.single_deposited_file(field, item)
+
+    def _validate_excludes_other_P11(self, do_test, field, value):
+        """
+        Check for only one field with data for P11 betweeen a,b,c, and d.
+
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
+        """
+
+        if value is not None:
+
+            list_of_fields = ['P11a', 'P11b', 'P11c', 'P11d']
+            list_of_fields.remove(field)
+
+            unallowed_fields = []
+
+            for key in self.document.keys():
+                if self.document[key] is not None and key in list_of_fields:
+                    unallowed_fields.append(key)
+
+            if unallowed_fields:
+                self._error(field, 'Cannot set field(s) {} when using field {}.'.format(unallowed_fields, field))
+
 
     def _validate_pages_format(self, do_test, field, value):
         """
@@ -251,6 +329,7 @@ class ValidatorPub(ValidatorBase):
             [r'^(\d+)[p]+$', 0],                # numbers and p or pp or even ppp etc
             [r'^p+(\d+)$', 0],                  # pp then number
             [r'(\d+)--(\d+)$', 0],              # nn--nn
+            [r'(\d+) - (\d+)$', 0],             # nn - nn
             [r'^s(\d+)--s(\d+)', 0],            # 's'num--'s'num
             [r'^R(\d+)--R(\d+)', 0],            # 'R'num--'R'num
         ]
@@ -258,20 +337,21 @@ class ValidatorPub(ValidatorBase):
         page1 = None
         page2 = None
         found = False
-        for regex in simple_pages_regex:
-            fields = re.search(regex[0], value)
-            if fields:
-                found = True
-                if fields.group(1):
-                    page1 = int(fields.group(1))
-                try:
-                    page2 = int(fields.group(2))
-                except IndexError:
-                    pass
-            if found:
-                continue
-        if found and page1 and page2:
-            if page1 > page2:
-                self._error(field, 'Error {}: {} is higher than {}.'.format(field, page2, page2))
-        if not found:
-            self._error(field, 'Error {}: {} is of none standard format.'.format(field, value))
+        if value is not None:
+            for regex in simple_pages_regex:
+                fields = re.search(regex[0], value)
+                if fields:
+                    found = True
+                    if fields.group(1):
+                        page1 = int(fields.group(1))
+                    try:
+                        page2 = int(fields.group(2))
+                    except IndexError:
+                        pass
+                if found:
+                    continue
+            if found and page1 and page2:
+                if page1 > page2:
+                    self._error(field, 'Error {}: {} is higher than {}.'.format(field, page2, page2))
+            if not found:
+                self._error(field, 'Error {}: {} is of non-standard format.'.format(field, value))
