@@ -160,8 +160,6 @@ def validate_proforma_object(proforma):
 
     schema = yaml.full_load(schema_file)
     log.debug('Schema used: {}'.format(yaml_file_location))
-    # pp = pprint.PrettyPrinter(indent=4)
-    # pp.pprint(schema['P45'])
 
     validator = validatortype(record_type=proforma.file_metadata['record_type'],
                               bang_c=proforma.bang_c,
@@ -213,9 +211,9 @@ def check_and_raise_errors(filename, proforma_start_line, line_number, error_fie
 
     # We want to search for partial matches of error_value against the critical_errors lists:
     if error_field in critical_errors: # If we have a key in critical_errors, e.g. P22
-        for x in critical_errors[error_field]:
-            if x in error_data:
-                log.debug('Found critical error: \'{}\' in Cerberus error value: \'{}\''.format(x, error_value))
+        for critical_error_entry in critical_errors[error_field]:
+            if critical_error_entry in error_data:
+                log.debug('Found critical error: \'{}\' in Cerberus error value: \'{}\''.format(critical_error_entry, error_value))
                 ErrorTracking(filename, proforma_start_line, line_number, 'Validation unsuccessful', error_data,
                               CRITICAL_ERROR)
                 log.critical(error_data)
