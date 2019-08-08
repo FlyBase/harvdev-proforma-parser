@@ -160,7 +160,6 @@ def validate_proforma_object(proforma):
 
     schema = yaml.full_load(schema_file)
     log.debug('Schema used: {}'.format(yaml_file_location))
-    # pp = pprint.PrettyPrinter(indent=4)
     # pp.pprint(schema['P45'])
 
     validator = validatortype(record_type=proforma.file_metadata['record_type'],
