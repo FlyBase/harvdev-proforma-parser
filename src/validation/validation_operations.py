@@ -199,26 +199,6 @@ def validate_proforma_object(proforma):
             critical_error_occurred = check_and_raise_errors(filename, proforma_start_line, line_number, field,
                                                              values)
             return critical_error_occurred
-            # if type(fields_values[field][0]) is tuple:  # Some fields are lists
-            #     line_number = fields_values[field][0][LINE_NUMBER]
-            # else:
-            #     line_number = fields_values[field][LINE_NUMBER]
-            # if type(values[0]) is str and type(field) is str:
-            #     error_field = field
-            #     error_value = values[0]
-            #     critical_error_occurred = check_and_raise_errors(filename, proforma_start_line, line_number, error_field, error_value)
-            #     return critical_error_occurred
-            # elif type(values[0]) is dict:
-            #     list_dict_keys = list(values[0].keys())
-            #     if len(list_dict_keys) > 1:
-            #         log.critical('List with length > 1 unexpectedly found in validation code.')
-            #         log.critical('Please contact Chris and/or Harvdev with this error.')
-            #         log.critical('Exiting.')
-            #         sys.exit(-1)
-            #     error_field = field
-            #     error_value = values[0][list_dict_keys[0]][0]
-            #     critical_error_occurred = check_and_raise_errors(filename, proforma_start_line, line_number, error_field, error_value)
-            #     return critical_error_occurred
 
 
 def check_and_raise_errors(filename, proforma_start_line, line_number, error_field, error_value):
