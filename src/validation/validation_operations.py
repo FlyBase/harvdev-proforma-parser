@@ -175,12 +175,6 @@ def validate_proforma_object(proforma):
     log.debug('Field and values to be used for validation: {}'.format(field_value_validation_dict))
     results = validator.validate(field_value_validation_dict, schema)
 
-    # The error storage can get really funky with some of the validation schema.
-    # Errors in cases of fields with string (e.g. G1a) are simple:
-    # error "values" will be a list and you can grab the first entry and you're set (e.g. values[0])
-    # However, error values from a list with individual entries which are strings (e.g. G1b) are more complicated.
-    # "Values" becomes a list with a single dictionary with a single key with a list as the value. Whew.
-    # So everything after the elif below is to deal with this funky data structure.
     if results is True:
         log.info('Validation successful.')
         # No critical errors.

@@ -7,12 +7,17 @@
 # TODO Split this file into individual files by class.
 
 # System and logging imports
-import re, yaml, os, sys, logging, traceback
+import re
+import yaml
+import os
+import sys
+import logging
+import traceback
 # Other modules
 from itertools import tee, islice, chain
 # Validation
 from validation.validation_operations import validate_proforma_object
-from error.error_tracking import ErrorTracking, CRITICAL_ERROR, WARNING_ERROR
+
 log = logging.getLogger(__name__)
 
 def process_proforma_directory(location):
@@ -440,7 +445,7 @@ class Proforma(object):
         if field in self.fields_values:  # If we have a previously defined key.
             if field in self.set_of_fields_with_wrapping_values:  # In this case, we want to concantenate the existing and new values.
                 log.info('Found field %s with wrapping values over multiple lines.' % (field))
-                log.info('Concantenating field %s existing value \'%s\' with new value \'%s\'' % (field, self.fields_values[field][1], value))
+                log.info('Concatenating field %s existing value \'%s\' with new value \'%s\'' % (field, self.fields_values[field][1], value))
                 # This following is currently stored with a newline. Keeping the same system, unfortunately.
                 self.fields_values[field] = (field, self.fields_values[field][1] + '\n' + value, line_number)
             else:
@@ -454,7 +459,8 @@ class Proforma(object):
                     log.critical('Exiting.')
                     sys.exit(-1)
         else:  # If the key doesn't exist, add it.
-            if field in self.set_of_fields_that_should_be_lists:
+            # Always add None objects as strings, not lists. 'None' in list format breaks Cerberus (as of 1.2)!
+            if field in self.set_of_fields_that_should_be_lists and value is not None:
                 log.debug('Adding field %s : value %s from line %s to the Proforma object as a new list.' % (field, value, line_number))
                 self.fields_values[field] = []
                 self.fields_values[field].append((field, value, line_number))
