@@ -175,12 +175,6 @@ def validate_proforma_object(proforma):
     log.debug('Field and values to be used for validation: {}'.format(field_value_validation_dict))
     results = validator.validate(field_value_validation_dict, schema)
 
-    # The error storage can get really funky with some of the validation schema.
-    # Errors in cases of fields with string (e.g. G1a) are simple:
-    # error "values" will be a list and you can grab the first entry and you're set (e.g. values[0])
-    # However, error values from a list with individual entries which are strings (e.g. G1b) are more complicated.
-    # "Values" becomes a list with a single dictionary with a single key with a list as the value. Whew.
-    # So everything after the elif below is to deal with this funky data structure.
     if results is True:
         log.info('Validation successful.')
         # No critical errors.
@@ -201,7 +195,7 @@ def validate_proforma_object(proforma):
 
 def check_and_raise_errors(filename, proforma_start_line, line_number, error_field, error_value):
     # Open list of critical errors.
-    critical_error_file = open(os.path.dirname(os.path.abspath(__file__)) + '/yaml/critical_errors.yaml', 'r')
+    critical_error_file = open(os.path.dirname(os.path.abspath(__file__)) + '/critical_errors.yaml', 'r')
     critical_errors = yaml.full_load(critical_error_file)
 
     if type(error_value) is list:

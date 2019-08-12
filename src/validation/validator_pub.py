@@ -21,6 +21,11 @@ class ValidatorPub(Validator):
         self.record_type = kwargs['record_type']
         super(ValidatorPub, self).__init__(*args, **kwargs)
 
+    def _validate_type_None(self, value):
+        if value is None:
+            log.info('Value is {}'.foramt(value))
+            return True
+
     def _validate_no_bangc(self, no_bangc, field, value):
         """
         Throw error if bangc is set. NOT allowed here.
@@ -56,6 +61,17 @@ class ValidatorPub(Validator):
         Throws error if comp_fields do NOT have data.
         The rule's arguments are validated against this schema:
         {'type': 'string'}
+        """
+        pass
+
+    def _validate_wrapping_values(self, field, dict1, comp_fields):
+        """
+        This is a "placeholder" validation used to indicate whether a field
+        contains wrapping values. It is used by a function in
+        proforma_operations to extract a list of fields which have this characteristic.
+
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
         """
         pass
 
@@ -145,7 +161,7 @@ class ValidatorPub(Validator):
         The rule's arguments are validated against this schema:
         {'type': 'string'}
         """
-        log.debug("Running check no duplicates with {} wrt {} {}".format(comp_fields, field, value))
+        log.debug("Running check -- no duplicates with {} wrt {} {}".format(comp_fields, field, value))
         if type(value) is not list:
             log.debug("Was expecting a list but we have '{}' for {}".format(value, field))
             return
@@ -289,9 +305,13 @@ class ValidatorPub(Validator):
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
-        for item in value:
-            if item is not None:
-                self.single_deposited_file(field, item)
+        if type(value) is not list:
+            if value is not None:
+                self.single_deposited_file(field, value)
+        else:
+            for item in value:
+                if item is not None:
+                    self.single_deposited_file(field, item)
 
     def _validate_excludes_other_P11(self, do_test, field, value):
         """

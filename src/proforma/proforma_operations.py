@@ -8,15 +8,17 @@
 
 # System and logging imports
 import re
+import yaml
 import os
 import sys
 import logging
+import traceback
 # Other modules
 from itertools import tee, islice, chain
 # Validation
 from validation.validation_operations import validate_proforma_object
-log = logging.getLogger(__name__)
 
+log = logging.getLogger(__name__)
 
 def process_proforma_directory(location):
     """
@@ -367,6 +369,39 @@ class Proforma(object):
         filename (str): The filename (including directory) of a proforma.
     """
 
+    set_of_fields_that_should_be_lists = set()
+    set_of_fields_with_wrapping_values = set()
+
+    location = os.getcwd() + '/src/validation/yaml'
+
+    for filename in os.listdir(location):
+        if filename.endswith('.yaml'):
+            with open(os.path.join(location, filename)) as yaml_location:
+                yaml_to_process = yaml.full_load(yaml_location)
+                for field_name in yaml_to_process.keys():
+                    # Check whether field_type is list.
+                    field_type = None
+                    try:
+                        field_type = yaml_to_process[field_name]['type']
+                    except KeyError:
+                        continue
+                    if type(field_type) is list:
+                        if 'list' in field_type:
+                            set_of_fields_that_should_be_lists.add(field_name)
+                    else:
+                        if field_type == 'list':
+                            set_of_fields_that_should_be_lists.add(field_name)
+
+                    # Check whether wrapping values are used.
+                    wrapping_values = None
+                    try:
+                        wrapping_values = yaml_to_process[field_name]['wrapping_values']
+                    except KeyError:
+                        continue
+
+                    if wrapping_values is True:
+                        set_of_fields_with_wrapping_values.add(field_name)
+
     def __init__(self, file_metadata, proforma_type, line_number):
         self.file_metadata = file_metadata  # Store our file metadata dictionary.
         self.errors = None                  # Error tracking. This will become a dict if used.
@@ -380,6 +415,9 @@ class Proforma(object):
         log.info('Creating Proforma class object from individual proforma entry in: %s', self.file_metadata['filename'])
         log.info('Proforma type defined as: %s' % proforma_type)
         log.info('Proforma object begins at line: %s' % line_number)
+
+        self.set_of_fields_that_should_be_lists = Proforma.set_of_fields_that_should_be_lists
+        self.set_of_fields_with_wrapping_values = Proforma.set_of_fields_with_wrapping_values
 
     def add_field_and_value(self, field, value, line_number, type_of_bang):
         """
@@ -399,36 +437,15 @@ class Proforma(object):
             # remove spaces from start and end of string
             value = value.strip()
 
-        # A list of fields where values might span multiple lines
-        # but they need to be treated as a single entry.
-        # Not a fan of hard-coding fields here but I can't seem to find a way around it.
-        list_of_fields_with_wrapping_values = [
-            'P19',
-            'P34'
-        ]
-
-        # TODO Generate this list from the validation YAML.
-        # A list of fields which should always be handled as lists, even if they are single values.
-        # This saves a tremendous amount of downstream code in handling strings vs lists.
-        # Basically, if a field *can* be a list, it will be turned into a list.
-        list_of_fields_that_should_be_lists = [
-            'P12',
-            'P30', 'P31', 'P32',  # related/secondary pubs
-            'P38',
-            'P40', 'P41', 'P42', 'P43', # Flags
-            'G1b',
-            'G2b',
-        ]
-
         # Field values are stored in tuples of (field, value, line number).
         # The field value key name is the same as the first part of this tuple.
         # This is redundant but useful because the key name will change when this gets loaded into a ChadoObject.
         # If we always bring along the field value in the tuple, we can always reference it later.
 
         if field in self.fields_values:  # If we have a previously defined key.
-            if field in list_of_fields_with_wrapping_values:  # In this case, we want to concantenate the existing and new values.
+            if field in self.set_of_fields_with_wrapping_values:  # In this case, we want to concantenate the existing and new values.
                 log.info('Found field %s with wrapping values over multiple lines.' % (field))
-                log.info('Concantenating field %s existing value \'%s\' with new value \'%s\'' % (field, self.fields_values[field][1], value))
+                log.info('Concatenating field %s existing value \'%s\' with new value \'%s\'' % (field, self.fields_values[field][1], value))
                 # This following is currently stored with a newline. Keeping the same system, unfortunately.
                 self.fields_values[field] = (field, self.fields_values[field][1] + '\n' + value, line_number)
             else:
@@ -442,7 +459,8 @@ class Proforma(object):
                     log.critical('Exiting.')
                     sys.exit(-1)
         else:  # If the key doesn't exist, add it.
-            if field in list_of_fields_that_should_be_lists:
+            # Always add None objects as strings, not lists. 'None' in list format breaks Cerberus (as of 1.2)!
+            if field in self.set_of_fields_that_should_be_lists and value is not None:
                 log.debug('Adding field %s : value %s from line %s to the Proforma object as a new list.' % (field, value, line_number))
                 self.fields_values[field] = []
                 self.fields_values[field].append((field, value, line_number))
