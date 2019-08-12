@@ -44,6 +44,7 @@ P11d:
 P12:
   type: [string, list]
   required: False
+  nullable: True
 P13:
   required: False
   type: string

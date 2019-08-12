@@ -28,7 +28,6 @@ P4:
   type: string
 P10:
   type: string
-  required: True
   regex: ^(\d+)(\.+\d+\.+\d+)?$
 P11a:
   pages_format: True
@@ -54,7 +53,6 @@ P11d:
   excludes_other_P11: True
 P12:
   required: True
-  nullable: True
   type: [string, list]
 P13:
   required: False
