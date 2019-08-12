@@ -27,6 +27,7 @@ P4:
   nullable: True
   type: string
 P10:
+  required: True
   type: string
   regex: ^(\d+)(\.+\d+\.+\d+)?$
 P11a:
