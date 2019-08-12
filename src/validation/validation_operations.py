@@ -201,7 +201,7 @@ def validate_proforma_object(proforma):
 
 def check_and_raise_errors(filename, proforma_start_line, line_number, error_field, error_value):
     # Open list of critical errors.
-    critical_error_file = open(os.path.dirname(os.path.abspath(__file__)) + '/yaml/critical_errors.yaml', 'r')
+    critical_error_file = open(os.path.dirname(os.path.abspath(__file__)) + '/critical_errors.yaml', 'r')
     critical_errors = yaml.full_load(critical_error_file)
 
     if type(error_value) is list:

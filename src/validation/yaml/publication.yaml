@@ -77,6 +77,7 @@ P18:
 P19:
   type: [string, list]
   nullable: True
+  wrapping_values: True
 P22:
   required: True
   no_bangc: True
@@ -120,6 +121,7 @@ P32:
 P34:
   required: False
   type: string
+  wrapping_values: True
 P38:
   required: False
   deposited_file: True

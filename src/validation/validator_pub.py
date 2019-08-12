@@ -59,6 +59,17 @@ class ValidatorPub(Validator):
         """
         pass
 
+    def _validate_wrapping_values(self, field, dict1, comp_fields):
+        """
+        This is a "placeholder" validation used to indicate whether a field
+        contains wrapping values. It is used by a function in
+        proforma_operations to extract a list of fields which have this characteristic.
+
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
+        """
+        pass
+
     def _validate_no_data(self, field, dict1, comp_fields):
         """
         Throws error if comp_fields do have data.
