@@ -136,27 +136,32 @@ def proforma_to_chado(dict_of_processed_files):
 
 def process_errors(load_type):
     """
-    Look at the errors and generate a summary and exit without savng if any critical errors
+    Look at the errors and generate a summary and exit.
+    If critical errors are found, no writing to the database occurs.
     """
     list_of_errors_transactions = [instance for instance in ErrorTracking.instances]
 
     if len(list_of_errors_transactions) > 0:
-        for error_object in list_of_errors_transactions:
-            error_object.print_error_messages()
 
-    if len(list_of_errors_transactions) > 0:
         critical_count, warning_count = get_error_summary()
+        log.info('{} critical error(s) were found.'.format(critical_count))
+        log.info('{} warning error(s) were found.'.format(warning_count))
+        log.info('')
+
+        for error_object in list_of_errors_transactions:
+            index_to_print = list_of_errors_transactions.index(error_object) + 1
+            error_object.print_error_messages(index_to_print)
+
         if critical_count:
-            log.critical('{} critical error(s) were found.'.format(critical_count))
-            log.critical('{} warning error(s) were found.'.format(warning_count))
             log.critical('Please the correct at least the critical ones or remove these file(s) before proceeding.')
             log.critical('No data was loaded into Chado.')
             log.critical('Exiting.')
             sys.exit(-1)
         elif warning_count:
-            log.warning("{} warnings found. Do you wish to proceed WILL be added soon".format(warning_count))
-            log.warning("Ignoring warnings for now!!!!")
+            log.warning('Ignoring warnings for now!')
     else:
+        log.info('0 critical error(s) were found.')
+        log.info('0 warning error(s) were found.')
         if load_type == 'test':
             log.info('All files successfully tested against production Chado.')
             log.info('')

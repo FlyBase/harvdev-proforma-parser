@@ -20,6 +20,7 @@ from datetime import datetime
 
 log = logging.getLogger(__name__)
 
+
 class ChadoChem(ChadoObject):
     # TODO
     #  - Warn for mismatch between database ID; database name in CH1g.
@@ -31,9 +32,9 @@ class ChadoChem(ChadoObject):
         ##########################################
         # Set up how to process each type of input
         ##########################################
-        #self.type_dict = {'direct': self.load_direct}
+        # self.type_dict = {'direct': self.load_direct}
 
-        #self.delete_dict = {'direct': self.delete_direct,
+        # self.delete_dict = {'direct': self.delete_direct,
         #               'obsolete': self.delete_obsolete}
 
         self.proforma_start_line_number = params.get('proforma_start_line_number')
@@ -149,28 +150,13 @@ class ChadoChem(ChadoObject):
     def validate_identifier(self):
         # TODO Check identifier and use proper database.
         # Initial implementation will be ChEBI only.
-        # TODO Regex to extract ChEBI identifier in case ; and name is used.
 
         identifier_unprocessed = self.process_data['CH3a']['data'][FIELD_VALUE]
-        identifier = None
-        identifier_name = None
 
-        # Strip away the name if one is supplied with the identifier.
-        if ';' in identifier_unprocessed:
-            log.debug('Semicolon found, splitting identifier: {}'.format(identifier_unprocessed))
-            identifier_split_list = identifier_unprocessed.split(';')
-            identifier_name = identifier_split_list.pop().strip()
-            identifier = identifier_split_list.pop().strip()
-            if identifier_split_list:  # If the list is not empty by this point.
-                self.critical_error(self.process_data['CH3a']['data'],
-                                    'Error splitting identifier and name using semicolon.')
-        else:
-            identifier = identifier_unprocessed.strip()
+        identifier, identifier_name = self.split_identifier_and_name(identifier_unprocessed)
 
         # TODO Check for valid ID format.
         self.check_valid_id(identifier)
-
-
 
         ch = ChEBI()
         results = ch.getLiteEntity(self.process_data['CH3a']['data'][FIELD_VALUE])
@@ -180,16 +166,44 @@ class ChadoChem(ChadoObject):
                                 .format(self.process_data['CH3a']['data'][FIELD_VALUE]))
             return
         name_from_chebi = results[0].chebiAsciiName
+        # Check whether the name intended to be used in FlyBase matches
+        # the name returned from the database.
         if name_from_chebi != self.process_data['CH1a']['data'][FIELD_VALUE]:
             self.warning_error(self.process_data['CH1a']['data'],
                                'ChEBI name does not match name specified for FlyBase: {} -> {}'
-                               .format(self.process_data['CH3a']['data'][FIELD_VALUE], self.process_data['CH1a']['data'][FIELD_VALUE]))
+                               .format(self.process_data['CH3a']['data'][FIELD_VALUE],
+                                       self.process_data['CH1a']['data'][FIELD_VALUE]))
         else:
             log.info('Queried name \'{}\' matches name used in proforma \'{}\''
                      .format(name_from_chebi, self.process_data['CH1a']['data'][FIELD_VALUE]))
 
+        # Check whether the identifier_name supplied by the curator matches
+        # the name returned from the database.
+        if identifier_name:
+            if name_from_chebi != identifier_name:
+                self.critical_error(self.process_data['CH3a']['data'],
+                                    'ChEBI name does not match name specified in identifier field: {} -> {}'
+                                    .format(name_from_chebi,
+                                            identifier_name))
         return
 
     def check_valid_id(self, identifier):
         # Added regex checks for identifiers here.
         pass
+
+    def split_identifier_and_name(self, identifier_unprocessed):
+        # Strip away the name if one is supplied with the identifier.
+        identifier = None
+        identifier_name = None
+        if ';' in identifier_unprocessed:
+            log.debug('Semicolon found, splitting identifier: {}'.format(identifier_unprocessed))
+            identifier_split_list = identifier_unprocessed.split(';')
+            identifier_name = identifier_split_list.pop().strip()
+            identifier = identifier_split_list.pop().strip()
+            if identifier_split_list:  # If the list is not empty by this point, raise an error.
+                self.critical_error(self.process_data['CH3a']['data'],
+                                    'Error splitting identifier and name using semicolon.')
+        else:
+            identifier = identifier_unprocessed.strip()
+
+        return identifier, identifier_name

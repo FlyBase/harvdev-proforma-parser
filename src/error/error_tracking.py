@@ -51,15 +51,17 @@ class ErrorTracking(object):
 
         ErrorTracking.instances.append(self)
 
-    def print_error_messages(self):
+    def print_error_messages(self, index_to_print):
         if self.error_level == WARNING_ERROR:
             log_message = log.warning
         else:
             log_message = log.critical
 
+        log_message('Error #{}'.format(index_to_print))
         log_message(self.filename)
         if self.proforma_start_line:
             log_message(self.proforma_start_line)
         log_message(self.proforma_line)
         log_message(self.error_message)
         log_message(self.error_data)
+        log_message('')  # Blank line
