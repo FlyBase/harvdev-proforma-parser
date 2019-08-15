@@ -37,24 +37,24 @@ class ChadoChem(ChadoObject):
         #               'obsolete': self.delete_obsolete}
 
         self.proforma_start_line_number = params.get('proforma_start_line_number')
-
-        ############################################################
-        # Get processing info and data to be processed.
-        # Please see the yml/chemical.yml file for more details
-        ############################################################
-        yml_file = os.path.join(os.path.dirname(__file__), 'yml/chemical.yml')
-        self.process_data = yaml.load(open(yml_file))
-        for key in self.process_data:
-        # TODO try/catch critical error here if params contains a field not found in the yaml.
-            self.process_data[key]['data'] = params['fields_values'].get(key)
-            if self.process_data[key]['data']:
-                log.debug("{}: {}".format(key, self.process_data[key]))
+        self.reference = params.get('reference')
 
         ###########################################################
         # Values queried later, placed here for reference purposes.
         ############################################################
         self.pub = None  # All other proforma need a reference to a pub
         self.chemical_feature_id = None  # The feature id used for the chemical.
+
+        # Initiate the parent.
+        super(ChadoChem, self).__init__(params)
+
+        ############################################################
+        # Get processing info and data to be processed.
+        # Please see the yml/chemical.yml file for more details
+        ############################################################
+        yml_file = os.path.join(os.path.dirname(__file__), 'yml/chemical.yml')
+        # Populated self.process_data with all possible keys.
+        self.process_data = self.load_reference_yaml(yml_file, params)
 
         #####################################################
         # Checking whether we're working with a new chemical.
@@ -64,9 +64,6 @@ class ChadoChem(ChadoObject):
         else:
             self.new_chemical_entry = False
 
-        # Initiate the parent.
-        super(ChadoChem, self).__init__(params)
-
     def obtain_session(self, session):
         self.session = session
 
@@ -75,7 +72,7 @@ class ChadoChem(ChadoObject):
         Main processing routine.
         """
 
-        self.pub = super(ChadoChem, self).pub_from_fbrf(self.process_data['P22']['data'], self.session)
+        self.pub = super(ChadoChem, self).pub_from_fbrf(self.reference, self.session)
 
         self.get_or_create_chemical()
 
@@ -104,7 +101,6 @@ class ChadoChem(ChadoObject):
         self.validate_identifier()
 
         # Look up organism id.
-        log.debug(self.current_query)
         organism = self.session.query(Organism). \
             filter(Organism.genus == 'Drosophila',
                    Organism.species == 'melanogaster').one()
@@ -112,7 +108,6 @@ class ChadoChem(ChadoObject):
         organism_id = organism.organism_id
 
         # Look up chemical cv term id.
-        log.debug(self.current_query)
         chemical = self.session.query(Cvterm).join(Cv). \
             filter(Cvterm.cv_id == Cv.cv_id,
                    Cvterm.name == 'chemical entity',
@@ -126,7 +121,7 @@ class ChadoChem(ChadoObject):
 
         # If we already have an entry and this should be be a new entry.
         if entry_already_exists and self.new_chemical_entry:
-            self.critical_error(self.process_data['CH2a']['data'],
+            self.critical_error(self.process_data['CH1a']['data'],
                                 'An entry already exists in the database with this name.')
         # If we're not dealing with a new entry.
         # Verify that the FBch and Name specified in the proforma match.
@@ -136,7 +131,7 @@ class ChadoChem(ChadoObject):
                                     'Name and FBch in this proforma do not match.')
         else:
             chemical = get_or_create(self.session, Feature, organism_id=organism_id,
-                                     name=self.process_data['CH2a']['data'][FIELD_VALUE],
+                                     name=self.process_data['CH1a']['data'][FIELD_VALUE],
                                      type_id=chemical_id,
                                      uniquename='FBch:temp_0')
             new_entry = self.chemical_feature_lookup(organism_id, chemical_id)
@@ -145,7 +140,7 @@ class ChadoChem(ChadoObject):
 
     def chemical_feature_lookup(self, organism_id, description_id):
         entry = self.session.query(Feature). \
-            filter(Feature.name == self.process_data['CH2a']['data'][FIELD_VALUE],
+            filter(Feature.name == self.process_data['CH1a']['data'][FIELD_VALUE],
                    Feature.type_id == description_id,
                    Feature.organism_id == organism_id).one_or_none()
 
@@ -156,20 +151,45 @@ class ChadoChem(ChadoObject):
         # Initial implementation will be ChEBI only.
         # TODO Regex to extract ChEBI identifier in case ; and name is used.
 
+        identifier_unprocessed = self.process_data['CH3a']['data'][FIELD_VALUE]
+        identifier = None
+        identifier_name = None
+
+        # Strip away the name if one is supplied with the identifier.
+        if ';' in identifier_unprocessed:
+            log.debug('Semicolon found, splitting identifier: {}'.format(identifier_unprocessed))
+            identifier_split_list = identifier_unprocessed.split(';')
+            identifier_name = identifier_split_list.pop().strip()
+            identifier = identifier_split_list.pop().strip()
+            if identifier_split_list:  # If the list is not empty by this point.
+                self.critical_error(self.process_data['CH3a']['data'],
+                                    'Error splitting identifier and name using semicolon.')
+        else:
+            identifier = identifier_unprocessed.strip()
+
+        # TODO Check for valid ID format.
+        self.check_valid_id(identifier)
+
+
+
         ch = ChEBI()
-        results = ch.getLiteEntity(self.process_data['CH1g']['data'][FIELD_VALUE])
+        results = ch.getLiteEntity(self.process_data['CH3a']['data'][FIELD_VALUE])
         if not results:
-            self.critical_error(self.process_data['CH1g']['data'],
+            self.critical_error(self.process_data['CH3a']['data'],
                                 'No results found when querying ChEBI for {}'
-                                .format(self.process_data['CH1g']['data'][FIELD_VALUE]))
+                                .format(self.process_data['CH3a']['data'][FIELD_VALUE]))
             return
         name_from_chebi = results[0].chebiAsciiName
-        if name_from_chebi != self.process_data['CH2a']['data'][FIELD_VALUE]:
-            self.warning_error(self.process_data['CH2a']['data'],
+        if name_from_chebi != self.process_data['CH1a']['data'][FIELD_VALUE]:
+            self.warning_error(self.process_data['CH1a']['data'],
                                'ChEBI name does not match name specified for FlyBase: {} -> {}'
-                               .format(self.process_data['CH1g']['data'][FIELD_VALUE], self.process_data['CH2a']['data'][FIELD_VALUE]))
+                               .format(self.process_data['CH3a']['data'][FIELD_VALUE], self.process_data['CH1a']['data'][FIELD_VALUE]))
         else:
             log.info('Queried name \'{}\' matches name used in proforma \'{}\''
-                     .format(name_from_chebi, self.process_data['CH2a']['data'][FIELD_VALUE]))
+                     .format(name_from_chebi, self.process_data['CH1a']['data'][FIELD_VALUE]))
 
         return
+
+    def check_valid_id(self, identifier):
+        # Added regex checks for identifiers here.
+        pass

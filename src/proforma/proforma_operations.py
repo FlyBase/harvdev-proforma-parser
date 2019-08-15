@@ -106,16 +106,18 @@ def process_proforma_file(file_location_from_list, curator_dict):
 
     # TODO Check that this entry is a pub proforma. Also implement workaround for processing DATABASE proforma which
     #  don't have pubs.
-    proforma_type, filename, proforma_start_line_number, fields_values = list_of_proforma_objects[0].get_data_for_processing()
+    proforma_type, filename, proforma_start_line_number, fields_values = list_of_proforma_objects[0]\
+        .get_data_for_processing()
     log.info('Found reference %s.' %
              (list_of_proforma_objects[0].fields_values['P22'][1]))
     log.info('Attaching %s from field %s, line %s to all subsequent proforma objects.' %
              (fields_values['P22'][1], 'P22', fields_values['P22'][2]))
 
     for individual_proforma_object in list_of_processed_proforma_objects:
-        individual_proforma_object.add_pub_data(list_of_proforma_objects[0].fields_values['P22'])
+        individual_proforma_object.add_reference_data(list_of_proforma_objects[0].fields_values['P22'][1])
 
-    log.info('Successfully attached pub data to {} proforma objects'.format(len(list_of_processed_proforma_objects)))
+    log.info('Successfully attached reference {} to {} proforma objects'
+             .format(list_of_proforma_objects[0].fields_values['P22'][1], len(list_of_processed_proforma_objects)))
 
     return list_of_processed_proforma_objects
 
@@ -407,6 +409,7 @@ class Proforma(object):
         self.errors = None                  # Error tracking. This will become a dict if used.
         self.bang_c = None                  # Becomes the field flagged for !c (if used).
         self.bang_d = None                  # Becomes the field flagged for !d (if used).
+        self.reference = None               # Becomes the FBrf used for attribution.
         self.proforma_start_line_number = line_number  # Used later for data retrieval.
         self.proforma_type = proforma_type  # Used later for data retrieval.
 
@@ -497,10 +500,12 @@ class Proforma(object):
             log.debug('!d field detected for %s. Adding flag to object.' % (field))
 
     def get_data_for_processing(self):
-        return self.proforma_type, self.file_metadata['filename'], self.proforma_start_line_number, self.fields_values
+        return self.proforma_type, self.file_metadata['filename'], \
+               self.proforma_start_line_number, self.fields_values
 
     def get_data_for_loading(self):
-        return(self.file_metadata, self.bang_c, self.bang_d, self.proforma_start_line_number, self.fields_values)
+        return self.file_metadata, self.bang_c, self.bang_d, \
+               self.proforma_start_line_number, self.fields_values, self.reference
 
     def update_errors(self, errors):
         """
@@ -514,8 +519,8 @@ class Proforma(object):
         else:
             self.errors.update(errors)
 
-    def add_pub_data(self, pub_data):
-        self.fields_values['P22'] = pub_data
+    def add_reference_data(self, reference_data):
+        self.reference = reference_data
 
     def get_file_metadata(self):
         return self.file_metadata
