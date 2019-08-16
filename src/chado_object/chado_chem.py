@@ -208,11 +208,13 @@ class ChadoChem(ChadoObject):
         if ';' in identifier_unprocessed:
             log.debug('Semicolon found, splitting identifier: {}'.format(identifier_unprocessed))
             identifier_split_list = identifier_unprocessed.split(';')
-            identifier_name = identifier_split_list.pop().strip()
-            identifier = identifier_split_list.pop().strip()
+            identifier = identifier_split_list.pop(0).strip()
+            identifier_name = identifier_split_list.pop(0).strip()
             if identifier_split_list:  # If the list is not empty by this point, raise an error.
                 self.critical_error(self.process_data['CH3a']['data'],
                                     'Error splitting identifier and name using semicolon.')
+                identifier_name = None # Set name to None before returning. It might be wrong otherwise.
+                return identifier, identifier_name
         else:
             identifier = identifier_unprocessed.strip()
 
