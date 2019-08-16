@@ -75,13 +75,13 @@ class ChadoChem(ChadoObject):
 
         self.pub = super(ChadoChem, self).pub_from_fbrf(self.reference, self.session)
 
-        self.get_or_create_chemical()
-
         # Bang c first, as it supersedes all things.
         # if self.bang_c:
         #     self.bang_c_it()
         # if self.bang_d:
         #     self.bang_d_it()
+
+        self.get_or_create_chemical()
 
         # for key in self.process_data:
         #     if self.process_data[key]['data']:
@@ -98,8 +98,9 @@ class ChadoChem(ChadoObject):
 
         # Validate the identifier in an external database.
         # Also looks for conflicts between the external name and
-        # the name specified for FlyBase.
-        self.validate_identifier()
+        # the name specified for FlyBase. It also returns data that we use
+        # to populate fields in Chado.
+        bioservice_results, identifier = self.validate_fetch_identifier_at_external_db()
 
         # Look up organism id.
         organism = self.session.query(Organism). \
@@ -120,10 +121,17 @@ class ChadoChem(ChadoObject):
         # Check if we already have an existing entry by name.
         entry_already_exists = self.chemical_feature_lookup(organism_id, chemical_id)
 
+        # Check if we already have an existing entry by feature name -> dbx xref.
+        # FBch features -> dbxrefs are UNIQUE for EACH external database.
+        # e.g. There should never be more than one connection from FBch -> ChEBI.
+        # If so, someone has already made an FBch which corresponds to the that CheBI.
+        self.check_existing_dbxref(identifier)
+
         # If we already have an entry and this should be be a new entry.
         if entry_already_exists and self.new_chemical_entry:
             self.critical_error(self.process_data['CH1a']['data'],
-                                'An entry already exists in the database with this name.')
+                                'An entry already exists in the database with this name: {}'
+                                .format(entry_already_exists.uniquename))
         # If we're not dealing with a new entry.
         # Verify that the FBch and Name specified in the proforma match.
         elif entry_already_exists:
@@ -135,9 +143,11 @@ class ChadoChem(ChadoObject):
                                      name=self.process_data['CH1a']['data'][FIELD_VALUE],
                                      type_id=chemical_id,
                                      uniquename='FBch:temp_0')
-            new_entry = self.chemical_feature_lookup(organism_id, chemical_id)
 
-            log.info("New chemical entry created: {}".format(new_entry.uniquename))
+            log.info("New chemical entry created: {}".format(chemical.name))
+
+    def check_existing_dbxref(self, identifier):
+        pass
 
     def chemical_feature_lookup(self, organism_id, description_id):
         entry = self.session.query(Feature). \
@@ -147,7 +157,7 @@ class ChadoChem(ChadoObject):
 
         return entry
 
-    def validate_identifier(self):
+    def validate_fetch_identifier_at_external_db(self):
         # TODO Check identifier and use proper database.
         # Initial implementation will be ChEBI only.
 
@@ -185,7 +195,7 @@ class ChadoChem(ChadoObject):
                                     'ChEBI name does not match name specified in identifier field: {} -> {}'
                                     .format(name_from_chebi,
                                             identifier_name))
-        return
+        return results, identifier
 
     def check_valid_id(self, identifier):
         # Added regex checks for identifiers here.
