@@ -14,21 +14,23 @@ log = logging.getLogger(__name__)
 
 def create_chado_objects(ChadoObjectType, proforma_object):
 
-    (file_metadata, bang_c, bang_d, proforma_start_line_number, fields_values) = proforma_object.get_data_for_loading()
+    (file_metadata, bang_c, bang_d,
+     proforma_start_line_number, fields_values, reference) = proforma_object.get_data_for_loading()
 
     params_to_send = {
-        'file_metadata' : file_metadata,
-        'fields_values' : fields_values,
-        'bang_c' : bang_c,
-        'bang_d' : bang_d,
-        'proforma_start_line_number' : proforma_start_line_number
+        'file_metadata': file_metadata,
+        'fields_values': fields_values,
+        'bang_c': bang_c,
+        'bang_d': bang_d,
+        'proforma_start_line_number': proforma_start_line_number,
+        'reference': reference
     }
 
     list_of_objects_to_return = []
 
     chado_object = ChadoObjectType(params_to_send) # Initialize a ChadoObject with this new entry.
     attrs = vars(chado_object) 
-    log.debug('Object attributes: %s' % (attrs))
+    log.debug('Object attributes: %s' % attrs)
     list_of_objects_to_return.append(chado_object)
 
     return list_of_objects_to_return
@@ -71,8 +73,9 @@ def process_data_input(proforma_object):
         log.critical('Please contact Harvdev with this error.')
         log.critical('Exiting.')
         sys.exit(-1)
-    
-    list_of_chado_objects = create_chado_objects(ChadoObjectType, proforma_object) # Execute the function with the proforma object as the argument.
+
+    # Execute the function with the proforma object as the argument.
+    list_of_chado_objects = create_chado_objects(ChadoObjectType, proforma_object)
 
     # Return the list of chado objects.
     log.debug('Number of objects in list returned from process_data_input: %s' % (len(list_of_chado_objects)))

@@ -29,20 +29,19 @@
 #      Will not add new relationship each time it is seen (only on creation of new pubs)
 #      It instead is used to make sure if pub already has a parent it matches this. 
 #########################################################################################
-CH1g:
-  type: string
-  required: True
 CH1f:
-  type: string
-  required: True
-  regex: ^(FBch\d{7}|new)$
-CH2a:
-  required: False
-  type: string
-CH2b:
-  required: True
-  type: string
-P22:
   type: ignore
-  name: uniquename
-  description: FBrf uniquename
+CH1a:
+  type: ignore
+CH1b:
+  type: ignore
+CH3a:
+  type: ignore
+CH3b:
+  type: ignore
+CH3c:
+  type: ignore
+CH4a:
+  type: ignore
+CH4b:
+  type: ignore

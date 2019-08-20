@@ -1,13 +1,33 @@
-CH1g:
-  type: string
-  required: True
 CH1f:
   type: string
   required: True
   regex: ^(FBch\d{7}|new)$
-CH2a:
+CH1a:
+  type: string
   required: False
+  nullable: True
+CH1b:
   type: string
-CH2b:
-  required: True
+  required: False
+  nullable: True
+CH3a:
   type: string
+CH3b:
+  nullable: True
+  required: false
+  type: string
+  allowed: [y]
+CH3c:
+  nullable: True
+  required: false
+  type: string
+  wrapping_values: True
+CH4a:
+  nullable: True
+  required: false
+  type: string
+CH4b:
+  nullable: True
+  required: false
+  type: string
+  wrapping_values: True

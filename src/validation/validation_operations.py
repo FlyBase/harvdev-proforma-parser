@@ -8,6 +8,7 @@
 # Cerberus and yaml
 import yaml
 from validation.validator_pub import ValidatorPub
+from validation.validator_chem import ValidatorChem
 from error.error_tracking import ErrorTracking, CRITICAL_ERROR, WARNING_ERROR
 import pprint
 
@@ -62,7 +63,6 @@ def validation_file_schema_lookup(proforma_type, fields_values):
 
     """
 
-    #root_directory = os.path.abspath('src/validation/yaml')
     root_directory = os.path.dirname(os.path.abspath(__file__))
     root_directory += '/yaml'
     # Ignore versions just get name (deal with this later if it ever becomes a problem)
@@ -70,7 +70,8 @@ def validation_file_schema_lookup(proforma_type, fields_values):
                        "GENE": get_validate_gene_schema,
                        "CHEMICAL": get_validate_chemical_schema}
     # if we have specific validation stuff set it up here.
-    validation_base = {"PUBLICATION": ValidatorPub}
+    validation_base = {"PUBLICATION": ValidatorPub,
+                       "CHEMICAL": ValidatorChem}
     validator = None
 
     pattern = r"""
