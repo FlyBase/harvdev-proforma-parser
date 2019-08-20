@@ -106,6 +106,7 @@ def process_proforma_file(file_location_from_list, curator_dict):
 
     # TODO Check that this entry is a pub proforma. Also implement workaround for processing DATABASE proforma which
     #  don't have pubs.
+    # TODO Clean up logging to clarify that we are sending the TUPLE, not just the FBrf value.
     proforma_type, filename, proforma_start_line_number, fields_values = list_of_proforma_objects[0]\
         .get_data_for_processing()
     log.info('Found reference %s.' %
@@ -114,7 +115,7 @@ def process_proforma_file(file_location_from_list, curator_dict):
              (fields_values['P22'][1], 'P22', fields_values['P22'][2]))
 
     for individual_proforma_object in list_of_processed_proforma_objects:
-        individual_proforma_object.add_reference_data(list_of_proforma_objects[0].fields_values['P22'][1])
+        individual_proforma_object.add_reference_data(list_of_proforma_objects[0].fields_values['P22'])
 
     log.info('Successfully attached reference {} to {} proforma objects'
              .format(list_of_proforma_objects[0].fields_values['P22'][1], len(list_of_processed_proforma_objects)))

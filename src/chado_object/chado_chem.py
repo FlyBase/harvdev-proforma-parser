@@ -45,6 +45,7 @@ class ChadoChem(ChadoObject):
         ############################################################
         self.pub = None  # All other proforma need a reference to a pub
         self.chemical_feature_id = None  # The feature id used for the chemical.
+        self.chebi_pub_id = None # Used for attributing chemical curation.
 
         # Initiate the parent.
         super(ChadoChem, self).__init__(params)
@@ -102,6 +103,8 @@ class ChadoChem(ChadoObject):
         # to populate fields in Chado.
         bioservice_results, identifier = self.validate_fetch_identifier_at_external_db()
 
+        identifier_accession_num_only = identifier.split(':')[1]
+
         # Look up organism id.
         organism = self.session.query(Organism). \
             filter(Organism.genus == 'Drosophila',
@@ -118,14 +121,14 @@ class ChadoChem(ChadoObject):
 
         chemical_id = chemical.cvterm_id
 
-        # Check if we already have an existing entry by name.
+        # Check if we already have an existing entry.
         entry_already_exists = self.chemical_feature_lookup(organism_id, chemical_id)
 
         # Check if we already have an existing entry by feature name -> dbx xref.
         # FBch features -> dbxrefs are UNIQUE for EACH external database.
         # e.g. There should never be more than one connection from FBch -> ChEBI.
         # If so, someone has already made an FBch which corresponds to the that CheBI.
-        self.check_existing_dbxref(identifier)
+        # self.check_existing_dbxref(identifier_accession_num_only)
 
         # If we already have an entry and this should be be a new entry.
         if entry_already_exists and self.new_chemical_entry:
@@ -146,8 +149,20 @@ class ChadoChem(ChadoObject):
 
             log.info("New chemical entry created: {}".format(chemical.name))
 
-    def check_existing_dbxref(self, identifier):
-        pass
+    def check_existing_dbxref(self, identifier_access_num_only):
+        log.debug('Querying for existing accession ({}) via feature -> dbx -> db.'.format(identifier_access_num_only))
+
+        feature_dbxref_chemical_chebi_result = self.session.query(Feature, Dbxref, Db).\
+            join(Feature, (Feature.dbxref_id == Dbxref.dbxref_id)).\
+            join(Db, (Dbxref.db_id == Db.db_id)).\
+            filter(Dbxref.accession == identifier_access_num_only).one_or_none()
+
+        log.debug(feature_dbxref_chemical_chebi_result)
+
+        if feature_dbxref_chemical_chebi_result:
+            self.critical_error(self.process_data['CH3a']['data'],
+                                'A feature -> ChEBI association already exists for this ID. Check: {}'
+                                .format(feature_dbxref_chemical_chebi_result.feature_uniquename))
 
     def chemical_feature_lookup(self, organism_id, description_id):
         entry = self.session.query(Feature). \
@@ -156,6 +171,17 @@ class ChadoChem(ChadoObject):
                    Feature.organism_id == organism_id).one_or_none()
 
         return entry
+
+    def look_up_chebi_reference(self):
+        log.debug('Retrieving ChEBI FBrf for association.')
+
+        chebi_publication_title = 'ChEBI: Chemical Entities of Biological Interest, EBI.'
+
+        chebi_ref_pub_id_query = self.session.query(Pub). \
+            filter(Pub.title == chebi_publication_title).one()
+
+        self.chebi_pub_id = chebi_ref_pub_id_query.pub_id
+        log.debug('Returned ChEBI FBrf pub id as {}'.format(self.chebi_pub_id))
 
     def validate_fetch_identifier_at_external_db(self):
         # TODO Check identifier and use proper database.
@@ -169,19 +195,23 @@ class ChadoChem(ChadoObject):
         self.check_valid_id(identifier)
 
         ch = ChEBI()
-        results = ch.getLiteEntity(self.process_data['CH3a']['data'][FIELD_VALUE])
+        results = ch.getCompleteEntity(identifier)
         if not results:
             self.critical_error(self.process_data['CH3a']['data'],
                                 'No results found when querying ChEBI for {}'
-                                .format(self.process_data['CH3a']['data'][FIELD_VALUE]))
+                                .format(identifier))
             return
-        name_from_chebi = results[0].chebiAsciiName
+        name_from_chebi = results.chebiAsciiName
+        definition = results.definition
+        CAS_number = results.RegistryNumbers
+
+
         # Check whether the name intended to be used in FlyBase matches
         # the name returned from the database.
         if name_from_chebi != self.process_data['CH1a']['data'][FIELD_VALUE]:
             self.warning_error(self.process_data['CH1a']['data'],
                                'ChEBI name does not match name specified for FlyBase: {} -> {}'
-                               .format(self.process_data['CH3a']['data'][FIELD_VALUE],
+                               .format(name_from_chebi,
                                        self.process_data['CH1a']['data'][FIELD_VALUE]))
         else:
             log.info('Queried name \'{}\' matches name used in proforma \'{}\''
