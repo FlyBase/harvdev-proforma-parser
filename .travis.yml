@@ -16,3 +16,7 @@ script:
     - ./build_test_travis_python.sh
     - pip install -r requirements.txt
     - python ./test_scripts/run_tests.py -p
+
+after_script:
+    - cd build/harvdev-proforma-parser
+    - flake8
