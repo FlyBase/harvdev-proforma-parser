@@ -52,7 +52,7 @@ class ChadoGene(ChadoObject):
         )
         try:
             results = self.session.query(Synonym.synonym_sgml).join(Cvterm, Cvterm.cvterm_id == Synonym.type_id).distinct().\
-                              filter(*filters).one()
+                filter(*filters).one()
         except NoResultFound:
             return False
 

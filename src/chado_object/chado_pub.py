@@ -108,11 +108,11 @@ class ChadoPub(ChadoObject):
 
         if pub:
             old_cvterm = self.session.query(Cvterm).join(Cv).join(Pubprop).\
-                            filter(Cvterm.cv_id == Cv.cv_id,
-                                   Pubprop.type_id == Cvterm.cvterm_id,
-                                   Cv.name == 'pub type',
-                                   Pubprop.pub_id == pub.pub_id,
-                                   Cvterm.is_obsolete == 0).one_or_none()
+                filter(Cvterm.cv_id == Cv.cv_id,
+                       Pubprop.type_id == Cvterm.cvterm_id,
+                       Cv.name == 'pub type',
+                       Pubprop.pub_id == pub.pub_id,
+                       Cvterm.is_obsolete == 0).one_or_none()
             if not old_cvterm:
                 # good, does not have a previous result so happy to continue
                 return cvterm

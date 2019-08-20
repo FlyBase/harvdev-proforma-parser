@@ -285,9 +285,7 @@ class ProformaFile(object):
             if field == 'C4':
                 file_metadata['record_type'] = value
             return
-        elif (current_line.startswith('!c') or
-              current_line.startswith('!d') or
-              current_line.startswith('! ')):
+        elif current_line.startswith('!c') or current_line.startswith('!d') or current_line.startswith('! '):
             field, value, type_of_bang = self.get_proforma_field_and_content(current_line)
             log.debug('Current line: {}'.format(current_line))
             log.debug('Line number: {}'.format(line_number))
@@ -489,7 +487,7 @@ class Proforma(object):
                 # TODO Update error tracking.
 
             self.bang_c = field
-            log.debug('!c field detected for %s. Adding flag to object.' % (field))
+            log.debug('!c field detected for %s. Adding flag to object.' % field)
 
         elif type_of_bang == 'd':
             if self.bang_d is not None:
@@ -499,15 +497,14 @@ class Proforma(object):
                 # TODO Update to new error tracking.
 
             self.bang_d = field
-            log.debug('!d field detected for %s. Adding flag to object.' % (field))
+            log.debug('!d field detected for %s. Adding flag to object.' % field)
 
     def get_data_for_processing(self):
-        return self.proforma_type, self.file_metadata['filename'], \
-               self.proforma_start_line_number, self.fields_values
+        return self.proforma_type, self.file_metadata['filename'], self.proforma_start_line_number, self.fields_values
 
     def get_data_for_loading(self):
-        return self.file_metadata, self.bang_c, self.bang_d, \
-               self.proforma_start_line_number, self.fields_values, self.reference
+        return self.file_metadata, \
+            self.bang_c, self.bang_d, self.proforma_start_line_number, self.fields_values, self.reference
 
     def update_errors(self, errors):
         """

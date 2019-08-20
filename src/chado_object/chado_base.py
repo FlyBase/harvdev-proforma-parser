@@ -100,7 +100,7 @@ class ChadoObject(object):
             Cv.name == cv_name,
             Cvterm.name == cv_term_name,
             Cvterm.is_obsolete == 0
-            )
+        )
 
         results = session.query(Cv.name, Cvterm.name, Cvterm.is_obsolete, Cvterm.cvterm_id).\
             join(Cvterm).\
