@@ -10,7 +10,6 @@ import yaml
 from validation.validator_pub import ValidatorPub
 from validation.validator_chem import ValidatorChem
 from error.error_tracking import ErrorTracking, CRITICAL_ERROR, WARNING_ERROR
-import pprint
 
 # Additional tools for validation
 import re
@@ -41,6 +40,7 @@ def get_validate_pub_schema(fields_values):
     if 'P22' in fields_values and fields_values['P22'][FIELD_VALUE] == "new":
         return "publication_new.yaml"
     return "publication.yaml"
+
 
 def get_validate_gene_schema(fields_values):
     return "gene.yaml"
@@ -205,7 +205,7 @@ def check_and_raise_errors(filename, proforma_start_line, line_number, error_fie
         error_data = error_field + ': ' + error_value
 
     # We want to search for partial matches of error_value against the critical_errors lists:
-    if error_field in critical_errors: # If we have a key in critical_errors, e.g. P22
+    if error_field in critical_errors:  # If we have a key in critical_errors, e.g. P22
         for critical_error_entry in critical_errors[error_field]:
             if critical_error_entry in error_data:
                 log.debug('Found critical error: \'{}\' in Cerberus error value: \'{}\''.format(critical_error_entry, error_value))

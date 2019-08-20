@@ -4,19 +4,16 @@
 
 .. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
-import re
-import os
-import yaml
 from bioservices import ChEBI
-from .chado_base import ChadoObject, FIELD_VALUE, FIELD_NAME
+from .chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.production import (
-    Cv, Cvterm, Pub, Pubprop, Pubauthor, PubRelationship, Db, Dbxref, PubDbxref, Organism,
+    Cv, Cvterm, Pub, Db, Dbxref, Organism,
     Feature
 )
 from harvdev_utils.chado_functions import get_or_create
-
-import logging
 from datetime import datetime
+import os
+import logging
 
 log = logging.getLogger(__name__)
 
@@ -45,7 +42,7 @@ class ChadoChem(ChadoObject):
         ############################################################
         self.pub = None  # All other proforma need a reference to a pub
         self.chemical_feature_id = None  # The feature id used for the chemical.
-        self.chebi_pub_id = None # Used for attributing chemical curation.
+        self.chebi_pub_id = None  # Used for attributing chemical curation.
 
         # Initiate the parent.
         super(ChadoChem, self).__init__(params)
@@ -104,6 +101,7 @@ class ChadoChem(ChadoObject):
         bioservice_results, identifier = self.validate_fetch_identifier_at_external_db()
 
         identifier_accession_num_only = identifier.split(':')[1]
+        log.debug('Identifier accession number only: {}'.format(identifier_accession_num_only))
 
         # Look up organism id.
         organism = self.session.query(Organism). \
@@ -203,8 +201,10 @@ class ChadoChem(ChadoObject):
             return
         name_from_chebi = results.chebiAsciiName
         definition = results.definition
-        CAS_number = results.RegistryNumbers
+        cas_number = results.RegistryNumbers
 
+        log.debug('ChEBI name: {} CAS Number: {}'.format(name_from_chebi, cas_number))
+        log.debug('ChEBI definition: {}'. format(definition))
 
         # Check whether the name intended to be used in FlyBase matches
         # the name returned from the database.
@@ -243,7 +243,7 @@ class ChadoChem(ChadoObject):
             if identifier_split_list:  # If the list is not empty by this point, raise an error.
                 self.critical_error(self.process_data['CH3a']['data'],
                                     'Error splitting identifier and name using semicolon.')
-                identifier_name = None # Set name to None before returning. It might be wrong otherwise.
+                identifier_name = None  # Set name to None before returning. It might be wrong otherwise.
                 return identifier, identifier_name
         else:
             identifier = identifier_unprocessed.strip()

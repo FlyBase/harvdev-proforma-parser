@@ -12,13 +12,13 @@ import yaml
 import os
 import sys
 import logging
-import traceback
 # Other modules
 from itertools import tee, islice, chain
 # Validation
 from validation.validation_operations import validate_proforma_object
 
 log = logging.getLogger(__name__)
+
 
 def process_proforma_directory(location):
     """
@@ -121,6 +121,7 @@ def process_proforma_file(file_location_from_list, curator_dict):
              .format(list_of_proforma_objects[0].fields_values['P22'][1], len(list_of_processed_proforma_objects)))
 
     return list_of_processed_proforma_objects
+
 
 class ProformaFile(object):
     """

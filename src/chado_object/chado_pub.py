@@ -48,7 +48,7 @@ class ChadoPub(ChadoObject):
         self.pub = None   # All other proforma need a reference to a pub
         self.parent_pub = None  # Various checks refer to this so just get it once
         self.gene = None  # Needed reference for alleles
-        self.newpub = False # Modified later for new publications.
+        self.newpub = False  # Modified later for new publications.
 
         # Initiate the parent.
         super(ChadoPub, self).__init__(params)
@@ -311,22 +311,22 @@ class ChadoPub(ChadoObject):
                 setattr(self.pub, self.process_data[key]['name'], self.process_data[key]['data'][FIELD_VALUE])
 
     def load_relationship(self, key):
-            if type(self.process_data[key]['data']) is list:
-                for fbrf in self.process_data[key]['data']:
-                    if 'verify_only_on_update' not in self.process_data[key] or self.newpub:
-                        pub = self.get_related_pub(fbrf)
-                        if not pub:
-                            return
-                        self.add_relationship(self.pub, pub, self.process_data[key]['cvterm'], self.process_data[key]['data'])
-            else:  # P2 can only change with !c or has no parent pub
-                log.debug("not list {}".format(key))
-                parent_pub = self.get_parent_pub(self.pub)
-                if self.bang_c == key or not parent_pub:
-                    fbrf = self.process_data[key]['data']
-                    pub = self.get_related_pub(fbrf, uniquename=False)
+        if type(self.process_data[key]['data']) is list:
+            for fbrf in self.process_data[key]['data']:
+                if 'verify_only_on_update' not in self.process_data[key] or self.newpub:
+                    pub = self.get_related_pub(fbrf)
                     if not pub:
                         return
                     self.add_relationship(self.pub, pub, self.process_data[key]['cvterm'], self.process_data[key]['data'])
+        else:  # P2 can only change with !c or has no parent pub
+            log.debug("not list {}".format(key))
+            parent_pub = self.get_parent_pub(self.pub)
+            if self.bang_c == key or not parent_pub:
+                fbrf = self.process_data[key]['data']
+                pub = self.get_related_pub(fbrf, uniquename=False)
+                if not pub:
+                    return
+                self.add_relationship(self.pub, pub, self.process_data[key]['cvterm'], self.process_data[key]['data'])
 
     def load_dbxref(self, key):
         if self.has_data(key):
@@ -381,7 +381,7 @@ class ChadoPub(ChadoObject):
 
         self.pub = self.get_pub()
 
-        if self.pub: # Only proceed if we have a pub. Otherwise we had an error.
+        if self.pub:  # Only proceed if we have a pub. Otherwise we had an error.
             self.parent_pub = self.get_parent_pub(self.pub)
 
             self.extra_checks()
