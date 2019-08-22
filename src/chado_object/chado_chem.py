@@ -22,6 +22,7 @@ log = logging.getLogger(__name__)
 # Stop bioservices from outputting tons of unnecessary info in DEBUG mode.
 logging.getLogger("suds").setLevel(logging.INFO)
 
+
 class ChadoChem(ChadoObject):
     # TODO
     #  - Warn for mismatch between database ID; database name in CH1g.
