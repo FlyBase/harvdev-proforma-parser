@@ -238,7 +238,7 @@ class ChadoChem(ChadoObject):
             identifier_and_data = database_dispatch_dictionary[database_to_query](identifier, identifier_name)
         except KeyError:
             self.critical_error(self.process_data['CH3a']['data'],
-                                'Database name not recognized from identifier:'.format(database_to_query))
+                                'Database name not recognized from identifier: {}'.format(database_to_query))
             return False
 
         if identifier_and_data is False:  # Errors are already declared in the sub-functions.
