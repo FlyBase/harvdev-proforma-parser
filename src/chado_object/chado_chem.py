@@ -150,6 +150,11 @@ class ChadoChem(ChadoObject):
 
         chemical_id = chemical.cvterm_id
 
+        chebi_database = self.session.query(Db). \
+            filter(Db.name == 'CHEBI').one()
+
+        chebi_database_id = chebi_database.db_id
+
         # Check if we already have an existing entry.
         entry_already_exists = self.chemical_feature_lookup(organism_id, chemical_id)
 
@@ -164,19 +169,30 @@ class ChadoChem(ChadoObject):
             self.critical_error(self.process_data['CH1a']['data'],
                                 'An entry already exists in the database with this name: {}'
                                 .format(entry_already_exists.uniquename))
+            return
+
         # If we're not dealing with a new entry.
         # Verify that the FBch and Name specified in the proforma match.
         elif entry_already_exists:
             if entry_already_exists.uniquename != self.process_data['CH1f']['data'][FIELD_VALUE]:
                 self.critical_error(self.process_data['CH1f']['data'],
                                     'Name and FBch in this proforma do not match.')
-        else:
-            chemical = get_or_create(self.session, Feature, organism_id=organism_id,
-                                     name=self.process_data['CH1a']['data'][FIELD_VALUE],
-                                     type_id=chemical_id,
-                                     uniquename='FBch:temp_0')
+                return
 
-            log.info("New chemical entry created: {}".format(chemical.name))
+        chemical = get_or_create(self.session, Feature, organism_id=organism_id,
+                                 name=self.process_data['CH1a']['data'][FIELD_VALUE],
+                                 type_id=chemical_id,
+                                 uniquename='FBch:temp_0')
+
+        log.info("New chemical entry created: {}".format(chemical.name))
+
+        dbx_ref = get_or_create(self.session, Dbxref, db_id=chebi_database_id,
+                                accession=identifier_accession_num_only)
+
+        log.debug("Creating new dbxref: {}".format(dbx_ref.dbxref_id))
+
+        log.debug("Updating FBch with dbxref.dbxref_id: {}".format(dbx_ref.dbxref_id))
+        chemical.dbxref_id = dbx_ref.dbxref_id
 
     def check_existing_dbxref(self, identifier_access_num_only):
         log.debug('Querying for existing accession ({}) via feature -> dbx -> db.'.format(identifier_access_num_only))
