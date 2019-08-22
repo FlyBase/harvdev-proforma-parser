@@ -4,7 +4,6 @@
 
 .. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
-from pprint import pprint
 from bioservices import ChEBI
 from .chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.production import (
