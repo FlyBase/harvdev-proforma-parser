@@ -9,8 +9,10 @@ from ...chado_gene import ChadoGene
 from ...chado_pub import ChadoPub
 from ...chado_chem import ChadoChem
 
-import logging, sys
+import logging
+import sys
 log = logging.getLogger(__name__)
+
 
 def create_chado_objects(ChadoObjectType, proforma_object):
 
@@ -28,21 +30,22 @@ def create_chado_objects(ChadoObjectType, proforma_object):
 
     list_of_objects_to_return = []
 
-    chado_object = ChadoObjectType(params_to_send) # Initialize a ChadoObject with this new entry.
-    attrs = vars(chado_object) 
+    chado_object = ChadoObjectType(params_to_send)  # Initialize a ChadoObject with this new entry.
+    attrs = vars(chado_object)
     log.debug('Object attributes: %s' % attrs)
     list_of_objects_to_return.append(chado_object)
 
     return list_of_objects_to_return
 
+
 def process_data_input(proforma_object):
     """
     Process an object containing data to be loaded into Chado and convert it
     into the appropriate ChadoObject.
-    
+
     Args:
-        object_type (str): The type of object being submitted (e.g. 'GENE PROFORMA'). 
-        
+        object_type (str): The type of object being submitted (e.g. 'GENE PROFORMA').
+
         proforma_object_entity (obj): The object being submitted.
 
     Returns:
@@ -59,14 +62,14 @@ def process_data_input(proforma_object):
     # This dictionary should be very similar to 'validation_file_schema_dict' found in validation_operations
     # Be sure both are updated whenever new data type sources are incorporated (for proforma-based data types).
     type_conversion_dict = {
-        '! PUBLICATION PROFORMA                   Version 47:  25 Nov 2014' : (ChadoPub),
-        '! GENE PROFORMA                          Version 76:  04 Sept 2014' : (ChadoGene),
-        '! GENE PROFORMA                          Version 77:  01 Jun 2016' : (ChadoGene),
-        '! CHEMICAL PROFORMA                     Version 1: 01 Mar 2019' : (ChadoChem)
+        '! PUBLICATION PROFORMA                   Version 47:  25 Nov 2014': (ChadoPub),
+        '! GENE PROFORMA                          Version 76:  04 Sept 2014': (ChadoGene),
+        '! GENE PROFORMA                          Version 77:  01 Jun 2016': (ChadoGene),
+        '! CHEMICAL PROFORMA                     Version 1: 01 Mar 2019': (ChadoChem)
     }
 
-    try: 
-        ChadoObjectType = type_conversion_dict[proforma_type] # Lookup the function to execute for this proforma object.
+    try:
+        ChadoObjectType = type_conversion_dict[proforma_type]  # Lookup the function to execute for this proforma object.
     except KeyError:
         log.critical('Proforma type not recognized for conversion into Chado object.')
         log.critical('Type: {}'.format(proforma_type))

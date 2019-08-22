@@ -4,21 +4,22 @@
 
 .. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
-import re
-import os
-import yaml
 from bioservices import ChEBI
-from .chado_base import ChadoObject, FIELD_VALUE, FIELD_NAME
+from .chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.production import (
-    Cv, Cvterm, Pub, Pubprop, Pubauthor, PubRelationship, Db, Dbxref, PubDbxref, Organism,
+    Cv, Cvterm, Pub, Db, Dbxref, Organism,
     Feature
 )
 from harvdev_utils.chado_functions import get_or_create
-
-import logging
 from datetime import datetime
+import os
+import logging
+import pubchempy
+import json
 
 log = logging.getLogger(__name__)
+# Stop bioservices from outputting tons of unnecessary info in DEBUG mode.
+logging.getLogger("suds").setLevel(logging.INFO)
 
 
 class ChadoChem(ChadoObject):
@@ -45,6 +46,31 @@ class ChadoChem(ChadoObject):
         ############################################################
         self.pub = None  # All other proforma need a reference to a pub
         self.chemical_feature_id = None  # The feature id used for the chemical.
+        self.chebi_pub_id = None  # Used for attributing chemical curation.
+
+        # Chemical storage dictionary.
+        # This dictionary contains all the information required to create a new FBch.
+        # The nested dictionaries contain the data as well as the source.
+        # This style allows for proper attribution when creating the entries in FB.
+
+        self.chemical_information = {
+            'identifier': {
+                'data': None,
+                'source': None
+            },
+            'definition': {
+                'data': [],
+                'source': None
+            },
+            'inchikey': {
+                'data': None,
+                'source': None
+            },
+            'name': {
+                'data': None,
+                'source': None
+            }
+        }
 
         # Initiate the parent.
         super(ChadoChem, self).__init__(params)
@@ -100,7 +126,13 @@ class ChadoChem(ChadoObject):
         # Also looks for conflicts between the external name and
         # the name specified for FlyBase. It also returns data that we use
         # to populate fields in Chado.
-        bioservice_results, identifier = self.validate_fetch_identifier_at_external_db()
+        identifier_found = self.validate_fetch_identifier_at_external_db()
+
+        if identifier_found is False:
+            return
+
+        identifier_accession_num_only = self.chemical_information['identifier']['data'].split(':')[1]
+        log.debug('Identifier accession number only: {}'.format(identifier_accession_num_only))
 
         # Look up organism id.
         organism = self.session.query(Organism). \
@@ -118,14 +150,14 @@ class ChadoChem(ChadoObject):
 
         chemical_id = chemical.cvterm_id
 
-        # Check if we already have an existing entry by name.
+        # Check if we already have an existing entry.
         entry_already_exists = self.chemical_feature_lookup(organism_id, chemical_id)
 
         # Check if we already have an existing entry by feature name -> dbx xref.
         # FBch features -> dbxrefs are UNIQUE for EACH external database.
         # e.g. There should never be more than one connection from FBch -> ChEBI.
         # If so, someone has already made an FBch which corresponds to the that CheBI.
-        self.check_existing_dbxref(identifier)
+        self.check_existing_dbxref(identifier_accession_num_only)
 
         # If we already have an entry and this should be be a new entry.
         if entry_already_exists and self.new_chemical_entry:
@@ -146,8 +178,19 @@ class ChadoChem(ChadoObject):
 
             log.info("New chemical entry created: {}".format(chemical.name))
 
-    def check_existing_dbxref(self, identifier):
-        pass
+    def check_existing_dbxref(self, identifier_access_num_only):
+        log.debug('Querying for existing accession ({}) via feature -> dbx -> db.'.format(identifier_access_num_only))
+
+        feature_dbxref_chemical_chebi_result = self.session.query(Feature, Dbxref, Db).\
+            join(Feature, (Feature.dbxref_id == Dbxref.dbxref_id)).\
+            join(Db, (Dbxref.db_id == Db.db_id)).\
+            filter(Dbxref.accession == identifier_access_num_only).one_or_none()
+
+        # feature_dbxref_chemical_chebi_result[0] accesses the 'Feature' object from the result.
+        if feature_dbxref_chemical_chebi_result:
+            self.critical_error(self.process_data['CH3a']['data'],
+                                'A feature -> ChEBI association already exists for this ID. Check: {}'
+                                .format(feature_dbxref_chemical_chebi_result[0].uniquename))
 
     def chemical_feature_lookup(self, organism_id, description_id):
         entry = self.session.query(Feature). \
@@ -157,31 +200,86 @@ class ChadoChem(ChadoObject):
 
         return entry
 
+    def look_up_chebi_reference(self):
+        log.debug('Retrieving ChEBI FBrf for association.')
+
+        chebi_publication_title = 'ChEBI: Chemical Entities of Biological Interest, EBI.'
+
+        chebi_ref_pub_id_query = self.session.query(Pub). \
+            filter(Pub.title == chebi_publication_title).one()
+
+        self.chebi_pub_id = chebi_ref_pub_id_query.pub_id
+        log.debug('Returned ChEBI FBrf pub id as {}'.format(self.chebi_pub_id))
+
     def validate_fetch_identifier_at_external_db(self):
-        # TODO Check identifier and use proper database.
-        # Initial implementation will be ChEBI only.
+        # Identifiers and names for ChEBI / PubChem entries are processed at their respective db.
+        # However, InChIKey entries and definitions always come from PubChem.
+        # This is because PubChem cites ChEBI (as well as other external definitions) whereas
+        # ChEBI does not provide this service.
 
         identifier_unprocessed = self.process_data['CH3a']['data'][FIELD_VALUE]
 
         identifier, identifier_name = self.split_identifier_and_name(identifier_unprocessed)
+        log.debug('Found identifier: {} and identifier_name: {}'.format(identifier, identifier_name))
+
+        database_to_query = identifier.split(':')[0]
+
+        database_dispatch_dictionary = {
+            'CHEBI': self.check_chebi_for_identifier,
+            'PubChem': self.check_pubchem_for_identifier
+        }
 
         # TODO Check for valid ID format.
         self.check_valid_id(identifier)
 
+        # Obtain our identifier, name, definition, and InChIKey from ChEBI / PubChem.
+        try:
+            identifier_and_data = database_dispatch_dictionary[database_to_query](identifier, identifier_name)
+        except KeyError:
+            self.critical_error(self.process_data['CH3a']['data'],
+                                'Database name not recognized from identifier: {}'.format(database_to_query))
+            return False
+
+        if identifier_and_data is False:  # Errors are already declared in the sub-functions.
+            return False
+
+        # If we're at this stage, we have all our data for PubChem BUT
+        # for a ChEBI query we need to go to PubChem for the definition.
+        if self.chemical_information['identifier']['source'] != 'PubChem':
+            # Set the identifier name to the result queried from ChEBI.
+            identifier_name = self.chemical_information['name']['data']
+            self.check_pubchem_for_identifier(identifier, identifier_name)
+
+        return True
+
+    def check_chebi_for_identifier(self, identifier, identifier_name):
+        # Return True if data is successfully found.
+        # Return False if there are any issues.
+
         ch = ChEBI()
-        results = ch.getLiteEntity(self.process_data['CH3a']['data'][FIELD_VALUE])
-        if not results:
+        result = ch.getCompleteEntity(identifier)
+        if not result:
             self.critical_error(self.process_data['CH3a']['data'],
                                 'No results found when querying ChEBI for {}'
-                                .format(self.process_data['CH3a']['data'][FIELD_VALUE]))
-            return
-        name_from_chebi = results[0].chebiAsciiName
+                                .format(identifier))
+            return False
+
+        # Obtain name and inchikey from results.
+        name_from_chebi = result.chebiAsciiName
+        inchikey = None
+        try:
+            inchikey = result.inchiKey
+        except AttributeError:
+            self.warning_error(self.process_data['CH3a']['data'],
+                               'No InChIKey found for entry: {}'
+                               .format(identifier))
+
         # Check whether the name intended to be used in FlyBase matches
         # the name returned from the database.
         if name_from_chebi != self.process_data['CH1a']['data'][FIELD_VALUE]:
             self.warning_error(self.process_data['CH1a']['data'],
                                'ChEBI name does not match name specified for FlyBase: {} -> {}'
-                               .format(self.process_data['CH3a']['data'][FIELD_VALUE],
+                               .format(name_from_chebi,
                                        self.process_data['CH1a']['data'][FIELD_VALUE]))
         else:
             log.info('Queried name \'{}\' matches name used in proforma \'{}\''
@@ -195,7 +293,37 @@ class ChadoChem(ChadoObject):
                                     'ChEBI name does not match name specified in identifier field: {} -> {}'
                                     .format(name_from_chebi,
                                             identifier_name))
-        return results, identifier
+                return False
+
+        self.chemical_information['identifier']['data'] = identifier
+        self.chemical_information['identifier']['source'] = 'ChEBI'
+        self.chemical_information['name']['data'] = name_from_chebi
+        self.chemical_information['name']['source'] = 'ChEBI'
+        self.chemical_information['inchikey']['data'] = inchikey
+        self.chemical_information['inchikey']['source'] = 'ChEBI'
+
+        return True
+
+    def check_pubchem_for_identifier(self, identifier, identifier_name):
+        # TODO PubChem code for PubChem identifiers goes here.
+
+        # Definitions always come from PubChem, regardless of identifier source.
+        if not self.chemical_information['definition']['data']:  # If the list is empty.
+
+            log.info('Searching for definitions on PubChem.')
+            results = pubchempy.get_compounds(identifier_name, 'name')
+            cid_for_definition = results[0].cid
+            log.info('Found PubChem CID: {} from query using {}'. format(cid_for_definition, identifier_name))
+
+            description = pubchempy.request(cid_for_definition, operation='description')
+
+            raw_data = description.read()
+            encoding = description.info().get_content_charset('utf8')  # JSON default
+            description_data = json.loads(raw_data.decode(encoding))
+
+            for description_item in description_data['InformationList']['Information']:
+                if 'Description' in description_item.keys():
+                    self.chemical_information['definition']['data'].append(description_item['Description'])
 
     def check_valid_id(self, identifier):
         # Added regex checks for identifiers here.
@@ -213,7 +341,7 @@ class ChadoChem(ChadoObject):
             if identifier_split_list:  # If the list is not empty by this point, raise an error.
                 self.critical_error(self.process_data['CH3a']['data'],
                                     'Error splitting identifier and name using semicolon.')
-                identifier_name = None # Set name to None before returning. It might be wrong otherwise.
+                identifier_name = None  # Set name to None before returning. It might be wrong otherwise.
                 return identifier, identifier_name
         else:
             identifier = identifier_unprocessed.strip()

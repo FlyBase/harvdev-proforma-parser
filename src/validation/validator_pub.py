@@ -1,12 +1,10 @@
 # Cerberus and yaml
-from .validator_base import ValidatorBase
 # Additional tools for validation
+from cerberus import Validator
 import re
 # logging imports
 import logging
 log = logging.getLogger(__name__)
-
-from cerberus import Validator
 
 
 class ValidatorPub(Validator):
@@ -334,7 +332,6 @@ class ValidatorPub(Validator):
 
             if unallowed_fields:
                 self._error(field, 'Cannot set field(s) {} when using field {}.'.format(unallowed_fields, field))
-
 
     def _validate_pages_format(self, do_test, field, value):
         """

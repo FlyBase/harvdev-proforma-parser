@@ -8,6 +8,7 @@ import re
 import logging
 log = logging.getLogger(__name__)
 
+
 class ValidatorBase(Validator):
     """
     The custom Cerberus validator used for all proforma.

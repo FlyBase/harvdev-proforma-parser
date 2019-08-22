@@ -127,7 +127,7 @@ def proforma_to_chado(dict_of_processed_files):
     """
     main_list_of_chado_objects_to_load = []
     for filename in dict_of_processed_files:
-        log.info('Converting proforma from file %s into ChadoObjects' % (filename))
+        log.info('Converting proforma from file %s into ChadoObjects' % filename)
         for proforma_object_to_load in dict_of_processed_files[filename]:
             returned_list_of_chado_objects = process_data_input(proforma_object_to_load)
             main_list_of_chado_objects_to_load.extend(returned_list_of_chado_objects)

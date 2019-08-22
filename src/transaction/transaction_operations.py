@@ -11,8 +11,6 @@ from sqlalchemy import event
 import traceback
 
 from error.error_tracking import ErrorTracking, CRITICAL_ERROR
-from chado_object.chado_base import LINE_NUMBER
-from chado_object.chado_exceptions import ValidationError
 
 log = logging.getLogger(__name__)
 
@@ -23,12 +21,13 @@ log = logging.getLogger(__name__)
 #             filter(Gene.is_obsolete == 'f')
 #     return query
 
+
 def process_entry(entry, session, filename):
     """
     Process Entry and deal with excpetions etc and just return if an error was seen.
     """
     error_occurred = False
-    executed_queries = [] # List for tracking all the executed queries.
+    executed_queries = []  # List for tracking all the executed queries.
 
     engine = session.get_bind()
     @event.listens_for(engine, "before_cursor_execute")
@@ -37,7 +36,7 @@ def process_entry(entry, session, filename):
         # Add all executed queries to a list.
         try:
             executed_queries.append(statement % parameters)
-        except TypeError: # If we don't have parameters to insert.
+        except TypeError:  # If we don't have parameters to insert.
             executed_queries.append(statement)
 
     try:
@@ -53,7 +52,7 @@ def process_entry(entry, session, filename):
         ErrorTracking(filename, None, None, 'Unexpected internal parser error. Please contact Harvdev. \n{} '
                                             'Last query below:'.format(traceback.format_exc()), executed_queries[-1], CRITICAL_ERROR)
         error_occurred = True
-    except Exception as e:
+    except Exception:
         # Create an error object.
         ErrorTracking(filename, None, None, 'Unexpected internal parser error. Please contact Harvdev. \n{} '
                                             'Last query below:'.format(traceback.format_exc()), executed_queries[-1], CRITICAL_ERROR)
