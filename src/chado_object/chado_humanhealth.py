@@ -4,11 +4,11 @@
 
 .. moduleauthor:: Ian Longden <ilongden@morgan.harvard.edu>
 """
-import re
 import os
-from .chado_base import ChadoObject, FIELD_VALUE, FIELD_NAME
+from .chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.production import (
-    Cv, Cvterm, Humanhealth, HumanhealthCvterm, Db, Dbxref, Organism
+    Humanhealth, Organism
+    # Cv, Cvterm, HumanhealthCvterm, Db, Dbxref
 )
 from harvdev_utils.chado_functions import get_or_create
 
@@ -32,11 +32,11 @@ class ChadoHumanhealth(ChadoObject):
                           'dissociate_hgnc': self.dissociate_hgnc,
                           'obsolete': self.make_obsolete,
                           'ignore': self.ignore,
-                          'dbxref': self.load_dbxref, 
+                          'dbxref': self.load_dbxref,
                           'dbxrefprop': self.load_dbxrefprop,
                           'featureprop': self.load_featureprop}
 
-        #self.delete_dict = {'direct': self.delete_direct,
+        # self.delete_dict = {'direct': self.delete_direct,
         #                    'pubauthor': self.delete_author,
         #                    'relationship': self.delete_relationships,
         #                    'pubprop': self.delete_pubprops,
@@ -63,7 +63,7 @@ class ChadoHumanhealth(ChadoObject):
         yml_file = os.path.join(os.path.dirname(__file__), 'yml/humanhealth.yml')
         # Populated self.process_data with all possible keys.
         self.process_data = self.load_reference_yaml(yml_file, params)
-   
+
     def load_content(self):
         """
         Main processing routine
@@ -73,16 +73,16 @@ class ChadoHumanhealth(ChadoObject):
         self.humanhealth = self.get_humanhealth()
 
         self.pub = super(ChadoHumanhealth, self).pub_from_fbrf(self.reference, self.session)
- 
-        if self.humanhealth: # Only proceed if we have a hh. Otherwise we had an error.
+
+        if self.humanhealth:  # Only proceed if we have a hh. Otherwise we had an error.
             self.extra_checks()
         else:
             return
 
         # bang c first as this supersedes all things
-        #if self.bang_c:
+        # if self.bang_c:
         #    self.bang_c_it()
-        #if self.bang_d:
+        # if self.bang_d:
         #    self.bang_d_it()
 
         for key in self.process_data:
@@ -103,9 +103,9 @@ class ChadoHumanhealth(ChadoObject):
         returns None or the humanhealth to be used.
         """
         if not self.newhumanhealth:
-            hh = session.query(Humanhealth).\
-            filter(Humanhealth.uniquename == self.process_data['HH1f']['data'][FIELD_VALUE]).\
-            one_or_none()
+            hh = self.session.query(Humanhealth).\
+                filter(Humanhealth.uniquename == self.process_data['HH1f']['data'][FIELD_VALUE]).\
+                one_or_none()
             if not hh:
                 self.critical_error(self.process_data['HH1f']['data'], 'Humanhealth does not exist in the database.')
                 return
@@ -117,7 +117,8 @@ class ChadoHumanhealth(ChadoObject):
             # triggers add dbxref and proper uniquename
             # check we have HH2a, HH1g and HH1b
             organism = get_or_create(self.session, Organism, abbreviation='Hsap')
-            hh = get_or_create(self.session, Humanhealth, name=self.process_data['HH1b']['data'][FIELD_VALUE], organism_id=organism.organism_id, uniquename='FBhh:temp_0')
+            hh = get_or_create(self.session, Humanhealth, name=self.process_data['HH1b']['data'][FIELD_VALUE],
+                               organism_id=organism.organism_id, uniquename='FBhh:temp_0')
             log.info(hh)
             # db has correct FBhh0000000x in it but here still has 'FBhh:temp_0'. ???
             # presume triggers start after hh is returned. Maybe worth getting form db again
@@ -136,21 +137,30 @@ class ChadoHumanhealth(ChadoObject):
 
     def load_relationship(self, key):
         pass
+
     def load_pubprop(self, key):
         pass
+
     def load_synonym(self, key):
         pass
+
     def dissociate_pub(self, key):
         pass
+
     def dissociate_hgnc(self, key):
         pass
+
     def make_obsolete(self, key):
         pass
+
     def ignore(self, key):
         return
+
     def load_dbxref(self, key):
         pass
+
     def load_dbxrefprop(self, key):
         pass
+
     def load_featureprop(self, key):
         pass

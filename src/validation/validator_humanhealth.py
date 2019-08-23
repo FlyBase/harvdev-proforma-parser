@@ -1,7 +1,7 @@
 # Cerberus and yaml
 # Additional tools for validation
 from cerberus import Validator
-import re
+
 # logging imports
 import logging
 log = logging.getLogger(__name__)

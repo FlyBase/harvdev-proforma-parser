@@ -31,6 +31,7 @@ def validate_proforma_file():
 
     # TODO Add whole file validation.
 
+
 def get_validate_humanhealth_schema(fields_values):
     """
     Check for special occurance of humanhealth being new.
@@ -40,6 +41,7 @@ def get_validate_humanhealth_schema(fields_values):
     if 'HH1f' in fields_values and fields_values['HH1f'][FIELD_VALUE] == "new":
         return "humanhealth_new.yaml"
     return "humanhealth.yaml"
+
 
 def get_validate_pub_schema(fields_values):
     """
