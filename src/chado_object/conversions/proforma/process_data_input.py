@@ -8,9 +8,11 @@
 from ...chado_gene import ChadoGene
 from ...chado_pub import ChadoPub
 from ...chado_chem import ChadoChem
+from ...chado_humanhealth import ChadoHumanhealth
 
 import logging
 import sys
+import re
 log = logging.getLogger(__name__)
 
 
@@ -61,15 +63,30 @@ def process_data_input(proforma_object):
 
     # This dictionary should be very similar to 'validation_file_schema_dict' found in validation_operations
     # Be sure both are updated whenever new data type sources are incorporated (for proforma-based data types).
+
+    pattern = r"""
+              ^!        # start with a bang
+              \s+       # one or more spaces
+              (\w+)     # the proformat type is a word
+              .*        # can have other words like HEALTH etc. ignore
+              \s+       # one or more spaces
+              PROFORMA  # the word proforma all CAPS
+              """
+    fields = re.search(pattern, proforma_type, re.VERBOSE)
+    proforma_type_name = None
+    if fields:
+        if fields.group(1):
+            proforma_type_name = fields.group(1)
+
     type_conversion_dict = {
-        '! PUBLICATION PROFORMA                   Version 47:  25 Nov 2014': (ChadoPub),
-        '! GENE PROFORMA                          Version 76:  04 Sept 2014': (ChadoGene),
-        '! GENE PROFORMA                          Version 77:  01 Jun 2016': (ChadoGene),
-        '! CHEMICAL PROFORMA                     Version 1: 01 Mar 2019': (ChadoChem)
+        'PUBLICATION': (ChadoPub),
+        'GENE': (ChadoGene),
+        'CHEMICAL': (ChadoChem),
+        'HUMAN': (ChadoHumanhealth)
     }
 
     try:
-        ChadoObjectType = type_conversion_dict[proforma_type]  # Lookup the function to execute for this proforma object.
+        ChadoObjectType = type_conversion_dict[proforma_type_name]  # Lookup the function to execute for this proforma object.
     except KeyError:
         log.critical('Proforma type not recognized for conversion into Chado object.')
         log.critical('Type: {}'.format(proforma_type))

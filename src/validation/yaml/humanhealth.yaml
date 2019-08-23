@@ -1,0 +1,202 @@
+HH1b:
+  required: True
+  type: string
+  no_bangc: True
+#      'HH1c', 'hdm_internal_name',  ### humanhealthprop OMIM phenotype symbol (internal comment) cvterm.name = 'hdm_internal_name' -- new cvterm
+#      'HH1d:', 'symbol', # synonym humanhealth_synonym.is_current = false
+HH1e:
+  required: False
+  type: string
+  at_required: False
+HH1f:
+  required: True
+  type: string
+  no_bangc: True
+  regex: ^(FBhh\d{7}|new)$
+HH1g:
+  required: False # if new required
+  type: string
+  allowed: ['disease', 'health-related process']
+
+HH2a:
+  required: False # if new required
+  type: string
+  allowed: [parent entity, sub-entity, specific entity, group entity]
+HH2b:
+  required: False # if new required
+  type: string
+  regex: ^(FBhh\d{7})$
+HH2c:
+  required: False
+  type: integer
+HH2d:
+  required: False
+  type: string
+  regex: ^(DOID:\d+)$
+HH3a:
+  required: False
+  type: string
+  no_bangc: True
+  dependencies: [HH1f]
+#     'HH3b', 'merge', ## not implemented
+HH3c:
+  required: False
+  type: string
+  no_bangc: True
+  allowed: [y, Y]
+HH3d:
+  required: False
+  type: string
+  no_bangc: True
+  allowed: [y, Y]
+HH4a:
+  required: False
+  at_required: True
+  type: string
+HH4b:
+  required: False
+  at_required: True
+  type: string
+HH4c:
+  required: False
+  at_required: True
+  type: string
+# HH4d: ---
+HH4f:
+  required: False
+  type: [string, list]
+  regex: ^(FBhh\d{7})$
+HH4g:
+  required: False
+  at_required: True
+  type: string
+HH4h:
+  required: False
+  type: string
+
+HH5a:
+  required: False
+  type: string
+  no_bangc: True 
+  dependencies: [HH5b, HH5c]
+HH5b:
+  required: False
+  type: string
+  no_bangc: True 
+  dependencies: [HH5a, HH5c]
+HH5c:
+  required: False
+  type: string
+  no_bangc: True 
+  dependencies: [HH5a, HH5b]
+HH5d:
+  required: false
+  type: string
+  no_bangc: True
+  allowed: [y, Y]
+HH6c:
+  required: False
+  type: [string, list]
+HH7a:
+  required: False
+  type: [string, list]
+  regex: ^(Hsap.*)$
+HH7b:
+  required: False
+  type: [string, list]
+HH7c:
+  required: False
+  at_required: True
+  type: [string, list]
+  dependencies: [HH7e]
+HH7d:
+  required: False
+  type: [string, list]
+  dependencies: [HH7e]
+HH7e:
+  required: False
+  type: string
+  no_bangc: True
+HH7f:
+  required: False
+  type: string
+  dependencies: [HH7e]
+  no_bangc: True
+  allowed: [y, Y]
+HH8a:
+  required: False
+  type: string
+  no_bangc: True
+HH8c:
+  required: False
+  at_required: True
+  type: [string, list]
+  dependencies: [HH8a]
+HH8d:
+  required: False
+  type: string
+  dependencies: [HH8a]
+  no_bangc: True
+  allowed: [y, Y]
+HH8e:
+  required: False
+  type: [string, list]
+  
+#    'HH10', 'hh_model_status' ,  #humanhealthprop
+#    'HH11a', 'mammalian_transgenics' ,  #humanhealthprop “y” or blank
+#    'HH11b', 'mammalian_transgenics_het_rescue' ,  #humanhealthprop if HH11b equal y or humanhealthprop.type mammalian_transgenics = y
+#    'HH11c', 'mammalian_transgenics_pheno' ,  #humanhealthprop  if HH11b equal y or humanhealthprop.type mammalian_transgenics = y
+#    'HH11d', 'mammalian_transgenics_physical_inter' ,  #humanhealthprop if HH11b equal y or humanhealthprop.type mammalian_transgenics = y
+#    'HH11e', 'mammalian_transgenics_genetic_inter' ,  #humanhealthprop if HH11b equal y or humanhealthprop.type mammalian_transgenics = y
+#    'HH11f', 'mammalian_transgenics_pert_treat' ,  #humanhealthprop if HH11b equal y or humanhealthprop.type mammalian_transgenics = y
+#    'HH12a', 'dmel_pheno' ,  #humanhealthprop
+#    'HH12b', 'dmel_physical_inter' ,  #humanhealthprop
+#    'HH12c', 'dmel_genetic_inter' ,  #humanhealthprop
+#    'HH12d', 'dmel_pert_treat' ,  #humanhealthprop
+#    'HH12e', 'dmel_recomb' ,  #humanhealthprop                                                                                  
+#    'HH13a', 'experiment_info' ,  #humanhealthprop
+#    'HH13b', 'proposed_mech' ,  #humanhealthprop.type =  cv (property type) cvterm.name (category) value (parent sub-entity specific entity or group entity)
+  
+HH14a:
+  required: false
+  type: string
+  no_bangc: True
+HH14b:
+  required: False
+  type: string
+  no_bangc: True 
+  dependencies: [HH14a]
+HH14c:
+  required: False
+  at_required: True
+  type: string
+  dependencies: [HH14a, HH14b]
+  at_required: True
+HH14d:
+  required: False
+  type: string
+  no_bangc: True
+  dependencies: [HH14a, HH14b]
+  allowed: [y, Y]
+HH15:
+  required: false
+  at_required: True
+  type: string
+  regex: (.* \w{3} \d{4} by FlyBase; FBrf0222196])$
+#    'HH16a', 'devel_model' ,  #humanhealth_pubprop.type =  cv (humanhealth_pubprop type) all categories
+#    'HH16b', 'refine_model' ,  #humanhealth_pubprop.type =  cv (humanhealth_pubprop type) all categories
+#    'HH16c', 'mech_disease_mut' ,  #humanhealth_pubprop.type =  cv (humanhealth_pubprop type) all categories
+#    'HH16d', 'genetic_int' ,  #humanhealth_pubprop.type =  cv (humanhealth_pubprop type) all categories
+#    'HH16e', 'phys_int' ,  #humanhealth_pubprop.type =  cv (humanhealth_pubprop type) all categories
+#    'HH16f', 'subcell_pheno' ,  #humanhealth_pubprop.type =  cv (humanhealth_pubprop type) all categories
+#    'HH16g', 'role_post-trans' ,  #humanhealth_pubprop.type =  cv (humanhealth_pubprop type) all categories
+#    'HH16h', 'molec_mech' ,  #humanhealth_pubprop.type =  cv (humanhealth_pubprop type) all categories
+#    'HH16i', 'role_molec_pathway' ,  #humanhealth_pubprop.type =  cv (humanhealth_pubprop type) all categories
+#    'HH16j', 'chem_pert' ,  #humanhealth_pubprop.type =  cv (humanhealth_pubprop type) all categories
+#    'HH16k', 'enviro_pert' ,  #humanhealth_pubprop.type =  cv (humanhealth_pubprop type) all categories
+#    'HH16l', 'drug_disc' ,  #humanhealth_pubprop.type =  cv (humanhealth_pubprop type) all categories
+HH20:
+  required: False
+  type: [string, list]
+  at_required: False
+  
