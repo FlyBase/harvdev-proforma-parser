@@ -8,7 +8,7 @@ from bioservices import ChEBI
 from .chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.production import (
     Cv, Cvterm, Pub, Db, Dbxref, Organism,
-    Feature
+    Feature, FeatureSynonym, Synonym
 )
 from harvdev_utils.chado_functions import get_or_create
 from datetime import datetime
@@ -193,6 +193,55 @@ class ChadoChem(ChadoObject):
 
         log.debug("Updating FBch with dbxref.dbxref_id: {}".format(dbx_ref.dbxref_id))
         chemical.dbxref_id = dbx_ref.dbxref_id
+
+        # Add the identifier as a synonym.
+        self.modify_synonym('add', chemical.feature_id)
+
+    def modify_synonym(self, process, feature_id):
+        """
+
+        :param process: accepts either 'add' or 'remove'.
+        'add' adds a new synonym to the chemical feature.
+        'remove' removes the synonym from the chemical feature.
+
+        :param feature_id: specify the feature id used in the feature_synonym table.
+
+        :return:
+        """
+
+        # insert into feature_synonym(is_internal, pub_id, synonym_id, is_current, feature_id) values('FALSE', 221699, 6555779, 'FALSE', 3107733)
+
+        log.debug('Looking up synonym type cv and symbol cv term.')
+        symbol_cv_lookup = self.session.query(Cv, Cvterm). \
+            join(Cvterm, (Cvterm.cv_id == Cv.cv_id)). \
+            filter(Cv.name == 'synonym type'). \
+            filter(Cvterm.name == 'symbol').one()
+
+        symbol_cv_id = symbol_cv_lookup[1].cvterm_id
+
+        # Look up the ChEBI reference pub_id.
+        # Assigns a value to 'self.chebi_pub_id'
+        self.look_up_chebi_reference()
+
+        if process == 'add':
+            log.info("Adding new synonym entry for {}.".format(self.chemical_information['identifier']['data']))
+            new_synonym = get_or_create(self.session, Synonym, type_id=symbol_cv_id,
+                                        synonym_sgml=self.chemical_information['identifier']['data'],
+                                        name=self.chemical_information['identifier']['data'])
+
+            get_or_create(self.session, FeatureSynonym, feature_id=feature_id,
+                          pub_id=self.chebi_pub_id, synonym_id=new_synonym.synonym_id,
+                          is_current=False)
+
+        elif process == 'remove':
+            log.info("Removing synonym entry for {}.".format(self.chemical_information['identifier']['data']))
+            synonym_lookup = self.session.query(Synonym). \
+                filter(Synonym.name == self.chemical_information['identifier']['data']).\
+                filter(Synonym.synonym_sgml == self.chemical_information['identifier']['data']).\
+                filter(Synonym.type_id == symbol_cv_id).\
+                delete()
+
+        # TODO Remove feature_synonym row.
 
     def check_existing_dbxref(self, identifier_access_num_only):
         log.debug('Querying for existing accession ({}) via feature -> dbx -> db.'.format(identifier_access_num_only))
