@@ -241,7 +241,8 @@ class ChadoChem(ChadoObject):
                 filter(Synonym.type_id == symbol_cv_id).\
                 delete()
 
-        # TODO Remove feature_synonym row.
+            # TODO Remove feature_synonym row.
+            log.debug(synonym_lookup)
 
     def check_existing_dbxref(self, identifier_access_num_only):
         log.debug('Querying for existing accession ({}) via feature -> dbx -> db.'.format(identifier_access_num_only))
