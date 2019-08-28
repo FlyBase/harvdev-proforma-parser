@@ -130,6 +130,7 @@ def validation_field_to_dict(fields_values):
     for field, value in fields_values.items():
         if type(value) is list:
             for list_object in value:
+                log.debug("{}: list_object is {}".format(field, type(list_object)))
                 if field in field_value_validation_dict:
                     field_value_validation_dict[field].append(list_object[FIELD_VALUE])
                 else:

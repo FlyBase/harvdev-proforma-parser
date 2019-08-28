@@ -20,6 +20,7 @@ HH1g:
 
 HH2a:
   required: True
+  no_bangc: True
   type: string
   allowed: [parent entity, sub-entity, specific entity, group entity]
 HH2b:
@@ -181,7 +182,7 @@ HH15:
   required: false
   at_required: True
   type: string
-  regex: (.* \w{3} \d{4} by FlyBase; FBrf0222196])$
+  regex: ^(.* \w{3} \d{4} by FlyBase; FBrf0222196])$
 #    'HH16a', 'devel_model' ,  #humanhealth_pubprop.type =  cv (humanhealth_pubprop type) all categories
 #    'HH16b', 'refine_model' ,  #humanhealth_pubprop.type =  cv (humanhealth_pubprop type) all categories
 #    'HH16c', 'mech_disease_mut' ,  #humanhealth_pubprop.type =  cv (humanhealth_pubprop type) all categories

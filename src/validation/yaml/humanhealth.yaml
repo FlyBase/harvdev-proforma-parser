@@ -77,23 +77,20 @@ HH4h:
 HH5a:
   required: False
   type: string
-  no_bangc: True 
-  dependencies: [HH5b, HH5c]
+  set: HH5
 HH5b:
   required: False
   type: string
-  no_bangc: True 
-  dependencies: [HH5a, HH5c]
+  set: HH5
 HH5c:
   required: False
   type: string
-  no_bangc: True 
-  dependencies: [HH5a, HH5b]
+  set: HH5
 HH5d:
   required: false
   type: string
-  no_bangc: True
   allowed: [y, Y]
+  set: HH5
 HH6c:
   required: False
   type: [string, list]
@@ -182,7 +179,7 @@ HH15:
   required: false
   at_required: True
   type: string
-  regex: (.* \w{3} \d{4} by FlyBase; FBrf0222196])$
+  regex: ^(.* \w{3} \d{4} by FlyBase; FBrf0222196])$
 #    'HH16a', 'devel_model' ,  #humanhealth_pubprop.type =  cv (humanhealth_pubprop type) all categories
 #    'HH16b', 'refine_model' ,  #humanhealth_pubprop.type =  cv (humanhealth_pubprop type) all categories
 #    'HH16c', 'mech_disease_mut' ,  #humanhealth_pubprop.type =  cv (humanhealth_pubprop type) all categories

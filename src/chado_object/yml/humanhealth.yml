@@ -5,7 +5,7 @@
 #
 #       direct:       Needs 'name' of field in chado database.
 #       relationship: Needs 'cvterm' of the relationship.
-#       prop:         Needs 'cvterm' of the property to add
+#       prop:         Needs 'cvterm' and cv of the property to add
 #       synonym:      Needs True or False in type_value to set if it is current
 #       dissociate_pub: Nothing.
 #       dissociate_hgnc: Nothing uses HH7e to get the hgnc ref.
@@ -48,10 +48,12 @@ HH1f:
   description: Database ID for disease or health issue
 HH1g:
   type: prop
+  cv: property type
   cvterm: sub_datatype
   description: Sub-datatype [disease, health-related process]
 HH2a:
   type: prop
+  cv: property type
   cvterm: category
   description: Category [parent entity, sub-entity, specific entity, group entity]
 #select * from humanhealthprop hp, cvterm c where c.cvterm_id = hp.type_id and value = 'parent entity' limit 10;
@@ -126,14 +128,17 @@ HH3d:
   description: dissociate HH1f from FBrf
 HH4a:
   type: prop
+  cv: property type
   cvterm: phenotype_description
   description: Symptoms and phenotype 
 HH4b:
   type: prop
+  cv: property type
   cvterm: genetics_description
   desription: Description/Genetics
 HH4c:
   type: prop
+  cv: property type
   cvterm: cellular_description
   description: Description/Cellular phenotype and pathology
 HH4f:
@@ -142,16 +147,21 @@ HH4f:
   description: Related human health entity
 HH4g:
   type: prop
+  cv: property type
   cvterm: molecular_description
   description: Description/Molecular information 
 HH4h:
   type: prop
+  cv: property type
   cvterm: process_description
   description: Description of process
 
-  
+HH5:
+  type: data_set
+  cvterm: data_link
+  description: External link HH5 [a,b,c and d]
 HH5a:
-  type: dbxrefprop
+  type: dbxrefpropset
   cvterm: data_link
   description: External link - accession number
 HH5b:
@@ -250,9 +260,11 @@ HH14d:
   description: dissociate accession specified in HH14a/HH14b from this human health model 
 HH15:
   type: prop
+  cv: property type
   cvterm: dros_model_overview
 HH20:
   type: prop
+  cv: property type
   cvterm: hdm_internal_notes
 
   

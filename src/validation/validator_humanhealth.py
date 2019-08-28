@@ -19,6 +19,16 @@ class ValidatorHumanhealth(Validator):
         self.record_type = kwargs['record_type']
         super(ValidatorHumanhealth, self).__init__(*args, **kwargs)
 
+    def _validate_set(self, value):
+        """
+        No testing here this is just to enable us to use sets of data.
+        The docstring statement below provides a schema to validate the 'plain_text' argument.
+
+        The rule's arguments are validated against this schema:
+        {'type': 'string'}
+        """
+        return True
+
     def _validate_type_None(self, value):
         if value is None:
             log.info('Value is {}'.format(value))
