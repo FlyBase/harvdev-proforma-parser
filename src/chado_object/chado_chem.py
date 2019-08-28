@@ -8,7 +8,7 @@ from bioservices import ChEBI
 from .chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.production import (
     Cv, Cvterm, Pub, Db, Dbxref, Organism,
-    Feature
+    Feature, FeatureSynonym, Synonym
 )
 from harvdev_utils.chado_functions import get_or_create
 from datetime import datetime
@@ -150,6 +150,11 @@ class ChadoChem(ChadoObject):
 
         chemical_id = chemical.cvterm_id
 
+        chebi_database = self.session.query(Db). \
+            filter(Db.name == 'CHEBI').one()
+
+        chebi_database_id = chebi_database.db_id
+
         # Check if we already have an existing entry.
         entry_already_exists = self.chemical_feature_lookup(organism_id, chemical_id)
 
@@ -164,19 +169,80 @@ class ChadoChem(ChadoObject):
             self.critical_error(self.process_data['CH1a']['data'],
                                 'An entry already exists in the database with this name: {}'
                                 .format(entry_already_exists.uniquename))
+            return
+
         # If we're not dealing with a new entry.
         # Verify that the FBch and Name specified in the proforma match.
         elif entry_already_exists:
             if entry_already_exists.uniquename != self.process_data['CH1f']['data'][FIELD_VALUE]:
                 self.critical_error(self.process_data['CH1f']['data'],
                                     'Name and FBch in this proforma do not match.')
-        else:
-            chemical = get_or_create(self.session, Feature, organism_id=organism_id,
-                                     name=self.process_data['CH1a']['data'][FIELD_VALUE],
-                                     type_id=chemical_id,
-                                     uniquename='FBch:temp_0')
+                return
 
-            log.info("New chemical entry created: {}".format(chemical.name))
+        chemical = get_or_create(self.session, Feature, organism_id=organism_id,
+                                 name=self.process_data['CH1a']['data'][FIELD_VALUE],
+                                 type_id=chemical_id,
+                                 uniquename='FBch:temp_0')
+
+        log.info("New chemical entry created: {}".format(chemical.name))
+
+        dbx_ref = get_or_create(self.session, Dbxref, db_id=chebi_database_id,
+                                accession=identifier_accession_num_only)
+
+        log.debug("Creating new dbxref: {}".format(dbx_ref.dbxref_id))
+
+        log.debug("Updating FBch with dbxref.dbxref_id: {}".format(dbx_ref.dbxref_id))
+        chemical.dbxref_id = dbx_ref.dbxref_id
+
+        # Add the identifier as a synonym.
+        self.modify_synonym('add', chemical.feature_id)
+
+    def modify_synonym(self, process, feature_id):
+        """
+
+        :param process: accepts either 'add' or 'remove'.
+        'add' adds a new synonym to the chemical feature.
+        'remove' removes the synonym from the chemical feature.
+
+        :param feature_id: specify the feature id used in the feature_synonym table.
+
+        :return:
+        """
+
+        # insert into feature_synonym(is_internal, pub_id, synonym_id, is_current, feature_id) values('FALSE', 221699, 6555779, 'FALSE', 3107733)
+
+        log.debug('Looking up synonym type cv and symbol cv term.')
+        symbol_cv_lookup = self.session.query(Cv, Cvterm). \
+            join(Cvterm, (Cvterm.cv_id == Cv.cv_id)). \
+            filter(Cv.name == 'synonym type'). \
+            filter(Cvterm.name == 'symbol').one()
+
+        symbol_cv_id = symbol_cv_lookup[1].cvterm_id
+
+        # Look up the ChEBI reference pub_id.
+        # Assigns a value to 'self.chebi_pub_id'
+        self.look_up_chebi_reference()
+
+        if process == 'add':
+            log.info("Adding new synonym entry for {}.".format(self.chemical_information['identifier']['data']))
+            new_synonym = get_or_create(self.session, Synonym, type_id=symbol_cv_id,
+                                        synonym_sgml=self.chemical_information['identifier']['data'],
+                                        name=self.chemical_information['identifier']['data'])
+
+            get_or_create(self.session, FeatureSynonym, feature_id=feature_id,
+                          pub_id=self.chebi_pub_id, synonym_id=new_synonym.synonym_id,
+                          is_current=False)
+
+        elif process == 'remove':
+            log.info("Removing synonym entry for {}.".format(self.chemical_information['identifier']['data']))
+            synonym_lookup = self.session.query(Synonym). \
+                filter(Synonym.name == self.chemical_information['identifier']['data']).\
+                filter(Synonym.synonym_sgml == self.chemical_information['identifier']['data']).\
+                filter(Synonym.type_id == symbol_cv_id).\
+                delete()
+
+            # TODO Remove feature_synonym row.
+            log.debug(synonym_lookup)
 
     def check_existing_dbxref(self, identifier_access_num_only):
         log.debug('Querying for existing accession ({}) via feature -> dbx -> db.'.format(identifier_access_num_only))
