@@ -72,23 +72,27 @@ class ChadoHumanhealth(ChadoObject):
             params = {'cvterm': 'data_link',
                       'cvname': 'property type'}
             for key in hh5_set.keys():
-                valid_key = key
+                if hh5_set[key][FIELD_VALUE]:
+                    valid_key = key
                 log.debug("HH5: {}: {}".format(key, hh5_set[key]))
-            if 'HH5a' not in hh5_set:
+            if not valid_key:  # Whole thing is blank so ignore. This is okay
+                continue
+            if 'HH5a' not in hh5_set or not hh5_set['HH5a'][FIELD_VALUE]:
                 valid_set = False
                 error_message = "Set HH5 does not have HH5a specified"
-                self.error_track(self, hh5_set[valid_key], error_message, CRITICAL_ERROR)
+                self.error_track(hh5_set[valid_key], error_message, CRITICAL_ERROR)
             else:
                 params['accession'] = hh5_set['HH5a'][FIELD_VALUE]
-            if 'HH5b' not in hh5_set:
+            if 'HH5b' not in hh5_set or not hh5_set['HH5b'][FIELD_VALUE]:
                 valid_set = False
                 error_message = "Set HH5 does not have HH5b specified"
-                self.error_track(self, hh5_set[valid_key], error_message, CRITICAL_ERROR)
+                self.error_track(hh5_set[valid_key], error_message, CRITICAL_ERROR)
             else:
                 params['dbname'] = hh5_set['HH5b'][FIELD_VALUE]
             if 'HH5c' in hh5_set:
                 params['description'] = hh5_set['HH5c'][FIELD_VALUE]
             if valid_set:
+                params['tuple'] = hh5_set[valid_key]
                 self.process_dbxrefprop(params)
 
     def process_sets(self):
@@ -231,27 +235,18 @@ class ChadoHumanhealth(ChadoObject):
     def load_dbxref(self, key):
         pass
 
-    def process_dbxrefprop(self, params):
+    def process_dbxref(self, params):
         # params should contain:-
         # dbname:      db name for dbxref
         # accession:   accession for dbxref
-        # cvname:      cv name for prop
-        # cvterm:      cvterm name for prop
-        # description: dbxref description (only used if new dbxref) *Also Optional*
-        log.debug("process_dbxrefprop: {}".format(params))
-
-        cvterm = self.session.query(Cvterm).join(Cv).\
-            filter(Cv.name == params['cvname'],
-                   Cvterm.name == params['cvterm']).\
-            one_or_none()
-        if not cvterm:
-            log.critical("cvterm {} with cv of {} failed lookup".format(params['cvterm'], params['cvname']))
-            return
+        # tuple:       one related tuple to help give better errors
+        log.debug("process_dbxref: {}".format(params))
 
         db = self.session.query(Db).filter(Db.name == params['dbname']).one_or_none()
         if not db:
-            log.critical("{} Not found in db table".format(params['dbname']))
-            return False
+            error_message = "{} Not found in db table".format(params['dbname'])
+            self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
+            return None
 
         dbxref = self.session.query(Dbxref).join(Db).\
             filter(Dbxref.db_id == db.db_id,
@@ -265,19 +260,36 @@ class ChadoHumanhealth(ChadoObject):
         hh_dbxref = get_or_create(self.session, HumanhealthDbxref,
                                   dbxref_id=dbxref.dbxref_id,
                                   humanhealth_id=self.humanhealth.humanhealth_id)
+        return hh_dbxref
 
-        get_or_create(self.session, HumanhealthDbxrefprop,
-                      humanhealth_dbxref_id=hh_dbxref.humanhealth_dbxref_id,
-                      type_id=cvterm.cvterm_id)
+    def process_dbxrefprop(self, params):
+        # params should contain:-
+        # dbname:      db name for dbxref
+        # accession:   accession for dbxref
+        # cvname:      cv name for prop
+        # cvterm:      cvterm name for prop
+        # description: dbxref description (only used if new dbxref) *Also Optional*
+        # tuple:       one related tuple to help give better errors
+        hh_dbxref = self.process_dbxref(params)
+
+        if not hh_dbxref:
+            return None
+
+        cvterm = self.session.query(Cvterm).join(Cv).\
+            filter(Cv.name == params['cvname'],
+                   Cvterm.name == params['cvterm']).\
+            one_or_none()
+        if not cvterm:
+            log.critical("cvterm {} with cv of {} failed lookup".format(params['cvterm'], params['cvname']))
+            return None
+
+        hhdp = get_or_create(self.session, HumanhealthDbxrefprop,
+                             humanhealth_dbxref_id=hh_dbxref.humanhealth_dbxref_id,
+                             type_id=cvterm.cvterm_id)
+        return hhdp
 
     def load_dbxrefprop(self, key):
         pass
-
-    def load_dbxrefpropset(self, key):
-        log.debug("{}: {}".format(key, self.process_data[key]['data']))
-        # get or create dbxref
-        # add dbxref to hh
-        # add humanhealth_dbxrefprop with cvterm 'data_link'
 
     def load_featureprop(self, key):
         pass

@@ -472,9 +472,8 @@ class Proforma(object):
                 self.fields_values[field] = []
                 self.fields_values[field].append((field, value, line_number))
             elif field in Proforma.set_fields_to_key:
-                if value is not None:
-                    self.process_set(field, value, line_number)
-                    log.debug('Adding SET data field %s : value %s from line %s to the Proforma object.' % (field, value, line_number))
+                self.process_set(field, value, line_number)
+                log.debug('Adding SET data field %s : value %s from line %s to the Proforma object.' % (field, value, line_number))
             else:
                 self.fields_values[field] = (field, value, line_number)
                 log.debug('Adding field %s : value %s from line %s to the Proforma object.' % (field, value, line_number))
