@@ -32,6 +32,7 @@ class ChadoHumanhealth(ChadoObject):
                           'dissociate_hgnc': self.dissociate_hgnc,
                           'obsolete': self.make_obsolete,
                           'ignore': self.ignore,
+                          'data_set': self.ignore,  # Done separately
                           'dbxref': self.load_dbxref,
                           'dbxrefprop': self.load_dbxrefprop,
                           'featureprop': self.load_featureprop}
@@ -65,24 +66,20 @@ class ChadoHumanhealth(ChadoObject):
         # Populated self.process_data with all possible keys.
         self.process_data = self.load_reference_yaml(yml_file, params)
 
-    def process_data_link(self, set_key, postfix):
+    def process_data_link(self, set_key):
         """
         set_key: Key to process i.e HH5 or HH14
-        postfix: dict of mapping to specify which key is mapped.
-                 i.e. 'acc' => 'a', so key + 'a' gives us the field to use
-                       to get the accesion for the data link
-                 By using postfix we can make this general as not all sets for
-                 datalink will use abcd.
+        
         TODO: disassociation 'd' still needs to be coded.
         """
         for data_set in self.set_values[set_key]:
             valid_set = True
             valid_key = None  # need a valid key incase something is wrong to report line number etc
-            params = {'cvterm': 'data_link',
-                      'cvname': 'property type'}
-            acc_key = set_key + postfix['acc']
-            db_key = set_key + postfix['dbname']
-            desc_key = set_key + postfix['description']
+            params = {'cvterm': self.process_data[set_key]['cvterm'],
+                      'cvname': self.process_data[set_key]['cv']}
+            acc_key = set_key + self.process_data[set_key]['set_acc']
+            db_key = set_key + self.process_data[set_key]['set_db']
+            desc_key = set_key + self.process_data[set_key]['set_desc']
             # dis_key = key + postfix['dis']
             for key in data_set.keys():
                 if data_set[key][FIELD_VALUE]:
@@ -138,11 +135,10 @@ class ChadoHumanhealth(ChadoObject):
         for key in self.set_values.keys():
             log.debug("SV: {}: {}".format(key, self.set_values[key]))
             if key == 'HH5' or key == 'HH14':
-                params = {"acc": 'a', "dbname": 'b', "description": 'c', "dis": 'd'}
+                self.process_data_link(key)
             else:
                 log.critical("Unknown set {}".format(key))
                 return
-            self.process_data_link(key, params)
 
     def load_content(self):
         """
@@ -172,7 +168,7 @@ class ChadoHumanhealth(ChadoObject):
 
         for key in self.process_data:
             log.debug("{} {}".format(key, type(self.process_data[key])))
-            log.debug("Processing {}".format(self.process_data[key]['data']))
+            #log.debug("Processing {}".format(self.process_data[key]['data']))
             self.type_dict[self.process_data[key]['type']](key)
 
         timestamp = datetime.now().strftime('%c')

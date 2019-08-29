@@ -38,6 +38,9 @@ class ChadoObject(object):
         process_data = yaml.load(open(filename))
         keys_to_remove = []
         for key in process_data:
+            log.debug('process data {}'.format(process_data[key]))
+            if process_data[key]['type'] == 'data_set':
+                continue
             if key in params['fields_values']:
                 if type(params['fields_values'][key]) is list:
                     # Skip if the first value in the list contains None.
