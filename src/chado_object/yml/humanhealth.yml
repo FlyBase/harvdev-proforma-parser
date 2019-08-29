@@ -159,6 +159,7 @@ HH4h:
 
 HH5:
   type: data_set
+  sub_type: dbxrefprop
   cv: property type
   cvterm: data_link
   description: External link HH5 [a,b,c and d]
@@ -256,6 +257,7 @@ HH8e:
 
 HH14:
   type: data_set
+  sub_type: dbxrefprop
   cv: property type
   cvterm: data_link_bdsc
   description: External link HH14 [a,b,c and d]

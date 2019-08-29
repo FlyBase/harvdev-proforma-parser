@@ -66,6 +66,39 @@ class ChadoHumanhealth(ChadoObject):
         # Populated self.process_data with all possible keys.
         self.process_data = self.load_reference_yaml(yml_file, params)
 
+    def process_set_dbxrefprop(self, set_key, data_set):
+        valid_set = True
+        valid_key = None  # need a valid key incase something is wrong to report line number etc
+
+        params = {'cvterm': self.process_data[set_key]['cvterm'],
+                  'cvname': self.process_data[set_key]['cv']}
+        acc_key = set_key + self.process_data[set_key]['set_acc']
+        db_key = set_key + self.process_data[set_key]['set_db']
+        desc_key = set_key + self.process_data[set_key]['set_desc']
+        # dis_key = key + postfix['dis']
+        for key in data_set.keys():
+            if data_set[key][FIELD_VALUE]:
+                valid_key = key
+        if not valid_key:  # Whole thing is blank so ignore. This is okay
+            return
+        if acc_key not in data_set or not data_set[acc_key][FIELD_VALUE]:
+            valid_set = False
+            error_message = "Set {} does not have {} specified".format(set_key, acc_key)
+            self.error_track(data_set[valid_key], error_message, CRITICAL_ERROR)
+        else:
+            params['accession'] = data_set[acc_key][FIELD_VALUE]
+        if db_key not in data_set or not data_set[db_key][FIELD_VALUE]:
+            valid_set = False
+            error_message = "Set {} does not have {} specified".format(set_key, db_key)
+            self.error_track(data_set[valid_key], error_message, CRITICAL_ERROR)
+        else:
+            params['dbname'] = data_set[db_key][FIELD_VALUE]
+        if desc_key in data_set:
+            params['description'] = data_set[desc_key][FIELD_VALUE]
+        if valid_set:
+            params['tuple'] = data_set[valid_key]
+            self.process_dbxrefprop(params)
+
     def process_data_link(self, set_key):
         """
         set_key: Key to process i.e HH5 or HH14
@@ -73,36 +106,10 @@ class ChadoHumanhealth(ChadoObject):
         TODO: disassociation 'd' still needs to be coded.
         """
         for data_set in self.set_values[set_key]:
-            valid_set = True
-            valid_key = None  # need a valid key incase something is wrong to report line number etc
-            params = {'cvterm': self.process_data[set_key]['cvterm'],
-                      'cvname': self.process_data[set_key]['cv']}
-            acc_key = set_key + self.process_data[set_key]['set_acc']
-            db_key = set_key + self.process_data[set_key]['set_db']
-            desc_key = set_key + self.process_data[set_key]['set_desc']
-            # dis_key = key + postfix['dis']
-            for key in data_set.keys():
-                if data_set[key][FIELD_VALUE]:
-                    valid_key = key
-            if not valid_key:  # Whole thing is blank so ignore. This is okay
-                continue
-            if acc_key not in data_set or not data_set[acc_key][FIELD_VALUE]:
-                valid_set = False
-                error_message = "Set {} does not have {} specified".format(set_key, acc_key)
-                self.error_track(data_set[valid_key], error_message, CRITICAL_ERROR)
+            if self.process_data[set_key]['sub_type'] == 'dbxrefprop':
+                self.process_set_dbxrefprop(set_key, data_set)
             else:
-                params['accession'] = data_set[acc_key][FIELD_VALUE]
-            if db_key not in data_set or not data_set[db_key][FIELD_VALUE]:
-                valid_set = False
-                error_message = "Set {} does not have {} specified".format(set_key, db_key)
-                self.error_track(data_set[valid_key], error_message, CRITICAL_ERROR)
-            else:
-                params['dbname'] = data_set[db_key][FIELD_VALUE]
-            if desc_key in data_set:
-                params['description'] = data_set[desc_key][FIELD_VALUE]
-            if valid_set:
-                params['tuple'] = data_set[valid_key]
-                self.process_dbxrefprop(params)
+                log.critical("sub_type for this data set unknown")
 
     def process_sets(self):
         """
