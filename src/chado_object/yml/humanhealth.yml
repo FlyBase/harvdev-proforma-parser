@@ -249,9 +249,13 @@ HH8e:
   cvterm: syn_gene_implicated
   description: Synthetic gene(s) used 
 
+HH14:
+  type: data_set
+  cvterm: data_link_bdsc
+  description: External link HH14 [a,b,c and d]
 HH14a:
   type: dbxrefprop
-  cvterm: BDSC_data_link
+  cvterm: data_link_bdsc
   description: External link to BDSC - page ID
 HH14b:
   type: ignore # part of HH14a
@@ -261,7 +265,8 @@ HH14c:
   description: External link to BDSC - title/description of specific page
 HH14d:
   type: ignore # deal with it  in HH14a
-  description: dissociate accession specified in HH14a/HH14b from this human health model 
+  description: dissociate accession specified in HH14a/HH14b from this human health model
+
 HH15:
   type: prop
   cv: property type

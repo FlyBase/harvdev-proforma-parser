@@ -65,43 +65,84 @@ class ChadoHumanhealth(ChadoObject):
         # Populated self.process_data with all possible keys.
         self.process_data = self.load_reference_yaml(yml_file, params)
 
-    def process_HH5(self):
-        for hh5_set in self.set_values['HH5']:
+    def process_data_link(self, set_key, postfix):
+        """
+        set_key: Key to process i.e HH5 or HH14
+        postfix: dict of mapping to specify which key is mapped.
+                 i.e. 'acc' => 'a', so key + 'a' gives us the field to use
+                       to get the accesion for the data link
+                 By using postfix we can make this general as not all sets for
+                 datalink will use abcd.
+        TODO: disassociation 'd' still needs to be coded.
+        """
+        for data_set in self.set_values[set_key]:
             valid_set = True
             valid_key = None  # need a valid key incase something is wrong to report line number etc
             params = {'cvterm': 'data_link',
                       'cvname': 'property type'}
-            for key in hh5_set.keys():
-                if hh5_set[key][FIELD_VALUE]:
+            acc_key = set_key + postfix['acc']
+            db_key = set_key + postfix['dbname']
+            desc_key = set_key + postfix['description']
+            # dis_key = key + postfix['dis']
+            for key in data_set.keys():
+                if data_set[key][FIELD_VALUE]:
                     valid_key = key
-                log.debug("HH5: {}: {}".format(key, hh5_set[key]))
             if not valid_key:  # Whole thing is blank so ignore. This is okay
                 continue
-            if 'HH5a' not in hh5_set or not hh5_set['HH5a'][FIELD_VALUE]:
+            if acc_key not in data_set or not data_set[acc_key][FIELD_VALUE]:
                 valid_set = False
-                error_message = "Set HH5 does not have HH5a specified"
-                self.error_track(hh5_set[valid_key], error_message, CRITICAL_ERROR)
+                error_message = "Set {} does not have {} specified".format(set_key, acc_key)
+                self.error_track(data_set[valid_key], error_message, CRITICAL_ERROR)
             else:
-                params['accession'] = hh5_set['HH5a'][FIELD_VALUE]
-            if 'HH5b' not in hh5_set or not hh5_set['HH5b'][FIELD_VALUE]:
+                params['accession'] = data_set[acc_key][FIELD_VALUE]
+            if db_key not in data_set or not data_set[db_key][FIELD_VALUE]:
                 valid_set = False
-                error_message = "Set HH5 does not have HH5b specified"
-                self.error_track(hh5_set[valid_key], error_message, CRITICAL_ERROR)
+                error_message = "Set {} does not have {} specified".format(set_key, db_key)
+                self.error_track(data_set[valid_key], error_message, CRITICAL_ERROR)
             else:
-                params['dbname'] = hh5_set['HH5b'][FIELD_VALUE]
-            if 'HH5c' in hh5_set:
-                params['description'] = hh5_set['HH5c'][FIELD_VALUE]
+                params['dbname'] = data_set[db_key][FIELD_VALUE]
+            if desc_key in data_set:
+                params['description'] = data_set[desc_key][FIELD_VALUE]
             if valid_set:
-                params['tuple'] = hh5_set[valid_key]
+                params['tuple'] = data_set[valid_key]
                 self.process_dbxrefprop(params)
 
     def process_sets(self):
+        """
+        Sets have a specific key, normally the shortened version of the fields
+        that it uses. i.e. For HH5a, HH5b etc this becomes HH5.
+        self.set_values is a dictionary of these and points to an list of the
+        actual values the curators have added i.e. HH5a, HH5c
+        This is an example of what the set_vales will look like.
+        HH5: [{'HH5a': ('HH5a', '1111111', 16),
+               'HH5b': ('HH5b', 'HGNC', 17),
+               'HH5c': ('HH5c', 'hgnc_1', 18)},
+              {'HH5a': ('HH5a', '2', 20),
+               'HH5b': ('HH5b', 'UniProtKB/Swiss-Prot', 21),
+               'HH5c': ('HH5c', 'sw_2', 22)},
+              {'HH5a': ('HH5a', '3', 24),
+                'HH5b': ('HH5b', 'UniProtKB/Swiss-Prot', 25),
+                'HH5c': ('HH5c', None, 26)},
+              {'HH5a': ('HH5a', '4444444', 28),
+               'HH5b': ('HH5b', 'HGNC', 29),
+               'HH5c': ('HH5c', 'hgnc_4', 30)},
+              {'HH5a': ('HH5a', '1', 32),
+               'HH5b': ('HH5b', 'HGNC', 33),
+               'HH5c': ('HH5c', 'already exists so desc not updated', 34)},
+              {'HH5a': ('HH5a', None, 36),
+               'HH5b': ('HH5b', None, 37),
+               'HH5c': ('HH5c', None, 38)
+             ]
+        This comes from the test 1505_HH_5abc_good_set.txt.sm.edit.1
+        """
         for key in self.set_values.keys():
             log.debug("SV: {}: {}".format(key, self.set_values[key]))
-            if key == 'HH5':
-                self.process_HH5()
+            if key == 'HH5' or key == 'HH14':
+                params = {"acc": 'a', "dbname": 'b', "description": 'c', "dis": 'd'}
             else:
                 log.critical("Unknown set {}".format(key))
+                return
+            self.process_data_link(key, params)
 
     def load_content(self):
         """
@@ -236,11 +277,13 @@ class ChadoHumanhealth(ChadoObject):
         pass
 
     def process_dbxref(self, params):
-        # params should contain:-
-        # dbname:      db name for dbxref
-        # accession:   accession for dbxref
-        # tuple:       one related tuple to help give better errors
-        log.debug("process_dbxref: {}".format(params))
+        """
+        General rountine for adding humanhealth dbxrefs.
+        params should contain:-
+          dbname:      db name for dbxref
+          accession:   accession for dbxref
+          tuple:       one related tuple to help give better errors
+        """
 
         db = self.session.query(Db).filter(Db.name == params['dbname']).one_or_none()
         if not db:
@@ -263,13 +306,16 @@ class ChadoHumanhealth(ChadoObject):
         return hh_dbxref
 
     def process_dbxrefprop(self, params):
-        # params should contain:-
-        # dbname:      db name for dbxref
-        # accession:   accession for dbxref
-        # cvname:      cv name for prop
-        # cvterm:      cvterm name for prop
-        # description: dbxref description (only used if new dbxref) *Also Optional*
-        # tuple:       one related tuple to help give better errors
+        """
+         General rountine for adding humanhealth dbxrefs and their props
+         params should contain:-
+         dbname:      db name for dbxref
+         accession:   accession for dbxref
+         cvname:      cv name for prop
+         cvterm:      cvterm name for prop
+         description: dbxref description (only used if new dbxref) *Also Optional*
+         tuple:       one related tuple to help give better errors
+        """
         hh_dbxref = self.process_dbxref(params)
 
         if not hh_dbxref:
