@@ -102,7 +102,7 @@ class ChadoHumanhealth(ChadoObject):
     def process_data_link(self, set_key):
         """
         set_key: Key to process i.e HH5 or HH14
-        
+
         TODO: disassociation 'd' still needs to be coded.
         """
         for data_set in self.set_values[set_key]:
@@ -174,8 +174,6 @@ class ChadoHumanhealth(ChadoObject):
             log.debug("No set values")
 
         for key in self.process_data:
-            log.debug("{} {}".format(key, type(self.process_data[key])))
-            #log.debug("Processing {}".format(self.process_data[key]['data']))
             self.type_dict[self.process_data[key]['type']](key)
 
         timestamp = datetime.now().strftime('%c')
