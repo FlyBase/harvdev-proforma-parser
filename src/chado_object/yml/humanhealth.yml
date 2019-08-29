@@ -71,6 +71,7 @@ HH2b:
 HH2c: #humanhealth_dbxref db = OMIM_PHENOTYPE, humanhealth_dbxrefprop hh2c_link
   type: dbxrefprop
   db: OMIM_PHENOTYPE
+  cv: property type
   cvterm: hh2c_link
 #select d.name, dx.accession, hdp.value, cvt.name, h.uniquename
 #    from humanhealth h, humanhealth_dbxrefprop hdp, humanhealth_dbxref hd, dbxref dx, db d, cvterm cvt
@@ -190,6 +191,7 @@ HH5d:
 HH6c:
   type: dbxrefprop
   db: OMIM_PHENOTYPE
+  cv: property type
   cvterm: OMIM_pheno_table
   description: Ordered list of OMIM phenotype entries
 HH7a:
@@ -206,10 +208,12 @@ HH7c:
   description: Comments on ortholog relationships
 HH7d:
   type: dbxrefprop
+  cv: property type
   cvterm: diopt_ortholog
   description: Orthologous Dmel gene
 HH7e:
   type: dbxrefprop
+  cv: property type
   cvterm: hgnc_link
   description: Human gene(s) implicated
 HH7f:
