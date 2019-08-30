@@ -1,0 +1,291 @@
+#########################################################################################
+# Documentation for HumanHealth yml
+#
+# type: dependent on...
+#
+#       direct:       Needs 'name' of field in chado database.
+#       relationship: Needs 'cvterm' of the relationship.
+#       prop:         Needs 'cvterm' and cv of the property to add
+#       synonym:      Needs True or False in type_value to set if it is current
+#       dissociate_pub: Nothing.
+#       dissociate_hgnc: Nothing uses HH7e to get the hgnc ref.
+#       obsolete:     Nothing.
+#       ignore:       Nothing.
+#                     Uses
+#       dbxref:       Needs 'dbname' of the db.
+#       dbxrefprop:   Needs 'dbname' and 'cvterm'
+#       featureprop:  Needs 'cvterm'
+#
+# So a direct type gets added to the HH directly, i.e. it is the same as the field name 
+# in chado and therefore aonly needs the name of that field to be able to change/add it.
+#
+# Relationships are stored in the humanhealth_feature table and need a cvterm to define how
+# they are related.
+#
+# Dbxrefs are stored in the humanhealth_dbxref table.
+#
+# Description is just in there to help out.
+#
+# Other terms are used to allow specific fields to do special things in the code instead
+# of creating more types. 
+# i.e. verify_only_on_update in P2
+#      Will not add new relationship each time it is seen (only on creation of new pubs)
+#      It instead is used to make sure if pub already has a parent it matches this. 
+#
+# TODO: remove large comments and sql after tests etc written.
+# 
+#########################################################################################
+HH1b: 
+  type: ignore
+  description: Disease name used (or to be used)  in FlyBase.
+HH1e:
+  type: synonym
+  type_value: False
+  description: Additional synonyms
+HH1f:
+  ignore: True
+  type: ignore
+  description: Database ID for disease or health issue
+HH1g:
+  type: prop
+  cv: property type
+  cvterm: sub_datatype
+  description: Sub-datatype [disease, health-related process]
+HH2a:
+  type: prop
+  cv: property type
+  cvterm: category
+  description: Category [parent entity, sub-entity, specific entity, group entity]
+#select * from humanhealthprop hp, cvterm c where c.cvterm_id = hp.type_id and value = 'parent entity' limit 10;
+# humanhealthprop_id | humanhealth_id | type_id |     value     | rank | cvterm_id | cv_id | definition | dbxref_id | is_obsolete | is_relationshiptype |   name   
+#--------------------+----------------+---------+---------------+------+-----------+-------+------------+-----------+-------------+---------------------+----------
+#                  8 |              2 |  126976 | parent entity |    0 |    126976 |     2 |            |   9541359 |           0 |                   0 | category
+#                 23 |              4 |  126976 | parent entity |    0 |    126976 |     2 |            |   9541359 |           0 |                   0 | category
+#                 27 |              5 |  126976 | parent entity |    0 |    126976 |     2 |            |   9541359 |           0 |                   0 | category
+#               4006 |            265 |  126976 | parent entity |    1 |    126976 |     2 |            |   9541359 |           0 |                   0 | category
+  
+HH2b:
+  type: relationship
+  cvterm: belongs_to
+  description: Parent entity
+HH2c: #humanhealth_dbxref db = OMIM_PHENOTYPE, humanhealth_dbxrefprop hh2c_link
+  type: dbxrefprop
+  db: OMIM_PHENOTYPE
+  cv: property type
+  cvterm: hh2c_link
+#select d.name, dx.accession, hdp.value, cvt.name, h.uniquename
+#    from humanhealth h, humanhealth_dbxrefprop hdp, humanhealth_dbxref hd, dbxref dx, db d, cvterm cvt
+#    where h.humanhealth_id = hd.humanhealth_id and
+#          hdp.type_id = cvt.cvterm_id and
+#          hdp.humanhealth_dbxref_id = hd.humanhealth_dbxref_id and
+#          hd.dbxref_id = dx.dbxref_id and
+#          d.db_id = dx.db_id and
+#          d.name = 'OMIM_PHENOTYPE' and
+#          cvt.name ='hh2c_link' limit 10;
+#      name      | accession | value |   name    | uniquename  
+#----------------+-----------+-------+-----------+-------------
+# OMIM_PHENOTYPE | 143100    |       | hh2c_link | FBhh0000003
+# OMIM_PHENOTYPE | 168601    |       | hh2c_link | FBhh0000006
+# OMIM_PHENOTYPE | 605543    |       | hh2c_link | FBhh0000007
+# OMIM_PHENOTYPE | 600116    |       | hh2c_link | FBhh0000008
+# OMIM_PHENOTYPE | 605909    |       | hh2c_link | FBhh0000009
+# OMIM_PHENOTYPE | 606324    |       | hh2c_link | FBhh0000010
+# OMIM_PHENOTYPE | 607060    |       | hh2c_link | FBhh0000011
+# OMIM_PHENOTYPE | 610297    |       | hh2c_link | FBhh0000012
+# OMIM_PHENOTYPE | 171400    |       | hh2c_link | FBhh0000013
+# OMIM_PHENOTYPE | 162300    |       | hh2c_link | FBhh0000014
+
+HH2d: 
+  type: cvterm
+  cvterm: doid_term
+#select cvt.name, db.name, dbxref.accession, h.uniquename, cvt2.name, cv.name, cv2.name
+# from cv cv2, humanhealth h, humanhealth_cvtermprop hcp, humanhealth_cvterm hc, dbxref, db, cvterm cvt, cvterm cvt2, cv 
+# where cv2.cv_id = cvt2.cv_id and 
+#       cvt2.cvterm_id  =hcp.type_id and
+#       h.humanhealth_id = hc.humanhealth_id and
+#       hcp.humanhealth_cvterm_id = hc.humanhealth_cvterm_id and
+#       hc.cvterm_id = cvt.cvterm_id and
+#       cvt.dbxref_id = dbxref.dbxref_id and
+#       db.db_id = dbxref.db_id and
+#       cv.cv_id = cvt.cv_id and
+#       accession = '0050888';
+#               name                | name | accession | uniquename  |   name    |       name       |            name             
+#-----------------------------------+------+-----------+-------------+-----------+------------------+-----------------------------
+# syndromic intellectual disability | DOID | 0050888   | FBhh0000940 | doid_term | disease_ontology | humanhealth_cvtermprop type
+# syndromic intellectual disability | DOID | 0050888   | FBhh0001066 | doid_term | disease_ontology | humanhealth_cvtermprop type
+# syndromic intellectual disability | DOID | 0050888   | FBhh0001096 | doid_term | disease_ontology | humanhealth_cvtermprop type
+# syndromic intellectual disability | DOID | 0050888   | FBhh0001097 | doid_term | disease_ontology | humanhealth_cvtermprop type
+
+
+HH3a:
+  type: direct
+  name: name
+  description: Action - rename this disease 
+HH3c:
+  type: obsolete
+  description: delete disease record
+HH3d:
+  type: dissociate_pub
+  description: dissociate HH1f from FBrf
+HH4a:
+  type: prop
+  cv: property type
+  cvterm: phenotype_description
+  description: Symptoms and phenotype 
+HH4b:
+  type: prop
+  cv: property type
+  cvterm: genetics_description
+  desription: Description/Genetics
+HH4c:
+  type: prop
+  cv: property type
+  cvterm: cellular_description
+  description: Description/Cellular phenotype and pathology
+HH4f:
+  type: relationship
+  cvterm: associated_with
+  description: Related human health entity
+HH4g:
+  type: prop
+  cv: property type
+  cvterm: molecular_description
+  description: Description/Molecular information 
+HH4h:
+  type: prop
+  cv: property type
+  cvterm: process_description
+  description: Description of process
+
+HH5:
+  type: data_set
+  sub_type: dbxrefprop
+  cv: property type
+  cvterm: data_link
+  description: External link HH5 [a,b,c and d]
+  set_acc: a
+  set_db: b
+  set_desc: c
+  set_dis: d
+HH5a:
+  type: dbxrefpropset
+  cvterm: data_link
+  description: External link - accession number
+HH5b:
+  type: ignore # dealt with as part of HH5a
+  description: FB database ID 
+HH5c:
+  type: ignore # dealt with as part of HH5a
+  description: title/description of specific accession  
+HH5d:
+  type: ignore # dealt with as part of HH5a
+  description: dissociate accession specified in HH5a/HH5b from this HH
+
+# select d.name, dx.accession, dx.description, hdp.value, cvt.name, h.uniquename
+# from humanhealth h, humanhealth_dbxrefprop hdp, humanhealth_dbxref hd, dbxref dx, db d, cvterm cvt
+#    where h.humanhealth_id = hd.humanhealth_id and
+#          hdp.type_id = cvt.cvterm_id and
+#          hdp.humanhealth_dbxref_id = hd.humanhealth_dbxref_id and
+#          hd.dbxref_id = dx.dbxref_id and
+#          d.db_id = dx.db_id and dx.accession = 'NBK320989' and
+#          cvt.name ='data_link' limit 10;
+#     name     | accession | value |   name    | uniquename  | description
+#--------------+-----------+-------+-----------+-------------+------------
+# Gene_reviews | NBK320989 |       | data_link | FBhh0001083 | Mitochondrial Disorders Overview
+# Gene_reviews | NBK320989 |       | data_link | FBhh0001084 | Mitochondrial Disorders Overview
+  
+HH6c:
+  type: dbxrefprop
+  db: OMIM_PHENOTYPE
+  cv: property type
+  cvterm: OMIM_pheno_table
+  description: Ordered list of OMIM phenotype entries
+HH7a:
+  type: featureprop
+  cvterm: human_gene_implicated
+  description: Human gene(s) implicated
+HH7b:
+  type: featureprop
+  cvterm: other_mammalian_gene
+  description: Other mammalian genes used
+HH7c:
+  type: dbxrefpropdependent
+  cvterm: hh_ortho_rel_comment
+  description: Comments on ortholog relationships
+HH7d:
+  type: dbxrefprop
+  cv: property type
+  cvterm: diopt_ortholog
+  description: Orthologous Dmel gene
+HH7e:
+  type: dbxrefprop
+  cv: property type
+  cvterm: hgnc_link
+  description: Human gene(s) implicated
+HH7f:
+  type: dissociate_hgnc
+  description: dissociate accession specified in HH7e from this human health model
+
+
+#    'HH8a', 'dmel_gene_implicated',  
+##          humanhealth_feature.feature_id/, humanhealth_featureprop cv = propert type with HH8c 
+#           -- only if HH1f is humanhealthprop.type =  cv (property type) cvterm.name (category) value (sub-entity or specific entity or group entity)
+#
+#    'HH8c', 'hh_ortholog_comment', 
+##humanhealth_featureprop cv = property type with HH8a -- humanhealth_featureprop need to track rank
+#
+#   'HH8e', 'syn_gene_implicated',  
+##humanhealth_feature.feature_id/, humanhealth_featureprop cv = humanhealth_featureprop type  
+#          -- only if HH1f is humanhealthprop.type = cv (property type) cvterm.name  (category) value (sub-entity or specific entity or group entity)
+#
+#   'HH8d', '', #Action - dissociate gene specified in HH8a from this human health model (blank/y)
+HH8a:
+  type: featureprop
+  cvterm: dmel_gene_implicated
+  description: Dmel gene(s) implicated 
+HH8c:
+  type: featureprop
+  cvterm: hh_ortholog_comment
+  description: Comments on orthologs
+HH8d:
+  type: dissociate_hh8a
+  description: dissociate gene specified in HH8a
+HH8e:
+  type: featureprop
+  cvterm: syn_gene_implicated
+  description: Synthetic gene(s) used 
+
+HH14:
+  type: data_set
+  sub_type: dbxrefprop
+  cv: property type
+  cvterm: data_link_bdsc
+  description: External link HH14 [a,b,c and d]
+  set_acc: a
+  set_db: b
+  set_desc: c
+  set_dis: d
+HH14a:
+  type: dbxrefprop
+  cvterm: data_link_bdsc
+  description: External link to BDSC - page ID
+HH14b:
+  type: ignore # part of HH14a
+  description: External link to BDSC - FB database ID
+HH14c:
+  type: ignore # part of HH14a
+  description: External link to BDSC - title/description of specific page
+HH14d:
+  type: ignore # deal with it  in HH14a
+  description: dissociate accession specified in HH14a/HH14b from this human health model
+
+HH15:
+  type: prop
+  cv: property type
+  cvterm: dros_model_overview
+HH20:
+  type: prop
+  cv: property type
+  cvterm: hdm_internal_notes
+
+  

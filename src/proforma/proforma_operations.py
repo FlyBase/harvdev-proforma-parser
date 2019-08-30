@@ -12,6 +12,7 @@ import yaml
 import os
 import sys
 import logging
+
 # Other modules
 from itertools import tee, islice, chain
 # Validation
@@ -370,13 +371,16 @@ class Proforma(object):
     Args:
         filename (str): The filename (including directory) of a proforma.
     """
-
+    #
+    # NOTE: first two are 'sets' where as the set_fileds_to_key needs info
+    # on what the 'mian' key is for the set
+    #
     set_of_fields_that_should_be_lists = set()
     set_of_fields_with_wrapping_values = set()
+    set_fields_to_key = {}
 
     location = os.getcwd() + '/src/validation/yaml'
-
-    for filename in os.listdir(location):
+    for filename in os.listdir(location):  # noqa: C901
         if filename.endswith('.yaml'):
             with open(os.path.join(location, filename)) as yaml_location:
                 yaml_to_process = yaml.full_load(yaml_location)
@@ -387,22 +391,22 @@ class Proforma(object):
                         field_type = yaml_to_process[field_name]['type']
                     except KeyError:
                         continue
+                    if 'set' in yaml_to_process[field_name]:
+                        set_fields_to_key[field_name] = yaml_to_process[field_name]['set']
+                        print("Adding {} with value {} for sets".format(field_name, yaml_to_process[field_name]['set']))
                     if type(field_type) is list:
                         if 'list' in field_type:
                             set_of_fields_that_should_be_lists.add(field_name)
                     else:
                         if field_type == 'list':
                             set_of_fields_that_should_be_lists.add(field_name)
-
                     # Check whether wrapping values are used.
                     wrapping_values = None
                     try:
                         wrapping_values = yaml_to_process[field_name]['wrapping_values']
+                        set_of_fields_with_wrapping_values.add(field_name)
                     except KeyError:
                         continue
-
-                    if wrapping_values is True:
-                        set_of_fields_with_wrapping_values.add(field_name)
 
     def __init__(self, file_metadata, proforma_type, line_number):
         self.file_metadata = file_metadata  # Store our file metadata dictionary.
@@ -414,13 +418,13 @@ class Proforma(object):
         self.proforma_type = proforma_type  # Used later for data retrieval.
 
         self.fields_values = {}
+        self.set_values = {}
 
         log.info('Creating Proforma class object from individual proforma entry in: %s', self.file_metadata['filename'])
         log.info('Proforma type defined as: %s' % proforma_type)
         log.info('Proforma object begins at line: %s' % line_number)
 
-        self.set_of_fields_that_should_be_lists = Proforma.set_of_fields_that_should_be_lists
-        self.set_of_fields_with_wrapping_values = Proforma.set_of_fields_with_wrapping_values
+        log.debug("Global set is: {}".format(Proforma.set_of_fields_that_should_be_lists))
 
     def add_field_and_value(self, field, value, line_number, type_of_bang):
         """
@@ -446,13 +450,13 @@ class Proforma(object):
         # If we always bring along the field value in the tuple, we can always reference it later.
 
         if field in self.fields_values:  # If we have a previously defined key.
-            if field in self.set_of_fields_with_wrapping_values:  # In this case, we want to concantenate the existing and new values.
+            if field in Proforma.set_of_fields_with_wrapping_values:  # In this case, we want to concantenate the existing and new values.
                 log.info('Found field %s with wrapping values over multiple lines.' % (field))
                 log.info('Concatenating field %s existing value \'%s\' with new value \'%s\'' % (field, self.fields_values[field][1], value))
                 # This following is currently stored with a newline. Keeping the same system, unfortunately.
                 self.fields_values[field] = (field, self.fields_values[field][1] + '\n' + value, line_number)
             else:
-                if type(self.fields_values[field]) is list:
+                if type(self.fields_values[field]) is list and value is not None:
                     self.fields_values[field].append((field, value, line_number))  # Otherwise, if it is a list already, just append the value.
                     log.info('Appending field %s : value %s from line %s to the existing list for this field.' % (field, value, line_number))
                 else:
@@ -463,13 +467,32 @@ class Proforma(object):
                     sys.exit(-1)
         else:  # If the key doesn't exist, add it.
             # Always add None objects as strings, not lists. 'None' in list format breaks Cerberus (as of 1.2)!
-            if field in self.set_of_fields_that_should_be_lists and value is not None:
+            if field in Proforma.set_of_fields_that_should_be_lists and value is not None:
                 log.debug('Adding field %s : value %s from line %s to the Proforma object as a new list.' % (field, value, line_number))
                 self.fields_values[field] = []
                 self.fields_values[field].append((field, value, line_number))
+            elif field in Proforma.set_fields_to_key:
+                self.process_set(field, value, line_number)
+                log.debug('Adding SET data field %s : value %s from line %s to the Proforma object.' % (field, value, line_number))
             else:
                 self.fields_values[field] = (field, value, line_number)
                 log.debug('Adding field %s : value %s from line %s to the Proforma object.' % (field, value, line_number))
+
+    def process_set(self, field, value, line_number):
+        # Example:
+        # self.set_values['HH5'] = [{'HH5a': ('HH5a','acc1', 17)}, 'HH5b': ('HH5b', 'SWISSPROT', 18)},
+        #                           {'HH5a': ('HH5a','acc2',23), 'HH5b': ('HH5b', 'SWISSPROT', 24)}]
+        set_key = Proforma.set_fields_to_key[field]
+        if set_key not in self.set_values:
+            self.set_values[set_key] = []
+            self.set_values[set_key].append({})
+        # if field is already in the last array element then it must be a new one
+        if field in self.set_values[set_key][-1]:
+            # so add a new one
+            log.debug("{} already seen so create next element in the array".format(field))
+            self.set_values[set_key].append({})
+        log.debug("Adding {} to {}".format(field, type(self.set_values[set_key][-1])))
+        self.set_values[set_key][-1][field] = (field, value, line_number)
 
     def add_bang(self, field, value, line_number, type_of_bang):
         """
@@ -504,7 +527,7 @@ class Proforma(object):
 
     def get_data_for_loading(self):
         return self.file_metadata, \
-            self.bang_c, self.bang_d, self.proforma_start_line_number, self.fields_values, self.reference
+            self.bang_c, self.bang_d, self.proforma_start_line_number, self.fields_values, self.set_values, self.reference
 
     def update_errors(self, errors):
         """

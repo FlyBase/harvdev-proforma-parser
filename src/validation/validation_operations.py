@@ -9,6 +9,7 @@
 import yaml
 from validation.validator_pub import ValidatorPub
 from validation.validator_chem import ValidatorChem
+from validation.validator_humanhealth import ValidatorHumanhealth
 from error.error_tracking import ErrorTracking, CRITICAL_ERROR, WARNING_ERROR
 
 # Additional tools for validation
@@ -29,6 +30,17 @@ def validate_proforma_file():
     log.info('Validating proforma file.')
 
     # TODO Add whole file validation.
+
+
+def get_validate_humanhealth_schema(fields_values):
+    """
+    Check for special occurance of humanhealth being new.
+    If they are we use the humanhealth_new.yaml file instead of
+    publication.yaml
+    """
+    if 'HH1f' in fields_values and fields_values['HH1f'][FIELD_VALUE] == "new":
+        return "humanhealth_new.yaml"
+    return "humanhealth.yaml"
 
 
 def get_validate_pub_schema(fields_values):
@@ -68,16 +80,19 @@ def validation_file_schema_lookup(proforma_type, fields_values):
     # Ignore versions just get name (deal with this later if it ever becomes a problem)
     validation_dict = {"PUBLICATION": get_validate_pub_schema,
                        "GENE": get_validate_gene_schema,
-                       "CHEMICAL": get_validate_chemical_schema}
+                       "CHEMICAL": get_validate_chemical_schema,
+                       "HUMAN": get_validate_humanhealth_schema}
     # if we have specific validation stuff set it up here.
     validation_base = {"PUBLICATION": ValidatorPub,
-                       "CHEMICAL": ValidatorChem}
+                       "CHEMICAL": ValidatorChem,
+                       "HUMAN": ValidatorHumanhealth}
     validator = None
 
     pattern = r"""
               ^!        # start with a bang
               \s+       # one or more spaces
               (\w+)     # the proformat type is a word
+              .*        # can have other words like HEALTH etc. ignore
               \s+       # one or more spaces
               PROFORMA  # the word proforma all CAPS
               """
@@ -115,6 +130,7 @@ def validation_field_to_dict(fields_values):
     for field, value in fields_values.items():
         if type(value) is list:
             for list_object in value:
+                log.debug("{}: list_object is {}".format(field, type(list_object)))
                 if field in field_value_validation_dict:
                     field_value_validation_dict[field].append(list_object[FIELD_VALUE])
                 else:
