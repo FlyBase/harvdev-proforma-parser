@@ -213,7 +213,7 @@ HH7c:
   cvterm: hh_ortho_rel_comment
   description: Comments on ortholog relationships
 HH7d:
-  type: dbxrefprop
+  type: feature_hh_dbxref 
   cv: property type
   cvterm: diopt_ortholog
   description: Orthologous Dmel gene

@@ -342,22 +342,32 @@ class ChadoHumanhealth(ChadoObject):
         If db not in yml file then the format must be dbname:accession
         Else just the accession
         """
-        params = {'cvterm': self.process_data[key]['cv'],
-                  'cv': self.process_data[key]['cvterm'],
-                  'tuple': self.process_data[key]['data']}
-        if 'dbname' in self.process_data[key]:
-            params['dbname'] = self.process_data[key]['dbname']
-            params['accession'] = self.process_data[key]['data'][FIELD_VALUE]
+        params = {'cvterm': self.process_data[key]['cvterm'],
+                  'cvname': self.process_data[key]['cv']}
+        # can be a list or single, so make them all a list to save code dupliction
+        if type(self.process_data[key]['data']) is not list:
+            data_list = []
+            data_list.append(self.process_data[key]['data'])
         else:
-            try:
-                fields = self.process_data[key]['data'][FIELD_VALUE].split(':')
-                params['dbname'] = fields[0].strip()
-                params['accession'] = fields[1].strip()
-            except KeyError:
-                error_message = "{} Not in the corect format of dbname:accession".format(self.process_data[key]['data'][FIELD_VALUE])
-                self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
-                return
-        self.process_dbxrefprop(params)
+            data_list = self.process_data[key]['data']
+
+        for item in data_list:
+            log.debug("{}: {} {}".format(key, item, type(item)))
+            params['tuple'] = item
+            if 'db' in self.process_data[key]:
+                params['dbname'] = self.process_data[key]['db']
+                params['accession'] = item[FIELD_VALUE]
+                self.process_dbxrefprop(params)
+            else:
+                try:
+                    fields = item[FIELD_VALUE].split(':')
+                    params['dbname'] = fields[0].strip()
+                    params['accession'] = fields[1].strip()
+                except IndexError:
+                    error_message = "{} Not in the corect format of dbname:accession".format(item[FIELD_VALUE])
+                    self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
+                    continue
+                self.process_dbxrefprop(params)
 
     def load_featureprop(self, key):
         pass
