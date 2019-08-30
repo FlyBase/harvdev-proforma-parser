@@ -243,6 +243,8 @@ class ChadoChem(ChadoObject):
 
         log.debug("Creating new dbxref: {}".format(dbx_ref.dbxref_id))
 
+        #  TODO Need pub_dbxref entry here?
+
         log.debug("Updating FBch with dbxref.dbxref_id: {}".format(dbx_ref.dbxref_id))
         chemical.dbxref_id = dbx_ref.dbxref_id
 
@@ -250,6 +252,9 @@ class ChadoChem(ChadoObject):
                                     pub_id=self.pub.pub_id)
 
         log.debug("Creating new feature_pub: {}".format(feature_pub.feature_pub_id))
+
+        #  TODO Do we ever remove feature_pubs once all synonym connections are removed?
+        # Probably not because other objects can create feature_pub relationships?
 
         # Add the identifier as a synonym.
         self.modify_synonym('add', chemical.feature_id)
