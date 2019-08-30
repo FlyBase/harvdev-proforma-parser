@@ -36,7 +36,7 @@ def get_validate_humanhealth_schema(fields_values):
     """
     Check for special occurance of humanhealth being new.
     If they are we use the humanhealth_new.yaml file instead of
-    publication.yaml
+    humanhealth.yaml
     """
     if 'HH1f' in fields_values and fields_values['HH1f'][FIELD_VALUE] == "new":
         return "humanhealth_new.yaml"

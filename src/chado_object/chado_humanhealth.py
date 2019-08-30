@@ -336,7 +336,28 @@ class ChadoHumanhealth(ChadoObject):
         return hhdp
 
     def load_dbxrefprop(self, key):
-        pass
+        """
+        load the hh_dbxref and hh_dbxrefprop.
+
+        If db not in yml file then the format must be dbname:accession
+        Else just the accession
+        """
+        params = {'cvterm': self.process_data[key]['cv'],
+                  'cv': self.process_data[key]['cvterm'],
+                  'tuple': self.process_data[key]['data']}
+        if 'dbname' in self.process_data[key]:
+            params['dbname'] = self.process_data[key]['dbname']
+            params['accession'] = self.process_data[key]['data'][FIELD_VALUE]
+        else:
+            try:
+                fields = self.process_data[key]['data'][FIELD_VALUE].split(':')
+                params['dbname'] = fields[0].strip()
+                params['accession'] = fields[1].strip()
+            except KeyError:
+                error_message = "{} Not in the corect format of dbname:accession".format(self.process_data[key]['data'][FIELD_VALUE])
+                self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
+                return
+        self.process_dbxrefprop(params)
 
     def load_featureprop(self, key):
         pass
