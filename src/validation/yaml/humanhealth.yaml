@@ -28,7 +28,7 @@ HH2b:
   regex: ^(FBhh\d{7})$
 HH2c:
   required: False
-  type: integer
+  type: [list, integer]
 HH2d:
   required: False
   type: string
