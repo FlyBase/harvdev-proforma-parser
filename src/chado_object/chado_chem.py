@@ -47,7 +47,7 @@ class ChadoChem(ChadoObject):
         self.pub = None  # All other proforma need a reference to a pub
         self.chemical_feature_id = None  # The feature id used for the chemical.
         self.chebi_pub_id = None  # Used for attributing chemical curation.
-        self.pubchem_pub_id = None # Used for attributing chemical curation.
+        self.pubchem_pub_id = None  # Used for attributing chemical curation.
 
         # Chemical storage dictionary.
         # This dictionary contains all the information required to create a new FBch.
