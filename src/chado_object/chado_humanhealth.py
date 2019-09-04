@@ -203,9 +203,9 @@ class ChadoHumanhealth(ChadoObject):
         else:
             # triggers add dbxref and proper uniquename
             # check we have HH2a, HH1g and HH1b
-            organism = get_or_create(self.session, Organism, abbreviation='Hsap')
-            hh = get_or_create(self.session, Humanhealth, name=self.process_data['HH1b']['data'][FIELD_VALUE],
-                               organism_id=organism.organism_id, uniquename='FBhh:temp_0')
+            organism, _ = get_or_create(self.session, Organism, abbreviation='Hsap')
+            hh, _ = get_or_create(self.session, Humanhealth, name=self.process_data['HH1b']['data'][FIELD_VALUE],
+                                  organism_id=organism.organism_id, uniquename='FBhh:temp_0')
             log.info(hh)
             # db has correct FBhh0000000x in it but here still has 'FBhh:temp_0'. ???
             # presume triggers start after hh is returned. Maybe worth getting form db again
@@ -297,13 +297,13 @@ class ChadoHumanhealth(ChadoObject):
                    Dbxref.accession == params['accession']).\
             one_or_none()
         if not dbxref:
-            dbxref = get_or_create(self.session, Dbxref, db_id=db.db_id, accession=params['accession'])
+            dbxref, _ = get_or_create(self.session, Dbxref, db_id=db.db_id, accession=params['accession'])
             if 'description' in params:
                 dbxref.description = params['description']
 
-        hh_dbxref = get_or_create(self.session, HumanhealthDbxref,
-                                  dbxref_id=dbxref.dbxref_id,
-                                  humanhealth_id=self.humanhealth.humanhealth_id)
+        hh_dbxref, _ = get_or_create(self.session, HumanhealthDbxref,
+                                     dbxref_id=dbxref.dbxref_id,
+                                     humanhealth_id=self.humanhealth.humanhealth_id)
         return hh_dbxref
 
     def process_dbxrefprop(self, params):
@@ -330,9 +330,9 @@ class ChadoHumanhealth(ChadoObject):
             log.critical("cvterm {} with cv of {} failed lookup".format(params['cvterm'], params['cvname']))
             return None
 
-        hhdp = get_or_create(self.session, HumanhealthDbxrefprop,
-                             humanhealth_dbxref_id=hh_dbxref.humanhealth_dbxref_id,
-                             type_id=cvterm.cvterm_id)
+        hhdp, _ = get_or_create(self.session, HumanhealthDbxrefprop,
+                                humanhealth_dbxref_id=hh_dbxref.humanhealth_dbxref_id,
+                                type_id=cvterm.cvterm_id)
         return hhdp
 
     def load_dbxrefprop(self, key):
