@@ -47,6 +47,7 @@ class ChadoChem(ChadoObject):
         self.pub = None  # All other proforma need a reference to a pub
         self.chemical_feature_id = None  # The feature id used for the chemical.
         self.chebi_pub_id = None  # Used for attributing chemical curation.
+        self.pubchem_pub_id = None # Used for attributing chemical curation.
 
         # Chemical storage dictionary.
         # This dictionary contains all the information required to create a new FBch.
@@ -253,8 +254,8 @@ class ChadoChem(ChadoObject):
 
         log.debug("Creating new feature_pub: {}".format(feature_pub.feature_pub_id))
 
-        #  TODO Do we ever remove feature_pubs once all synonym connections are removed?
-        # Probably not because other objects can create feature_pub relationships?
+        # TODO Do we ever remove feature_pubs once all synonym connections are removed?
+        # TODO Probably not because other objects can create feature_pub relationships?
 
         # Add the identifier as a synonym.
         self.modify_synonym('add', chemical.feature_id)
@@ -270,7 +271,6 @@ class ChadoChem(ChadoObject):
 
         :return:
         """
-
         # insert into feature_synonym(is_internal, pub_id, synonym_id, is_current, feature_id) values('FALSE', 221699, 6555779, 'FALSE', 3107733)
 
         log.debug('Looking up synonym type cv and symbol cv term.')
@@ -281,15 +281,15 @@ class ChadoChem(ChadoObject):
 
         symbol_cv_id = symbol_cv_lookup[1].cvterm_id
 
-        # Look up the ChEBI reference pub_id.
-        # Assigns a value to 'self.chebi_pub_id'
-        self.look_up_chebi_reference()
+        # Look up the ChEBI / PubChem reference pub_id's.
+        # Assigns a value to 'self.chebi_pub_id' and 'self.pubchem_pub_id'
+        self.look_up_static_references()
 
         if process == 'add':
             log.info("Adding new synonym entry for {}.".format(self.chemical_information['identifier']['data']))
             new_synonym = get_or_create(self.session, Synonym, type_id=symbol_cv_id,
-                                        synonym_sgml=self.chemical_information['identifier']['data'],
-                                        name=self.chemical_information['identifier']['data'])
+                                        synonym_sgml=self.chemical_information['name']['data'],
+                                        name=self.chemical_information['name']['data'])
 
             get_or_create(self.session, FeatureSynonym, feature_id=feature_id,
                           pub_id=self.chebi_pub_id, synonym_id=new_synonym.synonym_id,
@@ -298,8 +298,8 @@ class ChadoChem(ChadoObject):
         elif process == 'remove':
             log.info("Removing synonym entry for {}.".format(self.chemical_information['identifier']['data']))
             synonym_lookup = self.session.query(Synonym). \
-                filter(Synonym.name == self.chemical_information['identifier']['data']).\
-                filter(Synonym.synonym_sgml == self.chemical_information['identifier']['data']).\
+                filter(Synonym.name == self.chemical_information['name']['data']).\
+                filter(Synonym.synonym_sgml == self.chemical_information['name']['data']).\
                 filter(Synonym.type_id == symbol_cv_id).\
                 delete()
 
@@ -328,16 +328,22 @@ class ChadoChem(ChadoObject):
 
         return entry
 
-    def look_up_chebi_reference(self):
-        log.debug('Retrieving ChEBI FBrf for association.')
+    def look_up_static_references(self):
+        log.debug('Retrieving ChEBI / PubChem FBrfs for association.')
 
         chebi_publication_title = 'ChEBI: Chemical Entities of Biological Interest, EBI.'
+        pubchem_publication_title = 'PubChem, NIH.'
 
         chebi_ref_pub_id_query = self.session.query(Pub). \
             filter(Pub.title == chebi_publication_title).one()
 
+        pubchem_ref_pub_id_query = self.session.query(Pub). \
+            filter(Pub.title == pubchem_publication_title).one()
+
         self.chebi_pub_id = chebi_ref_pub_id_query.pub_id
+        self.pubchem_pub_id = pubchem_ref_pub_id_query.pub_id
         log.debug('Returned ChEBI FBrf pub id as {}'.format(self.chebi_pub_id))
+        log.debug('Returned PubChem FBrf pub id as {}'.format(self.pubchem_pub_id))
 
     def validate_fetch_identifier_at_external_db(self):
         # Identifiers and names for ChEBI / PubChem entries are processed at their respective db.
