@@ -223,7 +223,7 @@ class ChadoPub(ChadoObject):
             log.info("Creating new publication")
 
             # A trigger will swap out FBrf:temp_0 to the next rf in the sequence.
-            pub = get_or_create(self.session, Pub, type_id=P1_cvterm.cvterm_id, uniquename='FBrf:temp_0')
+            pub, _ = get_or_create(self.session, Pub, type_id=P1_cvterm.cvterm_id, uniquename='FBrf:temp_0')
             log.info(pub)
             log.info("New pub created with fbrf {}.".format(pub.uniquename))
         return pub
@@ -421,7 +421,7 @@ class ChadoPub(ChadoObject):
             for author in self.process_data[key]['data']:
                 givennames, surname = self.get_author(author)
                 log.debug("Author get/create: {}.".format(author[FIELD_VALUE]))
-                author = get_or_create(
+                author, _ = get_or_create(
                     self.session, Pubauthor,
                     pub_id=self.pub.pub_id,
                     surname=surname,
@@ -438,7 +438,7 @@ class ChadoPub(ChadoObject):
 
         log.debug('Querying for FBrf \'%s\'.' % (value_to_add_tuple[FIELD_VALUE]))
 
-        pub_prop = get_or_create(
+        pub_prop, _ = get_or_create(
             self.session, Pubprop,
             pub_id=self.pub.pub_id,
             value=value_to_add_tuple[FIELD_VALUE],
@@ -454,7 +454,7 @@ class ChadoPub(ChadoObject):
         db = self.session.query(Db).filter(Db.name == db_name).one()
 
         log.debug("Looking up dbxref: {}.".format(value_to_add_tuple[FIELD_VALUE]))
-        dbxref = get_or_create(
+        dbxref, _ = get_or_create(
             self.session, Dbxref,
             accession=value_to_add_tuple[FIELD_VALUE],
             db_id=db.db_id

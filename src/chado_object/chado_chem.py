@@ -232,15 +232,15 @@ class ChadoChem(ChadoObject):
                                     'Name and FBch in this proforma do not match.')
                 return
 
-        chemical = get_or_create(self.session, Feature, organism_id=organism_id,
-                                 name=self.process_data['CH1a']['data'][FIELD_VALUE],
-                                 type_id=chemical_id,
-                                 uniquename='FBch:temp_0')
+        chemical, _ = get_or_create(self.session, Feature, organism_id=organism_id,
+                                    name=self.process_data['CH1a']['data'][FIELD_VALUE],
+                                    type_id=chemical_id,
+                                    uniquename='FBch:temp_0')
 
         log.info("New chemical entry created: {}".format(chemical.name))
 
-        dbx_ref = get_or_create(self.session, Dbxref, db_id=chebi_database_id,
-                                accession=identifier_accession_num_only)
+        dbx_ref, _ = get_or_create(self.session, Dbxref, db_id=chebi_database_id,
+                                   accession=identifier_accession_num_only)
 
         log.debug("Creating new dbxref: {}".format(dbx_ref.dbxref_id))
 
@@ -249,8 +249,8 @@ class ChadoChem(ChadoObject):
         log.debug("Updating FBch with dbxref.dbxref_id: {}".format(dbx_ref.dbxref_id))
         chemical.dbxref_id = dbx_ref.dbxref_id
 
-        feature_pub = get_or_create(self.session, FeaturePub, feature_id=chemical.feature_id,
-                                    pub_id=self.pub.pub_id)
+        feature_pub, _ = get_or_create(self.session, FeaturePub, feature_id=chemical.feature_id,
+                                       pub_id=self.pub.pub_id)
 
         log.debug("Creating new feature_pub: {}".format(feature_pub.feature_pub_id))
 
@@ -287,9 +287,9 @@ class ChadoChem(ChadoObject):
 
         if process == 'add':
             log.info("Adding new synonym entry for {}.".format(self.chemical_information['identifier']['data']))
-            new_synonym = get_or_create(self.session, Synonym, type_id=symbol_cv_id,
-                                        synonym_sgml=self.chemical_information['name']['data'],
-                                        name=self.chemical_information['name']['data'])
+            new_synonym, _ = get_or_create(self.session, Synonym, type_id=symbol_cv_id,
+                                           synonym_sgml=self.chemical_information['name']['data'],
+                                           name=self.chemical_information['name']['data'])
 
             get_or_create(self.session, FeatureSynonym, feature_id=feature_id,
                           pub_id=self.chebi_pub_id, synonym_id=new_synonym.synonym_id,
