@@ -34,12 +34,3 @@ CH4b:
   required: false
   type: string
   wrapping_values: True
-
-#  ! CH1f. FlyBase chemical ID (FBch or new)          :new
-#  ! CH1a. Chemical name to use in FlyBase :2,4,6-trinitrotoluene
-#  ! CH1b. Chemical name used in reference (other than original source) :2,4,6-trinitrotoluene
-#  ! CH3a. ID from chemical database (ID or ID ; name) :CHEBI:46053 ; 2,4,6-trinitrotoluene
-#  ! CH3b. Variant of CH3a, not exact match (blank/y): y
-#  ! CH3c. Comment for CH3b (free text):
-#  ! CH4a. Derivative of chemical (FBch or CH1a):
-#  ! CH4b. Comment for CH4a (free text):
