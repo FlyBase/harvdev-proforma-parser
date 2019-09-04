@@ -202,12 +202,16 @@ HH6c:
   description: Ordered list of OMIM phenotype entries
 HH7a:
   type: featureprop
+  cv: humanhealth_featureprop type
   cvterm: human_gene_implicated
   description: Human gene(s) implicated
+  feature_code: gn
 HH7b:
   type: featureprop
+  cv: humanhealth_featureprop type
   cvterm: other_mammalian_gene
   description: Other mammalian genes used
+  feature_code: gn
 HH7c:
   type: dbxrefpropdependent
   cvterm: hh_ortho_rel_comment
@@ -241,8 +245,10 @@ HH7f:
 #   'HH8d', '', #Action - dissociate gene specified in HH8a from this human health model (blank/y)
 HH8a:
   type: featureprop
+  cv: humanhealth_featureprop type
   cvterm: dmel_gene_implicated
-  description: Dmel gene(s) implicated 
+  description: Dmel gene(s) implicated
+  feature_code: gn
 HH8c:
   type: featureprop
   cvterm: hh_ortholog_comment
@@ -252,8 +258,10 @@ HH8d:
   description: dissociate gene specified in HH8a
 HH8e:
   type: featureprop
+  cv: humanhealth_featureprop type
   cvterm: syn_gene_implicated
   description: Synthetic gene(s) used 
+  feature_code: gn
 
 HH14:
   type: data_set

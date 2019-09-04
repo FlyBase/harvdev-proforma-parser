@@ -7,8 +7,10 @@
 import os
 from .chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.production import (
-    Humanhealth, HumanhealthPub, Humanhealthprop, Organism, Cvterm, Cv,
-    HumanhealthDbxref, HumanhealthDbxrefprop, Db, Dbxref
+    Humanhealth, HumanhealthPub, Humanhealthprop,
+    HumanhealthDbxref, HumanhealthDbxrefprop,
+    HumanhealthFeature, HumanhealthFeatureprop,
+    Feature, Organism, Cvterm, Cv, Db, Dbxref
 )
 from harvdev_utils.chado_functions import get_or_create
 from error.error_tracking import CRITICAL_ERROR
@@ -203,9 +205,9 @@ class ChadoHumanhealth(ChadoObject):
         else:
             # triggers add dbxref and proper uniquename
             # check we have HH2a, HH1g and HH1b
-            organism = get_or_create(self.session, Organism, abbreviation='Hsap')
-            hh = get_or_create(self.session, Humanhealth, name=self.process_data['HH1b']['data'][FIELD_VALUE],
-                               organism_id=organism.organism_id, uniquename='FBhh:temp_0')
+            organism, _ = get_or_create(self.session, Organism, abbreviation='Hsap')
+            hh, _ = get_or_create(self.session, Humanhealth, name=self.process_data['HH1b']['data'][FIELD_VALUE],
+                                  organism_id=organism.organism_id, uniquename='FBhh:temp_0')
             log.info(hh)
             # db has correct FBhh0000000x in it but here still has 'FBhh:temp_0'. ???
             # presume triggers start after hh is returned. Maybe worth getting form db again
@@ -297,13 +299,13 @@ class ChadoHumanhealth(ChadoObject):
                    Dbxref.accession == params['accession']).\
             one_or_none()
         if not dbxref:
-            dbxref = get_or_create(self.session, Dbxref, db_id=db.db_id, accession=params['accession'])
+            dbxref, _ = get_or_create(self.session, Dbxref, db_id=db.db_id, accession=params['accession'])
             if 'description' in params:
                 dbxref.description = params['description']
 
-        hh_dbxref = get_or_create(self.session, HumanhealthDbxref,
-                                  dbxref_id=dbxref.dbxref_id,
-                                  humanhealth_id=self.humanhealth.humanhealth_id)
+        hh_dbxref, _ = get_or_create(self.session, HumanhealthDbxref,
+                                     dbxref_id=dbxref.dbxref_id,
+                                     humanhealth_id=self.humanhealth.humanhealth_id)
         return hh_dbxref
 
     def process_dbxrefprop(self, params):
@@ -330,9 +332,9 @@ class ChadoHumanhealth(ChadoObject):
             log.critical("cvterm {} with cv of {} failed lookup".format(params['cvterm'], params['cvname']))
             return None
 
-        hhdp = get_or_create(self.session, HumanhealthDbxrefprop,
-                             humanhealth_dbxref_id=hh_dbxref.humanhealth_dbxref_id,
-                             type_id=cvterm.cvterm_id)
+        hhdp, _ = get_or_create(self.session, HumanhealthDbxrefprop,
+                                humanhealth_dbxref_id=hh_dbxref.humanhealth_dbxref_id,
+                                type_id=cvterm.cvterm_id)
         return hhdp
 
     def load_dbxrefprop(self, key):
@@ -369,5 +371,84 @@ class ChadoHumanhealth(ChadoObject):
                     continue
                 self.process_dbxrefprop(params)
 
+    def process_feature(self, params):
+        """
+        General rountine for adding humanhealth dbxrefs.
+        params should contain:-
+          name: feature.name
+          feature_code: FB(xx), (xx, see process_featureprop for more info)
+          tuple: one related tuple to help give better errors
+          feature_type: type of feature to find. i.e. gene
+        """
+
+        feature = self.session.query(Feature).\
+            filter(Feature.name == params['name'],
+                   Feature.uniquename.like("FB{}%".format(params['feature_code']))).one_or_none()
+        if not feature:
+            error_message = "Name {} not found in feature table with unique name starting with FB{}".\
+                format(params['name'], params['feature_code'])
+            self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
+            return None
+
+        hh_feature, _ = get_or_create(self.session, HumanhealthFeature,
+                                      feature_id=feature.feature_id,
+                                      pub_id=self.pub.pub_id,
+                                      humanhealth_id=self.humanhealth.humanhealth_id)
+        return hh_feature
+
+    def process_featureprop(self, params):
+        """
+         General rountine for adding humanhealth dbxrefs and their props
+         params should contain:-
+         name:         name of the feature (feature.name)
+         feature_code: FBxx, pass the xx here.
+         cvname:       cv name for prop
+         cvterm:       cvterm name for prop
+         tuple:        one related tuple to help give better errors
+
+         NOTE: feature code needed as names are not unique i.e.
+         select f.uniquename, f.name from feature f where f.name = E'Hsap\\PTEN';
+            uniquename   |   name
+         ----------------+-----------
+          FBgn0028728    | Hsap\\PTEN
+          FBog0000209256 | Hsap\\PTEN
+
+         Do i also need to look up synonyms???
+        """
+        hh_feature = self.process_feature(params)
+
+        if not hh_feature:
+            return None
+
+        cvterm = self.session.query(Cvterm).join(Cv).\
+            filter(Cv.name == params['cvname'],
+                   Cvterm.name == params['cvterm']).\
+            one_or_none()
+        if not cvterm:
+            log.critical("cvterm {} with cv of {} failed lookup".format(params['cvterm'], params['cvname']))
+            return None
+
+        hhfp, _ = get_or_create(self.session, HumanhealthFeatureprop,
+                                humanhealth_feature_id=hh_feature.humanhealth_feature_id,
+                                type_id=cvterm.cvterm_id)
+        return hhfp
+
     def load_featureprop(self, key):
-        pass
+        """
+        load the hh_feature and hh_featureprop
+        """
+        params = {'cvterm': self.process_data[key]['cvterm'],
+                  'cvname': self.process_data[key]['cv'],
+                  'feature_code': self.process_data[key]['feature_code']}
+        # can be a list or single, so make them all a list to save code dupliction
+        if type(self.process_data[key]['data']) is not list:
+            data_list = []
+            data_list.append(self.process_data[key]['data'])
+        else:
+            data_list = self.process_data[key]['data']
+
+        for item in data_list:
+            log.debug("{}: {} {}".format(key, item, type(item)))
+            params['tuple'] = item
+            params['name'] = item[FIELD_VALUE]
+            self.process_featureprop(params)
