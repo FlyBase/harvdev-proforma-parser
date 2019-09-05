@@ -220,7 +220,6 @@ class ChadoHumanhealth(ChadoObject):
                 log.critical("Unknown set {}".format(key))
                 return
 
-
     def load_direct(self, key):
         if self.has_data(key):
             old_attr = getattr(self.humanhealth, self.process_data[key]['name'])
@@ -233,11 +232,6 @@ class ChadoHumanhealth(ChadoObject):
             filter(Cv.name == self.process_data[key]['cv'],
                    Cvterm.name == self.process_data[key]['cvterm']).\
             one_or_none()
-        if not cvterm:
-            self.critical_error(data_list[0],
-                                'Cvterm missing "{}" for cv "{}".'.format(self.process_data[key]['cvterm'],
-                                                                          self.process_data[key]['cv']))
-            return
 
         if type(self.process_data[key]['data']) is not list:
             data_list = []
@@ -245,7 +239,12 @@ class ChadoHumanhealth(ChadoObject):
         else:
             data_list = self.process_data[key]['data']
 
-        
+        if not cvterm:  # after datalist set up as we need to pass a tuple
+            self.critical_error(data_list[0],
+                                'Cvterm missing "{}" for cv "{}".'.format(self.process_data[key]['cvterm'],
+                                                                          self.process_data[key]['cv']))
+            return
+
         for data in data_list:
             log.debug("Creating hhr with cvterm {}, hh {}, value {}".format(cvterm.cvterm_id,
                                                                             self.humanhealth.humanhealth_id,
@@ -259,9 +258,8 @@ class ChadoHumanhealth(ChadoObject):
 
             get_or_create(self.session, HumanhealthRelationship, type_id=cvterm.cvterm_id,
                           subject_id=self.humanhealth.humanhealth_id,
-                          object_id = hh_object.humanhealth_id)
+                          object_id=hh_object.humanhealth_id)
         return
-        
 
     def load_prop(self, key):
         if not self.has_data(key):
@@ -273,17 +271,17 @@ class ChadoHumanhealth(ChadoObject):
                    Cvterm.name == self.process_data[key]['cvterm']).\
             one_or_none()
 
-        if not cvterm:
-            self.critical_error(data_list[0],
-                                'Cvterm missing "{}" for cv "{}".'.format(self.process_data[key]['cvterm'],
-                                                                          self.process_data[key]['cv']))
-            return
-
         if type(self.process_data[key]['data']) is not list:
             data_list = []
             data_list.append(self.process_data[key]['data'])
         else:
             data_list = self.process_data[key]['data']
+
+        if not cvterm:  # after datalist set up as we need to pass a tuple
+            self.critical_error(data_list[0],
+                                'Cvterm missing "{}" for cv "{}".'.format(self.process_data[key]['cvterm'],
+                                                                          self.process_data[key]['cv']))
+            return
 
         for data in data_list:
             log.debug("Creating hhp with cvterm {}, hh {}, value {}".format(cvterm.cvterm_id,
@@ -300,20 +298,21 @@ class ChadoHumanhealth(ChadoObject):
                    Cvterm.name == self.process_data[key]['cvterm']).\
             one_or_none()
 
-        if not cvterm:
-            self.critical_error(data_list[0],
-                                'Cvterm missing "{}" for cv "{}".'.format(self.process_data[key]['cvterm'],
-                                                                          self.process_data[key]['cv']))
-            return
-
         if type(self.process_data[key]['data']) is not list:
             data_list = []
             data_list.append(self.process_data[key]['data'])
         else:
             data_list = self.process_data[key]['data']
+
+        if not cvterm:  # after datalist set up as we need to pass a tuple
+            self.critical_error(data_list[0],
+                                'Cvterm missing "{}" for cv "{}".'.format(self.process_data[key]['cvterm'],
+                                                                          self.process_data[key]['cv']))
+            return
+
         for data in data_list:
             new_syn, _ = get_or_create(self.session, Synonym, name=data[FIELD_VALUE],
-                                    synonym_sgml=data[FIELD_VALUE], type_id=cvterm.cvterm_id)
+                                       synonym_sgml=data[FIELD_VALUE], type_id=cvterm.cvterm_id)
             get_or_create(self.session, HumanhealthSynonym,
                           humanhealth_id=self.humanhealth.humanhealth_id,
                           synonym_id=new_syn.synonym_id,
@@ -334,12 +333,12 @@ class ChadoHumanhealth(ChadoObject):
             self.error_track(self.process_data[key]['data'], error_message, CRITICAL_ERROR)
             return None
         self.session.delete(hh_pub)
-        
-        syns = self.session.query(HumanhealthSynonym).\
+
+        self.session.query(HumanhealthSynonym).\
             filter(HumanhealthSynonym.pub_id == self.pub.pub_id,
                    HumanhealthSynonym.humanhealth_id == self.humanhealth.humanhealth_id).delete()
 
-        feats = self.session.query(HumanhealthFeature).\
+        self.session.query(HumanhealthFeature).\
             filter(HumanhealthFeature.pub_id == self.pub.pub_id,
                    HumanhealthFeature.humanhealth_id == self.humanhealth.humanhealth_id).delete()
 
@@ -420,7 +419,7 @@ class ChadoHumanhealth(ChadoObject):
         If db not in yml file then the format must be dbname:accession
         Else just the accession
         """
-        # If this is to be deleted rather than created by then return 
+        # If this is to be deleted rather than created by then return
         if 'not_if_defined' in self.process_data[key]:
             check_key = self.process_data[key]['not_if_defined']
             if check_key in self.process_data:
