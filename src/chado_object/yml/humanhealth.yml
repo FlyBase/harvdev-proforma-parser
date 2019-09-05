@@ -41,6 +41,8 @@ HH1b:
 HH1e:
   type: synonym
   type_value: False
+  cv: synonym type
+  cvterm: symbol
   description: Additional synonyms
 HH1f:
   ignore: True
@@ -66,6 +68,7 @@ HH2a:
   
 HH2b:
   type: relationship
+  cv: relationship type
   cvterm: belongs_to
   description: Parent entity
 HH2c: #humanhealth_dbxref db = OMIM_PHENOTYPE, humanhealth_dbxrefprop hh2c_link
@@ -144,6 +147,7 @@ HH4c:
   description: Description/Cellular phenotype and pathology
 HH4f:
   type: relationship
+  cv: relationship type
   cvterm: associated_with
   description: Related human health entity
 HH4g:
@@ -225,9 +229,11 @@ HH7e:
   type: dbxrefprop
   cv: property type
   cvterm: hgnc_link
+  not_if_defined: HH7f
   description: Human gene(s) implicated
 HH7f:
   type: dissociate_hgnc
+  acc_key: HH7e
   description: dissociate accession specified in HH7e from this human health model
 
 

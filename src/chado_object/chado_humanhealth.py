@@ -10,7 +10,8 @@ from harvdev_utils.production import (
     Humanhealth, HumanhealthPub, Humanhealthprop,
     HumanhealthDbxref, HumanhealthDbxrefprop,
     HumanhealthFeature, HumanhealthFeatureprop,
-    Feature, Organism, Cvterm, Cv, Db, Dbxref
+    HumanhealthRelationship, HumanhealthSynonym,
+    Feature, Organism, Cvterm, Cv, Db, Dbxref, Synonym
 )
 from harvdev_utils.chado_functions import get_or_create
 from error.error_tracking import CRITICAL_ERROR
@@ -35,7 +36,6 @@ class ChadoHumanhealth(ChadoObject):
                           'obsolete': self.make_obsolete,
                           'ignore': self.ignore,
                           'data_set': self.ignore,  # Done separately
-                          'dbxref': self.load_dbxref,
                           'dbxrefprop': self.load_dbxrefprop,
                           'featureprop': self.load_featureprop}
 
@@ -67,6 +67,77 @@ class ChadoHumanhealth(ChadoObject):
         yml_file = os.path.join(os.path.dirname(__file__), 'yml/humanhealth.yml')
         # Populated self.process_data with all possible keys.
         self.process_data = self.load_reference_yaml(yml_file, params)
+
+    def load_content(self):
+        """
+        Main processing routine
+        """
+        self.pub = super(ChadoHumanhealth, self).pub_from_fbrf(self.reference, self.session)
+
+        if self.process_data['HH1f']['data'][FIELD_VALUE] == "new":
+            self.newhumanhealth = True
+        self.humanhealth = self.get_humanhealth()
+
+        if self.humanhealth:  # Only proceed if we have a hh. Otherwise we had an error.
+            self.extra_checks()
+        else:
+            return
+
+        # bang c first as this supersedes all things
+        # if self.bang_c:
+        #    self.bang_c_it()
+        # if self.bang_d:
+        #    self.bang_d_it()
+
+        if self.set_values:
+            self.process_sets()
+        else:
+            log.debug("No set values")
+
+        for key in self.process_data:
+            self.type_dict[self.process_data[key]['type']](key)
+
+        timestamp = datetime.now().strftime('%c')
+        curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short, timestamp)
+        log.info('Curator string assembled as:')
+        log.info('%s' % (curated_by_string))
+
+    def obtain_session(self, session):
+        self.session = session
+
+    def get_humanhealth(self):
+        """
+        get humanhealth or create humanhealth if new.
+        returns None or the humanhealth to be used.
+        """
+        if not self.newhumanhealth:
+            hh = self.session.query(Humanhealth).\
+                filter(Humanhealth.uniquename == self.process_data['HH1f']['data'][FIELD_VALUE]).\
+                one_or_none()
+            if not hh:
+                self.critical_error(self.process_data['HH1f']['data'], 'Humanhealth does not exist in the database.')
+                return
+            # Check synonym name is the same as HH1b
+            name = self.process_data['HH1b']['data'][FIELD_VALUE]
+            if hh.name != name:
+                self.critical_error(self.process_data['HH1b']['data'], 'HH1b field "{}" does NOT match the one in the database "{}"'.format(name, hh.name))
+        else:
+            # triggers add dbxref and proper uniquename
+            # check we have HH2a, HH1g and HH1b
+            organism, _ = get_or_create(self.session, Organism, abbreviation='Hsap')
+            hh, _ = get_or_create(self.session, Humanhealth, name=self.process_data['HH1b']['data'][FIELD_VALUE],
+                                  organism_id=organism.organism_id, uniquename='FBhh:temp_0')
+            log.info(hh)
+            # db has correct FBhh0000000x in it but here still has 'FBhh:temp_0'. ???
+            # presume triggers start after hh is returned. Maybe worth getting form db again
+            log.info("New humanhealth created with fbhh {} id={}.".format(hh.uniquename, hh.humanhealth_id))
+
+        # Add to pub to hh if it does not already exist.
+        get_or_create(self.session, HumanhealthPub, pub_id=self.pub.pub_id, humanhealth_id=hh.humanhealth_id)
+        return hh
+
+    def extra_checks(self):
+        pass
 
     def process_set_dbxrefprop(self, set_key, data_set):
         valid_set = True
@@ -149,76 +220,6 @@ class ChadoHumanhealth(ChadoObject):
                 log.critical("Unknown set {}".format(key))
                 return
 
-    def load_content(self):
-        """
-        Main processing routine
-        """
-        self.pub = super(ChadoHumanhealth, self).pub_from_fbrf(self.reference, self.session)
-
-        if self.process_data['HH1f']['data'][FIELD_VALUE] == "new":
-            self.newhumanhealth = True
-        self.humanhealth = self.get_humanhealth()
-
-        if self.humanhealth:  # Only proceed if we have a hh. Otherwise we had an error.
-            self.extra_checks()
-        else:
-            return
-
-        # bang c first as this supersedes all things
-        # if self.bang_c:
-        #    self.bang_c_it()
-        # if self.bang_d:
-        #    self.bang_d_it()
-
-        if self.set_values:
-            self.process_sets()
-        else:
-            log.debug("No set values")
-
-        for key in self.process_data:
-            self.type_dict[self.process_data[key]['type']](key)
-
-        timestamp = datetime.now().strftime('%c')
-        curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short, timestamp)
-        log.info('Curator string assembled as:')
-        log.info('%s' % (curated_by_string))
-
-    def obtain_session(self, session):
-        self.session = session
-
-    def get_humanhealth(self):
-        """
-        get humanhealth or create humanhealth if new.
-        returns None or the humanhealth to be used.
-        """
-        if not self.newhumanhealth:
-            hh = self.session.query(Humanhealth).\
-                filter(Humanhealth.uniquename == self.process_data['HH1f']['data'][FIELD_VALUE]).\
-                one_or_none()
-            if not hh:
-                self.critical_error(self.process_data['HH1f']['data'], 'Humanhealth does not exist in the database.')
-                return
-            # Check synonym name is the same as HH1b
-            name = self.process_data['HH1b']['data'][FIELD_VALUE]
-            if hh.name != name:
-                self.critical_error(self.process_data['HH1b']['data'], 'HH1b field "{}" does NOT match the one in the database "{}"'.format(name, hh.name))
-        else:
-            # triggers add dbxref and proper uniquename
-            # check we have HH2a, HH1g and HH1b
-            organism, _ = get_or_create(self.session, Organism, abbreviation='Hsap')
-            hh, _ = get_or_create(self.session, Humanhealth, name=self.process_data['HH1b']['data'][FIELD_VALUE],
-                                  organism_id=organism.organism_id, uniquename='FBhh:temp_0')
-            log.info(hh)
-            # db has correct FBhh0000000x in it but here still has 'FBhh:temp_0'. ???
-            # presume triggers start after hh is returned. Maybe worth getting form db again
-            log.info("New humanhealth created with fbhh {} id={}.".format(hh.uniquename, hh.humanhealth_id))
-
-        # Add to pub to hh if it does not already exist.
-        get_or_create(self.session, HumanhealthPub, pub_id=self.pub.pub_id, humanhealth_id=hh.humanhealth_id)
-        return hh
-
-    def extra_checks(self):
-        pass
 
     def load_direct(self, key):
         if self.has_data(key):
@@ -228,7 +229,39 @@ class ChadoHumanhealth(ChadoObject):
             setattr(self.humanhealth, self.process_data[key]['name'], self.process_data[key]['data'][FIELD_VALUE])
 
     def load_relationship(self, key):
-        pass
+        cvterm = self.session.query(Cvterm).join(Cv).\
+            filter(Cv.name == self.process_data[key]['cv'],
+                   Cvterm.name == self.process_data[key]['cvterm']).\
+            one_or_none()
+        if not cvterm:
+            self.critical_error(data_list[0],
+                                'Cvterm missing "{}" for cv "{}".'.format(self.process_data[key]['cvterm'],
+                                                                          self.process_data[key]['cv']))
+            return
+
+        if type(self.process_data[key]['data']) is not list:
+            data_list = []
+            data_list.append(self.process_data[key]['data'])
+        else:
+            data_list = self.process_data[key]['data']
+
+        
+        for data in data_list:
+            log.debug("Creating hhr with cvterm {}, hh {}, value {}".format(cvterm.cvterm_id,
+                                                                            self.humanhealth.humanhealth_id,
+                                                                            data[FIELD_VALUE]))
+            hh_object = self.session.query(Humanhealth).\
+                filter(Humanhealth.uniquename == data[FIELD_VALUE]).one_or_none()
+            if not hh_object:
+                error_message = "{} Not found in Humanhealth table".format(data[FIELD_VALUE])
+                self.error_track(data, error_message, CRITICAL_ERROR)
+                return None
+
+            get_or_create(self.session, HumanhealthRelationship, type_id=cvterm.cvterm_id,
+                          subject_id=self.humanhealth.humanhealth_id,
+                          object_id = hh_object.humanhealth_id)
+        return
+        
 
     def load_prop(self, key):
         if not self.has_data(key):
@@ -240,17 +273,17 @@ class ChadoHumanhealth(ChadoObject):
                    Cvterm.name == self.process_data[key]['cvterm']).\
             one_or_none()
 
-        if type(self.process_data[key]['data']) is not list:
-            data_list = []
-            data_list.append(self.process_data[key]['data'])
-        else:
-            data_list = self.process_data[key]['data']
-
         if not cvterm:
             self.critical_error(data_list[0],
                                 'Cvterm missing "{}" for cv "{}".'.format(self.process_data[key]['cvterm'],
                                                                           self.process_data[key]['cv']))
             return
+
+        if type(self.process_data[key]['data']) is not list:
+            data_list = []
+            data_list.append(self.process_data[key]['data'])
+        else:
+            data_list = self.process_data[key]['data']
 
         for data in data_list:
             log.debug("Creating hhp with cvterm {}, hh {}, value {}".format(cvterm.cvterm_id,
@@ -262,22 +295,65 @@ class ChadoHumanhealth(ChadoObject):
         return
 
     def load_synonym(self, key):
-        pass
+        cvterm = self.session.query(Cvterm).join(Cv).\
+            filter(Cv.name == self.process_data[key]['cv'],
+                   Cvterm.name == self.process_data[key]['cvterm']).\
+            one_or_none()
+
+        if not cvterm:
+            self.critical_error(data_list[0],
+                                'Cvterm missing "{}" for cv "{}".'.format(self.process_data[key]['cvterm'],
+                                                                          self.process_data[key]['cv']))
+            return
+
+        if type(self.process_data[key]['data']) is not list:
+            data_list = []
+            data_list.append(self.process_data[key]['data'])
+        else:
+            data_list = self.process_data[key]['data']
+        for data in data_list:
+            new_syn, _ = get_or_create(self.session, Synonym, name=data[FIELD_VALUE],
+                                    synonym_sgml=data[FIELD_VALUE], type_id=cvterm.cvterm_id)
+            get_or_create(self.session, HumanhealthSynonym,
+                          humanhealth_id=self.humanhealth.humanhealth_id,
+                          synonym_id=new_syn.synonym_id,
+                          pub_id=self.pub.pub_id)
 
     def dissociate_pub(self, key):
-        pass
+        """
+        Remove humanhealth_pub, humanhealth_synonym and humanhealth_feature
+        """
+        #################
+        # Humanhealth_pub
+        #################
+        hh_pub = self.session.query(HumanhealthPub).\
+            filter(HumanhealthPub.pub_id == self.pub.pub_id,
+                   HumanhealthPub.humanhealth_id == self.humanhealth.humanhealth_id).one_or_none()
+        if not hh_pub:
+            error_message = 'No relationship between pub and Humanhealth found in table'
+            self.error_track(self.process_data[key]['data'], error_message, CRITICAL_ERROR)
+            return None
+        self.session.delete(hh_pub)
+        
+        syns = self.session.query(HumanhealthSynonym).\
+            filter(HumanhealthSynonym.pub_id == self.pub.pub_id,
+                   HumanhealthSynonym.humanhealth_id == self.humanhealth.humanhealth_id).delete()
+
+        feats = self.session.query(HumanhealthFeature).\
+            filter(HumanhealthFeature.pub_id == self.pub.pub_id,
+                   HumanhealthFeature.humanhealth_id == self.humanhealth.humanhealth_id).delete()
+
+    def delete_dbxrefprop(self, key):
+        log.critical("NOT written delete_dbxrefprop YET! But key is {}".format(key))
 
     def dissociate_hgnc(self, key):
-        pass
+        self.delete_dbxrefprop(self.process_data[key]['acc_key'])
 
     def make_obsolete(self, key):
         pass
 
     def ignore(self, key):
         return
-
-    def load_dbxref(self, key):
-        pass
 
     def process_dbxref(self, params):
         """
@@ -344,6 +420,12 @@ class ChadoHumanhealth(ChadoObject):
         If db not in yml file then the format must be dbname:accession
         Else just the accession
         """
+        # If this is to be deleted rather than created by then return 
+        if 'not_if_defined' in self.process_data[key]:
+            check_key = self.process_data[key]['not_if_defined']
+            if check_key in self.process_data:
+                return
+
         params = {'cvterm': self.process_data[key]['cvterm'],
                   'cvname': self.process_data[key]['cv']}
         # can be a list or single, so make them all a list to save code dupliction
@@ -359,7 +441,6 @@ class ChadoHumanhealth(ChadoObject):
             if 'db' in self.process_data[key]:
                 params['dbname'] = self.process_data[key]['db']
                 params['accession'] = item[FIELD_VALUE]
-                self.process_dbxrefprop(params)
             else:
                 try:
                     fields = item[FIELD_VALUE].split(':')
@@ -369,7 +450,7 @@ class ChadoHumanhealth(ChadoObject):
                     error_message = "{} Not in the corect format of dbname:accession".format(item[FIELD_VALUE])
                     self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
                     continue
-                self.process_dbxrefprop(params)
+            self.process_dbxrefprop(params)
 
     def process_feature(self, params):
         """
