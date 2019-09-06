@@ -40,11 +40,13 @@ class ChadoHumanhealth(ChadoObject):
                           'featureprop': self.load_featureprop}
 
         # self.delete_dict = {'direct': self.delete_direct,
-        #                    'pubauthor': self.delete_author,
         #                    'relationship': self.delete_relationships,
-        #                    'pubprop': self.delete_pubprops,
-        #                    'dbxref': self.delete_dbxref,
+        #                    'prop': self.delete_prop,
+        #                    'synonym': self.delete_synonym,
+        #                    'dbxref': self.delete_dbxrefprop,
         #                    'ignore': self.delete_ignore,
+        #                  'dbxrefprop': self.delete_dbxrefprop,
+        #                  'featureprop': self.delete_featureprop,
         #                    'obsolete': self.delete_obsolete}
 
         self.proforma_start_line_number = params.get('proforma_start_line_number')
@@ -144,7 +146,8 @@ class ChadoHumanhealth(ChadoObject):
         valid_key = None  # need a valid key incase something is wrong to report line number etc
 
         params = {'cvterm': self.process_data[set_key]['cvterm'],
-                  'cvname': self.process_data[set_key]['cv']}
+                  'cvname': self.process_data[set_key]['cv'],
+                  'create_allowed': True}
         acc_key = set_key + self.process_data[set_key]['set_acc']
         db_key = set_key + self.process_data[set_key]['set_db']
         desc_key = set_key + self.process_data[set_key]['set_desc']
@@ -170,7 +173,7 @@ class ChadoHumanhealth(ChadoObject):
             params['description'] = data_set[desc_key][FIELD_VALUE]
         if valid_set:
             params['tuple'] = data_set[valid_key]
-            self.process_dbxrefprop(params)
+            self.get_or_create_dbxrefprop(params)
 
     def process_data_link(self, set_key):
         """
@@ -342,9 +345,6 @@ class ChadoHumanhealth(ChadoObject):
             filter(HumanhealthFeature.pub_id == self.pub.pub_id,
                    HumanhealthFeature.humanhealth_id == self.humanhealth.humanhealth_id).delete()
 
-    def delete_dbxrefprop(self, key):
-        log.critical("NOT written delete_dbxrefprop YET! But key is {}".format(key))
-
     def dissociate_hgnc(self, key):
         self.delete_dbxrefprop(self.process_data[key]['acc_key'])
 
@@ -369,21 +369,27 @@ class ChadoHumanhealth(ChadoObject):
             self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
             return None
 
-        dbxref = self.session.query(Dbxref).join(Db).\
-            filter(Dbxref.db_id == db.db_id,
-                   Dbxref.accession == params['accession']).\
-            one_or_none()
-        if not dbxref:
-            dbxref, _ = get_or_create(self.session, Dbxref, db_id=db.db_id, accession=params['accession'])
+        dbxref, is_new = get_or_create(self.session, Dbxref, db_id=db.db_id, accession=params['accession'])
+        if is_new and not params['create_allowed']:
+            error_message = "Accession {}: Not found in table for db {}".\
+                format(params['accession'], params['dbname'])
+            self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
+            return None
+        if is_new:
             if 'description' in params:
                 dbxref.description = params['description']
 
-        hh_dbxref, _ = get_or_create(self.session, HumanhealthDbxref,
-                                     dbxref_id=dbxref.dbxref_id,
-                                     humanhealth_id=self.humanhealth.humanhealth_id)
+        hh_dbxref, is_new = get_or_create(self.session, HumanhealthDbxref,
+                                          dbxref_id=dbxref.dbxref_id,
+                                          humanhealth_id=self.humanhealth.humanhealth_id)
+        if is_new and not params['create_allowed']:
+            error_message = "Prop for Accession {}: Not found in table for db {}".\
+                format(params['accession'], params['dbname'])
+            self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
+            return None
         return hh_dbxref
 
-    def process_dbxrefprop(self, params):
+    def get_or_create_dbxrefprop(self, params):
         """
          General rountine for adding humanhealth dbxrefs and their props
          params should contain:-
@@ -393,6 +399,9 @@ class ChadoHumanhealth(ChadoObject):
          cvterm:      cvterm name for prop
          description: dbxref description (only used if new dbxref) *Also Optional*
          tuple:       one related tuple to help give better errors
+         create_allowed: Wether we are allowed to create new prop
+
+         Return dbxrefprop
         """
         hh_dbxref = self.process_dbxref(params)
 
@@ -407,24 +416,22 @@ class ChadoHumanhealth(ChadoObject):
             log.critical("cvterm {} with cv of {} failed lookup".format(params['cvterm'], params['cvname']))
             return None
 
-        hhdp, _ = get_or_create(self.session, HumanhealthDbxrefprop,
-                                humanhealth_dbxref_id=hh_dbxref.humanhealth_dbxref_id,
-                                type_id=cvterm.cvterm_id)
+        hhdp, is_new = get_or_create(self.session, HumanhealthDbxrefprop,
+                                     humanhealth_dbxref_id=hh_dbxref.humanhealth_dbxref_id,
+                                     type_id=cvterm.cvterm_id)
+        if is_new and not params['create_allowed']:
+            # eror message
+            return None
         return hhdp
 
-    def load_dbxrefprop(self, key):
+    def process_dbxrefprop(self, key, create=True):
         """
-        load the hh_dbxref and hh_dbxrefprop.
-
-        If db not in yml file then the format must be dbname:accession
-        Else just the accession
+        delete or add hh_dbxrefprop
+        Delete and create are similar in processing data to get params
+        so code share and call appropriate function after generation of params.
         """
-        # If this is to be deleted rather than created by then return
-        if 'not_if_defined' in self.process_data[key]:
-            check_key = self.process_data[key]['not_if_defined']
-            if check_key in self.process_data:
-                return
-
+        log.debug("key = {}".format(key))
+        log.debug("cv is {}, cvterm is {}".format(self.process_data[key]['cv'], self.process_data[key]['cvterm']))
         params = {'cvterm': self.process_data[key]['cvterm'],
                   'cvname': self.process_data[key]['cv']}
         # can be a list or single, so make them all a list to save code dupliction
@@ -449,7 +456,33 @@ class ChadoHumanhealth(ChadoObject):
                     error_message = "{} Not in the corect format of dbname:accession".format(item[FIELD_VALUE])
                     self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
                     continue
-            self.process_dbxrefprop(params)
+
+            if create:
+                params['create_allowed'] = True
+            else:
+                params['create_allowed'] = False
+            hh_dbxrefprop = self.get_or_create_dbxrefprop(params)
+            if not create and hh_dbxrefprop:
+                # testing of the deletion of dbxref removes prop on cascade?
+                # self.session.query(HumanhealthDbxrefprop).\
+                #    filter(HumanhealthDbxrefprop.humanhealth_dbxref_id == hh_dbxrefprop.humanhealth_dbxref_id).delete()
+                self.session.query(HumanhealthDbxref).\
+                    filter(HumanhealthDbxref.humanhealth_dbxref_id == hh_dbxrefprop.humanhealth_dbxref_id).delete()
+
+    def load_dbxrefprop(self, key):
+        """
+        load the hh_dbxref and hh_dbxrefprop.
+
+        If db not in yml file then the format must be dbname:accession
+        Else just the accession
+        """
+        # If this is to be deleted rather than created by then return
+        if 'not_if_defined' in self.process_data[key]:
+            check_key = self.process_data[key]['not_if_defined']
+            if check_key in self.process_data:
+                return
+
+        self.process_dbxrefprop(key, create=True)
 
     def process_feature(self, params):
         """
@@ -532,3 +565,31 @@ class ChadoHumanhealth(ChadoObject):
             params['tuple'] = item
             params['name'] = item[FIELD_VALUE]
             self.process_featureprop(params)
+
+    def delete_direct(self, key, bangc=True):
+        try:
+            new_value = self.process_data[key]['data'][FIELD_VALUE]
+        except KeyError:
+            new_value = None
+        setattr(self.humanhealth, self.process_data[key]['name'], new_value)
+        # NOTE: direct is a replacement so might aswell delete data to stop it being processed again.
+        self.process_data[key]['data'] = None
+
+    def delete_dbxrefprop(self, key, bangc=True):
+        """
+        Delete dbxref and its prop.
+        """
+        if bangc:
+            cvterm = self.session.query(Cvterm).join(Cv).\
+                filter(Cv.name == self.process_data[key]['cvname'],
+                       Cvterm.name == self.process_data[key]['cvterm']).one_or_none()
+            if not cvterm:
+                log.critical("cvterm {} with cv of {} failed lookup".format(self.process_data[key]['cvterm'], self.process_data[key]['cvname']))
+                return None
+
+            self.session.query(HumanhealthDbxref).join(HumanhealthDbxrefprop).\
+                filter(HumanhealthDbxrefprop.type_id == cvterm.cvterm_id,
+                       HumanhealthDbxref.humanhealth_dbxref_id == HumanhealthDbxrefprop.humanhealth_dbxref_id,
+                       HumanhealthDbxref.humanhealth_id == self.humanhealth.humanhealth_id).delete()
+        else:
+            self.process_dbxrefprop(key, create=False)
