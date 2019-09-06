@@ -8,10 +8,9 @@ import os
 from ..chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.production import (
     Humanhealth, HumanhealthPub, Humanhealthprop,
-    HumanhealthDbxref, HumanhealthDbxrefprop,
     HumanhealthFeature, HumanhealthFeatureprop,
     HumanhealthRelationship, HumanhealthSynonym,
-    Feature, Organism, Cvterm, Cv, Db, Dbxref, Synonym
+    Feature, Organism, Cvterm, Cv, Synonym
 )
 from harvdev_utils.chado_functions import get_or_create
 from error.error_tracking import CRITICAL_ERROR
@@ -27,6 +26,7 @@ class ChadoHumanhealth(ChadoObject):
         process_dbxref, get_or_create_dbxrefprop, load_dbxrefprop,
         delete_dbxrefprop
     )
+
     def __init__(self, params):
         log.info('Initializing ChadoHumanhealth object.')
         ##########################################
@@ -403,4 +403,3 @@ class ChadoHumanhealth(ChadoObject):
         setattr(self.humanhealth, self.process_data[key]['name'], new_value)
         # NOTE: direct is a replacement so might aswell delete data to stop it being processed again.
         self.process_data[key]['data'] = None
-
