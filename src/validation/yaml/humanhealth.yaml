@@ -6,7 +6,7 @@ HH1b:
 #      'HH1d:', 'symbol', # synonym humanhealth_synonym.is_current = false
 HH1e:
   required: False
-  type: string
+  type: [list, string]
   at_required: False
 HH1f:
   required: True
