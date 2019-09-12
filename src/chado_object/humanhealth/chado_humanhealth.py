@@ -7,7 +7,7 @@
 import os
 from ..chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.production import (
-    Humanhealth, HumanhealthPub, Humanhealthprop,
+    Humanhealth, HumanhealthPub, Humanhealthprop, HumanhealthpropPub,
     HumanhealthRelationship, HumanhealthSynonym, HumanhealthFeature,
     Organism, Cvterm, Cv, Synonym
 )
@@ -251,9 +251,12 @@ class ChadoHumanhealth(ChadoObject):
             log.debug("Creating hhp with cvterm {}, hh {}, value {}".format(cvterm.cvterm_id,
                                                                             self.humanhealth.humanhealth_id,
                                                                             data[FIELD_VALUE]))
-            get_or_create(self.session, Humanhealthprop, type_id=cvterm.cvterm_id,
-                          humanhealth_id=self.humanhealth.humanhealth_id,
-                          value=data[FIELD_VALUE])
+            hhp, _ = get_or_create(self.session, Humanhealthprop, type_id=cvterm.cvterm_id,
+                                   humanhealth_id=self.humanhealth.humanhealth_id,
+                                   value=data[FIELD_VALUE])
+            get_or_create(self.session, HumanhealthpropPub,
+                          humanhealthprop_id = hhp.humanhealthprop_id,
+                          pub_id = self.pub.pub_id)
         return
 
     def load_synonym(self, key):
@@ -305,6 +308,10 @@ class ChadoHumanhealth(ChadoObject):
         self.session.query(HumanhealthFeature).\
             filter(HumanhealthFeature.pub_id == self.pub.pub_id,
                    HumanhealthFeature.humanhealth_id == self.humanhealth.humanhealth_id).delete()
+
+        # TODO: humanhealth_cvterm, humanhealth_relationship, humanhealth_phenotype,
+        #       library_humanhealth, feature_humanhealth_dbxref, humanhealth_dbxref,
+        #       humanhealth_dbxrefprop           
 
     def dissociate_hgnc(self, key):
         self.delete_dbxrefprop(self.process_data[key]['acc_key'])

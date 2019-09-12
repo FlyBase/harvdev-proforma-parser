@@ -1,5 +1,5 @@
 from harvdev_utils.production import (
-    HumanhealthDbxref, HumanhealthDbxrefprop,
+    HumanhealthDbxref, HumanhealthDbxrefprop, HumanhealthDbxrefpropPub,
     Cvterm, Cv, Db, Dbxref
 )
 import logging
@@ -142,7 +142,7 @@ def process_dbxref(self, params):
 
 def get_or_create_dbxrefprop(self, params):
     """
-        General rountine for adding humanhealth dbxrefs and their props
+        General rountine for adding humanhealth dbxrefs and their props + pubs
         params should contain:-
         dbname:      db name for dbxref
         accession:   accession for dbxref
@@ -173,6 +173,10 @@ def get_or_create_dbxrefprop(self, params):
     if is_new and not params['create_allowed']:
         # eror message
         return None
+    log.debug("Create pub for hdp {}".format(hhdp.humanhealth_dbxrefprop_id))
+    hhdpp, is_new = get_or_create(self.session, HumanhealthDbxrefpropPub,
+                                  humanhealth_dbxrefprop_id=hhdp.humanhealth_dbxrefprop_id,
+                                  pub_id=self.pub.pub_id)
     return hhdp
 
 
