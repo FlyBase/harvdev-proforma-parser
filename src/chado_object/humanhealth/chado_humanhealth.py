@@ -255,8 +255,8 @@ class ChadoHumanhealth(ChadoObject):
                                    humanhealth_id=self.humanhealth.humanhealth_id,
                                    value=data[FIELD_VALUE])
             get_or_create(self.session, HumanhealthpropPub,
-                          humanhealthprop_id = hhp.humanhealthprop_id,
-                          pub_id = self.pub.pub_id)
+                          humanhealthprop_id=hhp.humanhealthprop_id,
+                          pub_id=self.pub.pub_id)
         return
 
     def load_synonym(self, key):
@@ -311,7 +311,7 @@ class ChadoHumanhealth(ChadoObject):
 
         # TODO: humanhealth_cvterm, humanhealth_relationship, humanhealth_phenotype,
         #       library_humanhealth, feature_humanhealth_dbxref, humanhealth_dbxref,
-        #       humanhealth_dbxrefprop           
+        #       humanhealth_dbxrefprop
 
     def dissociate_hgnc(self, key):
         self.delete_dbxrefprop(self.process_data[key]['acc_key'])
