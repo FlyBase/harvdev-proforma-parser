@@ -393,7 +393,7 @@ class Proforma(object):
                         continue
                     if 'set' in yaml_to_process[field_name]:
                         set_fields_to_key[field_name] = yaml_to_process[field_name]['set']
-                        print("Adding {} with value {} for sets".format(field_name, yaml_to_process[field_name]['set']))
+                        log.debug("Adding {} with value {} for sets".format(field_name, yaml_to_process[field_name]['set']))
                     if type(field_type) is list:
                         if 'list' in field_type:
                             set_of_fields_that_should_be_lists.add(field_name)
@@ -467,13 +467,13 @@ class Proforma(object):
                     sys.exit(-1)
         else:  # If the key doesn't exist, add it.
             # Always add None objects as strings, not lists. 'None' in list format breaks Cerberus (as of 1.2)!
-            if field in Proforma.set_of_fields_that_should_be_lists and value is not None:
+            if field in Proforma.set_fields_to_key:
+                self.process_set(field, value, line_number)
+                log.debug('Adding SET data field %s : value %s from line %s to the Proforma object.' % (field, value, line_number))
+            elif field in Proforma.set_of_fields_that_should_be_lists and value is not None:
                 log.debug('Adding field %s : value %s from line %s to the Proforma object as a new list.' % (field, value, line_number))
                 self.fields_values[field] = []
                 self.fields_values[field].append((field, value, line_number))
-            elif field in Proforma.set_fields_to_key:
-                self.process_set(field, value, line_number)
-                log.debug('Adding SET data field %s : value %s from line %s to the Proforma object.' % (field, value, line_number))
             else:
                 self.fields_values[field] = (field, value, line_number)
                 log.debug('Adding field %s : value %s from line %s to the Proforma object.' % (field, value, line_number))

@@ -205,6 +205,19 @@ HH6c:
   cv: property type
   cvterm: OMIM_pheno_table
   description: Ordered list of OMIM phenotype entries
+
+# HH7 set.
+HH7:
+  type: data_set
+  sub_type: hh7special
+  description: Feature links HH7 [c,d,e and f]
+  e_cv: property type
+  e_cvterm: hgnc_link
+  c_cv: property type
+  c_cvterm: hh_ortho_rel_comment
+  d_cv: property type
+  d_cvterm: diopt_ortholog
+
 HH7a:
   type: featureprop
   cv: humanhealth_featureprop type
@@ -218,22 +231,22 @@ HH7b:
   description: Other mammalian genes used
   feature_code: gn
 HH7c:
-  type: dbxrefpropdependent
+  type: ignore  # processed as HH7 set
   cvterm: hh_ortho_rel_comment
   description: Comments on ortholog relationships
 HH7d:
-  type: feature_hh_dbxref 
+  type: ignore  # processed as HH7 set 
   cv: property type
   cvterm: diopt_ortholog
   description: Orthologous Dmel gene
 HH7e:
-  type: dbxrefprop
+  type: ignore  # processed as HH7 set
   cv: property type
   cvterm: hgnc_link
   not_if_defined: HH7f
   description: Human gene(s) implicated
 HH7f:
-  type: dissociate_hgnc
+  type: ignore  # processed as HH7 set
   acc_key: HH7e
   description: dissociate accession specified in HH7e from this human health model
 
