@@ -8,7 +8,7 @@ from bioservices import ChEBI
 from .chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.production import (
     Cv, Cvterm, Pub, Db, Dbxref, Organism,
-    Feature, Featureprop, FeaturePub, FeatureRelationship,
+    Feature, Featureprop, FeaturePub, FeatureRelationship, FeatureRelationshipprop,
     FeatureSynonym, Synonym
 )
 from harvdev_utils.chado_functions import get_or_create
@@ -223,6 +223,7 @@ class ChadoChem(ChadoObject):
     def add_relationship_to_other_FBch(self, feature_id):
         """
         Adds a relationship between the FBch features of CH1f and CH4a.
+        Also adds relationship information from CH4b if it exists.
 
         :param feature_id: specify the feature id used in the feature table.
         :return:
@@ -243,8 +244,18 @@ class ChadoChem(ChadoObject):
         description_cv_id = self.cvterm_query('relationship type', 'derived_from', self.session)
 
         log.debug('Creating relationship between feature in CH1f and CH4a.')
-        get_or_create(self.session, FeatureRelationship, subject_id=feature_id,
-                      object_id=related_fbch_feature_id, type_id=description_cv_id)
+        feature_relationship, _ = get_or_create(self.session, FeatureRelationship, subject_id=feature_id,
+                                                object_id=related_fbch_feature_id, type_id=description_cv_id)
+
+        if self.has_data('CH4b'):
+            log.debug('Adding relationship comment: {} between CH1f and CH4a.'
+                      .format(self.process_data['CH4b']['data'][FIELD_VALUE]))
+
+            comment_cv_id = self.cvterm_query('feature_relationshipprop type', 'comment', self.session)
+
+            get_or_create(self.session, FeatureRelationshipprop,
+                          feature_relationship_id=feature_relationship.feature_relationship_id,
+                          type_id=comment_cv_id, value=self.process_data['CH4b']['data'][FIELD_VALUE])
 
     def add_description_to_featureprop(self, feature_id):
         """
