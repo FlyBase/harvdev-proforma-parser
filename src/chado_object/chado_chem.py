@@ -8,12 +8,12 @@ from bioservices import ChEBI
 from .chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.production import (
     Cv, Cvterm, Pub, Db, Dbxref, Organism,
-    Feature, Featureprop, FeaturePub, FeatureRelationship, FeatureRelationshipprop,
+    Feature, Featureprop, FeaturePub, FeatureRelationship,
     FeatureSynonym, Synonym
 )
 from harvdev_utils.chado_functions import get_or_create
 from datetime import datetime
-from pprint import pprint, pformat
+from pprint import pformat
 import os
 import logging
 import pubchempy
@@ -464,7 +464,7 @@ class ChadoChem(ChadoObject):
             for description_item in description_data['InformationList']['Information']:
                 if 'Description' in description_item.keys() and 'DescriptionSourceName' in description_item.keys():
                     formatted_string = '{}: {}'.format(description_item['DescriptionSourceName'],
-                                                           description_item['Description'])
+                                                       description_item['Description'])
 
                     string_to_add_for_description += formatted_string
 
