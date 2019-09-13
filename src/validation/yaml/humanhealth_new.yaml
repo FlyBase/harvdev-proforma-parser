@@ -80,21 +80,25 @@ HH5a:
   type: string
   no_bangc: True 
   dependencies: [HH5b, HH5c]
+  set: HH5
 HH5b:
   required: False
   type: string
   no_bangc: True 
   dependencies: [HH5a, HH5c]
+  set: HH5
 HH5c:
   required: False
   type: string
   no_bangc: True 
   dependencies: [HH5a, HH5b]
+  set: HH5
 HH5d:
   required: false
   type: string
   no_bangc: True
   allowed: [y, Y]
+  set: HH5
 HH6c:
   required: False
   type: [string, list]
@@ -109,21 +113,22 @@ HH7c:
   required: False
   at_required: True
   type: [string, list]
-  dependencies: [HH7e]
+  set: HH7
 HH7d:
   required: False
   type: [string, list]
-  dependencies: [HH7e]
+  set: HH7
 HH7e:
   required: False
   type: string
   no_bangc: True
+  set: HH7
 HH7f:
   required: False
   type: string
-  dependencies: [HH7e]
   no_bangc: True
   allowed: [y, Y]
+  set: HH7
 HH8a:
   required: False
   type: string
@@ -162,22 +167,26 @@ HH14a:
   required: false
   type: string
   no_bangc: True
+  set: HH14
 HH14b:
   required: False
   type: string
   no_bangc: True 
   dependencies: [HH14a]
+  set: HH14
 HH14c:
   required: False
   type: string
   dependencies: [HH14a, HH14b]
   at_required: True
+  set: HH14
 HH14d:
   required: False
   type: string
   no_bangc: True
   dependencies: [HH14a, HH14b]
   allowed: [y, Y]
+  set: HH14
 HH15:
   required: false
   at_required: True

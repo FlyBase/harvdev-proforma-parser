@@ -23,7 +23,7 @@ class ChadoHumanhealth(ChadoObject):
     from .humanhealth_dbxrefprop import (
         process_dbxrefprop, process_set_dbxrefprop, process_data_link,
         process_dbxref, get_or_create_dbxrefprop, load_dbxrefprop,
-        delete_dbxrefprop
+        delete_dbxrefprop, process_hh7, process_dbxref_link_item
     )
     from .humanhealth_featureprop import (
         process_feature, process_featureprop, load_featureprop
@@ -180,6 +180,8 @@ class ChadoHumanhealth(ChadoObject):
             log.debug("SV: {}: {}".format(key, self.set_values[key]))
             if key == 'HH5' or key == 'HH14':
                 self.process_data_link(key)
+            elif key == 'HH7':
+                self.process_hh7(key)
             else:
                 log.critical("Unknown set {}".format(key))
                 return
