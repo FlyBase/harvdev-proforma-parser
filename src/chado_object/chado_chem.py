@@ -8,10 +8,12 @@ from bioservices import ChEBI
 from .chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.production import (
     Cv, Cvterm, Pub, Db, Dbxref, Organism,
-    Feature, FeaturePub, FeatureSynonym, Synonym
+    Feature, Featureprop, FeaturePub, FeatureRelationship,
+    FeatureSynonym, Synonym
 )
 from harvdev_utils.chado_functions import get_or_create
 from datetime import datetime
+from pprint import pformat
 import os
 import logging
 import pubchempy
@@ -59,8 +61,8 @@ class ChadoChem(ChadoObject):
                 'data': None,
                 'source': None
             },
-            'definition': {
-                'data': [],
+            'description': {
+                'data': None,
                 'source': None
             },
             'inchikey': {
@@ -207,6 +209,57 @@ class ChadoChem(ChadoObject):
 
         # Add the identifier as a synonym.
         self.modify_synonym('add', chemical.feature_id)
+
+        # Add the description as a featureprop.
+        self.add_description_to_featureprop(chemical.feature_id)
+
+        # If CH3b is declared as 'y', store that information in feature_dbxrefprop
+        # TODO Are we creating a feature_dbxrefprop table? More discussion needed.
+
+        # If CH4a is filled out, link two features together.
+        if self.has_data('CH4a'):
+            self.add_relationship_to_other_FBch(chemical.feature_id)
+
+    def add_relationship_to_other_FBch(self, feature_id):
+        """
+        Adds a relationship between the FBch features of CH1f and CH4a.
+
+        :param feature_id: specify the feature id used in the feature table.
+        :return:
+        """
+        ch4a_value = self.process_data['CH4a']['data'][FIELD_VALUE]
+
+        log.debug('Looking up feature id for existing chemical feature {}.'.format(ch4a_value))
+
+        if ch4a_value.startswith('FBch'):
+            feature_for_related_fbch = self.session.query(Feature). \
+                filter(Feature.uniquename == ch4a_value).one()
+        else:
+            feature_for_related_fbch = self.session.query(Feature). \
+                filter(Feature.name == ch4a_value).one()
+
+        related_fbch_feature_id = feature_for_related_fbch.feature_id
+
+        description_cv_id = self.cvterm_query('relationship type', 'derived_from', self.session)
+
+        log.debug('Creating relationship between feature in CH1f and CH4a.')
+        get_or_create(self.session, FeatureRelationship, subject_id=feature_id,
+                      object_id=related_fbch_feature_id, type_id=description_cv_id)
+
+    def add_description_to_featureprop(self, feature_id):
+        """
+        Associates the description from PubChem to a feature via featureprop.
+
+        :param feature_id: str. Specify the feature id used in the featureprop table.
+        :return:
+        """
+
+        log.debug('Adding PubChem description to featureprop.')
+
+        description_cvterm_id = self.cvterm_query('property type', 'description', self.session)
+
+        get_or_create(self.session, Featureprop, feature_id=feature_id,
+                      type_id=description_cvterm_id, value=self.chemical_information['description']['data'])
 
     def modify_synonym(self, process, feature_id):
         """
@@ -390,7 +443,7 @@ class ChadoChem(ChadoObject):
         # TODO PubChem code for PubChem identifiers goes here.
 
         # Definitions always come from PubChem, regardless of identifier source.
-        if not self.chemical_information['definition']['data']:  # If the list is empty.
+        if not self.chemical_information['description']['data']:  # If the list is empty.
 
             log.info('Searching for definitions on PubChem.')
             results = pubchempy.get_compounds(identifier_name, 'name')
@@ -402,10 +455,21 @@ class ChadoChem(ChadoObject):
             raw_data = description.read()
             encoding = description.info().get_content_charset('utf8')  # JSON default
             description_data = json.loads(raw_data.decode(encoding))
+            log.debug(pformat(description_data))
 
+            # We need to format the description from PubChem into a string to be loaded as a featureprop.
+            string_to_add_for_description = ''
+
+            # TODO Need to coordinate with IU on how to store / retrieve this data.
             for description_item in description_data['InformationList']['Information']:
-                if 'Description' in description_item.keys():
-                    self.chemical_information['definition']['data'].append(description_item['Description'])
+                if 'Description' in description_item.keys() and 'DescriptionSourceName' in description_item.keys():
+                    formatted_string = '{}: {}'.format(description_item['DescriptionSourceName'],
+                                                       description_item['Description'])
+
+                    string_to_add_for_description += formatted_string
+
+            self.chemical_information['description']['data'] = string_to_add_for_description
+            log.debug(pformat(self.chemical_information['description']['data']))
 
     def check_valid_id(self, identifier):
         # Added regex checks for identifiers here.
