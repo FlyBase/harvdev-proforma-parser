@@ -42,6 +42,7 @@ CH3b:
 CH3c:
   type: ignore
 CH4a:
-  type: ignore
+  type: relationship
+  cvterm: derived_from
 CH4b:
   type: ignore

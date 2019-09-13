@@ -96,12 +96,18 @@ class ChadoObject(object):
     def warning_error(self, tuple, error_message):
         self.error_track(tuple, error_message, WARNING_ERROR)
 
-    def cvterm_query(self, cv_name, cv_term_name, session):
-        log.debug('Querying for cv_term_name \'%s\'.' % cv_term_name)
+    def cvterm_query(self, cv, cvterm, session):
+        """
+        :param cv: str. The name of the cv to lookup.
+        :param cvterm: str. The name of the cvterm to lookup.
+        :param session: obj. The session object from the child chado object.
+        :return: str. The cvterm_id from the query.
+        """
+        log.debug('Querying for cvterm: {} from cv: {}.'.format(cvterm, cv))
 
         filters = (
-            Cv.name == cv_name,
-            Cvterm.name == cv_term_name,
+            Cv.name == cv,
+            Cvterm.name == cvterm,
             Cvterm.is_obsolete == 0
         )
 
