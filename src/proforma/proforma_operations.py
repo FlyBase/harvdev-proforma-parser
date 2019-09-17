@@ -290,7 +290,7 @@ class ProformaFile(object):
             field, value, type_of_bang = self.get_proforma_field_and_content(current_line)
             log.debug('Current line: {}'.format(current_line))
             log.debug('Line number: {}'.format(line_number))
-            individual_proforma.add_field_and_value(field, value, line_number, type_of_bang)
+            individual_proforma.add_field_and_value(field, value, line_number)
             if type_of_bang:
                 individual_proforma.add_bang(field, value, line_number, type_of_bang)
         else:
@@ -426,7 +426,7 @@ class Proforma(object):
 
         log.debug("Global set is: {}".format(Proforma.set_of_fields_that_should_be_lists))
 
-    def add_field_and_value(self, field, value, line_number, type_of_bang):
+    def add_field_and_value(self, field, value, line_number):
         """
         Adds the field and value from a proforma into a dictionary.
 
@@ -500,7 +500,7 @@ class Proforma(object):
 
         Args:
             field (str): The field to be assigned to the bang_c or bang_d variable.
-
+        NOTE: value, line_number Do NOT seem to be used so why pass them.
         """
         if type_of_bang == 'c':
             if self.bang_c is not None:
