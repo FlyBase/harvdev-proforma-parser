@@ -57,7 +57,7 @@ def process_dbxrefprop(self, key, create=True):
             #    filter(HumanhealthDbxrefprop.humanhealth_dbxref_id == hh_dbxrefprop.humanhealth_dbxref_id).delete()
             self.session.query(HumanhealthDbxref).\
                 filter(HumanhealthDbxref.humanhealth_dbxref_id == hh_dbxrefprop.humanhealth_dbxref_id).delete()
-
+    return hh_dbxref, hh_dbxrefprop
 
 def process_set_dbxrefprop(self, set_key, data_set):
     valid_set = True
@@ -70,12 +70,13 @@ def process_set_dbxrefprop(self, set_key, data_set):
     acc_key = set_key + self.process_data[set_key]['set_acc']
     db_key = set_key + self.process_data[set_key]['set_db']
     desc_key = set_key + self.process_data[set_key]['set_desc']
-    # dis_key = key + postfix['dis']
+    dis_key = set_key + self.process_data[set_key]['set_acc']
+
     for key in data_set.keys():
         if data_set[key][FIELD_VALUE]:
             valid_key = key
     if not valid_key:  # Whole thing is blank so ignore. This is okay
-        return
+        return 
     if acc_key not in data_set or not data_set[acc_key][FIELD_VALUE]:
         valid_set = False
         error_message = "Set {} does not have {} specified".format(set_key, acc_key)
@@ -88,6 +89,10 @@ def process_set_dbxrefprop(self, set_key, data_set):
         self.error_track(data_set[valid_key], error_message, CRITICAL_ERROR)
     else:
         params['dbname'] = data_set[db_key][FIELD_VALUE]
+    if dis_key in data_set:
+        params['bang_c'] = False  # bang_d equivalent remove he one listed
+        self.bang_dbxrefprop(params)
+        return
     if desc_key in data_set:
         params['description'] = data_set[desc_key][FIELD_VALUE]
     if valid_set:
@@ -286,21 +291,72 @@ def load_dbxrefprop(self, key):
     self.process_dbxrefprop(key, create=True)
 
 
-def delete_dbxrefprop(self, key, bangc=True):
+############################################################################
+# Deletion rountines
+############################################################################
+
+
+def delete_specific_dbxrefprop(self, key):
+    """
+    Delete a specific hh_dbxrefprop from a bang_d.
+    """
+    params = {'cvterm' = self.process_data[key]['cvterm'],
+              'cvname' = self.process_data[key]['cvname'],
+              'bang_c' = bangc,
+              'key' = key}
+    if not self.add_db_accession(params, key):
+        return
+
+    params['create_dbxref_allowed'] = False
+    params['create_prop_allowed'] = False
+
+    hh_dbxref, hh_dbxrefprop = self.get_or_create_dbxrefprop(params)
+    if not create and hh_dbxrefprop:
+        hh_dbxrefprop.delete()
+
+def delete_set_dbxrefprop(self, key):
+    pass
+
+def delete_hh_dbxref_props(self, params):
+    """
+    Delete all hh_dbxrefprop for a particular cvterm.
+    pub and hh referenced by self. 
+    params:-
+      cvterm: cvterm name for prop
+      cvname: cv name for prop
+    """
+    cvterm = self.session.query(Cvterm).join(Cv).\
+    filter(Cv.name == params['cvname'],
+           Cvterm.name == params['cvterm']).one_or_none()
+    if not cvterm:
+        log.critical("cvterm {} with cv of {} failed lookup".format(params['cvterm'], params['cvname']))
+        return None
+
+    # Remove all hh_dbxrefprop for this cvterm, hh and pub.
+        self.session.query(HumanhealthDbxrefprop).join(HumanhealthDbxrefpropPub).\
+            .join(HumanhealthDbxref).join(Humanhealth).\
+            filter(HumanhealthDbxrefpropPub.humanhealth_dbxrefprop_id == HumanhealthDbxrefprop.humanhealth_dbxrefprop_id,
+                   HumanhealthDbxrefprop.humanhealth_dbxref_id == HumanhealthDbxref.humanhealth_dbxref_id,
+                   HumanhealthDbxref.humanhealth_id == Humanhealth.humanhealth_id,
+                   HumanhealthDbxrefprop.type_id == cvterm.cvterm_id,
+                   Humanhealth.humanhealth_id = self.humanhealth.humanhealth_id,
+                   HumanhealthDbxrefpropPub.pub_id == self.pub.pub_id).delete()
+
+
+def bang_dbxrefprop(self, params):
     """
     Delete dbxref and its prop.
+    params:-
+      cvterm: cvterm name for prop
+      cvname: cv name for prop
+      dbname: db name
+      accession: db accession
+      bang_c: True if bang_c operation else its a bang_d
+      key:    proforma key to get dbxref value from if bang_d
     """
-    if bangc:
-        cvterm = self.session.query(Cvterm).join(Cv).\
-            filter(Cv.name == self.process_data[key]['cvname'],
-                   Cvterm.name == self.process_data[key]['cvterm']).one_or_none()
-        if not cvterm:
-            log.critical("cvterm {} with cv of {} failed lookup".format(self.process_data[key]['cvterm'], self.process_data[key]['cvname']))
-            return None
-
-        self.session.query(HumanhealthDbxref).join(HumanhealthDbxrefprop).\
-            filter(HumanhealthDbxrefprop.type_id == cvterm.cvterm_id,
-                   HumanhealthDbxref.humanhealth_dbxref_id == HumanhealthDbxrefprop.humanhealth_dbxref_id,
-                   HumanhealthDbxref.humanhealth_id == self.humanhealth.humanhealth_id).delete()
+    if params['bang_c']:
+        self.add_db_accession(params, key):
+        self.delete_hh_dbxref_props(params)
     else:
-        self.process_dbxrefprop(key, create=False)
+        self.delete_specific_dbxrefprop(key)
+        self.process_data[key]['data'] = None  # Remove data so that it is not re-added.

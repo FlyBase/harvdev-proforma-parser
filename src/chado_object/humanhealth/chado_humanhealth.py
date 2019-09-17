@@ -39,20 +39,20 @@ class ChadoHumanhealth(ChadoObject):
                           'prop': self.load_prop,
                           'synonym': self.load_synonym,
                           'dissociate_pub': self.dissociate_pub,
-                          'dissociate_hgnc': self.dissociate_hgnc,
                           'obsolete': self.make_obsolete,
                           'ignore': self.ignore,
                           'data_set': self.ignore,  # Done separately
                           'dbxrefprop': self.load_dbxrefprop,
                           'featureprop': self.load_featureprop}
 
-        # self.delete_dict = {'direct': self.delete_direct,
+        self.delete_dict = {'dbxrefprop': self.bang_dbxrefprop,
+                            'ignore': self.delete_ignore}
         #                    'relationship': self.delete_relationships,
         #                    'prop': self.delete_prop,
         #                    'synonym': self.delete_synonym,
         #                    'dbxref': self.delete_dbxrefprop,
         #                    'ignore': self.delete_ignore,
-        #                  'dbxrefprop': self.delete_dbxrefprop,
+        #                     'dbxrefprop': self.delete_specific_dbxrefprop,
         #                  'featureprop': self.delete_featureprop,
         #                    'obsolete': self.delete_obsolete}
 
@@ -93,10 +93,13 @@ class ChadoHumanhealth(ChadoObject):
             return
 
         # bang c first as this supersedes all things
-        # if self.bang_c:
-        #    self.bang_c_it()
-        # if self.bang_d:
-        #    self.bang_d_it()
+        if 'data' not in self.process_data[key]:  # MUST be part of set.
+            self.delete_set_dbxrefprop(key)
+        else:
+            if self.bang_c:
+                self.bang_c_it()
+            if self.bang_d:
+                self.bang_d_it()
 
         if self.set_values:
             self.process_sets()
@@ -315,13 +318,13 @@ class ChadoHumanhealth(ChadoObject):
         #       library_humanhealth, feature_humanhealth_dbxref, humanhealth_dbxref,
         #       humanhealth_dbxrefprop
 
-    def dissociate_hgnc(self, key):
-        self.delete_dbxrefprop(self.process_data[key]['acc_key'])
-
     def make_obsolete(self, key):
         pass
 
     def ignore(self, key):
+        return
+
+    def delete_ignore(self, key, bangc=False):
         return
 
     def delete_direct(self, key, bangc=True):

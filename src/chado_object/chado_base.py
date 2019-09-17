@@ -149,6 +149,25 @@ class ChadoObject(object):
 
         return results[0]
 
+    def add_db_accession(self, params, key):
+        """
+        Add dbname and accession to parms form the key given.
+        Return True if successful.
+        """
+        if 'db' in self.process_data[key]:
+            params['dbname'] = self.process_data[key]['db']
+            params['accession'] = item[FIELD_VALUE]
+        else:
+            try:
+                fields = item[FIELD_VALUE].split(':')
+                params['dbname'] = fields[0].strip()
+                params['accession'] = fields[1].strip()
+            except IndexError:
+                error_message = "{} Not in the corect format of dbname:accession".format(item[FIELD_VALUE])
+                self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
+                return False
+        return True
+
     ########################################################################################
     # Deletion bangc and bangd methods.
     # NOTE: After correction or deletion
@@ -161,6 +180,7 @@ class ChadoObject(object):
         key = self.bang_c
         self.delete_dict[self.process_data[key]['type']](key, bangc=True)
         delete_blank = False
+            
         if type(self.process_data[key]['data']) is list:
             for item in self.process_data[key]['data']:
                 if not item[FIELD_VALUE]:
