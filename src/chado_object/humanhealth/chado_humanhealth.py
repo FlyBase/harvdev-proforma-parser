@@ -81,7 +81,7 @@ class ChadoHumanhealth(ChadoObject):
         """
         Main processing routine
         """
-        self.pub = super(ChadoHumanhealth, self).pub_from_fbrf(self.reference, self.session)
+        self.pub = super(ChadoHumanhealth, self).pub_from_fbrf(self.reference)
 
         if self.process_data['HH1f']['data'][FIELD_VALUE] == "new":
             self.newhumanhealth = True
@@ -110,9 +110,6 @@ class ChadoHumanhealth(ChadoObject):
         curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short, timestamp)
         log.info('Curator string assembled as:')
         log.info('%s' % (curated_by_string))
-
-    def obtain_session(self, session):
-        self.session = session
 
     def get_humanhealth(self):
         """

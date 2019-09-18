@@ -94,15 +94,12 @@ class ChadoChem(ChadoObject):
         else:
             self.new_chemical_entry = False
 
-    def obtain_session(self, session):
-        self.session = session
-
     def load_content(self):
         """
         Main processing routine.
         """
 
-        self.pub = super(ChadoChem, self).pub_from_fbrf(self.reference, self.session)
+        self.pub = super(ChadoChem, self).pub_from_fbrf(self.reference)
 
         # bang c first as this supersedes all things
         if self.bang_c:
@@ -240,7 +237,7 @@ class ChadoChem(ChadoObject):
 
         related_fbch_feature_id = feature_for_related_fbch.feature_id
 
-        description_cv_id = self.cvterm_query('relationship type', 'derived_from', self.session)
+        description_cv_id = self.cvterm_query('relationship type', 'derived_from')
 
         log.debug('Creating relationship between feature in CH1f and CH4a.')
         get_or_create(self.session, FeatureRelationship, subject_id=feature_id,
@@ -256,7 +253,7 @@ class ChadoChem(ChadoObject):
 
         log.debug('Adding PubChem description to featureprop.')
 
-        description_cvterm_id = self.cvterm_query('property type', 'description', self.session)
+        description_cvterm_id = self.cvterm_query('property type', 'description')
 
         get_or_create(self.session, Featureprop, feature_id=feature_id,
                       type_id=description_cvterm_id, value=self.chemical_information['description']['data'])
