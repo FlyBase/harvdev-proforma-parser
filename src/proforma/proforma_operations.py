@@ -292,7 +292,7 @@ class ProformaFile(object):
             log.debug('Line number: {}'.format(line_number))
             individual_proforma.add_field_and_value(field, value, line_number, True)
             if type_of_bang:
-                individual_proforma.add_bang(field, value, line_number, type_of_bang)
+                individual_proforma.add_bang(field, type_of_bang)
         else:
             # We're in a line which contains a value for the previously defined field.
             # Add the entire contents of the line to the previously defined field.
@@ -505,13 +505,13 @@ class Proforma(object):
         if set_key == 'HH7':
             log.debug(self.set_values[set_key][-1][field])
 
-    def add_bang(self, field, value, line_number, type_of_bang):
+    def add_bang(self, field, type_of_bang):
         """
         Sets the bang_c or bang_d property of the object if found on a proforma line.
 
         Args:
             field (str): The field to be assigned to the bang_c or bang_d variable.
-        NOTE: value, line_number Do NOT seem to be used so why pass them
+            type_of_bang (str): can be 'c' or 'd'
         """
         if type_of_bang == 'c':
             if self.bang_c is not None:
