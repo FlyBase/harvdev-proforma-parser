@@ -59,40 +59,46 @@ def process_dbxrefprop(self, key, create=True):
                 filter(HumanhealthDbxref.humanhealth_dbxref_id == hh_dbxrefprop.humanhealth_dbxref_id).delete()
 
 
-def process_set_dbxrefprop(self, set_key, data_set):  # noqa: C901
-    valid_set = True
-    valid_key = None  # need a valid key incase something is wrong to report line number etc
-
+def create_set_initial_params(self, set_key, data_set):
+    """
+    Create initial params to be used for dbxrefprop generation.
+    """
     params = {'cvterm': self.process_data[set_key]['cvterm'],
               'cvname': self.process_data[set_key]['cv'],
               'create_dbxref_allowed': True,
               'create_prop_allowed': True}
-    acc_key = set_key + self.process_data[set_key]['set_acc']
+
     db_key = set_key + self.process_data[set_key]['set_db']
-    desc_key = set_key + self.process_data[set_key]['set_desc']
-    # dis_key = key + postfix['dis']
-    for key in data_set.keys():
-        if type(data_set[key]) is not list and data_set[key][FIELD_VALUE]:
-            valid_key = key
-        elif type(data_set[key]) is list and data_set[key][0][FIELD_VALUE]:
-            valid_key = key
-    if not valid_key:  # Whole thing is blank so ignore. This is okay
-        return
-
-    log.debug("SETS: {} {}".format(type(data_set[acc_key]), data_set[acc_key]))
-
     if db_key not in data_set or not data_set[db_key][FIELD_VALUE]:
-        valid_set = False
         error_message = "Set {} does not have {} specified".format(set_key, db_key)
-        self.error_track(data_set[valid_key], error_message, CRITICAL_ERROR)
+        self.error_track(data_set[db_key], error_message, CRITICAL_ERROR)
+        return False
     else:
         params['dbname'] = data_set[db_key][FIELD_VALUE]
 
+    desc_key = set_key + self.process_data[set_key]['set_desc']
     if desc_key in data_set:
         params['description'] = data_set[desc_key][FIELD_VALUE]
 
-    if not valid_set:
+    return params
+
+
+def process_set_dbxrefprop(self, set_key, data_set):
+    """
+    Create the dbxref and prop, pubs for this data_set.
+    set_key: Key for the set i.r. HH5 or HH14
+    data_set: One complete set of data. (dictionary)
+    """
+
+    valid_key = self.get_valid_key_for_data_set(data_set)
+    if not valid_key:
         return
+
+    params = self.create_set_initial_params(set_key, data_set)
+    if not params:
+        return
+
+    acc_key = set_key + self.process_data[set_key]['set_acc']
 
     if type(data_set[acc_key]) is not list:
         data_list = []
@@ -102,13 +108,10 @@ def process_set_dbxrefprop(self, set_key, data_set):  # noqa: C901
 
     for acc_tuple in data_list:
         if not acc_tuple[FIELD_VALUE]:
-            valid_set = False
             error_message = "Set {} does not have {} specified".format(set_key, acc_key)
             self.error_track(acc_tuple, error_message, CRITICAL_ERROR)
         else:
             params['accession'] = acc_tuple[FIELD_VALUE]
-
-        if valid_set:
             params['tuple'] = data_set[valid_key]
             self.get_or_create_dbxrefprop(params)
 
@@ -302,7 +305,7 @@ def process_dbxref_link_item(self, set_key, data_set):
     if not valid_key:  # Whole thing is blank so ignore. This is okay
         return
 
-    params = {'create_dbxref_allowed': False,
+    params = {'create_dbxref_allowed': True,
               'create_prop_allowed': True}
 
     if self.process_hh7_e_and_f(set_key, data_set, params):

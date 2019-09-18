@@ -77,7 +77,7 @@ HH4h:
 
 HH5a:
   required: False
-  type: [string, list]
+  type: string
   no_bangc: True 
   dependencies: [HH5b, HH5c]
   set: HH5
