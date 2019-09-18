@@ -76,7 +76,7 @@ HH4h:
 
 HH5a:
   required: False
-  type: string
+  type: [string, list]
   set: HH5
 HH5b:
   required: False
