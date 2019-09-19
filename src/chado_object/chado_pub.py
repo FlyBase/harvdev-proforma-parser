@@ -61,9 +61,6 @@ class ChadoPub(ChadoObject):
         # Populated self.process_data with all possible keys.
         self.process_data = self.load_reference_yaml(yml_file, params)
 
-    def obtain_session(self, session):
-        self.session = session
-
     def get_P1_cvterm_and_validate(self, pub):
         """
         https://svn.flybase.org/flybase-cam/Peeves/doc/specs/pub/P1.txt
@@ -205,7 +202,7 @@ class ChadoPub(ChadoObject):
         returns None or the pub to be used.
         """
         if not self.newpub:
-            pub = super(ChadoPub, self).pub_from_fbrf(self.process_data['P22']['data'], self.session)
+            pub = super(ChadoPub, self).pub_from_fbrf(self.process_data['P22']['data'])
             if not pub:
                 self.critical_error(self.process_data['P22']['data'], 'Pub does not exist in the database.')
                 return
@@ -216,7 +213,7 @@ class ChadoPub(ChadoObject):
             P1_cvterm = self.get_P1_cvterm_and_validate(pub)
 
         if not self.newpub:
-            pub = self.pub_from_fbrf(self.process_data['P22']['data'], self.session)
+            pub = self.pub_from_fbrf(self.process_data['P22']['data'])
         else:
             if not P1_cvterm:  # ErrorTracking already knows, so just return.
                 return None
@@ -434,7 +431,7 @@ class ChadoPub(ChadoObject):
         If cv or cvterm do not exist create an error and return.
         """
         log.debug("Looking up cvterm: {} {}.".format(cv_name, cv_term_name))
-        cv_term_id = super(ChadoPub, self).cvterm_query(cv_name, cv_term_name, self.session)
+        cv_term_id = super(ChadoPub, self).cvterm_query(cv_name, cv_term_name)
 
         log.debug('Querying for FBrf \'%s\'.' % (value_to_add_tuple[FIELD_VALUE]))
 

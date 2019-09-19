@@ -33,9 +33,6 @@ class ChadoGene(ChadoObject):
         # Initiate the parent.
         super(ChadoGene, self).__init__(params)
 
-    def obtain_session(self, session):
-        self.session = session
-
     def is_current_symbol(self, G1b_entry):
         log.debug('Checking whether \'{}\' is the current symbol in Chado'.format(G1b_entry[FIELD_VALUE]))
         self.current_query_source = G1b_entry
@@ -74,8 +71,8 @@ class ChadoGene(ChadoObject):
             log.info('Removing the entries listed in field \'%s\'.' % (self.bang_d))
             for G1b_entry in self.G1b_symbol_used_in_ref:
 
-                synonym_type_id = super(ChadoGene, self).cvterm_query('synonym type', 'symbol', self.session)
-                symbol_used_in_ref_synonym_id = super(ChadoGene, self).synonym_id_from_synonym_symbol(G1b_entry, synonym_type_id, self.session)
+                synonym_type_id = super(ChadoGene, self).cvterm_query('synonym type', 'symbol')
+                symbol_used_in_ref_synonym_id = super(ChadoGene, self).synonym_id_from_synonym_symbol(G1b_entry, synonym_type_id)
 
                 self.current_query_source = G1b_entry
                 self.current_query = 'Deleting feature synonym \'%s\'.' % (G1b_entry[FIELD_VALUE])
@@ -116,7 +113,7 @@ class ChadoGene(ChadoObject):
             if self.G1b_symbol_used_in_ref is not None:
                 for G1b_entry in self.G1b_symbol_used_in_ref:
 
-                    synonym_type_id = super(ChadoGene, self).cvterm_query('synonym type', 'symbol', self.session)
+                    synonym_type_id = super(ChadoGene, self).cvterm_query('synonym type', 'symbol')
 
                     self.current_query_source = G1b_entry
                     self.current_query = 'Querying for \'%s\'.' % (G1b_entry[FIELD_VALUE])
@@ -145,8 +142,8 @@ class ChadoGene(ChadoObject):
     def load_content(self):
 
         # Required querying and loading.
-        self.gene = self.feature_from_feature_name(self.G1a_symbol_in_FB[FIELD_VALUE], self.session)
-        self.pub = self.pub_from_fbrf(self.P22_FlyBase_reference_ID, self.session)
+        self.gene = self.feature_from_feature_name(self.G1a_symbol_in_FB[FIELD_VALUE])
+        self.pub = self.pub_from_fbrf(self.P22_FlyBase_reference_ID)
         log.info("Loading content for gene {} in pub {}.".format(self.gene.uniquename, self.pub.uniquename))
 
         get_or_create(
