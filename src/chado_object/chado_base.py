@@ -33,6 +33,9 @@ class ChadoObject(object):
         self.bang_d = params.get('bang_d')
         self.process_data = None
 
+    def obtain_session(self, session):
+        self.session = session
+
     def load_reference_yaml(self, filename, params):
         # TODO Change bang_c "blank" processing to not require an empty process_data[key]['data'] entry.
         process_data = yaml.load(open(filename))
@@ -110,11 +113,10 @@ class ChadoObject(object):
     def warning_error(self, tuple, error_message):
         self.error_track(tuple, error_message, WARNING_ERROR)
 
-    def cvterm_query(self, cv, cvterm, session):
+    def cvterm_query(self, cv, cvterm):
         """
         :param cv: str. The name of the cv to lookup.
         :param cvterm: str. The name of the cvterm to lookup.
-        :param session: obj. The session object from the child chado object.
         :return: str. The cvterm_id from the query.
         """
         log.debug('Querying for cvterm: {} from cv: {}.'.format(cvterm, cv))
@@ -125,38 +127,38 @@ class ChadoObject(object):
             Cvterm.is_obsolete == 0
         )
 
-        results = session.query(Cv.name, Cvterm.name, Cvterm.is_obsolete, Cvterm.cvterm_id).\
+        results = self.session.query(Cv.name, Cvterm.name, Cvterm.is_obsolete, Cvterm.cvterm_id).\
             join(Cvterm).\
             filter(*filters).\
             one()
 
         return results[3]
 
-    def pub_from_fbrf(self, fbrf_tuple, session):
+    def pub_from_fbrf(self, fbrf_tuple):
         """
         Return pub object for a given fbrf.
         Return None if it does not exist.
         """
         log.debug('Querying for FBrf \'%s\'.' % (fbrf_tuple[FIELD_VALUE]))
 
-        pub = session.query(Pub).\
+        pub = self.session.query(Pub).\
             filter(Pub.uniquename == fbrf_tuple[FIELD_VALUE]).\
             one_or_none()
         return pub
 
-    def feature_from_feature_name(self, feature_name, session):
+    def feature_from_feature_name(self, feature_name):
         log.debug('Querying for feature uniquename from feature id \'%s\'.' % feature_name)
 
-        feature = session.query(Feature).\
+        feature = self.session.query(Feature).\
             filter(Feature.name == feature_name).\
             one()
 
         return feature
 
-    def synonym_id_from_synonym_symbol(self, synonym_name_tuple, synonym_type_id, session):
+    def synonym_id_from_synonym_symbol(self, synonym_name_tuple, synonym_type_id):
         log.debug('Querying for synonym \'%s\'.' % synonym_name_tuple[FIELD_VALUE])
 
-        results = session.query(Synonym.synonym_id, Synonym.name, Synonym.type_id).\
+        results = self.session.query(Synonym.synonym_id, Synonym.name, Synonym.type_id).\
             filter(Synonym.name == synonym_name_tuple[FIELD_VALUE]).\
             filter(Synonym.type_id == synonym_type_id).\
             one()
