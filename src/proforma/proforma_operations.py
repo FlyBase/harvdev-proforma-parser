@@ -502,8 +502,6 @@ class Proforma(object):
                 self.set_values[set_key][-1][field].append((field, value, line_number))
         else:
             self.set_values[set_key][-1][field] = (field, value, line_number)
-        if set_key == 'HH7':
-            log.debug(self.set_values[set_key][-1][field])
 
     def add_bang(self, field, type_of_bang):
         """
