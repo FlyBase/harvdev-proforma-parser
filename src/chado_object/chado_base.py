@@ -69,6 +69,20 @@ class ChadoObject(object):
 
         return process_data
 
+    def get_valid_key_for_data_set(self, data_set):
+        """
+        Basically check we have at least one valid key and the data is
+        not empty.
+        """
+        valid_key = None  # need a valid key incase something is wrong to report line number etc
+        for key in data_set.keys():
+            if type(data_set[key]) is not list and data_set[key][FIELD_VALUE]:
+                valid_key = key
+            elif type(data_set[key]) is list and data_set[key][0][FIELD_VALUE]:
+                valid_key = key
+
+        return valid_key
+
     def has_data(self, key):
         # Checks whether a key exists and contains a FIELD_VALUE that isn't None.
         if key in self.process_data:
