@@ -23,7 +23,8 @@ class ChadoHumanhealth(ChadoObject):
     from .humanhealth_dbxrefprop import (
         process_dbxrefprop, process_set_dbxrefprop, process_data_link,
         process_dbxref, get_or_create_dbxrefprop, load_dbxrefprop,
-        delete_dbxrefprop, process_hh7, process_dbxref_link_item
+        delete_dbxrefprop, process_hh7, process_dbxref_link_item,
+        process_hh7_c_and_d, process_hh7_e_and_f, create_set_initial_params
     )
     from .humanhealth_featureprop import (
         process_feature, process_featureprop, load_featureprop

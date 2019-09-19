@@ -290,9 +290,9 @@ class ProformaFile(object):
             field, value, type_of_bang = self.get_proforma_field_and_content(current_line)
             log.debug('Current line: {}'.format(current_line))
             log.debug('Line number: {}'.format(line_number))
-            individual_proforma.add_field_and_value(field, value, line_number, type_of_bang)
+            individual_proforma.add_field_and_value(field, value, line_number, True)
             if type_of_bang:
-                individual_proforma.add_bang(field, value, line_number, type_of_bang)
+                individual_proforma.add_bang(field, type_of_bang)
         else:
             # We're in a line which contains a value for the previously defined field.
             # Add the entire contents of the line to the previously defined field.
@@ -426,14 +426,15 @@ class Proforma(object):
 
         log.debug("Global set is: {}".format(Proforma.set_of_fields_that_should_be_lists))
 
-    def add_field_and_value(self, field, value, line_number, type_of_bang):
+    def add_field_and_value(self, field, value, line_number, new_line):
         """
         Adds the field and value from a proforma into a dictionary.
 
         Args:
             field (str): The field from the proforma.
-
             value (str): The value from the proforma.
+            line_number: The line number.
+            new_line: True if line starts with ! blah else False (continuation of line)
         """
 
         # Needed to remove the following check to allow empty values to properly fail validation.
@@ -468,7 +469,7 @@ class Proforma(object):
         else:  # If the key doesn't exist, add it.
             # Always add None objects as strings, not lists. 'None' in list format breaks Cerberus (as of 1.2)!
             if field in Proforma.set_fields_to_key:
-                self.process_set(field, value, line_number)
+                self.process_set(field, value, line_number, new_line)
                 log.debug('Adding SET data field %s : value %s from line %s to the Proforma object.' % (field, value, line_number))
             elif field in Proforma.set_of_fields_that_should_be_lists and value is not None:
                 log.debug('Adding field %s : value %s from line %s to the Proforma object as a new list.' % (field, value, line_number))
@@ -478,29 +479,37 @@ class Proforma(object):
                 self.fields_values[field] = (field, value, line_number)
                 log.debug('Adding field %s : value %s from line %s to the Proforma object.' % (field, value, line_number))
 
-    def process_set(self, field, value, line_number):
+    def process_set(self, field, value, line_number, new_line):
         # Example:
-        # self.set_values['HH5'] = [{'HH5a': ('HH5a','acc1', 17)}, 'HH5b': ('HH5b', 'SWISSPROT', 18)},
-        #                           {'HH5a': ('HH5a','acc2',23), 'HH5b': ('HH5b', 'SWISSPROT', 24)}]
+        # self.set_values['HH5'] = [{'HH5a': [('HH5a','acc1', 17), ('HH5a', 'acc4', 18)]}, 'HH5b': ('HH5b', 'SWISSPROT', 19)},
+        #                           {'HH5a': [('HH5a','acc2', 23)], 'HH5b': ('HH5b', 'SWISSPROT', 24)}]
         set_key = Proforma.set_fields_to_key[field]
         if set_key not in self.set_values:
             self.set_values[set_key] = []
             self.set_values[set_key].append({})
-        # if field is already in the last array element then it must be a new one
-        if field in self.set_values[set_key][-1]:
+
+        # if field is already in the last array element and it is a new line then it must be a new one
+        if new_line and field in self.set_values[set_key][-1]:
             # so add a new one
             log.debug("{} already seen so create next element in the array".format(field))
             self.set_values[set_key].append({})
-        log.debug("Adding {} to {}".format(field, type(self.set_values[set_key][-1])))
-        self.set_values[set_key][-1][field] = (field, value, line_number)
 
-    def add_bang(self, field, value, line_number, type_of_bang):
+        log.debug("Adding {} to {}".format(field, type(self.set_values[set_key][-1])))
+        if field in Proforma.set_of_fields_that_should_be_lists and value is not None:
+            if new_line:
+                self.set_values[set_key][-1][field] = [(field, value, line_number)]
+            else:
+                self.set_values[set_key][-1][field].append((field, value, line_number))
+        else:
+            self.set_values[set_key][-1][field] = (field, value, line_number)
+
+    def add_bang(self, field, type_of_bang):
         """
         Sets the bang_c or bang_d property of the object if found on a proforma line.
 
         Args:
             field (str): The field to be assigned to the bang_c or bang_d variable.
-
+            type_of_bang (str): can be 'c' or 'd'
         """
         if type_of_bang == 'c':
             if self.bang_c is not None:
