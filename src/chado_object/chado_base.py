@@ -177,7 +177,7 @@ class ChadoObject(object):
         key = self.bang_c
         self.delete_dict[self.process_data[key]['type']](key, bangc=True)
         delete_blank = False
-            
+
         if type(self.process_data[key]['data']) is list:
             for item in self.process_data[key]['data']:
                 if not item[FIELD_VALUE]:

@@ -512,8 +512,7 @@ class Proforma(object):
                       error_message,
                       "{}: {}".format(field, error_message),
                       CRITICAL_ERROR)
-        #sys.exit(-1) # for now may want to plow on regardless.
- 
+
     def add_bang(self, field, value, type_of_bang, line_number):
         """
         Sets the bang_c or bang_d property of the object if found on a proforma line.
