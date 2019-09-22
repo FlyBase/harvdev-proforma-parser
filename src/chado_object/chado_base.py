@@ -167,7 +167,7 @@ class ChadoObject(object):
 
     def add_db_accession(self, params, key):
         """
-        Add dbname and accession to parms form the key given.
+        Add dbname and accession to params form the key given.
         Return True if successful.
         """
         if 'db' in self.process_data[key]:
