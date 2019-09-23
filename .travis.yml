@@ -18,3 +18,4 @@ script:
     - flake8 build_dir/harvdev-proforma-parser || travis_terminate 1;
     - pip install -r requirements.txt
     - python ./test_scripts/run_tests.py -p
+    - cat test_errors.log || pass
