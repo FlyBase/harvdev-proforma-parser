@@ -4,17 +4,14 @@ from harvdev_utils.production import (
 )
 import logging
 from ..chado_base import FIELD_VALUE
-from error.error_tracking import CRITICAL_ERROR
 from harvdev_utils.chado_functions import get_or_create
-
+from error.error_tracking import CRITICAL_ERROR
 log = logging.getLogger(__name__)
 
 
-def process_dbxrefprop(self, key, create=True):
+def process_dbxrefprop(self, key):
     """
-    delete or add hh_dbxrefprop
-    Delete and create are similar in processing data to get params
-    so code share and call appropriate function after generation of params.
+    Add hh_dbxrefprop
     """
     log.debug("key = {}".format(key))
     log.debug("cv is {}, cvterm is {}".format(self.process_data[key]['cv'], self.process_data[key]['cvterm']))
@@ -43,20 +40,8 @@ def process_dbxrefprop(self, key, create=True):
                 self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
                 continue
 
-        if create:
-            params['create_dbxref_allowed'] = True
-            params['create_prop_allowed'] = True
-        else:
-            params['create_dbxref_allowed'] = False
-            params['create_prop_allowed'] = False
-
         hh_dbxref, hh_dbxrefprop = self.get_or_create_dbxrefprop(params)
-        if not create and hh_dbxrefprop:
-            # testing of the deletion of dbxref removes prop on cascade?
-            # self.session.query(HumanhealthDbxrefprop).\
-            #    filter(HumanhealthDbxrefprop.humanhealth_dbxref_id == hh_dbxrefprop.humanhealth_dbxref_id).delete()
-            self.session.query(HumanhealthDbxref).\
-                filter(HumanhealthDbxref.humanhealth_dbxref_id == hh_dbxrefprop.humanhealth_dbxref_id).delete()
+    return hh_dbxref, hh_dbxrefprop
 
 
 def create_set_initial_params(self, set_key, data_set):
@@ -64,9 +49,7 @@ def create_set_initial_params(self, set_key, data_set):
     Create initial params to be used for dbxrefprop generation.
     """
     params = {'cvterm': self.process_data[set_key]['cvterm'],
-              'cvname': self.process_data[set_key]['cv'],
-              'create_dbxref_allowed': True,
-              'create_prop_allowed': True}
+              'cvname': self.process_data[set_key]['cv']}
 
     db_key = set_key + self.process_data[set_key]['set_db']
     if db_key not in data_set or not data_set[db_key][FIELD_VALUE]:
@@ -85,7 +68,7 @@ def create_set_initial_params(self, set_key, data_set):
 
 def process_set_dbxrefprop(self, set_key, data_set):
     """
-    Create the dbxref and prop, pubs for this data_set.
+    Create/Dissociate the dbxref and prop, pubs for this data_set.
     set_key: Key for the set i.r. HH5 or HH14
     data_set: One complete set of data. (dictionary)
     """
@@ -99,21 +82,24 @@ def process_set_dbxrefprop(self, set_key, data_set):
         return
 
     acc_key = set_key + self.process_data[set_key]['set_acc']
-
-    if type(data_set[acc_key]) is not list:
-        data_list = []
-        data_list.append(data_set[acc_key])
+    if not data_set[acc_key][FIELD_VALUE]:
+        error_message = "Set {} does not have {} specified".format(set_key, acc_key)
+        self.error_track(data_set[acc_key], error_message, CRITICAL_ERROR)
+        return
     else:
-        data_list = data_set[acc_key]
+        params['accession'] = data_set[acc_key][FIELD_VALUE]
 
-    for acc_tuple in data_list:
-        if not acc_tuple[FIELD_VALUE]:
-            error_message = "Set {} does not have {} specified".format(set_key, acc_key)
-            self.error_track(acc_tuple, error_message, CRITICAL_ERROR)
-        else:
-            params['accession'] = acc_tuple[FIELD_VALUE]
-            params['tuple'] = data_set[valid_key]
-            self.get_or_create_dbxrefprop(params)
+    dis_key = set_key + self.process_data[set_key]['set_dis']
+    if dis_key in data_set and data_set[dis_key][FIELD_VALUE] == 'y':
+        log.debug("dis_key is set so delete stuff")
+        params['tuple'] = data_set[acc_key]
+        self.bangc_dbxref(params)
+        return
+    else:
+        log.debug("Dis key NOT set so create stuff")
+
+    params['tuple'] = data_set[acc_key]
+    self.get_or_create_dbxrefprop(params)
 
 
 def process_data_link(self, set_key):
@@ -136,8 +122,6 @@ def process_dbxref(self, params):
         dbname:      db name for dbxref
         accession:   accession for dbxref
         tuple:       one related tuple to help give better errors
-        create_dbxef_allowed: Wether we are allowed to create a new dbxref
-        create_prop_allowed: Wether we are allowed to create new prop
     """
 
     db = self.session.query(Db).filter(Db.name == params['dbname']).one_or_none()
@@ -147,11 +131,6 @@ def process_dbxref(self, params):
         return None
 
     dbxref, is_new = get_or_create(self.session, Dbxref, db_id=db.db_id, accession=params['accession'])
-    if is_new and not params['create_dbxref_allowed']:
-        error_message = "Accession {}: Not found in table for db {}".\
-            format(params['accession'], params['dbname'])
-        self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
-        return None
     if is_new:
         if 'description' in params:
             dbxref.description = params['description']
@@ -159,11 +138,7 @@ def process_dbxref(self, params):
     hh_dbxref, is_new = get_or_create(self.session, HumanhealthDbxref,
                                       dbxref_id=dbxref.dbxref_id,
                                       humanhealth_id=self.humanhealth.humanhealth_id)
-    if is_new and not params['create_prop_allowed']:
-        error_message = "Prop for Accession {}: Not found in table for db {}".\
-            format(params['accession'], params['dbname'])
-        self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
-        return None
+
     return hh_dbxref
 
 
@@ -178,8 +153,6 @@ def get_or_create_dbxrefprop(self, params):
         description: dbxref description (only used if new dbxref) *Also Optional*
         tuple:       one related tuple to help give better errors
         value:       prop value.
-        create_dbxef_allowed: Wether we are allowed to create a new dbxref
-        create_prop_allowed: Wether we are allowed to create new prop
 
         Return dbxref, dbxrefprop
     """
@@ -199,9 +172,7 @@ def get_or_create_dbxrefprop(self, params):
     hhdp, is_new = get_or_create(self.session, HumanhealthDbxrefprop,
                                  humanhealth_dbxref_id=hh_dbxref.humanhealth_dbxref_id,
                                  type_id=cvterm.cvterm_id)
-    if is_new and not params['create_prop_allowed']:
-        # eror message
-        return None, None
+
     log.debug("Create pub for hdp {}".format(hhdp.humanhealth_dbxrefprop_id))
     hhdpp, is_new = get_or_create(self.session, HumanhealthDbxrefpropPub,
                                   humanhealth_dbxrefprop_id=hhdp.humanhealth_dbxrefprop_id,
@@ -223,13 +194,7 @@ def process_hh7_e_and_f(self, set_key, data_set, params):
         description: dbxref description (only used if new dbxref) *Also Optional*
         tuple:       one related tuple to help give better errors
         value:       prop value
-        create_dbxef_allowed: Wether we are allowed to create a new dbxref
-        create_prop_allowed: Wether we are allowed to create new prop
     """
-    dis_key = set_key + 'f'
-    if dis_key in data_set and data_set[dis_key] != '':
-        log.critical("NOT done dissociate yet")
-        return False
 
     db_acc_key = set_key + 'e'
     params['cvterm'] = self.process_data[set_key]['e_cvterm']
@@ -242,6 +207,11 @@ def process_hh7_e_and_f(self, set_key, data_set, params):
     except IndexError:
         error_message = "{} Not in the corect format of dbname:accession".format(params['tuple'][FIELD_VALUE])
         self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
+        return False
+
+    dis_key = set_key + 'f'
+    if dis_key in data_set and data_set[dis_key][FIELD_VALUE] == 'y':
+        self.bangc_dbxref(params)
         return False
 
     hh_dbxref, hh_dbxrefprop = self.get_or_create_dbxrefprop(params)
@@ -259,10 +229,7 @@ def process_hh7_c_and_d(self, set_key, data_set, params):
         description: dbxref description (only used if new dbxref) *Also Optional*
         tuple:       one related tuple to help give better errors
         value:       prop value
-        create_dbxef_allowed: Wether we are allowed to create a new dbxref
-        create_prop_allowed: Wether we are allowed to create new prop
     """
-
     for char_key in ('c', 'd'):
         sub_key = set_key + char_key
         params['cvterm'] = self.process_data[set_key]['{}_cvterm'.format(char_key)]
@@ -304,10 +271,7 @@ def process_dbxref_link_item(self, set_key, data_set):
             valid_key = key
     if not valid_key:  # Whole thing is blank so ignore. This is okay
         return
-
-    params = {'create_dbxref_allowed': True,
-              'create_prop_allowed': True}
-
+    params = {}
     if self.process_hh7_e_and_f(set_key, data_set, params):
         self.process_hh7_c_and_d(set_key, data_set, params)
 
@@ -334,24 +298,41 @@ def load_dbxrefprop(self, key):
         if check_key in self.process_data:
             return
 
-    self.process_dbxrefprop(key, create=True)
+    self.process_dbxrefprop(key)
 
 
-def delete_dbxrefprop(self, key, bangc=True):
+############################################################################
+# Deletion rountines
+# For humanhealth_dbxref we do not care what the pub or props are we just
+# want to dissociate the whole thing.
+# If we delete the hh_dbxref then casding will deal with the rest.
+############################################################################
+
+def delete_dbxref(self, key, bangc):
     """
-    Delete dbxref and its prop.
+    General first call from
     """
-    if bangc:
-        cvterm = self.session.query(Cvterm).join(Cv).\
-            filter(Cv.name == self.process_data[key]['cvname'],
-                   Cvterm.name == self.process_data[key]['cvterm']).one_or_none()
-        if not cvterm:
-            log.critical("cvterm {} with cv of {} failed lookup".format(self.process_data[key]['cvterm'], self.process_data[key]['cvname']))
-            return None
+    pass
 
-        self.session.query(HumanhealthDbxref).join(HumanhealthDbxrefprop).\
-            filter(HumanhealthDbxrefprop.type_id == cvterm.cvterm_id,
-                   HumanhealthDbxref.humanhealth_dbxref_id == HumanhealthDbxrefprop.humanhealth_dbxref_id,
-                   HumanhealthDbxref.humanhealth_id == self.humanhealth.humanhealth_id).delete()
+
+def bangc_dbxref(self, params):
+    """
+    Params needed are:-
+    'dbname' and 'accession': to get the dbxref.
+    'tuple': to allow reporting of problems
+    humanhealth obtained from self.
+    """
+    db = self.session.query(Db).filter(Db.name == params['dbname']).one_or_none()
+    if not db:
+        error_message = "{} Not found in db table".format(params['dbname'])
+        self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
+        return None
+
+    dbxref, is_new = get_or_create(self.session, Dbxref, db_id=db.db_id, accession=params['accession'])
+    if is_new:
+        error_message = "Could not find dbname:{} accession:{} in the Database.".format(params['dbname'], params['accession'])
+        self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
     else:
-        self.process_dbxrefprop(key, create=False)
+        self.session.query(HumanhealthDbxref).\
+            filter(HumanhealthDbxref.humanhealth_id == self.humanhealth.humanhealth_id,
+                   HumanhealthDbxref.dbxref_id == dbxref.dbxref_id).delete()

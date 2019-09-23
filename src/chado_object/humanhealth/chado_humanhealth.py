@@ -23,8 +23,9 @@ class ChadoHumanhealth(ChadoObject):
     from .humanhealth_dbxrefprop import (
         process_dbxrefprop, process_set_dbxrefprop, process_data_link,
         process_dbxref, get_or_create_dbxrefprop, load_dbxrefprop,
-        delete_dbxrefprop, process_hh7, process_dbxref_link_item,
-        process_hh7_c_and_d, process_hh7_e_and_f, create_set_initial_params
+        process_hh7, process_dbxref_link_item,
+        process_hh7_c_and_d, process_hh7_e_and_f, create_set_initial_params,
+        delete_dbxref, bangc_dbxref
     )
     from .humanhealth_featureprop import (
         process_feature, process_featureprop, load_featureprop
@@ -40,20 +41,21 @@ class ChadoHumanhealth(ChadoObject):
                           'prop': self.load_prop,
                           'synonym': self.load_synonym,
                           'dissociate_pub': self.dissociate_pub,
-                          'dissociate_hgnc': self.dissociate_hgnc,
                           'obsolete': self.make_obsolete,
                           'ignore': self.ignore,
                           'data_set': self.ignore,  # Done separately
                           'dbxrefprop': self.load_dbxrefprop,
                           'featureprop': self.load_featureprop}
 
-        # self.delete_dict = {'direct': self.delete_direct,
+        self.delete_dict = {'dbxrefprop': self.delete_dbxref,
+                            'ignore': self.delete_ignore,
+                            'prop': self.delete_prop}
         #                    'relationship': self.delete_relationships,
         #                    'prop': self.delete_prop,
         #                    'synonym': self.delete_synonym,
         #                    'dbxref': self.delete_dbxrefprop,
         #                    'ignore': self.delete_ignore,
-        #                  'dbxrefprop': self.delete_dbxrefprop,
+        #                     'dbxrefprop': self.delete_specific_dbxrefprop,
         #                  'featureprop': self.delete_featureprop,
         #                    'obsolete': self.delete_obsolete}
 
@@ -94,10 +96,10 @@ class ChadoHumanhealth(ChadoObject):
             return
 
         # bang c first as this supersedes all things
-        # if self.bang_c:
-        #    self.bang_c_it()
-        # if self.bang_d:
-        #    self.bang_d_it()
+        if self.bang_c:
+            self.bang_c_it()
+        if self.bang_d:
+            self.bang_d_it()
 
         if self.set_values:
             self.process_sets()
@@ -313,13 +315,13 @@ class ChadoHumanhealth(ChadoObject):
         #       library_humanhealth, feature_humanhealth_dbxref, humanhealth_dbxref,
         #       humanhealth_dbxrefprop
 
-    def dissociate_hgnc(self, key):
-        self.delete_dbxrefprop(self.process_data[key]['acc_key'])
-
     def make_obsolete(self, key):
         pass
 
     def ignore(self, key):
+        return
+
+    def delete_ignore(self, key, bangc=False):
         return
 
     def delete_direct(self, key, bangc=True):
@@ -330,3 +332,6 @@ class ChadoHumanhealth(ChadoObject):
         setattr(self.humanhealth, self.process_data[key]['name'], new_value)
         # NOTE: direct is a replacement so might aswell delete data to stop it being processed again.
         self.process_data[key]['data'] = None
+
+    def delete_prop(self, key, bangc=True):
+        pass
