@@ -502,12 +502,13 @@ class Proforma(object):
             self.set_values[set_key][-1][field] = (field, value, line_number, type_of_bang)
         elif type_of_bang == 'd':
             error_message = 'Cannot have bangd with an empty value'
-            ErrorTracking(self.file_metadata['filename'],
-                      "Proforma entry starting on line: {}".format(line_number),
-                      "Proforma error around line: {}".format(line_number),
-                      error_message,
-                      "{}: {}".format(field, error_message),
-                      CRITICAL_ERROR)
+            ErrorTracking(
+                self.file_metadata['filename'],
+                "Proforma entry starting on line: {}".format(line_number),
+                "Proforma error around line: {}".format(line_number),
+                error_message,
+                "{}: {}".format(field, error_message),
+                CRITICAL_ERROR)
 
     def bang_error(self, field, type_of_bang, line_number):
         """
@@ -520,7 +521,7 @@ class Proforma(object):
                       error_message,
                       "{}: {}".format(field, error_message),
                       CRITICAL_ERROR)
- 
+
     def add_bang(self, field, value, type_of_bang, line_number):
         """
         Sets the bang_c or bang_d property of the object if found on a proforma line.

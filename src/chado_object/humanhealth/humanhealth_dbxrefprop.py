@@ -228,7 +228,7 @@ def process_hh7_e_and_f(self, set_key, data_set, params):
     return True
 
 
-def process_hh7_c_and_d(self, set_key, data_set, params):
+def process_hh7_c_and_d(self, set_key, data_set, params):  # noqa: C901
     """
     Process hh7 c and d.
       params already defined
@@ -264,7 +264,7 @@ def process_hh7_c_and_d(self, set_key, data_set, params):
             else:
                 params['value'] = ''
             hh_dbxref, hh_dbxrefprop = self.get_or_create_dbxrefprop(params)
-            
+
             if char_key == 'd':  # Add feature_hh_dbxref
                 feature = self.session.query(Feature).\
                               filter(Feature.name == params['tuple'][FIELD_VALUE],
@@ -344,7 +344,7 @@ def bang_dbxrefprop_only(self, params):
     'dbname' and 'accession': to get the dbxref.
     'tuple': to allow reporting of problems
     'bang_type': d or c
-    humanhealth and pub obtained from self.    
+    humanhealth and pub obtained from self.
     """
     # get dbxref
     dbxref = self.session.query(Dbxref).join(Db).\
@@ -372,7 +372,7 @@ def bang_dbxrefprop_only(self, params):
     if not hh_dbxref:
         error_message = "Could not find link between {}:{} and {} in DB".format(params['dbname'], params['accession'], self.humanhealth.uniquename)
         self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
-    
+
     if params['bang_type'] == 'c':
         # delete all hh_dbxref_props for this hh, dbxref and cvterm
         self.session.query(HumanhealthDbxrefprop).\
@@ -383,7 +383,7 @@ def bang_dbxrefprop_only(self, params):
         self.session.query(HumanhealthDbxrefprop).\
             filter(HumanhealthDbxrefprop.type_id == cvterm.cvterm_id,
                    HumanhealthDbxrefprop.humanhealth_dbxref_id == hh_dbxref.humanhealth_dbxref_id,
-                   HumanheathDbxrefProp.value == params['tuple'][FIELD_VALUE]).delete()
+                   HumanhealthDbxrefprop.value == params['tuple'][FIELD_VALUE]).delete()
 
 
 def bang_feature_hh_dbxref(self, params):
@@ -403,7 +403,7 @@ def bang_feature_hh_dbxref(self, params):
                HumanhealthDbxref.humanhealth_id == self.humanhealth.humanhealth_id).one_or_none()
     if not hh_dbxref:
         error_message = "Could not find dbxref ({}:{}) -> humanhealth relationship {}in database.".\
-            format(params['dbname'], params['accession'], self.humanhealth.uniquename)    
+            format(params['dbname'], params['accession'], self.humanhealth.uniquename)
 
     if params['bang_type'] == 'd':
         # get the feature
@@ -443,9 +443,10 @@ def bangd_dbxref(self, params):
         return None
 
     self.session.query(HumanhealthDbxrefprop).\
-            filter(HumanhealthDbxrefprop.dbxref_id == HumanhealthDbxref.dbxref_id,
-                   HumanhealthDbxref.humanhealth_id == self.humanhealth.humanhealth_id,
-                   HumanhealthDbxref.dbxref_id == dbxref.dbxref_id).delete()
+        filter(HumanhealthDbxrefprop.dbxref_id == HumanhealthDbxref.dbxref_id,
+               HumanhealthDbxref.humanhealth_id == self.humanhealth.humanhealth_id,
+               HumanhealthDbxref.dbxref_id == dbxref.dbxref_id).delete()
+
 
 def bangc_dbxref(self, params):
     """
