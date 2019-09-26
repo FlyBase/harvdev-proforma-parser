@@ -3,7 +3,7 @@ from harvdev_utils.production import (
     Cvterm, Cv, Db, Dbxref, Feature
 )
 import logging
-from ..chado_base import FIELD_VALUE
+from ..chado_base import FIELD_VALUE, SET_BANG
 from harvdev_utils.chado_functions import get_or_create
 from error.error_tracking import CRITICAL_ERROR
 log = logging.getLogger(__name__)
@@ -52,7 +52,13 @@ def create_set_initial_params(self, set_key, data_set):
               'cvname': self.process_data[set_key]['cv']}
 
     db_key = set_key + self.process_data[set_key]['set_db']
-    if db_key not in data_set or not data_set[db_key][FIELD_VALUE]:
+    if db_key not in data_set:
+        acc_key = set_key + self.process_data[set_key]['set_acc']
+        if acc_key in data_set:
+            error_message = "Set {} does not have {} specified".format(set_key, db_key)
+            self.error_track(data_set[acc_key], error_message, CRITICAL_ERROR)
+            return False
+    elif db_key not in data_set or not data_set[db_key][FIELD_VALUE]:
         error_message = "Set {} does not have {} specified".format(set_key, db_key)
         self.error_track(data_set[db_key], error_message, CRITICAL_ERROR)
         return False
@@ -82,6 +88,10 @@ def process_set_dbxrefprop(self, set_key, data_set):
         return
 
     acc_key = set_key + self.process_data[set_key]['set_acc']
+    if acc_key not in data_set:
+        error_message = "Set {} does not have {} specified".format(set_key, acc_key)
+        self.error_track(data_set[valid_key], error_message, CRITICAL_ERROR)
+        return
     if not data_set[acc_key][FIELD_VALUE]:
         error_message = "Set {} does not have {} specified".format(set_key, acc_key)
         self.error_track(data_set[acc_key], error_message, CRITICAL_ERROR)
@@ -221,9 +231,10 @@ def process_hh7_e_and_f(self, set_key, data_set, params):
 def process_hh7_c_and_d(self, set_key, data_set, params):
     """
     Process hh7 c and d.
-     need to create params for get_or_create_dbxrefprop
+      params already defined
         dbname:      db name for dbxref
         accession:   accession for dbxref
+      need to create params for get_or_create_dbxrefprop
         cvname:      cv name for prop
         cvterm:      cvterm name for prop
         description: dbxref description (only used if new dbxref) *Also Optional*
@@ -238,11 +249,22 @@ def process_hh7_c_and_d(self, set_key, data_set, params):
             continue
         for item in data_set[sub_key]:
             params['tuple'] = item
+            if item and item[SET_BANG]:
+                params['bang_type'] = item[SET_BANG]
+                self.bang_dbxrefprop_only(params)
+                log.debug("Bang for {} is set too {}".format(sub_key, item[SET_BANG]))
+                if char_key == 'd':
+                    self.bang_feature_hh_dbxref(params)
+                if item[SET_BANG] == 'd':
+                    continue
+            if not item or not item[FIELD_VALUE]:
+                continue
             if char_key == 'c':
                 params['value'] = item[FIELD_VALUE]
             else:
                 params['value'] = ''
             hh_dbxref, hh_dbxrefprop = self.get_or_create_dbxrefprop(params)
+            
             if char_key == 'd':  # Add feature_hh_dbxref
                 feature = self.session.query(Feature).\
                               filter(Feature.name == params['tuple'][FIELD_VALUE],
@@ -314,6 +336,116 @@ def delete_dbxref(self, key, bangc):
     """
     pass
 
+
+def bang_dbxrefprop_only(self, params):
+    """
+    Params needed are:-
+    'cvterm', 'cvname': to get prop
+    'dbname' and 'accession': to get the dbxref.
+    'tuple': to allow reporting of problems
+    'bang_type': d or c
+    humanhealth and pub obtained from self.    
+    """
+    # get dbxref
+    dbxref = self.session.query(Dbxref).join(Db).\
+        filter(Dbxref.db_id == Db.db_id,
+               Db.name == params['dbname'],
+               Dbxref.accession == params['accession']).one_or_none()
+    if not dbxref:
+        error_message = "Could not found accession {} in dbxref table for db {}".format(params['accession'], params['dbname'])
+        self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
+        return
+
+    # get cvterm
+    cvterm = self.session.query(Cvterm).join(Cv).\
+        filter(Cv.name == params['cvname'],
+               Cvterm.name == params['cvterm']).\
+        one_or_none()
+    if not cvterm:
+        log.critical("cvterm {} with cv of {} failed lookup".format(params['cvterm'], params['cvname']))
+        return
+
+    # get humanhealth_dbxref
+    hh_dbxref = self.session.query(HumanhealthDbxref).\
+        filter(HumanhealthDbxref.dbxref_id == dbxref.dbxref_id,
+               HumanhealthDbxref.humanhealth_id == self.humanhealth.humanhealth_id).one_or_none()
+    if not hh_dbxref:
+        error_message = "Could not find link between {}:{} and {} in DB".format(params['dbname'], params['accession'], self.humanhealth.uniquename)
+        self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
+    
+    if params['bang_type'] == 'c':
+        # delete all hh_dbxref_props for this hh, dbxref and cvterm
+        self.session.query(HumanhealthDbxrefprop).\
+            filter(HumanhealthDbxrefprop.type_id == cvterm.cvterm_id,
+                   HumanhealthDbxrefprop.humanhealth_dbxref_id == hh_dbxref.humanhealth_dbxref_id).delete()
+    else:
+        # delete hh_dbxref_props for this hh, dbxref and cvterm AND value of that was specified
+        self.session.query(HumanhealthDbxrefprop).\
+            filter(HumanhealthDbxrefprop.type_id == cvterm.cvterm_id,
+                   HumanhealthDbxrefprop.humanhealth_dbxref_id == hh_dbxref.humanhealth_dbxref_id,
+                   HumanheathDbxrefProp.value == params['tuple'][FIELD_VALUE]).delete()
+
+
+def bang_feature_hh_dbxref(self, params):
+    # get dbxref
+    dbxref = self.session.query(Dbxref).join(Db).\
+        filter(Dbxref.db_id == Db.db_id,
+               Db.name == params['dbname'],
+               Dbxref.accession == params['accession']).one_or_none()
+    if not dbxref:
+        error_message = "Could not found accession {} in dbxref table for db {}".format(params['accession'], params['dbname'])
+        self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
+        return
+
+    # get hh_dbxref
+    hh_dbxref = self.session.query(HumanhealthDbxref).\
+        filter(HumanhealthDbxref.dbxref_id == dbxref.dbxref_id,
+               HumanhealthDbxref.humanhealth_id == self.humanhealth.humanhealth_id).one_or_none()
+    if not hh_dbxref:
+        error_message = "Could not find dbxref ({}:{}) -> humanhealth relationship {}in database.".\
+            format(params['dbname'], params['accession'], self.humanhealth.uniquename)    
+
+    if params['bang_type'] == 'd':
+        # get the feature
+        feature = self.session.query(Feature).\
+                      filter(Feature.name == params['tuple'][FIELD_VALUE],
+                             Feature.uniquename.like("FBgn%")).one_or_none()
+        if not feature:
+            error_message = "Name {} not found in feature table with unique name starting with FBgn".\
+                format(params['name'])
+            self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
+            return
+
+        self.session.query(FeatureHumanhealthDbxref).\
+            filter(FeatureHumanhealthDbxref.feature_id == feature.feature_id,
+                   FeatureHumanhealthDbxref.humanhealth_dbxref_id == hh_dbxref.humanhealth_dbxref_id,
+                   FeatureHumanhealthDbxref.pub_id == self.pub.pub_id).delete()
+    else:
+        self.session.query(FeatureHumanhealthDbxref).\
+            filter(FeatureHumanhealthDbxref.humanhealth_dbxref_id == hh_dbxref.humanhealth_dbxref_id,
+                   FeatureHumanhealthDbxref.pub_id == self.pub.pub_id).delete()
+
+
+def bangd_dbxref(self, params):
+    """
+    Params needed are:-
+    'dbname' and 'accession': to get the dbxref.
+    'tuple': to allow reporting of problems
+    humanhealth obtained from self.
+    """
+    dbxref = self.session.query(Dbxref).join(Db).\
+        filter(Dbxref.db_id == Db.db_id,
+               Db.name == params['dbname'],
+               Dbxref.accession == params['accession']).one_or_none()
+    if not dbxref:
+        error_message = "Could not found accession {} in dbxref table for db {}".format(params['accession'], params['dbname'])
+        self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
+        return None
+
+    self.session.query(HumanhealthDbxrefprop).\
+            filter(HumanhealthDbxrefprop.dbxref_id == HumanhealthDbxref.dbxref_id,
+                   HumanhealthDbxref.humanhealth_id == self.humanhealth.humanhealth_id,
+                   HumanhealthDbxref.dbxref_id == dbxref.dbxref_id).delete()
 
 def bangc_dbxref(self, params):
     """
