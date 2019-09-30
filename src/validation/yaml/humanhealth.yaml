@@ -30,6 +30,7 @@ HH2c:
   required: False
   type: [list, integer]
   nullable: True
+  regex: ^(\d{6})$
 HH2d:
   required: False
   type: string
