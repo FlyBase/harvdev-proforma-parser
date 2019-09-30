@@ -102,6 +102,7 @@ HH5d:
 HH6c:
   required: False
   type: [string, list]
+  regex: ^(\d{6})$
 HH7a:
   required: False
   type: [string, list]
