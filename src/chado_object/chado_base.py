@@ -39,7 +39,7 @@ class ChadoObject(object):
 
     def load_reference_yaml(self, filename, params):
         # TODO Change bang_c "blank" processing to not require an empty process_data[key]['data'] entry.
-        process_data = yaml.load(open(filename))
+        process_data = yaml.load(open(filename), Loader=yaml.FullLoader)
         keys_to_remove = []
         for key in process_data:
             log.debug('process data {}'.format(process_data[key]))
