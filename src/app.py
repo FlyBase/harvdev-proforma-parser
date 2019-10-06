@@ -27,6 +27,7 @@ parser = argparse.ArgumentParser(description='Parse proforma files and load them
 parser.add_argument('-v', '--verbose', help='Enable verbose mode.', action='store_true')
 parser.add_argument('-c', '--config', help='Specify the location of the configuration file.', required=True)
 parser.add_argument('-d', '--directory', help='Specify the directory of proformae to be loaded.', required=True)
+parser.add_argument('-m', '--multithread', help='Specify blah,.,....', required=False)
 parser.add_argument('-l', '--load_type', help='Specify whether the load is \'test\' or \'production\'', required=True,
                     choices=['test', 'production'])
 args = parser.parse_args()
@@ -37,6 +38,10 @@ if args.verbose:
 else:
     logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(levelname)s -- %(message)s')
 
+thread_num = None
+if args.multithread:
+    thread_num = int(args.multithread)
+
 log = logging.getLogger(__name__)
 
 # Import secure config variables.
@@ -45,9 +50,12 @@ config.read(args.config)
 
 
 def create_postgres_session():
+    global num_thread
     USER = config['connection']['USER']
     PASSWORD = config['connection']['PASSWORD']
     SERVER = config['connection']['SERVER']
+    if type(thread_num) is int:
+        SERVER += "_{}".format(thread_num)
     DB = config['connection']['DB']
 
     log.info('Using server: {}'.format(SERVER))
@@ -55,7 +63,7 @@ def create_postgres_session():
 
     # Create our SQL Alchemy engine from our environmental variables.
     engine_var = 'postgresql://' + USER + ":" + PASSWORD + '@' + SERVER + '/' + DB
-
+    print("PORT {}".format(engine_var))
     engine = create_engine(engine_var)
 
     Session = sessionmaker(bind=engine)

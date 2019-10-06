@@ -27,7 +27,7 @@ def process_entry(entry, session, filename):
     Process Entry and deal with excpetions etc and just return if an error was seen.
     """
     error_occurred = False
-    executed_queries = []  # List for tracking all the executed queries.
+    executed_queries = ["fake"]  # List for tracking all the executed queries.
 
     engine = session.get_bind()
     @event.listens_for(engine, "before_cursor_execute")
