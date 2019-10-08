@@ -27,7 +27,7 @@ parser = argparse.ArgumentParser(description='Parse proforma files and load them
 parser.add_argument('-v', '--verbose', help='Enable verbose mode.', action='store_true')
 parser.add_argument('-c', '--config', help='Specify the location of the configuration file.', required=True)
 parser.add_argument('-d', '--directory', help='Specify the directory of proformae to be loaded.', required=True)
-parser.add_argument('-m', '--multithread', help='Specify blah,.,....', required=False)
+parser.add_argument('-m', '--multithread', help='Specify the thread numbe if threaded.', required=False)
 parser.add_argument('-l', '--load_type', help='Specify whether the load is \'test\' or \'production\'', required=True,
                     choices=['test', 'production'])
 args = parser.parse_args()
@@ -50,7 +50,6 @@ config.read(args.config)
 
 
 def create_postgres_session():
-    global num_thread
     USER = config['connection']['USER']
     PASSWORD = config['connection']['PASSWORD']
     SERVER = config['connection']['SERVER']
@@ -63,7 +62,7 @@ def create_postgres_session():
 
     # Create our SQL Alchemy engine from our environmental variables.
     engine_var = 'postgresql://' + USER + ":" + PASSWORD + '@' + SERVER + '/' + DB
-    print("PORT {}".format(engine_var))
+    log.debug("PORT engine_var = {}: thread is {}".format(engine_var, thread_num))
     engine = create_engine(engine_var)
 
     Session = sessionmaker(bind=engine)
