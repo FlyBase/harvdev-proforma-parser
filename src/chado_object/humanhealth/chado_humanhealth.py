@@ -28,7 +28,8 @@ class ChadoHumanhealth(ChadoObject):
         delete_dbxref, bangc_dbxref, bangd_dbxref, bang_dbxrefprop_only, bang_feature_hh_dbxref
     )
     from .humanhealth_featureprop import (
-        process_feature, process_featureprop, load_featureprop
+        process_feature, process_featureprop, load_featureprop,
+        delete_featureprop, bangc_featureprop, bangd_featureprop
     )
 
     def __init__(self, params):
@@ -49,14 +50,12 @@ class ChadoHumanhealth(ChadoObject):
 
         self.delete_dict = {'dbxrefprop': self.delete_dbxref,
                             'ignore': self.delete_ignore,
-                            'prop': self.delete_prop}
+                            'prop': self.delete_prop,
+                            'featureprop': self.delete_featureprop}
         #                    'relationship': self.delete_relationships,
         #                    'prop': self.delete_prop,
         #                    'synonym': self.delete_synonym,
-        #                    'dbxref': self.delete_dbxrefprop,
         #                    'ignore': self.delete_ignore,
-        #                     'dbxrefprop': self.delete_specific_dbxrefprop,
-        #                  'featureprop': self.delete_featureprop,
         #                    'obsolete': self.delete_obsolete}
 
         self.proforma_start_line_number = params.get('proforma_start_line_number')
@@ -182,6 +181,8 @@ class ChadoHumanhealth(ChadoObject):
                 self.process_data_link(key)
             elif key == 'HH7':
                 self.process_hh7(key)
+            elif key == 'HH8':
+                self.process_hh8(key)
             else:
                 log.critical("Unknown set {}".format(key))
                 return

@@ -250,31 +250,27 @@ HH7f:
   acc_key: HH7e
   description: dissociate accession specified in HH7e from this human health model
 
-
-#    'HH8a', 'dmel_gene_implicated',  
-##          humanhealth_feature.feature_id/, humanhealth_featureprop cv = propert type with HH8c 
-#           -- only if HH1f is humanhealthprop.type =  cv (property type) cvterm.name (category) value (sub-entity or specific entity or group entity)
-#
-#    'HH8c', 'hh_ortholog_comment', 
-##humanhealth_featureprop cv = property type with HH8a -- humanhealth_featureprop need to track rank
-#
-#   'HH8e', 'syn_gene_implicated',  
-##humanhealth_feature.feature_id/, humanhealth_featureprop cv = humanhealth_featureprop type  
-#          -- only if HH1f is humanhealthprop.type = cv (property type) cvterm.name  (category) value (sub-entity or specific entity or group entity)
-#
-#   'HH8d', '', #Action - dissociate gene specified in HH8a from this human health model (blank/y)
+HH8:
+  type: data_set
+  sub_type: hh8special
+  description: Feature links HH8[a, c and d]
+  a_cv: humanhealth_featureprop type
+  a_cvterm: dmel_gene_implicated
+  c_cv: humanhealth_featureprop type
+  c_cvterm: hh_ortholog_comment
+  feature_code: gn
 HH8a:
-  type: featureprop
+  type: ignore  # processed as HH8 set
   cv: humanhealth_featureprop type
   cvterm: dmel_gene_implicated
   description: Dmel gene(s) implicated
   feature_code: gn
 HH8c:
-  type: featureprop
+  type: ignore  # processed as HH8 set
   cvterm: hh_ortholog_comment
   description: Comments on orthologs
 HH8d:
-  type: dissociate_hh8a
+  type: ignore  # processed as HH8 set
   description: dissociate gene specified in HH8a
 HH8e:
   type: featureprop

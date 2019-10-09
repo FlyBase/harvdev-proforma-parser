@@ -3,7 +3,7 @@ from harvdev_utils.production import (
     HumanhealthFeature, HumanhealthFeatureprop
 )
 import logging
-from ..chado_base import FIELD_VALUE
+from ..chado_base import FIELD_VALUE, SET_BANG
 from error.error_tracking import CRITICAL_ERROR
 from harvdev_utils.chado_functions import get_or_create
 
@@ -12,12 +12,11 @@ log = logging.getLogger(__name__)
 
 def process_feature(self, params):
     """
-    General rountine for adding humanhealth dbxrefs.
+    General rountine for adding humanhealth features.
     params should contain:-
         name: feature.name
         feature_code: FB(xx), (xx, see process_featureprop for more info)
         tuple: one related tuple to help give better errors
-          eature_type: type of feature to find. i.e. gene
     """
 
     feature = self.session.query(Feature).\
@@ -71,6 +70,8 @@ def process_featureprop(self, params):
     hhfp, _ = get_or_create(self.session, HumanhealthFeatureprop,
                             humanhealth_feature_id=hh_feature.humanhealth_feature_id,
                             type_id=cvterm.cvterm_id)
+    if 'propval' in params:
+        hhfp.value = params['propval']
     return hhfp
 
 
@@ -93,3 +94,160 @@ def load_featureprop(self, key):
         params['tuple'] = item
         params['name'] = item[FIELD_VALUE]
         self.process_featureprop(params)
+
+
+def process_featurepropset(self, set_key, data_set):
+    """
+    8a featureprop, 8c different featureprop but to the feature specified in 8a.
+    8d dissociate 8a
+    """
+
+    valid_key = None  # need a valid key incase something is wrong to report line number etc
+    for key in data_set.keys():
+        if type(data_set[key]) is list:
+            if data_set[key][0][FIELD_VALUE]:
+                valid_key = 1
+        elif data_set[key][FIELD_VALUE]:
+            valid_key = key
+    if not valid_key:  # Whole thing is blank so ignore. This is okay
+        return
+
+    feature_key = set_key + 'a'
+    params = {'cvterm': self.process_data[set_key]['a_cvterm'],
+              'cvname': self.process_data[key]['a_cv'],
+              'name': data_set[feature_key][FIELD_VALUE],
+              'tuple': data_set[feature_key],
+              'feature_code': self.process_data[set_key]['feature_code']}
+
+    dis_key = set_key + 'd'
+    if dis_key in data_set and data_set[dis_key].upper() == 'Y':
+        self.bangd_featureprop(params)
+        return
+
+    self.process_featureprop(params)
+
+    orth_com_key = set_key + 'c'
+    params['cvterm'] = self.process_data[set_key]['c_cvterm']
+    params['cv'] = self.process_data[set_key]['c_cv']
+    if orth_com_key in data_set and data_set[orth_com_key][SET_BANG]:
+        params['bang_type'] = data_set[orth_com_key][SET_BANG]
+        params['propval'] = data_set[orth_com_key][FIELD_VALUE]
+        self.delete_featureprop_only(params)
+    elif orth_com_key in data_set and data_set[orth_com_key][FIELD_VALUE] != '':
+        self.process_featureprop(params)
+
+
+def process_hh8(self, set_key):
+    """
+    8a featureprop, 8c different featureprop but to the feature specified in 8a.
+    8d dissociate 8a
+    """
+    for data_set in self.set_values[set_key]:
+        self.process_featurepropset(set_key, data_set)
+
+
+#############################################
+# Deletion. bangc/bangd routines
+#############################################
+
+
+def delete_featureprop_only(self, params):
+    """
+    Delete the prop only and not the hh_feature
+    """
+    # Get feature
+    feature = self.session.query(Feature).\
+        filter(Feature.name == params['name'],
+               Feature.uniquename.like("FB{}%".format(params['feature_code']))).one_or_none()
+    if not feature:
+        error_message = "Name {} not found in feature table with unique name starting with FB{}".\
+            format(params['name'], params['feature_code'])
+        self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
+        return None
+
+    # Get humanhealth_feature
+    hhf = self.session.query(HumanhealthFeature).\
+        filter(HumanhealthFeature.feature_id == feature.feature_id,
+               HumanhealthFeature.humanhealth_id == self.humanhealth.humanhealth_id).one_or_none()
+    if not hhf:
+        error_message = "No relationship between {} and {} so cannot bang{} it.".\
+            format(params['name'], self.humanhealth.name, params['bang_type'])
+        self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
+        return None
+
+    if params['bang_type'] == 'd':  # delete specific prop value
+        hhfp = self.session.query(HumanhealthFeatureprop).\
+                   filter(HumanhealthFeatureprop.humanhealth_feature_id == hhf.humanhealth_feature_id,
+                          HumanhealthFeatureprop.value == params['propval']).one_or_none()
+        if not hhfp:
+            error_message = "No relationship between {} and {} with comment '{}' so cannot bangd it.".\
+                format(params['name'], self.humanhealth.name, params['propval'])
+            self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
+            return None
+    else:  # delete all props and if we have a new one add it.
+        self.session.query(HumanhealthFeatureprop).\
+            filter(HumanhealthFeatureprop.humanhealth_feature_id == hhf.humanhealth_feature_id).delete()
+        if 'propval' in params and params['propval'] != '':
+            self.process_featureprop(params)
+
+
+def delete_featureprop(self, key, bangc):
+    params = {'cvterm': self.process_data[key]['cvterm'],
+              'cvname': self.process_data[key]['cv'],
+              'feature_code': self.process_data[key]['feature_code']}
+
+    if type(self.process_data[key]['data']) is not list:
+        data_list = []
+        data_list.append(self.process_data[key]['data'])
+    else:
+        data_list = self.process_data[key]['data']
+
+    for item in data_list:
+        log.debug("{}: {} {}".format(key, item, type(item)))
+        params['tuple'] = item
+        params['name'] = item[FIELD_VALUE]
+        if bangc:
+            self.bangc_featureprop(params)
+        else:
+            self.bangd_featureprop(params)
+            self.process_data[key]['data'] = None
+
+
+def bangc_featureprop(self, params):
+    """
+    Delete ALL hh_features for specific cvterm and hh.
+    """
+    cvterm = self.session.query(Cvterm).join(Cv).\
+        filter(Cv.name == params['cvname'],
+               Cvterm.name == params['cvterm']).\
+        one_or_none()
+    if not cvterm:
+        log.critical("cvterm {} with cv of {} failed lookup".format(params['cvterm'], params['cvname']))
+        return None
+    self.session.query(HumanhealthFeature).\
+        filter(HumanhealthFeatureprop.type_id == cvterm.cvterm_id,
+               HumanhealthFeature.humanhealth_id == self.humanhealth.humanhealth_id).delete()
+
+
+def bangd_featureprop(self, params):
+    cvterm = self.session.query(Cvterm).join(Cv).\
+        filter(Cv.name == params['cvname'],
+               Cvterm.name == params['cvterm']).\
+        one_or_none()
+    if not cvterm:
+        log.critical("cvterm {} with cv of {} failed lookup".format(params['cvterm'], params['cvname']))
+        return None
+
+    feature = self.session.query(Feature).\
+        filter(Feature.name == params['name'],
+               Feature.uniquename.like("FB{}%".format(params['feature_code']))).one_or_none()
+    if not feature:
+        error_message = "Name {} not found in feature table with unique name starting with FB{}".\
+            format(params['name'], params['feature_code'])
+        self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
+        return None
+    self.session.query(HumanhealthFeature).\
+        join(HumanhealthFeatureprop, HumanhealthFeature.humanhealth_feature_id == HumanhealthFeatureprop.humanhealth_feature_id).\
+        filter(HumanhealthFeatureprop.type_id == cvterm.cvterm_id,
+               HumanhealthFeature.humanhealth_id == self.humanhealth.humanhealth_id,
+               HumanhealthFeature.feature_id == feature.feature_id).delete()
