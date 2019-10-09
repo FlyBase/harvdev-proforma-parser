@@ -31,7 +31,7 @@ def process_feature(self, params):
                                   feature_id=feature.feature_id,
                                   pub_id=self.pub.pub_id,
                                   humanhealth_id=self.humanhealth.humanhealth_id)
-    log.debug("Created hh feat {} id is {}".format(feature.name , hh_feature.humanhealth_feature_id))
+    log.debug("Created hh feat {} id is {}".format(feature.name, hh_feature.humanhealth_feature_id))
     return hh_feature
 
 
@@ -99,7 +99,7 @@ def load_featureprop(self, key):
         self.process_featureprop(params)
 
 
-def process_featurepropset(self, set_key, data_set):
+def process_featurepropset(self, set_key, data_set):  # noqa: C901
     """
     8a featureprop, 8c different featureprop but to the feature specified in 8a.
     8d dissociate 8a
@@ -266,4 +266,4 @@ def bangd_featureprop(self, params):
                HumanhealthFeature.humanhealth_id == self.humanhealth.humanhealth_id,
                HumanhealthFeature.feature_id == feature.feature_id)
     for hh_feat in hh_feats:
-            self.session.delete(hh_feat)
+        self.session.delete(hh_feat)
