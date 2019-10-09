@@ -256,7 +256,7 @@ HH8:
   description: Feature links HH8[a, c and d]
   a_cv: humanhealth_featureprop type
   a_cvterm: dmel_gene_implicated
-  c_cv: humanhealth_featureprop type
+  c_cv: property type
   c_cvterm: hh_ortholog_comment
   feature_code: gn
 HH8a:
@@ -267,6 +267,7 @@ HH8a:
   feature_code: gn
 HH8c:
   type: ignore  # processed as HH8 set
+  cv: property type
   cvterm: hh_ortholog_comment
   description: Comments on orthologs
 HH8d:

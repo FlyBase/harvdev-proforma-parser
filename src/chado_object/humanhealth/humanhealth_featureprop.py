@@ -27,11 +27,11 @@ def process_feature(self, params):
             format(params['name'], params['feature_code'])
         self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
         return None
-
     hh_feature, _ = get_or_create(self.session, HumanhealthFeature,
                                   feature_id=feature.feature_id,
                                   pub_id=self.pub.pub_id,
                                   humanhealth_id=self.humanhealth.humanhealth_id)
+    log.debug("Created hh feat {} id is {}".format(feature.name , hh_feature.humanhealth_feature_id))
     return hh_feature
 
 
@@ -64,12 +64,15 @@ def process_featureprop(self, params):
                Cvterm.name == params['cvterm']).\
         one_or_none()
     if not cvterm:
-        log.critical("cvterm {} with cv of {} failed lookup".format(params['cvterm'], params['cvname']))
+        error_message = "cvterm {} with cv of {} failed lookup".format(params['cvterm'], params['cvname'])
+        self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
         return None
 
     hhfp, _ = get_or_create(self.session, HumanhealthFeatureprop,
                             humanhealth_feature_id=hh_feature.humanhealth_feature_id,
                             type_id=cvterm.cvterm_id)
+    log.debug("Created hh_feat_prop hh_feat_id is {}".format(hhfp, hh_feature.humanhealth_feature_id))
+
     if 'propval' in params:
         hhfp.value = params['propval']
     return hhfp
@@ -120,7 +123,7 @@ def process_featurepropset(self, set_key, data_set):
               'feature_code': self.process_data[set_key]['feature_code']}
 
     dis_key = set_key + 'd'
-    if dis_key in data_set and data_set[dis_key].upper() == 'Y':
+    if dis_key in data_set and data_set[dis_key][FIELD_VALUE].upper() == 'Y':
         self.bangd_featureprop(params)
         return
 
@@ -128,7 +131,7 @@ def process_featurepropset(self, set_key, data_set):
 
     orth_com_key = set_key + 'c'
     params['cvterm'] = self.process_data[set_key]['c_cvterm']
-    params['cv'] = self.process_data[set_key]['c_cv']
+    params['cvname'] = self.process_data[set_key]['c_cv']
     if orth_com_key in data_set:
         log.critical("name is {}".format(data_set[feature_key][FIELD_VALUE]))
         log.critical("data set is {}".format(data_set[orth_com_key]))
@@ -195,7 +198,10 @@ def delete_featureprop_only(self, params):
                 format(params['name'], self.humanhealth.name, params['propval'])
             self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
             return None
+        self.session.delete(hhfp)
     else:  # delete all props and if we have a new one add it.
+        log.debug("Removing hh feat prop for {}".format(feature.name))
+        log.debug("params are {}".format(params))
         self.session.query(HumanhealthFeatureprop).\
             filter(HumanhealthFeatureprop.humanhealth_feature_id == hhf.humanhealth_feature_id).delete()
         if 'propval' in params and params['propval'] != '':
@@ -233,7 +239,8 @@ def bangc_featureprop(self, params):
                Cvterm.name == params['cvterm']).\
         one_or_none()
     if not cvterm:
-        log.critical("cvterm {} with cv of {} failed lookup".format(params['cvterm'], params['cvname']))
+        error_message = "cvterm {} with cv of {} failed lookup".format(params['cvterm'], params['cvname'])
+        self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
         return None
     self.session.query(HumanhealthFeature).\
         filter(HumanhealthFeatureprop.type_id == cvterm.cvterm_id,
@@ -246,7 +253,8 @@ def bangd_featureprop(self, params):
                Cvterm.name == params['cvterm']).\
         one_or_none()
     if not cvterm:
-        log.critical("cvterm {} with cv of {} failed lookup".format(params['cvterm'], params['cvname']))
+        error_message = "cvterm {} with cv of {} failed lookup".format(params['cvterm'], params['cvname'])
+        self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
         return None
 
     feature = self.session.query(Feature).\
@@ -257,8 +265,11 @@ def bangd_featureprop(self, params):
             format(params['name'], params['feature_code'])
         self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
         return None
-    self.session.query(HumanhealthFeature).\
+
+    hh_feats = self.session.query(HumanhealthFeature).\
         join(HumanhealthFeatureprop, HumanhealthFeature.humanhealth_feature_id == HumanhealthFeatureprop.humanhealth_feature_id).\
         filter(HumanhealthFeatureprop.type_id == cvterm.cvterm_id,
                HumanhealthFeature.humanhealth_id == self.humanhealth.humanhealth_id,
-               HumanhealthFeature.feature_id == feature.feature_id).delete()
+               HumanhealthFeature.feature_id == feature.feature_id)
+    for hh_feat in hh_feats:
+            self.session.delete(hh_feat)
