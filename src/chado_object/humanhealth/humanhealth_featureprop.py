@@ -114,7 +114,7 @@ def process_featurepropset(self, set_key, data_set):
 
     feature_key = set_key + 'a'
     params = {'cvterm': self.process_data[set_key]['a_cvterm'],
-              'cvname': self.process_data[key]['a_cv'],
+              'cvname': self.process_data[set_key]['a_cv'],
               'name': data_set[feature_key][FIELD_VALUE],
               'tuple': data_set[feature_key],
               'feature_code': self.process_data[set_key]['feature_code']}
@@ -129,12 +129,22 @@ def process_featurepropset(self, set_key, data_set):
     orth_com_key = set_key + 'c'
     params['cvterm'] = self.process_data[set_key]['c_cvterm']
     params['cv'] = self.process_data[set_key]['c_cv']
-    if orth_com_key in data_set and data_set[orth_com_key][SET_BANG]:
-        params['bang_type'] = data_set[orth_com_key][SET_BANG]
-        params['propval'] = data_set[orth_com_key][FIELD_VALUE]
-        self.delete_featureprop_only(params)
-    elif orth_com_key in data_set and data_set[orth_com_key][FIELD_VALUE] != '':
-        self.process_featureprop(params)
+    if orth_com_key in data_set:
+        log.critical("name is {}".format(data_set[feature_key][FIELD_VALUE]))
+        log.critical("data set is {}".format(data_set[orth_com_key]))
+        log.critical("SET_BANG is {}".format(SET_BANG))
+        for bob in data_set[orth_com_key]: 
+            log.critical("Bob is {}".format(bob[SET_BANG]))
+
+    if orth_com_key in data_set:
+        for item in data_set[orth_com_key]:  # List of comments/propvals
+            if item[SET_BANG]:
+                params['bang_type'] = item[SET_BANG]
+                params['propval'] = item[FIELD_VALUE]
+                self.delete_featureprop_only(params)
+            elif item[FIELD_VALUE] != '':
+                params['propval'] = item[FIELD_VALUE]
+                self.process_featureprop(params)
 
 
 def process_hh8(self, set_key):
@@ -142,6 +152,7 @@ def process_hh8(self, set_key):
     8a featureprop, 8c different featureprop but to the feature specified in 8a.
     8d dissociate 8a
     """
+    log.critical("set values is : {}".format(self.set_values[set_key]))
     for data_set in self.set_values[set_key]:
         self.process_featurepropset(set_key, data_set)
 

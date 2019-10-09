@@ -29,7 +29,8 @@ class ChadoHumanhealth(ChadoObject):
     )
     from .humanhealth_featureprop import (
         process_feature, process_featureprop, load_featureprop,
-        delete_featureprop, bangc_featureprop, bangd_featureprop
+        delete_featureprop, bangc_featureprop, bangd_featureprop,
+        process_hh8, process_featurepropset, delete_featureprop_only
     )
 
     def __init__(self, params):
