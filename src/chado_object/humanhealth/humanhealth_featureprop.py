@@ -119,7 +119,7 @@ def process_featurepropset(self, set_key, data_set):  # noqa: C901
     if feature_key not in data_set:
         error_message = "HH8a Not set but we have dependents for this. Please specify HH8a or remove HH8c and HH8d"
         self.error_track(valid_tuple, error_message, CRITICAL_ERROR)
-        return None       
+        return None
 
     params = {'cvterm': self.process_data[set_key]['a_cvterm'],
               'cvname': self.process_data[set_key]['a_cv'],
