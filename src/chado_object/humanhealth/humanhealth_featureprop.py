@@ -248,6 +248,7 @@ def bangc_featureprop(self, params):
     for hh_feat in hh_feats:
         self.session.delete(hh_feat)
 
+
 def bangd_featureprop(self, params):
     cvterm = self.session.query(Cvterm).join(Cv).\
         filter(Cv.name == params['cvname'],
