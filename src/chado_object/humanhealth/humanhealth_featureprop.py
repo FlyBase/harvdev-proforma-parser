@@ -226,7 +226,6 @@ def delete_featureprop(self, key, bangc):
             self.bangc_featureprop(params)
         else:
             self.bangd_featureprop(params)
-            self.process_data[key]['data'] = None
 
 
 def bangc_featureprop(self, params):
@@ -241,10 +240,13 @@ def bangc_featureprop(self, params):
         error_message = "cvterm {} with cv of {} failed lookup".format(params['cvterm'], params['cvname'])
         self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
         return None
-    self.session.query(HumanhealthFeature).\
-        filter(HumanhealthFeatureprop.type_id == cvterm.cvterm_id,
-               HumanhealthFeature.humanhealth_id == self.humanhealth.humanhealth_id).delete()
 
+    hh_feats = self.session.query(HumanhealthFeature).\
+        join(HumanhealthFeatureprop, HumanhealthFeature.humanhealth_feature_id == HumanhealthFeatureprop.humanhealth_feature_id).\
+        filter(HumanhealthFeatureprop.type_id == cvterm.cvterm_id,
+               HumanhealthFeature.humanhealth_id == self.humanhealth.humanhealth_id)
+    for hh_feat in hh_feats:
+        self.session.delete(hh_feat)
 
 def bangd_featureprop(self, params):
     cvterm = self.session.query(Cvterm).join(Cv).\

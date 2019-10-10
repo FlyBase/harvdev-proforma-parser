@@ -221,4 +221,5 @@ class ChadoObject(object):
             return
 
         self.delete_dict[self.process_data[key]['type']](key, bangc=False)
-        self.process_data[key]['data'] = None
+
+        del self.process_data[key]
