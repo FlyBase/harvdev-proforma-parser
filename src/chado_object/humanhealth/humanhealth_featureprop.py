@@ -105,17 +105,22 @@ def process_featurepropset(self, set_key, data_set):  # noqa: C901
     8d dissociate 8a
     """
 
-    valid_key = None  # need a valid key incase something is wrong to report line number etc
+    valid_tuple = None  # need a valid key incase something is wrong to report line number etc
     for key in data_set.keys():
         if type(data_set[key]) is list:
             if data_set[key][0][FIELD_VALUE]:
-                valid_key = 1
+                valid_tuple = data_set[key][0]
         elif data_set[key][FIELD_VALUE]:
-            valid_key = key
-    if not valid_key:  # Whole thing is blank so ignore. This is okay
+            valid_tuple = data_set[key]
+    if not valid_tuple:  # Whole thing is blank so ignore. This is okay
         return
 
     feature_key = set_key + 'a'
+    if feature_key not in data_set:
+        error_message = "HH8a Not set but we have dependents for this. Please specify HH8a or remove HH8c and HH8d"
+        self.error_track(valid_tuple, error_message, CRITICAL_ERROR)
+        return None       
+
     params = {'cvterm': self.process_data[set_key]['a_cvterm'],
               'cvname': self.process_data[set_key]['a_cv'],
               'name': data_set[feature_key][FIELD_VALUE],
