@@ -132,17 +132,20 @@ HH8a:
   required: False
   type: string
   no_bangc: True
+  set: HH8
 HH8c:
   required: False
   at_required: True
   type: [string, list]
   dependencies: [HH8a]
+  set: HH8
 HH8d:
   required: False
   type: string
   dependencies: [HH8a]
   no_bangc: True
   allowed: [y, Y]
+  set: HH8
 HH8e:
   required: False
   type: [string, list]
