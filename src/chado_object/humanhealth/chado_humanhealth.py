@@ -49,7 +49,8 @@ class ChadoHumanhealth(ChadoObject):
                           'dbxrefprop': self.load_dbxrefprop,
                           'featureprop': self.load_featureprop}
 
-        self.delete_dict = {'dbxrefprop': self.delete_dbxref,
+        self.delete_dict = {'direct': self.delete_direct,
+                            'dbxrefprop': self.delete_dbxref,
                             'ignore': self.delete_ignore,
                             'prop': self.delete_prop,
                             'featureprop': self.delete_featureprop}
@@ -289,6 +290,10 @@ class ChadoHumanhealth(ChadoObject):
                           synonym_id=new_syn.synonym_id,
                           pub_id=self.pub.pub_id)
 
+########################
+# Deletion routines
+########################
+
     def dissociate_pub(self, key):
         """
         Remove humanhealth_pub, humanhealth_synonym and humanhealth_feature
@@ -316,6 +321,48 @@ class ChadoHumanhealth(ChadoObject):
         # TODO: humanhealth_cvterm, humanhealth_relationship, humanhealth_phenotype,
         #       library_humanhealth, feature_humanhealth_dbxref, humanhealth_dbxref,
         #       humanhealth_dbxrefprop
+
+    def delete_relationship(self, key, bangc=False):
+        cvterm = self.session.query(Cvterm).join(Cv).\
+            filter(Cv.name == self.process_data[key]['cv'],
+                   Cvterm.name == self.process_data[key]['cvterm']).\
+            one_or_none()
+
+        if type(self.process_data[key]['data']) is not list:
+            data_list = []
+            data_list.append(self.process_data[key]['data'])
+        else:
+            data_list = self.process_data[key]['data']
+
+        if not cvterm:  # after datalist set up as we need to pass a tuple
+            self.critical_error(data_list[0],
+                                'Cvterm missing "{}" for cv "{}".'.format(self.process_data[key]['cvterm'],
+                                                                          self.process_data[key]['cv']))
+            return None
+        if bangc:
+            self.session.query(HumanhealthRelationship).\
+                filter(HumanhealthRelationship.type_id == cvterm.cvterm_id,
+                       HumanhealthRelationship.subject_id == self.humanhealth.humanhealth_id).delete()
+        else:
+            for data in data_list:
+                hh_object = self.session.query(Humanhealth).\
+                    filter(Humanhealth.uniquename == data[FIELD_VALUE]).one_or_none()
+                if not hh_object:
+                    error_message = "{} Not found in Humanhealth table".format(data[FIELD_VALUE])
+                    self.error_track(data, error_message, CRITICAL_ERROR)
+                    return None
+                hh_relationships = self.session.query(HumanhealthRelationship).\
+                    filter(HumanhealthRelationship.subject == self.humanhealth.humanhealth_id,
+                           HumanhealthRelationship.object == hh_object.humanhealth_id,
+                           HumanhealthRelationship.type_id == cvterm.cvterm_id)
+                relationship_count = 0
+                for hh_rel in hh_relationships:
+                    self.session.delete(hh_rel)
+                    relationship_count += 1
+                if not relationship_count:
+                    error_message = "No Relationship found between {} and {} for {}".format(self.humanhealth.uniquename, hh_object.name, cvterm.name)
+                    self.error_track(data, error_message, CRITICAL_ERROR)
+                    return
 
     def make_obsolete(self, key):
         pass
