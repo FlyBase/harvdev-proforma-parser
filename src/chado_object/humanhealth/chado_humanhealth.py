@@ -53,8 +53,8 @@ class ChadoHumanhealth(ChadoObject):
                             'dbxrefprop': self.delete_dbxref,
                             'ignore': self.delete_ignore,
                             'prop': self.delete_prop,
-                            'featureprop': self.delete_featureprop}
-        #                    'relationship': self.delete_relationships,
+                            'featureprop': self.delete_featureprop,
+                            'relationship': self.delete_relationship}
         #                    'prop': self.delete_prop,
         #                    'synonym': self.delete_synonym,
         #                    'ignore': self.delete_ignore,
