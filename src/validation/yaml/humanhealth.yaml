@@ -33,7 +33,7 @@ HH2c:
   regex: ^(\d{6})$
 HH2d:
   required: False
-  type: string
+  type: [list, string]
   regex: ^(DOID:\d+)$
 HH3a:
   required: False

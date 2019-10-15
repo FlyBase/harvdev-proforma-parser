@@ -137,7 +137,7 @@ class ChadoHumanhealth(ChadoObject):
             organism, _ = get_or_create(self.session, Organism, abbreviation='Hsap')
             hh, _ = get_or_create(self.session, Humanhealth, name=self.process_data['HH1b']['data'][FIELD_VALUE],
                                   organism_id=organism.organism_id, uniquename='FBhh:temp_0')
-            log.info(hh)
+            log.info("New humanhealth {} {}".format(hh.humanhealth_id, hh.uniquename))
             # db has correct FBhh0000000x in it but here still has 'FBhh:temp_0'. ???
             # presume triggers start after hh is returned. Maybe worth getting form db again
             log.info("New humanhealth created with fbhh {} id={}.".format(hh.uniquename, hh.humanhealth_id))
@@ -147,7 +147,39 @@ class ChadoHumanhealth(ChadoObject):
         return hh
 
     def extra_checks(self):
-        pass
+        # If HH2b is specified then must have a category of 'parent-entity'
+        # and self.humanhealth must have a category of 'sub-entity'
+        if 'HH2b' in self.process_data and self.process_data['HH2b']['data'][FIELD_VALUE] != '':
+            cvterm = self.session.query(Cvterm).join(Cv).\
+                filter(Cv.name == 'property type',
+                       Cvterm.name == 'category').one_or_none()
+            if not cvterm:
+                self.critical_error(self.process_data['HH2b']['data'],
+                                    'Cvterm missing "category" for cv "property type".')
+                return
+
+            log.debug("cvterm is {}".format(cvterm.name))
+            hhp = self.session.query(Humanhealthprop).\
+                join(Humanhealth).\
+                filter(Humanhealth.uniquename == self.process_data['HH2b']['data'][FIELD_VALUE],
+                       Humanhealthprop.type_id == cvterm.cvterm_id).one_or_none()
+            log.debug("hhp is {}".format(hhp))
+            if not hhp or hhp.value != 'parent-entity':
+                self.critical_error(self.process_data['HH2b']['data'],
+                                    '{} must be a parent-entity but this is not the case here.'.format(self.process_data['HH2b']['data'][FIELD_VALUE]))
+
+            if self.newhumanhealth:
+                if 'HH2a' not in self.process_data or self.process_data['HH2a']['data'][FIELD_VALUE] != 'sub-entity':
+                    self.critical(self.process_data['HH2b']['data'],
+                                  "New humanhealth has a parent specified but its own type specified by HH2a is not sub-entity")
+            else:
+                hhp = self.session.query(Humanhealthprop).\
+                    join(Humanhealth).\
+                    filter(Humanhealth.humanhealth_id == self.humanhealth.humanhealth_id,
+                           Humanhealthprop.type_id == cvterm.cvterm_id).one_or_none()
+                if not hhp or hhp.value != 'sub-entity':
+                    self.critical_error(self.process_data['HH2b']['data'],
+                                        '{} must be a sub-entity but this is not the case here.'.format(self.humanhealth.uniquename))
 
     def process_sets(self):
         """
