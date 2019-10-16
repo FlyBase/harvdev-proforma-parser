@@ -9,7 +9,8 @@ from ..chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.production import (
     Humanhealth, HumanhealthPub, Humanhealthprop, HumanhealthpropPub,
     HumanhealthRelationship, HumanhealthSynonym, HumanhealthFeature,
-    Organism, Cvterm, Cv, Synonym
+    HumanhealthCvterm, HumanhealthCvtermprop,
+    Organism, Cvterm, Cv, Synonym, Db, Dbxref
 )
 from harvdev_utils.chado_functions import get_or_create
 from error.error_tracking import CRITICAL_ERROR
@@ -41,6 +42,7 @@ class ChadoHumanhealth(ChadoObject):
         self.type_dict = {'direct': self.load_direct,
                           'relationship': self.load_relationship,
                           'prop': self.load_prop,
+                          'cvterm': self.load_cvterm,
                           'synonym': self.load_synonym,
                           'dissociate_pub': self.dissociate_pub,
                           'obsolete': self.make_obsolete,
@@ -53,6 +55,7 @@ class ChadoHumanhealth(ChadoObject):
                             'dbxrefprop': self.delete_dbxref,
                             'ignore': self.delete_ignore,
                             'prop': self.delete_prop,
+                            'cvterm': self.delete_cvterm,
                             'featureprop': self.delete_featureprop,
                             'relationship': self.delete_relationship}
         #                    'prop': self.delete_prop,
@@ -228,6 +231,51 @@ class ChadoHumanhealth(ChadoObject):
                 self.warning_error(self.process_data[key]['data'], "No !c but still overwriting existing value of {}".format(old_attr))
             setattr(self.humanhealth, self.process_data[key]['name'], self.process_data[key]['data'][FIELD_VALUE])
 
+    def load_cvterm(self, key):
+        # lookup dbxref DOID:nnnnn
+        # get the cvterm for this cv:'disease_ontology' (joined by dbxref)
+        # lookup cvterm for doid_term
+        # create humanhealth_cvterm (first cvterm and hh)
+        # cretae humanhealth)cvtermprop with type_id of second cvterm
+
+        # this needs to be done only once so do first outside of loop
+        doid_cvterm = self.session.query(Cvterm).join(Cv).\
+            filter(Cv.name == self.process_data[key]['cv'],
+                   Cvterm.name == self.process_data[key]['cvterm']).\
+            one_or_none()
+        if not doid_cvterm:  # after datalist set up as we need to pass a tuple
+            self.critical_error(self.process_data[key]['data'][FIELD_VALUE],
+                                'Cvterm missing "{}" for cv "{}".'.format(self.process_data[key]['cvterm'],
+                                                                          self.process_data[key]['cv']))
+            return
+
+        for item in self.process_data[key]['data']:
+            db, acc = item[FIELD_VALUE].split(':')
+            # NOTE: db is DOID as specified in the format validation
+            log.debug("Looking up {} for dn DOID".format(acc))
+            dbxref = self.session.query(Dbxref).\
+                join(Db).\
+                filter(Db.name == 'DOID',
+                       Dbxref.accession == acc).one_or_none()
+            if not dbxref:
+                self.critical_error(item, "Accession {} Not found in database for DOID.".format(acc))
+                continue
+            dis_cvterm = self.session.query(Cvterm).\
+                join(Cv).\
+                filter(Cvterm.dbxref_id == dbxref.dbxref_id,
+                       Cv.name == 'disease_ontology').one_or_none()
+            if not dis_cvterm:
+                self.critical_error(item, "DO Cvterm Not found for this acc and cv of 'disease_ontology'")
+                continue
+            # make hh_cvterm
+            hh_c, _ = get_or_create(self.session, HumanhealthCvterm,
+                                    humanhealth_id=self.humanhealth.humanhealth_id,
+                                    cvterm_id=dis_cvterm.cvterm_id,
+                                    pub_id=self.pub.pub_id)
+            hhcp, _ = get_or_create(self.session, HumanhealthCvtermprop,
+                                    humanhealth_cvterm_id=hh_c.humanhealth_cvterm_id,
+                                    type_id=doid_cvterm.cvterm_id)
+
     def load_relationship(self, key):
         cvterm = self.session.query(Cvterm).join(Cv).\
             filter(Cv.name == self.process_data[key]['cv'],
@@ -353,6 +401,39 @@ class ChadoHumanhealth(ChadoObject):
         # TODO: humanhealth_cvterm, humanhealth_relationship, humanhealth_phenotype,
         #       library_humanhealth, feature_humanhealth_dbxref, humanhealth_dbxref,
         #       humanhealth_dbxrefprop
+
+    def delete_cvterm(self, key, bangc=False):
+        if bangc:
+            self.session.query(HumanhealthCvterm).\
+                filter(HumanhealthCvterm.humanhealth_id == self.humanhealth.humanhealth_id).delete()
+            return
+
+        for item in self.process_data[key]['data']:
+            db, acc = item[FIELD_VALUE].split(':')
+            # NOTE: db is DOID as specified in the format validation
+            log.debug("Looking up {} for dn DOID".format(acc))
+            dbxref = self.session.query(Dbxref).\
+                join(Db).\
+                filter(Db.name == 'DOID',
+                       Dbxref.accession == acc).one_or_none()
+            if not dbxref:
+                self.critical_error(item, "Accession {} Not found in database for DOID.".format(acc))
+                continue
+            dis_cvterm = self.session.query(Cvterm).\
+                join(Cv).\
+                filter(Cvterm.dbxref_id == dbxref.dbxref_id,
+                       Cv.name == 'disease_ontology').one_or_none()
+            if not dis_cvterm:
+                self.critical_error(item, "DO Cvterm Not found for this acc {} and cv of 'disease_ontology'".format(acc))
+                continue
+            hhc = self.session.query(HumanhealthCvterm).\
+                filter(HumanhealthCvterm.humanhealth_id == self.humanhealth.humanhealth_id,
+                       HumanhealthCvterm.cvterm_id == dis_cvterm.cvterm_id).one_or_none()
+            if not hhc:
+                self.critical_error(item, "No humanhealth relationship found for {} and DOID:{}".format(self.humanhealth.uniquename, acc))
+                continue
+            else:
+                self.session.delete(hhc)
 
     def delete_relationship(self, key, bangc=False):
         cvterm = self.session.query(Cvterm).join(Cv).\
