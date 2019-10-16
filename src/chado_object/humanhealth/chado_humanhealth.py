@@ -407,7 +407,7 @@ class ChadoHumanhealth(ChadoObject):
             self.session.query(HumanhealthCvterm).\
                 filter(HumanhealthCvterm.humanhealth_id == self.humanhealth.humanhealth_id).delete()
             return
-        
+
         for item in self.process_data[key]['data']:
             db, acc = item[FIELD_VALUE].split(':')
             # NOTE: db is DOID as specified in the format validation
