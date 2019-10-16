@@ -102,7 +102,7 @@ HH2d:
   type: cvterm
   cv: humanhealth_cvtermprop type
   cvterm: doid_term
-#select cvt.name, db.name, dbxref.accession, h.uniquename, cvt2.name, cv.name, cv2.name
+# select cvt.name, db.name, dbxref.accession, h.uniquename, cvt2.name, cv.name, cv2.name
 # from cv cv2, humanhealth h, humanhealth_cvtermprop hcp, humanhealth_cvterm hc, dbxref, db, cvterm cvt, cvterm cvt2, cv 
 # where cv2.cv_id = cvt2.cv_id and 
 #       cvt2.cvterm_id  =hcp.type_id and

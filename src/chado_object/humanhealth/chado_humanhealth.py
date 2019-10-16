@@ -49,11 +49,12 @@ class ChadoHumanhealth(ChadoObject):
                           'dbxrefprop': self.load_dbxrefprop,
                           'featureprop': self.load_featureprop}
 
-        self.delete_dict = {'dbxrefprop': self.delete_dbxref,
+        self.delete_dict = {'direct': self.delete_direct,
+                            'dbxrefprop': self.delete_dbxref,
                             'ignore': self.delete_ignore,
                             'prop': self.delete_prop,
-                            'featureprop': self.delete_featureprop}
-        #                    'relationship': self.delete_relationships,
+                            'featureprop': self.delete_featureprop,
+                            'relationship': self.delete_relationship}
         #                    'prop': self.delete_prop,
         #                    'synonym': self.delete_synonym,
         #                    'ignore': self.delete_ignore,
@@ -136,7 +137,7 @@ class ChadoHumanhealth(ChadoObject):
             organism, _ = get_or_create(self.session, Organism, abbreviation='Hsap')
             hh, _ = get_or_create(self.session, Humanhealth, name=self.process_data['HH1b']['data'][FIELD_VALUE],
                                   organism_id=organism.organism_id, uniquename='FBhh:temp_0')
-            log.info(hh)
+            log.info("New humanhealth {} {}".format(hh.humanhealth_id, hh.uniquename))
             # db has correct FBhh0000000x in it but here still has 'FBhh:temp_0'. ???
             # presume triggers start after hh is returned. Maybe worth getting form db again
             log.info("New humanhealth created with fbhh {} id={}.".format(hh.uniquename, hh.humanhealth_id))
@@ -146,7 +147,39 @@ class ChadoHumanhealth(ChadoObject):
         return hh
 
     def extra_checks(self):
-        pass
+        # If HH2b is specified then must have a category of 'parent-entity'
+        # and self.humanhealth must have a category of 'sub-entity'
+        if 'HH2b' in self.process_data and self.process_data['HH2b']['data'][FIELD_VALUE] != '':
+            cvterm = self.session.query(Cvterm).join(Cv).\
+                filter(Cv.name == 'property type',
+                       Cvterm.name == 'category').one_or_none()
+            if not cvterm:
+                self.critical_error(self.process_data['HH2b']['data'],
+                                    'Cvterm missing "category" for cv "property type".')
+                return
+
+            log.debug("cvterm is {}".format(cvterm.name))
+            hhp = self.session.query(Humanhealthprop).\
+                join(Humanhealth).\
+                filter(Humanhealth.uniquename == self.process_data['HH2b']['data'][FIELD_VALUE],
+                       Humanhealthprop.type_id == cvterm.cvterm_id).one_or_none()
+            log.debug("hhp is {}".format(hhp))
+            if not hhp or hhp.value != 'parent-entity':
+                self.critical_error(self.process_data['HH2b']['data'],
+                                    '{} must be a parent-entity but this is not the case here.'.format(self.process_data['HH2b']['data'][FIELD_VALUE]))
+
+            if self.newhumanhealth:
+                if 'HH2a' not in self.process_data or self.process_data['HH2a']['data'][FIELD_VALUE] != 'sub-entity':
+                    self.critical(self.process_data['HH2b']['data'],
+                                  "New humanhealth has a parent specified but its own type specified by HH2a is not sub-entity")
+            else:
+                hhp = self.session.query(Humanhealthprop).\
+                    join(Humanhealth).\
+                    filter(Humanhealth.humanhealth_id == self.humanhealth.humanhealth_id,
+                           Humanhealthprop.type_id == cvterm.cvterm_id).one_or_none()
+                if not hhp or hhp.value != 'sub-entity':
+                    self.critical_error(self.process_data['HH2b']['data'],
+                                        '{} must be a sub-entity but this is not the case here.'.format(self.humanhealth.uniquename))
 
     def process_sets(self):
         """
@@ -289,6 +322,10 @@ class ChadoHumanhealth(ChadoObject):
                           synonym_id=new_syn.synonym_id,
                           pub_id=self.pub.pub_id)
 
+########################
+# Deletion routines
+########################
+
     def dissociate_pub(self, key):
         """
         Remove humanhealth_pub, humanhealth_synonym and humanhealth_feature
@@ -316,6 +353,48 @@ class ChadoHumanhealth(ChadoObject):
         # TODO: humanhealth_cvterm, humanhealth_relationship, humanhealth_phenotype,
         #       library_humanhealth, feature_humanhealth_dbxref, humanhealth_dbxref,
         #       humanhealth_dbxrefprop
+
+    def delete_relationship(self, key, bangc=False):
+        cvterm = self.session.query(Cvterm).join(Cv).\
+            filter(Cv.name == self.process_data[key]['cv'],
+                   Cvterm.name == self.process_data[key]['cvterm']).\
+            one_or_none()
+
+        if type(self.process_data[key]['data']) is not list:
+            data_list = []
+            data_list.append(self.process_data[key]['data'])
+        else:
+            data_list = self.process_data[key]['data']
+
+        if not cvterm:  # after datalist set up as we need to pass a tuple
+            self.critical_error(data_list[0],
+                                'Cvterm missing "{}" for cv "{}".'.format(self.process_data[key]['cvterm'],
+                                                                          self.process_data[key]['cv']))
+            return None
+        if bangc:
+            self.session.query(HumanhealthRelationship).\
+                filter(HumanhealthRelationship.type_id == cvterm.cvterm_id,
+                       HumanhealthRelationship.subject_id == self.humanhealth.humanhealth_id).delete()
+        else:
+            for data in data_list:
+                hh_object = self.session.query(Humanhealth).\
+                    filter(Humanhealth.uniquename == data[FIELD_VALUE]).one_or_none()
+                if not hh_object:
+                    error_message = "{} Not found in Humanhealth table".format(data[FIELD_VALUE])
+                    self.error_track(data, error_message, CRITICAL_ERROR)
+                    return None
+                hh_relationships = self.session.query(HumanhealthRelationship).\
+                    filter(HumanhealthRelationship.subject == self.humanhealth.humanhealth_id,
+                           HumanhealthRelationship.object == hh_object.humanhealth_id,
+                           HumanhealthRelationship.type_id == cvterm.cvterm_id)
+                relationship_count = 0
+                for hh_rel in hh_relationships:
+                    self.session.delete(hh_rel)
+                    relationship_count += 1
+                if not relationship_count:
+                    error_message = "No Relationship found between {} and {} for {}".format(self.humanhealth.uniquename, hh_object.name, cvterm.name)
+                    self.error_track(data, error_message, CRITICAL_ERROR)
+                    return
 
     def make_obsolete(self, key):
         pass

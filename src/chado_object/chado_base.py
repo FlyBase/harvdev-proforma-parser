@@ -187,7 +187,7 @@ class ChadoObject(object):
             if not self.process_data[key]['data'] or not self.process_data[key]['data'][FIELD_VALUE]:
                 delete_blank = True
         if delete_blank:
-            self.process_data[key]['data'] = None
+            del self.process_data[key]
 
     def bang_d_it(self):
         """
