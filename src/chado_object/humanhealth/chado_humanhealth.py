@@ -402,6 +402,41 @@ class ChadoHumanhealth(ChadoObject):
         #       library_humanhealth, feature_humanhealth_dbxref, humanhealth_dbxref,
         #       humanhealth_dbxrefprop
 
+    def delete_synonym(self, key, bangc=False):
+
+        if type(self.process_data[key]['data']) is not list:
+            data_list = []
+            data_list.append(self.process_data[key]['data'])
+        else:
+            data_list = self.process_data[key]['data']
+
+        cvterm = self.session.query(Cvterm).join(Cv).\
+            filter(Cv.name == self.process_data[key]['cv'],
+                   Cvterm.name == self.process_data[key]['cvterm']).\
+            one_or_none()
+        if not cvterm:  # after datalist set up as we need to pass a tuple
+            self.critical_error(data_list[0],
+                                'Cvterm missing "{}" for cv "{}".'.format(self.process_data[key]['cvterm'],
+                                                                          self.process_data[key]['cv']))
+            return
+
+        if bangc:
+            self.session.query(HumanhealthSynonym).\
+                filter(HumanhealthSynonym.pub_id == self.pub.pub_id,
+                       HumanhealthSynonym.humanhealth_id == self.humanhealth.humanhealth_id).delete()
+        else:
+            for data in data_list:
+                synonym = self.session.query(Synonym).\
+                    filter(name=data[FIELD_VALUE],
+                           type_id=cvterm.cvterm_id).one_or_none()
+                if not synonym:
+                    self.critical_error(data_list[0], 'Synonym linked to cvterm "{}" Does not exist.'.format(synonym.name, self.process_data[key]['cvterm']))
+                    continue
+                self.session.query(HumanhealthSynonym).\
+                    filter(humanhealth_id=self.humanhealth.humanhealth_id,
+                           synonym_id=synonym.synonym_id,
+                           pub_id=self.pub.pub_id)
+
     def delete_cvterm(self, key, bangc=False):
         if bangc:
             self.session.query(HumanhealthCvterm).\
