@@ -409,7 +409,7 @@ class ChadoHumanhealth(ChadoObject):
                    HumanhealthFeature.humanhealth_id == self.humanhealth.humanhealth_id).delete()
 
         self.session.query(HumanhealthCvterm).\
-            filter(HumanhealthFeature.pub_id == self.pub.pub_id,
+            filter(HumanhealthCvterm.pub_id == self.pub.pub_id,
                    HumanhealthCvterm.humanhealth_id == self.humanhealth.humanhealth_id).delete()
 
         self.session.query(HumanhealthRelationship).\
