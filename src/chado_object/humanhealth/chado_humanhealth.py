@@ -569,10 +569,7 @@ class ChadoHumanhealth(ChadoObject):
                            HumanhealthpropPub.pub_id == self.pub.pub_id,
                            Humanhealthprop.value == data[FIELD_VALUE]).one_or_none()
                 if not hp:
-                    self.critical_error(data_list[0],
-                                        'Value "{}" Not found for Cvterm "{}".'.format(data[FIELD_VALUE]),
-                                        self.process_data[key]['cvterm'])
-                    continue
+                    self.critical_error(data, 'Value "{}" Not found for Cvterm "{}".'.format(data[FIELD_VALUE], self.process_data[key]['cvterm']))
                 else:
                     self.session.delete(hp)
         else:
