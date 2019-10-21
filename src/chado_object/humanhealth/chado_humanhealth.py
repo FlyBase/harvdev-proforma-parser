@@ -9,7 +9,7 @@ from ..chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.production import (
     Humanhealth, HumanhealthPub, Humanhealthprop, HumanhealthpropPub,
     HumanhealthRelationship, HumanhealthSynonym, HumanhealthFeature,
-    HumanhealthCvterm, HumanhealthCvtermprop,
+    HumanhealthCvterm, HumanhealthCvtermprop, HumanhealthDbxref,
     Organism, Cvterm, Cv, Synonym, Db, Dbxref
 )
 from harvdev_utils.chado_functions import get_or_create
@@ -37,7 +37,10 @@ class ChadoHumanhealth(ChadoObject):
     def __init__(self, params):
         log.info('Initializing ChadoHumanhealth object.')
         ##########################################
+        #
         # Set up how to process each type of input
+        #
+        # This is set in the humanhealth.yml file.
         ##########################################
         self.type_dict = {'direct': self.load_direct,
                           'relationship': self.load_relationship,
@@ -56,12 +59,9 @@ class ChadoHumanhealth(ChadoObject):
                             'ignore': self.delete_ignore,
                             'prop': self.delete_prop,
                             'cvterm': self.delete_cvterm,
+                            'synonym': self.delete_synonym,
                             'featureprop': self.delete_featureprop,
                             'relationship': self.delete_relationship}
-        #                    'prop': self.delete_prop,
-        #                    'synonym': self.delete_synonym,
-        #                    'ignore': self.delete_ignore,
-        #                    'obsolete': self.delete_obsolete}
 
         self.proforma_start_line_number = params.get('proforma_start_line_number')
         self.reference = params.get('reference')
@@ -99,7 +99,7 @@ class ChadoHumanhealth(ChadoObject):
         else:
             return
 
-        # bang c first as this supersedes all things
+        # bang c/d first as this supersedes all things
         if self.bang_c:
             self.bang_c_it()
         if self.bang_d:
@@ -123,27 +123,28 @@ class ChadoHumanhealth(ChadoObject):
         get humanhealth or create humanhealth if new.
         returns None or the humanhealth to be used.
         """
-        if not self.newhumanhealth:
-            hh = self.session.query(Humanhealth).\
-                filter(Humanhealth.uniquename == self.process_data['HH1f']['data'][FIELD_VALUE]).\
-                one_or_none()
-            if not hh:
-                self.critical_error(self.process_data['HH1f']['data'], 'Humanhealth does not exist in the database.')
-                return
-            # Check synonym name is the same as HH1b
-            name = self.process_data['HH1b']['data'][FIELD_VALUE]
-            if hh.name != name:
-                self.critical_error(self.process_data['HH1b']['data'], 'HH1b field "{}" does NOT match the one in the database "{}"'.format(name, hh.name))
-        else:
+        if self.newhumanhealth:
             # triggers add dbxref and proper uniquename
             # check we have HH2a, HH1g and HH1b
             organism, _ = get_or_create(self.session, Organism, abbreviation='Hsap')
             hh, _ = get_or_create(self.session, Humanhealth, name=self.process_data['HH1b']['data'][FIELD_VALUE],
                                   organism_id=organism.organism_id, uniquename='FBhh:temp_0')
-            log.info("New humanhealth {} {}".format(hh.humanhealth_id, hh.uniquename))
             # db has correct FBhh0000000x in it but here still has 'FBhh:temp_0'. ???
             # presume triggers start after hh is returned. Maybe worth getting form db again
             log.info("New humanhealth created with fbhh {} id={}.".format(hh.uniquename, hh.humanhealth_id))
+        else:
+            not_obsolete = False
+            hh = self.session.query(Humanhealth).\
+                filter(Humanhealth.uniquename == self.process_data['HH1f']['data'][FIELD_VALUE],
+                       Humanhealth.is_obsolete == not_obsolete).\
+                one_or_none()
+            if not hh:
+                self.critical_error(self.process_data['HH1f']['data'], 'Humanhealth does not exist in the database or is obsolete.')
+                return
+            # Check synonym name is the same as HH1b
+            name = self.process_data['HH1b']['data'][FIELD_VALUE]
+            if hh.name != name:
+                self.critical_error(self.process_data['HH1b']['data'], 'HH1b field "{}" does NOT match the one in the database "{}"'.format(name, hh.name))
 
         # Add to pub to hh if it does not already exist.
         get_or_create(self.session, HumanhealthPub, pub_id=self.pub.pub_id, humanhealth_id=hh.humanhealth_id)
@@ -161,12 +162,10 @@ class ChadoHumanhealth(ChadoObject):
                                     'Cvterm missing "category" for cv "property type".')
                 return
 
-            log.debug("cvterm is {}".format(cvterm.name))
             hhp = self.session.query(Humanhealthprop).\
                 join(Humanhealth).\
                 filter(Humanhealth.uniquename == self.process_data['HH2b']['data'][FIELD_VALUE],
                        Humanhealthprop.type_id == cvterm.cvterm_id).one_or_none()
-            log.debug("hhp is {}".format(hhp))
             if not hhp or hhp.value != 'parent-entity':
                 self.critical_error(self.process_data['HH2b']['data'],
                                     '{} must be a parent-entity but this is not the case here.'.format(self.process_data['HH2b']['data'][FIELD_VALUE]))
@@ -277,6 +276,9 @@ class ChadoHumanhealth(ChadoObject):
                                     type_id=doid_cvterm.cvterm_id)
 
     def load_relationship(self, key):
+        """
+        Load relationships between humanhealths
+        """
         cvterm = self.session.query(Cvterm).join(Cv).\
             filter(Cv.name == self.process_data[key]['cv'],
                    Cvterm.name == self.process_data[key]['cvterm']).\
@@ -314,7 +316,6 @@ class ChadoHumanhealth(ChadoObject):
         if not self.has_data(key):
             return
 
-        log.debug("load prop {}: {} {}: {}".format(key, self.process_data[key]['cv'], self.process_data[key]['cvterm'], self.process_data[key]['data']))
         cvterm = self.session.query(Cvterm).join(Cv).\
             filter(Cv.name == self.process_data[key]['cv'],
                    Cvterm.name == self.process_data[key]['cvterm']).\
@@ -333,9 +334,6 @@ class ChadoHumanhealth(ChadoObject):
             return
 
         for data in data_list:
-            log.debug("Creating hhp with cvterm {}, hh {}, value {}".format(cvterm.cvterm_id,
-                                                                            self.humanhealth.humanhealth_id,
-                                                                            data[FIELD_VALUE]))
             hhp, _ = get_or_create(self.session, Humanhealthprop, type_id=cvterm.cvterm_id,
                                    humanhealth_id=self.humanhealth.humanhealth_id,
                                    value=data[FIELD_VALUE])
@@ -376,7 +374,11 @@ class ChadoHumanhealth(ChadoObject):
 
     def dissociate_pub(self, key):
         """
-        Remove humanhealth_pub, humanhealth_synonym and humanhealth_feature
+        Remove humanhealth_pub, humanhealth_synonym, humanhealth_cvterm, humanhealth_relationship,
+        feature_humanhealth_dbxref, humanhealth_dbxref, humanhealth_dbxrefprop and humanhealth_feature
+
+        NOTE: humanhealth_phenotype and library_humanhealth seem to be empty are not
+            : filled in by anything here.
         """
         #################
         # Humanhealth_pub
@@ -398,9 +400,54 @@ class ChadoHumanhealth(ChadoObject):
             filter(HumanhealthFeature.pub_id == self.pub.pub_id,
                    HumanhealthFeature.humanhealth_id == self.humanhealth.humanhealth_id).delete()
 
-        # TODO: humanhealth_cvterm, humanhealth_relationship, humanhealth_phenotype,
-        #       library_humanhealth, feature_humanhealth_dbxref, humanhealth_dbxref,
-        #       humanhealth_dbxrefprop
+        self.session.query(HumanhealthCvterm).\
+            filter(HumanhealthCvterm.pub_id == self.pub.pub_id,
+                   HumanhealthCvterm.humanhealth_id == self.humanhealth.humanhealth_id).delete()
+
+        self.session.query(HumanhealthRelationship).\
+            filter(HumanhealthRelationship.subject_id == self.humanhealth.humanhealth_id).delete()
+        self.session.query(HumanhealthRelationship).\
+            filter(HumanhealthRelationship.object_id == self.humanhealth.humanhealth_id).delete()
+
+        # Deleting humanhealth_dbxref should remove feature_humanhealth_dbxref humanhealth_dbxrefprop
+        # and by the CASCADE
+        self.session.query(HumanhealthDbxref).\
+            filter(HumanhealthDbxref.humanhealth_id == self.humanhealth.humanhealth_id).delete()
+
+    def delete_synonym(self, key, bangc=False):
+
+        if type(self.process_data[key]['data']) is not list:
+            data_list = []
+            data_list.append(self.process_data[key]['data'])
+        else:
+            data_list = self.process_data[key]['data']
+
+        cvterm = self.session.query(Cvterm).join(Cv).\
+            filter(Cv.name == self.process_data[key]['cv'],
+                   Cvterm.name == self.process_data[key]['cvterm']).\
+            one_or_none()
+        if not cvterm:  # after datalist set up as we need to pass a tuple
+            self.critical_error(data_list[0],
+                                'Cvterm missing "{}" for cv "{}".'.format(self.process_data[key]['cvterm'],
+                                                                          self.process_data[key]['cv']))
+            return
+
+        if bangc:
+            self.session.query(HumanhealthSynonym).\
+                filter(HumanhealthSynonym.pub_id == self.pub.pub_id,
+                       HumanhealthSynonym.humanhealth_id == self.humanhealth.humanhealth_id).delete()
+        else:
+            for data in data_list:
+                synonym = self.session.query(Synonym).\
+                    filter(name=data[FIELD_VALUE],
+                           type_id=cvterm.cvterm_id).one_or_none()
+                if not synonym:
+                    self.critical_error(data_list[0], 'Synonym linked to cvterm "{}" Does not exist.'.format(synonym.name, self.process_data[key]['cvterm']))
+                    continue
+                self.session.query(HumanhealthSynonym).\
+                    filter(humanhealth_id=self.humanhealth.humanhealth_id,
+                           synonym_id=synonym.synonym_id,
+                           pub_id=self.pub.pub_id)
 
     def delete_cvterm(self, key, bangc=False):
         if bangc:
@@ -478,7 +525,7 @@ class ChadoHumanhealth(ChadoObject):
                     return
 
     def make_obsolete(self, key):
-        pass
+        self.humanhealth.is_obsolete = True
 
     def ignore(self, key):
         return
@@ -496,4 +543,37 @@ class ChadoHumanhealth(ChadoObject):
         self.process_data[key]['data'] = None
 
     def delete_prop(self, key, bangc=True):
-        pass
+        cvterm = self.session.query(Cvterm).join(Cv).\
+            filter(Cv.name == self.process_data[key]['cv'],
+                   Cvterm.name == self.process_data[key]['cvterm']).\
+            one_or_none()
+
+        if type(self.process_data[key]['data']) is not list:
+            data_list = []
+            data_list.append(self.process_data[key]['data'])
+        else:
+            data_list = self.process_data[key]['data']
+
+        if not cvterm:  # after datalist set up as we need to pass a tuple
+            self.critical_error(data_list[0],
+                                'Cvterm missing "{}" for cv "{}".'.format(self.process_data[key]['cvterm'],
+                                                                          self.process_data[key]['cv']))
+            return
+
+        if not bangc:
+            for data in data_list:
+                hp = self.session.query(Humanhealthprop).\
+                    filter(Humanhealthprop.humanhealth_id == self.humanhealth.humanhealth_id,
+                           Humanhealthprop.type_id == cvterm.cvterm_id,
+                           Humanhealthprop.value == data[FIELD_VALUE]).one_or_none()
+                if not hp:
+                    self.critical_error(data_list[0],
+                                        'Value "{}" Not found for Cvterm missing "{}".'.format(data[FIELD_VALUE],
+                                                                                               self.process_data[key]['cvterm']))
+                    continue
+                else:
+                    self.session.delete(hp)
+        else:
+            self.session.query(Humanhealthprop).\
+                filter(Humanhealthprop.humanhealth_id == self.humanhealth.humanhealth_id,
+                       Humanhealthprop.type_id == cvterm.cvterm_id).delete()

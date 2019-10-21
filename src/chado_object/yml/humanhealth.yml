@@ -26,13 +26,6 @@
 #
 # Description is just in there to help out.
 #
-# Other terms are used to allow specific fields to do special things in the code instead
-# of creating more types. 
-# i.e. verify_only_on_update in P2
-#      Will not add new relationship each time it is seen (only on creation of new pubs)
-#      It instead is used to make sure if pub already has a parent it matches this. 
-#
-# TODO: remove large comments and sql after tests etc written.
 # 
 #########################################################################################
 HH1b: 
@@ -58,14 +51,6 @@ HH2a:
   cv: property type
   cvterm: category
   description: Category [parent entity, sub-entity, specific entity, group entity]
-#select * from humanhealthprop hp, cvterm c where c.cvterm_id = hp.type_id and value = 'parent entity' limit 10;
-# humanhealthprop_id | humanhealth_id | type_id |     value     | rank | cvterm_id | cv_id | definition | dbxref_id | is_obsolete | is_relationshiptype |   name   
-#--------------------+----------------+---------+---------------+------+-----------+-------+------------+-----------+-------------+---------------------+----------
-#                  8 |              2 |  126976 | parent entity |    0 |    126976 |     2 |            |   9541359 |           0 |                   0 | category
-#                 23 |              4 |  126976 | parent entity |    0 |    126976 |     2 |            |   9541359 |           0 |                   0 | category
-#                 27 |              5 |  126976 | parent entity |    0 |    126976 |     2 |            |   9541359 |           0 |                   0 | category
-#               4006 |            265 |  126976 | parent entity |    1 |    126976 |     2 |            |   9541359 |           0 |                   0 | category
-  
 HH2b:
   type: relationship
   cv: relationship type
@@ -76,51 +61,10 @@ HH2c: #humanhealth_dbxref db = OMIM_PHENOTYPE, humanhealth_dbxrefprop hh2c_link
   db: OMIM_PHENOTYPE
   cv: property type
   cvterm: hh2c_link
-#select d.name, dx.accession, hdp.value, cvt.name, h.uniquename
-#    from humanhealth h, humanhealth_dbxrefprop hdp, humanhealth_dbxref hd, dbxref dx, db d, cvterm cvt
-#    where h.humanhealth_id = hd.humanhealth_id and
-#          hdp.type_id = cvt.cvterm_id and
-#          hdp.humanhealth_dbxref_id = hd.humanhealth_dbxref_id and
-#          hd.dbxref_id = dx.dbxref_id and
-#          d.db_id = dx.db_id and
-#          d.name = 'OMIM_PHENOTYPE' and
-#          cvt.name ='hh2c_link' limit 10;
-#      name      | accession | value |   name    | uniquename  
-#----------------+-----------+-------+-----------+-------------
-# OMIM_PHENOTYPE | 143100    |       | hh2c_link | FBhh0000003
-# OMIM_PHENOTYPE | 168601    |       | hh2c_link | FBhh0000006
-# OMIM_PHENOTYPE | 605543    |       | hh2c_link | FBhh0000007
-# OMIM_PHENOTYPE | 600116    |       | hh2c_link | FBhh0000008
-# OMIM_PHENOTYPE | 605909    |       | hh2c_link | FBhh0000009
-# OMIM_PHENOTYPE | 606324    |       | hh2c_link | FBhh0000010
-# OMIM_PHENOTYPE | 607060    |       | hh2c_link | FBhh0000011
-# OMIM_PHENOTYPE | 610297    |       | hh2c_link | FBhh0000012
-# OMIM_PHENOTYPE | 171400    |       | hh2c_link | FBhh0000013
-# OMIM_PHENOTYPE | 162300    |       | hh2c_link | FBhh0000014
-
 HH2d: 
   type: cvterm
   cv: humanhealth_cvtermprop type
   cvterm: doid_term
-# select cvt.name, db.name, dbxref.accession, h.uniquename, cvt2.name, cv.name, cv2.name
-# from cv cv2, humanhealth h, humanhealth_cvtermprop hcp, humanhealth_cvterm hc, dbxref, db, cvterm cvt, cvterm cvt2, cv 
-# where cv2.cv_id = cvt2.cv_id and 
-#       cvt2.cvterm_id  =hcp.type_id and
-#       h.humanhealth_id = hc.humanhealth_id and
-#       hcp.humanhealth_cvterm_id = hc.humanhealth_cvterm_id and
-#       hc.cvterm_id = cvt.cvterm_id and
-#       cvt.dbxref_id = dbxref.dbxref_id and
-#       db.db_id = dbxref.db_id and
-#       cv.cv_id = cvt.cv_id and
-#       accession = '0050888';
-#               name                | name | accession | uniquename  |   name    |       name       |            name             
-#-----------------------------------+------+-----------+-------------+-----------+------------------+-----------------------------
-# syndromic intellectual disability | DOID | 0050888   | FBhh0000940 | doid_term | disease_ontology | humanhealth_cvtermprop type
-# syndromic intellectual disability | DOID | 0050888   | FBhh0001066 | doid_term | disease_ontology | humanhealth_cvtermprop type
-# syndromic intellectual disability | DOID | 0050888   | FBhh0001096 | doid_term | disease_ontology | humanhealth_cvtermprop type
-# syndromic intellectual disability | DOID | 0050888   | FBhh0001097 | doid_term | disease_ontology | humanhealth_cvtermprop type
-
-
 HH3a:
   type: direct
   name: name
@@ -185,20 +129,6 @@ HH5c:
 HH5d:
   type: ignore # dealt with as part of HH5a
   description: dissociate accession specified in HH5a/HH5b from this HH
-
-# select d.name, dx.accession, dx.description, hdp.value, cvt.name, h.uniquename
-# from humanhealth h, humanhealth_dbxrefprop hdp, humanhealth_dbxref hd, dbxref dx, db d, cvterm cvt
-#    where h.humanhealth_id = hd.humanhealth_id and
-#          hdp.type_id = cvt.cvterm_id and
-#          hdp.humanhealth_dbxref_id = hd.humanhealth_dbxref_id and
-#          hd.dbxref_id = dx.dbxref_id and
-#          d.db_id = dx.db_id and dx.accession = 'NBK320989' and
-#          cvt.name ='data_link' limit 10;
-#     name     | accession | value |   name    | uniquename  | description
-#--------------+-----------+-------+-----------+-------------+------------
-# Gene_reviews | NBK320989 |       | data_link | FBhh0001083 | Mitochondrial Disorders Overview
-# Gene_reviews | NBK320989 |       | data_link | FBhh0001084 | Mitochondrial Disorders Overview
-  
 HH6c:
   type: dbxrefprop
   db: OMIM_PHENOTYPE
