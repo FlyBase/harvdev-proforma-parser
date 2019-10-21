@@ -563,7 +563,7 @@ class ChadoHumanhealth(ChadoObject):
         if not bangc:
             for data in data_list:
                 hp = self.session.query(Humanhealthprop).\
-                    filter(Humanhealthprop.humamhealth_id == self.humanhealth.humanhealth_id,
+                    filter(Humanhealthprop.humanhealth_id == self.humanhealth.humanhealth_id,
                            Humanhealthprop.type_id == cvterm.cvterm_id,
                            Humanhealthprop.value == data[FIELD_VALUE]).one_or_none()
                 if not hp:
@@ -575,5 +575,5 @@ class ChadoHumanhealth(ChadoObject):
                     self.session.delete(hp)
         else:
             self.session.query(Humanhealthprop).\
-                filter(Humanhealthprop.humamhealth_id == self.humanhealth.humanhealth_id,
+                filter(Humanhealthprop.humanhealth_id == self.humanhealth.humanhealth_id,
                        Humanhealthprop.type_id == cvterm.cvterm_id).delete()
