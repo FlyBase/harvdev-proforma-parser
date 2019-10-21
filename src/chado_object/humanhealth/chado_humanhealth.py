@@ -563,17 +563,27 @@ class ChadoHumanhealth(ChadoObject):
         if not bangc:
             for data in data_list:
                 hp = self.session.query(Humanhealthprop).\
+                    join(HumanhealthpropPub).\
                     filter(Humanhealthprop.humanhealth_id == self.humanhealth.humanhealth_id,
                            Humanhealthprop.type_id == cvterm.cvterm_id,
+                           HumanhealthpropPub.pub_id == self.pub.pub_id,
                            Humanhealthprop.value == data[FIELD_VALUE]).one_or_none()
                 if not hp:
                     self.critical_error(data_list[0],
-                                        'Value "{}" Not found for Cvterm missing "{}".'.format(data[FIELD_VALUE],
+                                        'Value "{}" Not found for Cvterm "{}".'.format(data[FIELD_VALUE],
                                                                                                self.process_data[key]['cvterm']))
                     continue
                 else:
                     self.session.delete(hp)
         else:
-            self.session.query(Humanhealthprop).\
+            hp_list = self.session.query(Humanhealthprop).\
+                join(HumanhealthpropPub).\
                 filter(Humanhealthprop.humanhealth_id == self.humanhealth.humanhealth_id,
-                       Humanhealthprop.type_id == cvterm.cvterm_id).delete()
+                       HumanhealthpropPub.pub_id == self.pub.pub_id,
+                       Humanhealthprop.type_id == cvterm.cvterm_id)
+            count = 0
+            for hp in hp_list:
+                count += 1
+                self.session.delete(hp)
+            if not count:
+                self.critical_error(data_list[0], "No props removed so Error using bangc")
