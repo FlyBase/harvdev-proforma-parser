@@ -1,0 +1,32 @@
+MP1:
+  type: string
+  no_bangc: True
+  required: True
+  regex: ^(\d{5}|new)$
+MP2a:
+  type: string
+  required: True
+MP2b:
+  type: string
+  if_new_required: True
+MP6:
+  type: string
+  book_check: True
+MP11:
+  type: [list, string]
+  book_check: True
+MP15:
+  type: string
+  if_new_required: True
+  regex: ^(\d{10}|\d{13}|\d{4}=\d{4})$
+MP17:
+  type: string
+  if_new_required: True
+  allowed: [compendium,journal,book]
+MP18:
+  type: [string, list]
+  regex: ^(\d+)$
+MP19:
+  type: string
+  no_bangc: True
+  allowed: [y,Y]
