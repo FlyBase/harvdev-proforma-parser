@@ -1,7 +1,7 @@
 # Cerberus and yaml
 # Additional tools for validation
 from cerberus import Validator
-import re
+
 # logging imports
 import logging
 log = logging.getLogger(__name__)
@@ -76,9 +76,30 @@ class ValidatorMultipub(Validator):
         """
         pass
 
-    def _validate_if_new_required(self, field, dict1, comp_fields):
-        pass
+    def _validate_if_new_required(self, other, field, value):
+        """
+        Throws error if required for new.
+        The rule's arguments are validated against this schema:
+        {'type': 'string'}
+        """
+        if self.document['MP1'] == 'new':
+            if value and len(value):
+                return
+            else:
+                self._error(field, 'Error {} Must be set for new pubs.'.format(field))
 
-    def _validate_book_check(self, field, dict1, comp_fields):
-        pass
- 
+    def _validate_book_check(self, other, field, value):
+        """
+        Throws error if new book and not defined.
+        The rule's arguments are validated against this schema:
+        {'type': 'string'}
+        """
+        if self.bang_c == field:
+            return
+        if self.document['MP1'] == 'new' and self.document['MP17'] == 'book':
+            if value and len(value):
+                return
+            else:
+                self._error(field, 'Error {} is not set so cannot set but MP1 is new and MP17 is book, so is required.'.format(field))
+        elif value and len(value):
+            self._error(field, 'Error cannot set {} if not a new book')
