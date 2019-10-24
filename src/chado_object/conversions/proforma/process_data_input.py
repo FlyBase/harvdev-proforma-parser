@@ -8,6 +8,7 @@
 from ...chado_gene import ChadoGene
 from ...chado_pub import ChadoPub
 from ...chado_chem import ChadoChem
+from ...chado_multipub import ChadoMultipub
 from ...humanhealth.chado_humanhealth import ChadoHumanhealth
 
 import logging
@@ -83,7 +84,8 @@ def process_data_input(proforma_object):
         'PUBLICATION': (ChadoPub),
         'GENE': (ChadoGene),
         'CHEMICAL': (ChadoChem),
-        'HUMAN': (ChadoHumanhealth)
+        'HUMAN': (ChadoHumanhealth),
+        'MULTIPUBLICATION': (ChadoMultipub),
     }
 
     try:

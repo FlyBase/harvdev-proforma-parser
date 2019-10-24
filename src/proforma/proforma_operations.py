@@ -111,6 +111,11 @@ def process_proforma_file(file_location_from_list, curator_dict):
     # TODO Clean up logging to clarify that we are sending the TUPLE, not just the FBrf value.
     proforma_type, filename, proforma_start_line_number, fields_values = list_of_proforma_objects[0]\
         .get_data_for_processing()
+
+    # Multipub is the exception as it does not need a pub to start with
+    if 'MULTIPUBLICATION' in list_of_proforma_objects[0].proforma_type:
+        return list_of_processed_proforma_objects
+
     log.info('Found reference %s.' %
              (list_of_proforma_objects[0].fields_values['P22'][1]))
     log.info('Attaching %s from field %s, line %s to all subsequent proforma objects.' %
@@ -355,7 +360,7 @@ class ProformaFile(object):
                 continue  # If we're on the proforma_type line, go to the next line.
             elif current_line == '!':
                 continue  # If we're on a line with only an exclamation point.
-            elif next_line and 'END OF RECORD FOR THIS PUBLICATION' in next_line:
+            elif next_line and ('END OF RECORD FOR THIS PUBLICATION' in next_line or 'END OF RECORD FOR THIS MULTIPUBLICATION' in next_line):
                 list_of_proforma_objects.append(individual_proforma)  # add the last proforma entry to the list.
                 break  # fin.
             else:

@@ -19,6 +19,11 @@ class ValidatorMultipub(Validator):
         self.record_type = kwargs['record_type']
         super(ValidatorMultipub, self).__init__(*args, **kwargs)
 
+    def _validate_type_None(self, value):
+        if value is None:
+            log.info('Value is {}'.format(value))
+            return True
+
     def _validate_no_bangc(self, no_bangc, field, value):
         """
         Throw error if bangc is set. NOT allowed here.
@@ -80,7 +85,7 @@ class ValidatorMultipub(Validator):
         """
         Throws error if required for new.
         The rule's arguments are validated against this schema:
-        {'type': 'string'}
+        {'type': 'boolean'}
         """
         if self.document['MP1'] == 'new':
             if value and len(value):
@@ -92,7 +97,7 @@ class ValidatorMultipub(Validator):
         """
         Throws error if new book and not defined.
         The rule's arguments are validated against this schema:
-        {'type': 'string'}
+        {'type': 'boolean'}
         """
         if self.bang_c == field:
             return
