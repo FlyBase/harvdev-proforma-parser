@@ -46,7 +46,6 @@ class ChadoMultipub(ChadoPub):
         ############################################################
         self.newpub = False  # Modified later for new publications.
 
-
         ############################################################
         # Get processing info and data to be processed.
         # Please see the yml/publication.yml file for more details
@@ -99,7 +98,7 @@ class ChadoMultipub(ChadoPub):
 
         if self.pub:  # Only proceed if we have a pub. Otherwise we had an error.
             self.extra_checks()
- 
+
         # bang c first as this supersedes all things
         if self.bang_c:
             self.bang_c_it()
@@ -114,7 +113,7 @@ class ChadoMultipub(ChadoPub):
         curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short, timestamp)
         log.info('Curator string assembled as:')
         log.info('%s' % (curated_by_string))
- 
+
     def extra_checks(self):
         """
         Perform extra checks that validation was not able to do.
