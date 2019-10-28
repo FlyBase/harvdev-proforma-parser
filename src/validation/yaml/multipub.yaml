@@ -11,11 +11,11 @@ MP2b:
   if_new_required: True
   nullable: True
 MP6:
-  type: [list, string]
+  type: string
   book_check: True
   nullable: True
 MP11:
-  type: string
+  type: [string, list]
   book_check: True
   nullable: True
 MP15:

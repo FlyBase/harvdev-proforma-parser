@@ -214,7 +214,7 @@ def validate_proforma_object(proforma):
                 line_number = fields_values[field][LINE_NUMBER]
             critical_error_occurred = check_and_raise_errors(filename, proforma_start_line, line_number, field,
                                                              values)
-            return critical_error_occurred
+        return critical_error_occurred
 
 
 def check_and_raise_errors(filename, proforma_start_line, line_number, error_field, error_value):
