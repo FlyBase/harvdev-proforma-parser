@@ -8,6 +8,7 @@
 # Cerberus and yaml
 import yaml
 from validation.validator_pub import ValidatorPub
+from validation.validator_multipub import ValidatorMultipub
 from validation.validator_chem import ValidatorChem
 from validation.validator_humanhealth import ValidatorHumanhealth
 from error.error_tracking import ErrorTracking, CRITICAL_ERROR, WARNING_ERROR
@@ -54,6 +55,10 @@ def get_validate_pub_schema(fields_values):
     return "publication.yaml"
 
 
+def get_validate_multipub_schema(fields_values):
+    return "multipub.yaml"
+
+
 def get_validate_gene_schema(fields_values):
     return "gene.yaml"
 
@@ -79,11 +84,13 @@ def validation_file_schema_lookup(proforma_type, fields_values):
     root_directory += '/yaml'
     # Ignore versions just get name (deal with this later if it ever becomes a problem)
     validation_dict = {"PUBLICATION": get_validate_pub_schema,
+                       "MULTIPUBLICATION": get_validate_multipub_schema,
                        "GENE": get_validate_gene_schema,
                        "CHEMICAL": get_validate_chemical_schema,
                        "HUMAN": get_validate_humanhealth_schema}
     # if we have specific validation stuff set it up here.
     validation_base = {"PUBLICATION": ValidatorPub,
+                       "MULTIPUBLICATION": ValidatorMultipub,
                        "CHEMICAL": ValidatorChem,
                        "HUMAN": ValidatorHumanhealth}
     validator = None
@@ -207,7 +214,7 @@ def validate_proforma_object(proforma):
                 line_number = fields_values[field][LINE_NUMBER]
             critical_error_occurred = check_and_raise_errors(filename, proforma_start_line, line_number, field,
                                                              values)
-            return critical_error_occurred
+        return critical_error_occurred
 
 
 def check_and_raise_errors(filename, proforma_start_line, line_number, error_field, error_value):

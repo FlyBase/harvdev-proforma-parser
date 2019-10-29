@@ -60,6 +60,8 @@ class ChadoPub(ChadoObject):
         yml_file = os.path.join(os.path.dirname(__file__), 'yml/publication.yml')
         # Populated self.process_data with all possible keys.
         self.process_data = self.load_reference_yaml(yml_file, params)
+        self.direct_key = 'P22'
+        self.editor = False
 
     def get_P1_cvterm_and_validate(self, pub):
         """
@@ -299,9 +301,11 @@ class ChadoPub(ChadoObject):
             if 'boolean' in self.process_data[key]:
                 setattr(self.pub, self.process_data[key]['name'], True)
                 if 'warning' in self.process_data[key]:
-                    message = "Making {} {}.".format(self.process_data['P22']['data'][FIELD_VALUE], self.process_data[key]['name'])
+                    message = "Making {} {}.".format(self.process_data[self.direct_key]['data'][FIELD_VALUE], self.process_data[key]['name'])
                     self.warning_error(self.process_data[key]['data'], message)
             else:
+                log.debug("key is {}, name = {}".format(key, self.process_data[key]['name']))
+                log.debug("key is {}, value is {}".format(key, self.process_data[key]['data'][FIELD_VALUE]))
                 old_attr = getattr(self.pub, self.process_data[key]['name'])
                 if old_attr:
                     self.warning_error(self.process_data[key]['data'], "No !c but still overwriting existing value of {}".format(old_attr))
@@ -422,6 +426,7 @@ class ChadoPub(ChadoObject):
                     self.session, Pubauthor,
                     pub_id=self.pub.pub_id,
                     surname=surname,
+                    editor=self.editor,
                     givennames=givennames
                 )
 

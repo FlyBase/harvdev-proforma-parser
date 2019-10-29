@@ -91,9 +91,9 @@ def process_proforma_file(file_location_from_list, curator_dict):
         log.info('From file: %s' % (individual_proforma_object.file_metadata['filename']))
         log.info('From line: %s' % (individual_proforma_object.proforma_start_line_number))
 
-        critical_error_occurred = validate_proforma_object(individual_proforma_object)
+        critical_error_list = validate_proforma_object(individual_proforma_object)
 
-        if critical_error_occurred is False:
+        if not critical_error_list:
             list_of_processed_proforma_objects.append(individual_proforma_object)
         else:
             log.critical('Critical error found in {}.'.format(individual_proforma_object.proforma_type))
@@ -111,6 +111,11 @@ def process_proforma_file(file_location_from_list, curator_dict):
     # TODO Clean up logging to clarify that we are sending the TUPLE, not just the FBrf value.
     proforma_type, filename, proforma_start_line_number, fields_values = list_of_proforma_objects[0]\
         .get_data_for_processing()
+
+    # Multipub is the exception as it does not need a pub to start with
+    if 'MULTIPUBLICATION' in list_of_proforma_objects[0].proforma_type:
+        return list_of_processed_proforma_objects
+
     log.info('Found reference %s.' %
              (list_of_proforma_objects[0].fields_values['P22'][1]))
     log.info('Attaching %s from field %s, line %s to all subsequent proforma objects.' %
@@ -344,7 +349,9 @@ class ProformaFile(object):
             line_number += 1
             # log.info('next line: %s' % (next_line))
             # If we find the start of a proforma section, create a new proforma object and set the type.
-            if current_line.startswith('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!') and 'END OF RECORD FOR THIS PUBLICATION' not in next_line:
+            if current_line.startswith('!!!!!!!!!!!!!!!!') and \
+                'END OF RECORD FOR THIS PUBLICATION' not in next_line and \
+                    'END OF RECORD FOR THIS MULTIPUBLICATION' not in next_line:
                 if individual_proforma is not None:
                     list_of_proforma_objects.append(individual_proforma)
                 proforma_type = next_line
@@ -355,7 +362,7 @@ class ProformaFile(object):
                 continue  # If we're on the proforma_type line, go to the next line.
             elif current_line == '!':
                 continue  # If we're on a line with only an exclamation point.
-            elif next_line and 'END OF RECORD FOR THIS PUBLICATION' in next_line:
+            elif next_line and ('END OF RECORD FOR THIS PUBLICATION' in next_line or 'END OF RECORD FOR THIS MULTIPUBLICATION' in next_line):
                 list_of_proforma_objects.append(individual_proforma)  # add the last proforma entry to the list.
                 break  # fin.
             else:

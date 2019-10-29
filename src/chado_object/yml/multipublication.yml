@@ -1,0 +1,33 @@
+
+MP1:
+  type: ignore
+  description: FlyBase multipub ID or "new" *U
+MP2a:
+  type: direct
+  name: miniref
+  description: Title abbreviation *s
+MP2b:
+  type: direct
+  name: title
+  description: Title *u
+MP18:
+  type: ignore # Well until i know what this means
+  description: Action - make this/these multipub ID(s) secondary IDs of MP1 *N
+MP19:
+  type: obsolete
+  description: Action - obsolete MP1 in FlyBase TAKE CARE
+MP17:
+  type: cvterm
+  cvname: pub type
+  description: Type of multipub [CV]
+MP15:
+  type: dbxref
+  dbname: issn
+  description: ISSN/ISBN *I
+MP6:
+  type: direct
+  name: pyear
+  description: Year of publication, if MP17 = book *t
+MP11:
+  type: author
+  description: Editor(s), if MP17 = book a-b
