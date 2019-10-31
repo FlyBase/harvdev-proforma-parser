@@ -7,11 +7,13 @@
 import re
 import os
 from .chado_base import ChadoObject, FIELD_VALUE, FIELD_NAME
+
 from harvdev_utils.production import (
     Cv, Cvterm, Pub, Pubprop, Pubauthor, PubRelationship, Db, Dbxref, PubDbxref
 )
 from harvdev_utils.chado_functions import get_or_create
 from harvdev_utils.char_conversions.sub_sup_to_sgml import sub_sup_to_sgml
+
 import logging
 from datetime import datetime
 
