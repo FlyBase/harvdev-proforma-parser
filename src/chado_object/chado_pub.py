@@ -7,10 +7,12 @@
 import re
 import os
 from .chado_base import ChadoObject, FIELD_VALUE, FIELD_NAME
+
 from harvdev_utils.production import (
     Cv, Cvterm, Pub, Pubprop, Pubauthor, PubRelationship, Db, Dbxref, PubDbxref
 )
 from harvdev_utils.chado_functions import get_or_create
+from harvdev_utils.char_conversions.sub_sup_to_sgml import sub_sup_to_sgml
 
 import logging
 from datetime import datetime
@@ -435,15 +437,20 @@ class ChadoPub(ChadoObject):
         From a given cv and cvterm name add the pubprop with value in tuple.
         If cv or cvterm do not exist create an error and return.
         """
+        value = value_to_add_tuple[FIELD_VALUE]
+        if cv_term_name == 'pubmed_abstract':
+            # convert '[' to '<up>' etc.
+            value = sub_sup_to_sgml(value)
+
         log.debug("Looking up cvterm: {} {}.".format(cv_name, cv_term_name))
         cv_term_id = super(ChadoPub, self).cvterm_query(cv_name, cv_term_name)
 
-        log.debug('Querying for FBrf \'%s\'.' % (value_to_add_tuple[FIELD_VALUE]))
+        log.debug('Querying for FBrf \'%s\'.' % (value))
 
         pub_prop, _ = get_or_create(
             self.session, Pubprop,
             pub_id=self.pub.pub_id,
-            value=value_to_add_tuple[FIELD_VALUE],
+            value=value,
             type_id=cv_term_id
         )
         return pub_prop
