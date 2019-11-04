@@ -129,9 +129,6 @@ def process_proforma_file(file_location_from_list, curator_dict):
             log.info("SEtting new pub to be {}".format(last_pub))
         individual_proforma_object.add_reference_data(last_pub)
 
-    #log.info('Successfully attached reference {} to {} proforma objects'
-    #         .format(list_of_proforma_objects[0].fields_values['P22'][1], len(list_of_processed_proforma_objects)))
-
     return list_of_processed_proforma_objects
 
 
@@ -370,10 +367,10 @@ class ProformaFile(object):
                 individual_proforma = Proforma(file_metadata, proforma_type, line_number)  # Create a new Proforma object.
                 log.debug('Individual proforma object is %s' % individual_proforma)
             elif current_line == '!':
-                continue  # If we're on a line with only an exclamation point.
+                continue   # If we're on a line with only an exclamation point.
             elif individual_proforma:
                 field = self.process_line(field, line_number, current_line, individual_proforma, file_metadata)
-            elif re.match(r'^! C[0-9]', current_line): # curator line
+            elif re.match(r'^! C[0-9]', current_line):  # curator line
                 field = self.process_line(field, line_number, current_line, individual_proforma, file_metadata)
             else:
                 log.debug("Ignoring {}".format(current_line))
