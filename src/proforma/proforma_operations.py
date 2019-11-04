@@ -126,7 +126,7 @@ def process_proforma_file(file_location_from_list, curator_dict):
         log.info("TYPE: is {}".format(individual_proforma_object.proforma_type))
         if 'PUBLICATION' in individual_proforma_object.proforma_type:
             last_pub = individual_proforma_object.fields_values['P22']
-            log.info("SEtting new pub to be {}".format(last_pub))
+            log.info("Setting new pub to be {}".format(last_pub))
         individual_proforma_object.add_reference_data(last_pub)
 
     return list_of_processed_proforma_objects
