@@ -116,16 +116,21 @@ def process_proforma_file(file_location_from_list, curator_dict):
     if 'MULTIPUBLICATION' in list_of_proforma_objects[0].proforma_type:
         return list_of_processed_proforma_objects
 
-    log.info('Found reference %s.' %
+    log.info('Found first reference %s.' %
              (list_of_proforma_objects[0].fields_values['P22'][1]))
     log.info('Attaching %s from field %s, line %s to all subsequent proforma objects.' %
              (fields_values['P22'][1], 'P22', fields_values['P22'][2]))
 
+    last_pub = list_of_proforma_objects[0].fields_values['P22']
     for individual_proforma_object in list_of_processed_proforma_objects:
-        individual_proforma_object.add_reference_data(list_of_proforma_objects[0].fields_values['P22'])
+        log.info("TYPE: is {}".format(individual_proforma_object.proforma_type))
+        if 'PUBLICATION' in individual_proforma_object.proforma_type:
+            last_pub = individual_proforma_object.fields_values['P22']
+            log.info("SEtting new pub to be {}".format(last_pub))
+        individual_proforma_object.add_reference_data(last_pub)
 
-    log.info('Successfully attached reference {} to {} proforma objects'
-             .format(list_of_proforma_objects[0].fields_values['P22'][1], len(list_of_processed_proforma_objects)))
+    #log.info('Successfully attached reference {} to {} proforma objects'
+    #         .format(list_of_proforma_objects[0].fields_values['P22'][1], len(list_of_processed_proforma_objects)))
 
     return list_of_processed_proforma_objects
 
@@ -343,30 +348,35 @@ class ProformaFile(object):
         proforma_type = None
         field = None
         line_number = 0
+        proforma_start = r"""
+            ^!        # starts with a bang
+            \s+       # at least one space
+            .+        # Anything really
+            PROFORMA  # word proforma
+            \s+       # spaces
+            Version   # word Version"""
 
         # Iterate through the content looking at the current and next line.
         for current_line, next_line in self.next_and_current_item(self.proforma_file_data):
             line_number += 1
             # log.info('next line: %s' % (next_line))
             # If we find the start of a proforma section, create a new proforma object and set the type.
-            if current_line.startswith('!!!!!!!!!!!!!!!!') and \
-                'END OF RECORD FOR THIS PUBLICATION' not in next_line and \
-                    'END OF RECORD FOR THIS MULTIPUBLICATION' not in next_line:
+            if current_line.startswith('!!!!!!!!!!!!!!!!'):
                 if individual_proforma is not None:
                     list_of_proforma_objects.append(individual_proforma)
-                proforma_type = next_line
-                line_number = line_number + 1  # The proforma starts on the next line.
+                individual_proforma = None
+            elif re.search(proforma_start, current_line, re.VERBOSE):
+                proforma_type = current_line
                 individual_proforma = Proforma(file_metadata, proforma_type, line_number)  # Create a new Proforma object.
                 log.debug('Individual proforma object is %s' % individual_proforma)
-            elif proforma_type is not None and current_line == proforma_type:
-                continue  # If we're on the proforma_type line, go to the next line.
             elif current_line == '!':
                 continue  # If we're on a line with only an exclamation point.
-            elif next_line and ('END OF RECORD FOR THIS PUBLICATION' in next_line or 'END OF RECORD FOR THIS MULTIPUBLICATION' in next_line):
-                list_of_proforma_objects.append(individual_proforma)  # add the last proforma entry to the list.
-                break  # fin.
-            else:
+            elif individual_proforma:
                 field = self.process_line(field, line_number, current_line, individual_proforma, file_metadata)
+            elif re.match(r'^! C[0-9]', current_line): # curator line
+                field = self.process_line(field, line_number, current_line, individual_proforma, file_metadata)
+            else:
+                log.debug("Ignoring {}".format(current_line))
         return list_of_proforma_objects
 
 
