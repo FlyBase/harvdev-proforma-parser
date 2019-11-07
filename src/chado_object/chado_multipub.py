@@ -73,7 +73,7 @@ class ChadoMultipub(ChadoPub):
 
             if not self.has_data('MP2'):
                 return pub
-             
+
             # check MP2a is equal to miniref. Must exist from validation.
             if pub.miniref != self.process_data['MP2a']['data'][FIELD_VALUE]:
                 message = "{} does not match abbreviation of {}".format(self.process_data['MP2a']['data'][FIELD_VALUE], pub.miniref)
