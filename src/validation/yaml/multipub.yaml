@@ -6,6 +6,7 @@ MP1:
 MP2a:
   type: string
   required: True
+  nullable: False
 MP2b:
   type: string
   if_new_required: True

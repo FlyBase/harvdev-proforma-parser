@@ -36,8 +36,7 @@ class ChadoMultipub(ChadoPub):
                             'author': self.delete_author,
                             'dbxref': self.delete_dbxref,
                             'cvterm': self.delete_cvterm,
-                            'ignore': self.delete_ignore,
-                            'obsolete': self.delete_obsolete}
+                            'ignore': self.delete_ignore}
 
         self.proforma_start_line_number = params.get('proforma_start_line_number')
 
@@ -62,16 +61,24 @@ class ChadoMultipub(ChadoPub):
         returns None or the pub to be used.
         """
         if not self.newpub:
-            fbrf = "multipub_{}".format(self.process_data['MP1']['data'])
-            pub = self.pub_from_fbrf(fbrf)
+            fbrf = "multipub_{}".format(self.process_data['MP1']['data'][FIELD_VALUE])
+            pub = self.session.query(Pub).\
+                filter(Pub.uniquename == fbrf).\
+                one_or_none()
             if not pub:
-                self.critical_error(self.process_data['MP1']['data'], 'Pub does not exist in the database.')
+                self.critical_error(self.process_data['MP1']['data'], 'Pub {} does not exist in the database.'.format(fbrf))
                 return pub
+            # Check MP2a is defined. If not then validation will already have raised an error
+            # So just return
+
+            if not self.has_data('MP2'):
+                return pub
+             
             # check MP2a is equal to miniref. Must exist from validation.
             if pub.miniref != self.process_data['MP2a']['data'][FIELD_VALUE]:
                 message = "{} does not match abbreviation of {}".format(self.process_data['MP2a']['data'][FIELD_VALUE], pub.miniref)
                 self.critical_error(self.process_data['MP2a']['data'], message)
-                return pub
+            return pub
 
         cvterm = self.session.query(Cvterm).join(Cv).filter(Cv.name == self.process_data['MP17']['cvname'],
                                                             Cvterm.name == self.process_data['MP17']['data'][FIELD_VALUE],
@@ -98,6 +105,8 @@ class ChadoMultipub(ChadoPub):
 
         if self.pub:  # Only proceed if we have a pub. Otherwise we had an error.
             self.extra_checks()
+        else:
+            return
 
         # bang c first as this supersedes all things
         if self.bang_c:
@@ -132,4 +141,5 @@ class ChadoMultipub(ChadoPub):
         """
         Will need to add this as MP17 can have bangc
         """
+
         pass

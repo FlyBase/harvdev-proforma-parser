@@ -207,7 +207,9 @@ def validate_proforma_object(proforma):
         for field, values in validator.errors.items():
             log.debug('Error items below:')
             log.debug("Field is {}, values is {}".format(field, values))
-            log.debug("Fields_values is {}".format(fields_values[field]))
+            if field not in fields_values:
+                critical_error_occurred = check_and_raise_errors(filename, proforma_start_line, 0, field, values)
+                continue
             if type(fields_values[field][0]) is tuple:  # Some fields are lists
                 line_number = fields_values[field][0][LINE_NUMBER]
             else:
