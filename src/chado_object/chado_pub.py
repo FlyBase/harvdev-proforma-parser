@@ -312,7 +312,8 @@ class ChadoPub(ChadoObject):
                 if old_attr and key != self.bang_c:
                     # Just a check?
                     if old_attr != self.process_data[key]['data'][FIELD_VALUE]:
-                        self.critical_error(self.process_data[key]['data'], "No !c So will not overwrite {} with {}".format(old_attr, self.process_data[key]['data'][FIELD_VALUE]))
+                        message = "No !c So will not overwrite {} with {}".format(old_attr, self.process_data[key]['data'][FIELD_VALUE])
+                        self.critical_error(self.process_data[key]['data'], message)
                 else:
                     setattr(self.pub, self.process_data[key]['name'], self.process_data[key]['data'][FIELD_VALUE])
 

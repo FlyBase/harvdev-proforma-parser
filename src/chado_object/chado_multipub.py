@@ -136,7 +136,7 @@ class ChadoMultipub(ChadoPub):
         So it is safe to ignore here. Nope!!
         Okay give an error if not bangc and it has changed
         """
-        if self.has_data(key) and not self.newpub: # new pub already done
+        if self.has_data(key) and not self.newpub:  # new pub already done
             cvterm = self.session.query(Cvterm).join(Cv).join(Pub).filter(Cv.name == self.process_data[key]['cvname'],
                                                                           Pub.pub_id == self.pub.pub_id).one()
             if not cvterm:
@@ -152,13 +152,13 @@ class ChadoMultipub(ChadoPub):
         Will need to add this as MP17 can have bangc
         """
 
-        if self.has_data(key): 
-            old_cvterm = self.session.query(Cvterm).join(Cv).join(Pub , Pub.type_id== Cvterm.cvterm_id).\
+        if self.has_data(key):
+            old_cvterm = self.session.query(Cvterm).join(Cv).join(Pub, Pub.type_id == Cvterm.cvterm_id).\
                 filter(Cv.name == self.process_data[key]['cvname'], Pub.pub_id == self.pub.pub_id).one_or_none()
 
             new_cvterm = self.session.query(Cvterm).join(Cv).filter(Cv.name == self.process_data[key]['cvname'],
                                                                     Cvterm.name == self.process_data[key]['data'][FIELD_VALUE],
-                                                                    Cvterm.is_obsolete == 0).one_or_none()   
+                                                                    Cvterm.is_obsolete == 0).one_or_none()
             if not old_cvterm:
                 message = 'Previous Pub type {} does not exist in the database???'.format(self.process_data['MP17']['data'][FIELD_VALUE])
                 self.critical_error(self.process_data[key]['data'], message)
