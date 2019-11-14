@@ -309,9 +309,12 @@ class ChadoPub(ChadoObject):
                 log.debug("key is {}, name = {}".format(key, self.process_data[key]['name']))
                 log.debug("key is {}, value is {}".format(key, self.process_data[key]['data'][FIELD_VALUE]))
                 old_attr = getattr(self.pub, self.process_data[key]['name'])
-                if old_attr:
-                    self.warning_error(self.process_data[key]['data'], "No !c but still overwriting existing value of {}".format(old_attr))
-                setattr(self.pub, self.process_data[key]['name'], self.process_data[key]['data'][FIELD_VALUE])
+                if old_attr and key != self.bang_c:
+                    # Just a check?
+                    if old_attr != self.process_data[key]['data'][FIELD_VALUE]:
+                        self.critical_error(self.process_data[key]['data'], "No !c So will not overwrite {} with {}".format(old_attr, self.process_data[key]['data'][FIELD_VALUE]))
+                else:
+                    setattr(self.pub, self.process_data[key]['name'], self.process_data[key]['data'][FIELD_VALUE])
 
     def load_relationship(self, key):
         if type(self.process_data[key]['data']) is list:
