@@ -48,12 +48,12 @@ class ChadoObject(object):
             if key in params['fields_values']:
                 if type(params['fields_values'][key]) is list:
                     # Skip if the first value in the list contains None.
-                    if params['fields_values'][key][0][FIELD_VALUE] is None and self.bang_c != key:
+                    if params['fields_values'][key][0][FIELD_VALUE] is None and key not in self.bang_c:
                         log.debug("Skipping field {} -- it's value is empty in the proforma.".format(key))
                         keys_to_remove.append(key)
                 else:
                     # Skip if the value contains None.
-                    if params['fields_values'][key][FIELD_VALUE] is None and self.bang_c != key:
+                    if params['fields_values'][key][FIELD_VALUE] is None and key not in self.bang_c:
                         log.debug("Skipping field {} -- it's value is empty in the proforma.".format(key))
                         keys_to_remove.append(key)
 
@@ -175,51 +175,50 @@ class ChadoObject(object):
         Correction. Remove all existing value(s) and replace with the value(s) in this field.
         """
         log.debug("Bang C processing {}".format(self.bang_c))
-        key = self.bang_c
-        self.delete_dict[self.process_data[key]['type']](key, bangc=True)
-        delete_blank = False
+        for key in self.bang_c:
+            self.delete_dict[self.process_data[key]['type']](key, bangc=True)
+            delete_blank = False
 
-        if type(self.process_data[key]['data']) is list:
-            for item in self.process_data[key]['data']:
-                if not item[FIELD_VALUE]:
+            if type(self.process_data[key]['data']) is list:
+                for item in self.process_data[key]['data']:
+                    if not item[FIELD_VALUE]:
+                        delete_blank = True
+            else:
+                if not self.process_data[key]['data'] or not self.process_data[key]['data'][FIELD_VALUE]:
                     delete_blank = True
-        else:
-            if not self.process_data[key]['data'] or not self.process_data[key]['data'][FIELD_VALUE]:
-                delete_blank = True
-        if delete_blank:
-            del self.process_data[key]
+            if delete_blank:
+                del self.process_data[key]
 
     def bang_d_it(self):
         """
         Remove specific values indicated in the proforma field.
         """
         log.debug("Bang D processing {}".format(self.bang_d))
-        key = self.bang_d
 
         #####################################
         # check bang_d has a value to delete
         #####################################
-
-        # TODO Bring line number info along with bang c/d info for error reporting.
-        if key in self.process_data:
-            if type(self.process_data[key]['data']) is not list:
-                if not self.process_data[key]['data'][FIELD_VALUE]:
-                    log.error("BANGD: {}".format(self.process_data[key]['data']))
-                    self.critical_error(self.process_data[key]['data'], "Must specify a value with !d.")
-                    self.process_data[key]['data'] = None
-                    return
-            else:
-                for item in self.process_data[key]['data']:
-                    if not item[FIELD_VALUE]:
-                        log.error("BANGD: {}".format(item))
-                        self.critical_error(item, "Must specify a value with !d.")
+        for key in self.bang_d:
+            # TODO Bring line number info along with bang c/d info for error reporting.
+            if key in self.process_data:
+                if type(self.process_data[key]['data']) is not list:
+                    if not self.process_data[key]['data'][FIELD_VALUE]:
+                        log.error("BANGD: {}".format(self.process_data[key]['data']))
+                        self.critical_error(self.process_data[key]['data'], "Must specify a value with !d.")
                         self.process_data[key]['data'] = None
                         return
-        else:
-            # Faking the tuple because we don't have a field value or line number.
-            self.critical_error((key, key, key), "Must specify a value with !d.")
-            return
+                else:
+                    for item in self.process_data[key]['data']:
+                        if not item[FIELD_VALUE]:
+                            log.error("BANGD: {}".format(item))
+                            self.critical_error(item, "Must specify a value with !d.")
+                            self.process_data[key]['data'] = None
+                            return
+            else:
+                # Faking the tuple because we don't have a field value or line number.
+                self.critical_error((key, key, key), "Must specify a value with !d.")
+                return
 
-        self.delete_dict[self.process_data[key]['type']](key, bangc=False)
+            self.delete_dict[self.process_data[key]['type']](key, bangc=False)
 
-        del self.process_data[key]
+            del self.process_data[key]

@@ -274,7 +274,7 @@ class ChadoPub(ChadoObject):
         P11a:  Trying to set <pages> to '<your-pages>' but it is '<chado-pages>' in Chado.
         """
         p11a = self.process_data['P11a']['data']
-        if not self.newpub and self.bang_c != 'P11a':
+        if not self.newpub and 'P11a' in self.bang_c:
             if self.pub.pages and p11a and self.pub.pages != p11a[FIELD_VALUE]:
                 message = 'P11a page range "{}" does not match "{}" already in chado.\n'.format(p11a[FIELD_VALUE], self.pub.pages)
                 self.critical_error(p11a, message)
@@ -285,7 +285,7 @@ class ChadoPub(ChadoObject):
         """
         if self.has_data('P11'):
             self.do_P11_checks()
-        if self.has_data('P2') and self.bang_c != 'P2' and self.bang_d != 'P2':
+        if self.has_data('P2') and 'P2' not in self.bang_c and 'P2' not in self.bang_d:
             self.check_multipub(self.parent_pub, self.process_data['P2']['data'])
         if self.has_data('P46'):
             self.graphical_abstracts_check()
@@ -309,7 +309,7 @@ class ChadoPub(ChadoObject):
                 log.debug("key is {}, name = {}".format(key, self.process_data[key]['name']))
                 log.debug("key is {}, value is {}".format(key, self.process_data[key]['data'][FIELD_VALUE]))
                 old_attr = getattr(self.pub, self.process_data[key]['name'])
-                if old_attr and key != self.bang_c:
+                if old_attr and key not in self.bang_c:
                     # Just a check?
                     if old_attr != self.process_data[key]['data'][FIELD_VALUE]:
                         message = "No !c So will not overwrite {} with {}".format(old_attr, self.process_data[key]['data'][FIELD_VALUE])
@@ -424,7 +424,7 @@ class ChadoPub(ChadoObject):
         return givennames, surname
 
     def load_author(self, key):
-        if self.bang_d != 'P12':
+        if 'P12' not in self.bang_d:
             for author in self.process_data[key]['data']:
                 givennames, surname = self.get_author(author)
                 log.debug("Author get/create: {}.".format(author[FIELD_VALUE]))

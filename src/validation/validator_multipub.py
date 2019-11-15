@@ -33,7 +33,7 @@ class ValidatorMultipub(Validator):
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
-        if self.bang_c == field:
+        if field in self.bang_c:
             self._error(field, '{} not allowed with bang c or bang d'.format(field))
 
     def _validate_only_allowed(self, field_keys, field, comp_fields):
@@ -100,7 +100,7 @@ class ValidatorMultipub(Validator):
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
-        if self.bang_c == field:
+        if field in self.bang_c:
             return
         if self.document['MP1'] == 'new' and self.document['MP17'] == 'book':
             if value and len(value):
