@@ -18,6 +18,7 @@ import os
 import logging
 import pubchempy
 import json
+import time
 
 log = logging.getLogger(__name__)
 # Stop bioservices from outputting tons of unnecessary info in DEBUG mode.
@@ -451,7 +452,7 @@ class ChadoChem(ChadoObject):
                 except pubchempy.PubChemHTTPError:
                     log.info('Chem server busy or timedout, waiting to try again')
                     count += 1
-                    wait(5)
+                    time.sleep(5)
             # should we check the results here?
 
             cid_for_definition = results[0].cid
@@ -465,7 +466,7 @@ class ChadoChem(ChadoObject):
                 except pubchempy.PubChemHTTPError:
                     log.info('Chem server busy or timedout, waiting to try again')
                     count += 1
-                    wait(5)
+                    time.sleep(5)
             # Check for description ?
 
             raw_data = description.read()
