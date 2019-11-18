@@ -49,7 +49,7 @@ class ChadoObject(object):
                 if type(params['fields_values'][key]) is list:
                     # Skip if the first value in the list contains None.
                     if params['fields_values'][key][0][FIELD_VALUE] is None and key not in self.bang_c:
-                        log.debug("Skipping field {} -- it's value is empty in the proforma.".format(key))
+                        log.debug("Skipping field {} -- its value is empty in the proforma.".format(key))
                         keys_to_remove.append(key)
                 else:
                     # Skip if the value contains None.
