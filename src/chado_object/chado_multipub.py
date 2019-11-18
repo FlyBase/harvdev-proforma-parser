@@ -173,5 +173,5 @@ class ChadoMultipub(ChadoPub):
                 message = 'Unknown pub type in chado for {}'.format(self.process_data[key]['data'][FIELD_VALUE])
                 self.critical_error(self.process_data[key]['data'], message)
         else:
-            message = 'Must specify a pub type cannot bangc to nothing'
+            message = 'Must specify a pub type; cannot bangc to nothing.'
             self.critical_error(self.process_data[key]['data'], message)
