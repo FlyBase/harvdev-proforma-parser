@@ -140,7 +140,7 @@ class ChadoMultipub(ChadoPub):
             cvterm = self.session.query(Cvterm).join(Cv).join(Pub).filter(Cv.name == self.process_data[key]['cvname'],
                                                                           Pub.pub_id == self.pub.pub_id).one()
             if not cvterm:
-                message = 'Previous Pub type {} does not exist in the database???'.format(self.process_data['MP17']['data'][FIELD_VALUE])
+                message = 'Previous Pub type {} does not exist in the database?'.format(self.process_data['MP17']['data'][FIELD_VALUE])
                 self.critical_error(self.process_data[key]['data'], message)
             else:
                 if cvterm.name != self.process_data[key]['data'][FIELD_VALUE]:
