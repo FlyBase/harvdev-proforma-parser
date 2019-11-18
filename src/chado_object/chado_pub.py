@@ -285,7 +285,7 @@ class ChadoPub(ChadoObject):
         """
         if self.has_data('P11'):
             self.do_P11_checks()
-        if self.has_data('P2') and self.has_bang_type('P2'):
+        if self.has_data('P2') and not self.has_bang_type('P2'):
             self.check_multipub(self.parent_pub, self.process_data['P2']['data'])
         if self.has_data('P46'):
             self.graphical_abstracts_check()
@@ -304,7 +304,7 @@ class ChadoPub(ChadoObject):
                 setattr(self.pub, self.process_data[key]['name'], True)
                 if 'warning' in self.process_data[key]:
                     message = "Making {} {}.".format(self.process_data[self.direct_key]['data'][FIELD_VALUE], self.process_data[key]['name'])
-                    self.critical_error(self.process_data[key]['data'], message)
+                    self.warning_error(self.process_data[key]['data'], message)
             else:
                 log.debug("key is {}, name = {}".format(key, self.process_data[key]['name']))
                 log.debug("key is {}, value is {}".format(key, self.process_data[key]['data'][FIELD_VALUE]))
