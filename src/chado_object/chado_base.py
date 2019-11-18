@@ -48,12 +48,12 @@ class ChadoObject(object):
             if key in params['fields_values']:
                 if type(params['fields_values'][key]) is list:
                     # Skip if the first value in the list contains None.
-                    if params['fields_values'][key][0][FIELD_VALUE] is None and key not in self.bang_c:
+                    if params['fields_values'][key][0][FIELD_VALUE] is None and not self.has_bang_type(key, 'c'):
                         log.debug("Skipping field {} -- its value is empty in the proforma.".format(key))
                         keys_to_remove.append(key)
                 else:
                     # Skip if the value contains None.
-                    if params['fields_values'][key][FIELD_VALUE] is None and key not in self.bang_c:
+                    if params['fields_values'][key][FIELD_VALUE] is None and not self.has_bang_type(key, 'c'):
                         log.debug("Skipping field {} -- it's value is empty in the proforma.".format(key))
                         keys_to_remove.append(key)
 
@@ -86,6 +86,17 @@ class ChadoObject(object):
                 valid_key = key
 
         return valid_key
+
+    def has_bang_type(self, key, bang_type=None):
+        # Checks if a key is in the bang lists.
+        # If bang_type is defined then only that one is checked.
+        if not bang_type or bang_type == 'c':
+            if key in self.bang_c:
+                return True
+        if not bang_type or bang_type == 'd':
+            if key in self.bang_d:
+                return True
+        return False
 
     def has_data(self, key):
         # Checks whether a key exists and contains a FIELD_VALUE that isn't None.

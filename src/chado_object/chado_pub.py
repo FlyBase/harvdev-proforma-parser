@@ -274,7 +274,7 @@ class ChadoPub(ChadoObject):
         P11a:  Trying to set <pages> to '<your-pages>' but it is '<chado-pages>' in Chado.
         """
         p11a = self.process_data['P11a']['data']
-        if not self.newpub and 'P11a' in self.bang_c:
+        if not self.newpub and self.has_bang_type('P11a', 'c'):
             if self.pub.pages and p11a and self.pub.pages != p11a[FIELD_VALUE]:
                 message = 'P11a page range "{}" does not match "{}" already in chado.\n'.format(p11a[FIELD_VALUE], self.pub.pages)
                 self.critical_error(p11a, message)
@@ -285,7 +285,7 @@ class ChadoPub(ChadoObject):
         """
         if self.has_data('P11'):
             self.do_P11_checks()
-        if self.has_data('P2') and 'P2' not in self.bang_c and 'P2' not in self.bang_d:
+        if self.has_data('P2') and self.has_bang_type('P2'):
             self.check_multipub(self.parent_pub, self.process_data['P2']['data'])
         if self.has_data('P46'):
             self.graphical_abstracts_check()
@@ -304,12 +304,12 @@ class ChadoPub(ChadoObject):
                 setattr(self.pub, self.process_data[key]['name'], True)
                 if 'warning' in self.process_data[key]:
                     message = "Making {} {}.".format(self.process_data[self.direct_key]['data'][FIELD_VALUE], self.process_data[key]['name'])
-                    self.warning_error(self.process_data[key]['data'], message)
+                    self.critical_error(self.process_data[key]['data'], message)
             else:
                 log.debug("key is {}, name = {}".format(key, self.process_data[key]['name']))
                 log.debug("key is {}, value is {}".format(key, self.process_data[key]['data'][FIELD_VALUE]))
                 old_attr = getattr(self.pub, self.process_data[key]['name'])
-                if old_attr and key not in self.bang_c:
+                if old_attr and not self.has_bang_type(key):
                     # Just a check?
                     if old_attr != self.process_data[key]['data'][FIELD_VALUE]:
                         message = "No !c So will not overwrite {} with {}".format(old_attr, self.process_data[key]['data'][FIELD_VALUE])
@@ -328,7 +328,7 @@ class ChadoPub(ChadoObject):
         else:  # P2 can only change with !c or has no parent pub
             log.debug("not list {}".format(key))
             parent_pub = self.get_parent_pub(self.pub)
-            if self.bang_c == key or not parent_pub:
+            if self.has_bang_type(key, 'c') or not parent_pub:
                 fbrf = self.process_data[key]['data']
                 pub = self.get_related_pub(fbrf, uniquename=False)
                 if not pub:

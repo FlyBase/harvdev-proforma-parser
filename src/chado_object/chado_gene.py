@@ -89,7 +89,7 @@ class ChadoGene(ChadoObject):
                     delete()
 
         else:  # Normal loading for G1b only occurs if we don't have a !d flag.
-            if 'G1b' in self.bang_c:
+            if self.has_bang_type('G1b'):
                 # Clear the field if we have a !c
                 self.current_query_source = self.G1b_symbol_used_in_ref
                 self.current_query = 'Removing all previous entries for field \'%s\' and loading new data.' % ('G1b')
@@ -162,5 +162,5 @@ class ChadoGene(ChadoObject):
         else:
             log.info('No !d entries found.')
 
-        if self.G1b_symbol_used_in_ref is not None or 'G1b' in self.bang_c or 'G1b' in self.bang_d:
+        if self.G1b_symbol_used_in_ref or self.has_bang_type('G1b'):
             self.process_G1b_symbols()
