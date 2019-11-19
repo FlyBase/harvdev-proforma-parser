@@ -18,6 +18,7 @@ import os
 import logging
 import pubchempy
 import json
+import time
 
 log = logging.getLogger(__name__)
 # Stop bioservices from outputting tons of unnecessary info in DEBUG mode.
@@ -443,11 +444,31 @@ class ChadoChem(ChadoObject):
         if not self.chemical_information['description']['data']:  # If the list is empty.
 
             log.info('Searching for definitions on PubChem.')
-            results = pubchempy.get_compounds(identifier_name, 'name')
+            results = None
+            count = 0
+            # pubchempy can be a bit flaky so try 5 times with a small break inbetween
+            while not results and count < 5:
+                try:
+                    results = pubchempy.get_compounds(identifier_name, 'name')
+                except pubchempy.PubChemHTTPError:
+                    log.info('Chem server busy or timed out, waiting to try again')
+                    count += 1
+                    time.sleep(5)
+            # NOTE: should we check the results here?
+
             cid_for_definition = results[0].cid
             log.info('Found PubChem CID: {} from query using {}'. format(cid_for_definition, identifier_name))
-
-            description = pubchempy.request(cid_for_definition, operation='description')
+            count = 0
+            description = None
+            # pubchempy can be a bit flaky so try 5 times with a small break inbetween
+            while not description and count < 5:
+                try:
+                    description = pubchempy.request(cid_for_definition, operation='description')
+                except pubchempy.PubChemHTTPError:
+                    log.info('Chem server busy or timed out, waiting to try again')
+                    count += 1
+                    time.sleep(5)
+            # NOTE: Check for description ?
 
             raw_data = description.read()
             encoding = description.info().get_content_charset('utf8')  # JSON default

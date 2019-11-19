@@ -274,7 +274,7 @@ class ChadoPub(ChadoObject):
         P11a:  Trying to set <pages> to '<your-pages>' but it is '<chado-pages>' in Chado.
         """
         p11a = self.process_data['P11a']['data']
-        if not self.newpub and self.bang_c != 'P11a':
+        if not self.newpub and self.has_bang_type('P11a', 'c'):
             if self.pub.pages and p11a and self.pub.pages != p11a[FIELD_VALUE]:
                 message = 'P11a page range "{}" does not match "{}" already in chado.\n'.format(p11a[FIELD_VALUE], self.pub.pages)
                 self.critical_error(p11a, message)
@@ -285,7 +285,7 @@ class ChadoPub(ChadoObject):
         """
         if self.has_data('P11'):
             self.do_P11_checks()
-        if self.has_data('P2') and self.bang_c != 'P2' and self.bang_d != 'P2':
+        if self.has_data('P2') and not self.has_bang_type('P2'):
             self.check_multipub(self.parent_pub, self.process_data['P2']['data'])
         if self.has_data('P46'):
             self.graphical_abstracts_check()
@@ -309,9 +309,13 @@ class ChadoPub(ChadoObject):
                 log.debug("key is {}, name = {}".format(key, self.process_data[key]['name']))
                 log.debug("key is {}, value is {}".format(key, self.process_data[key]['data'][FIELD_VALUE]))
                 old_attr = getattr(self.pub, self.process_data[key]['name'])
-                if old_attr:
-                    self.warning_error(self.process_data[key]['data'], "No !c but still overwriting existing value of {}".format(old_attr))
-                setattr(self.pub, self.process_data[key]['name'], self.process_data[key]['data'][FIELD_VALUE])
+                if old_attr and not self.has_bang_type(key):
+                    # Just a check?
+                    if old_attr != self.process_data[key]['data'][FIELD_VALUE]:
+                        message = "No !c So will not overwrite {} with {}".format(old_attr, self.process_data[key]['data'][FIELD_VALUE])
+                        self.critical_error(self.process_data[key]['data'], message)
+                else:
+                    setattr(self.pub, self.process_data[key]['name'], self.process_data[key]['data'][FIELD_VALUE])
 
     def load_relationship(self, key):
         if type(self.process_data[key]['data']) is list:
@@ -324,7 +328,7 @@ class ChadoPub(ChadoObject):
         else:  # P2 can only change with !c or has no parent pub
             log.debug("not list {}".format(key))
             parent_pub = self.get_parent_pub(self.pub)
-            if self.bang_c == key or not parent_pub:
+            if self.has_bang_type(key, 'c') or not parent_pub:
                 fbrf = self.process_data[key]['data']
                 pub = self.get_related_pub(fbrf, uniquename=False)
                 if not pub:
@@ -420,7 +424,7 @@ class ChadoPub(ChadoObject):
         return givennames, surname
 
     def load_author(self, key):
-        if self.bang_d != 'P12':
+        if 'P12' not in self.bang_d:
             for author in self.process_data[key]['data']:
                 givennames, surname = self.get_author(author)
                 log.debug("Author get/create: {}.".format(author[FIELD_VALUE]))

@@ -424,8 +424,8 @@ class Proforma(object):
     def __init__(self, file_metadata, proforma_type, line_number):
         self.file_metadata = file_metadata  # Store our file metadata dictionary.
         self.errors = None                  # Error tracking. This will become a dict if used.
-        self.bang_c = None                  # Becomes the field flagged for !c (if used).
-        self.bang_d = None                  # Becomes the field flagged for !d (if used).
+        self.bang_c = []                    # List of fields flagged for !c (if used).
+        self.bang_d = []                    # List of fields flagged for !d (if used).
         self.reference = None               # Becomes the FBrf used for attribution.
         self.proforma_start_line_number = line_number  # Used later for data retrieval.
         self.proforma_type = proforma_type  # Used later for data retrieval.
@@ -524,18 +524,6 @@ class Proforma(object):
                 "{}: {}".format(field, error_message),
                 CRITICAL_ERROR)
 
-    def bang_error(self, field, type_of_bang, line_number):
-        """
-        Give error message wrt bangX error.
-        """
-        error_message = 'Multiple !{} entries found. This is not currently supported outside of sets.'.format(type_of_bang)
-        ErrorTracking(self.file_metadata['filename'],
-                      "Proforma entry starting on line: {}".format(line_number),
-                      "Proforma error around line: {}".format(line_number),
-                      error_message,
-                      "{}: {}".format(field, error_message),
-                      CRITICAL_ERROR)
-
     def add_bang(self, field, value, type_of_bang, line_number):
         """
         Sets the bang_c or bang_d property of the object if found on a proforma line.
@@ -553,30 +541,21 @@ class Proforma(object):
         if field in self.set_fields_to_key:
             set_key = self.set_fields_to_key[field]
             if type_of_bang == 'c':
-                if self.bang_c is not None and self.bang_c != field:
-                    self.bang_error(field, type_of_bang, line_number)
-                self.bang_c = field
+                self.bang_c.append(field)
                 log.debug('!c field detected for {} in set {}. Adding flag to object.'.format(field, set_key))
             else:
-                if self.bang_d is not None and self.bang_d != field:
-                    self.bang_error(field, type_of_bang, line_number)
-                self.bang_d = field
+                self.bang_d.append(field)
                 log.debug('!d field detected for {} in set {}. Adding flag to object.'.format(field, set_key))
             return
 
         # None set data can only have one as appling one bangc may have unknown
         # consequences on others. So we only allow one for these.
         if type_of_bang == 'c':
-            if self.bang_c is not None:
-                self.bang_error(field, type_of_bang, line_number)
-            self.bang_c = field
+            self.bang_c.append(field)
             log.debug('!c field detected for %s. Adding flag to object.' % field)
 
         elif type_of_bang == 'd':
-            if self.bang_d is not None:
-                self.bang_error(field, type_of_bang, line_number)
-
-            self.bang_d = field
+            self.bang_d.append(field)
             log.debug('!d field detected for %s. Adding flag to object.' % field)
 
     def get_data_for_processing(self):

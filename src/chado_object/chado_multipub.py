@@ -133,13 +133,45 @@ class ChadoMultipub(ChadoPub):
     def load_cvterm(self, key):
         """
         MP17 is the only cvterm here and is loaded as part of get_pub
-        So it is safe to ignore here.
+        So it is safe to ignore here. Nope!!
+        Okay give an error if not bangc and it has changed
         """
-        pass
+        if self.has_data(key) and not self.newpub:  # new pub already done
+            cvterm = self.session.query(Cvterm).join(Cv).join(Pub).filter(Cv.name == self.process_data[key]['cvname'],
+                                                                          Pub.pub_id == self.pub.pub_id).one()
+            if not cvterm:
+                message = 'Previous Pub type {} does not exist in the database?'.format(self.process_data['MP17']['data'][FIELD_VALUE])
+                self.critical_error(self.process_data[key]['data'], message)
+            else:
+                if cvterm.name != self.process_data[key]['data'][FIELD_VALUE]:
+                    message = 'Cannot change type from {} to {} without !c'.format(cvterm.name, self.process_data['MP17']['data'][FIELD_VALUE])
+                    self.critical_error(self.process_data[key]['data'], message)
 
-    def delete_cvterm(self, key):
+    def delete_cvterm(self, key, bangc):
         """
         Will need to add this as MP17 can have bangc
         """
 
-        pass
+        if self.has_data(key):
+            old_cvterm = self.session.query(Cvterm).join(Cv).join(Pub, Pub.type_id == Cvterm.cvterm_id).\
+                filter(Cv.name == self.process_data[key]['cvname'], Pub.pub_id == self.pub.pub_id).one_or_none()
+
+            new_cvterm = self.session.query(Cvterm).join(Cv).filter(Cv.name == self.process_data[key]['cvname'],
+                                                                    Cvterm.name == self.process_data[key]['data'][FIELD_VALUE],
+                                                                    Cvterm.is_obsolete == 0).one_or_none()
+            if not old_cvterm:
+                message = 'Previous Pub type {} does not exist in the database???'.format(self.process_data['MP17']['data'][FIELD_VALUE])
+                self.critical_error(self.process_data[key]['data'], message)
+            elif new_cvterm:
+                if old_cvterm.name == self.process_data[key]['data'][FIELD_VALUE]:
+                    message = 'Cannot change type from {} to {} as it is the same'.format(old_cvterm.name, new_cvterm.name)
+                    self.critical_error(self.process_data[key]['data'], message)
+                else:
+                    log.debug("Setting pub to new type ({}) {}".format(new_cvterm.cvterm_id, new_cvterm.name))
+                    self.pub.type_id = new_cvterm.cvterm_id
+            else:  # should be done in avlidation but just being safe!
+                message = 'Unknown pub type in chado for {}'.format(self.process_data[key]['data'][FIELD_VALUE])
+                self.critical_error(self.process_data[key]['data'], message)
+        else:
+            message = 'Must specify a pub type; cannot bangc to nothing.'
+            self.critical_error(self.process_data[key]['data'], message)

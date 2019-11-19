@@ -227,8 +227,12 @@ class ChadoHumanhealth(ChadoObject):
         if self.has_data(key):
             old_attr = getattr(self.humanhealth, self.process_data[key]['name'])
             if old_attr:
-                self.warning_error(self.process_data[key]['data'], "No !c but still overwriting existing value of {}".format(old_attr))
-            setattr(self.humanhealth, self.process_data[key]['name'], self.process_data[key]['data'][FIELD_VALUE])
+                # Is it just a check?
+                if old_attr != self.process_data[key]['data'][FIELD_VALUE] and not self.newhumanhealth:
+                    message = "No !c But {} does not match value of {}".format(self.process_data[key]['data'][FIELD_VALUE], old_attr)
+                    self.critical_error(self.process_data[key]['data'], message)
+            else:
+                setattr(self.humanhealth, self.process_data[key]['name'], self.process_data[key]['data'][FIELD_VALUE])
 
     def load_cvterm(self, key):
         # lookup dbxref DOID:nnnnn

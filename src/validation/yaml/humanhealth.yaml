@@ -17,65 +17,77 @@ HH1g:
   required: False # if new required
   type: string
   allowed: ['disease', 'health-related process']
-
+  nullable: True
 HH2a:
   required: False # if new required
   type: string
   allowed: [parent entity, sub-entity, specific entity, group entity]
+  nullable: True
 HH2b:
   required: False # if new required
   type: string
   regex: ^(FBhh\d{7})$
+  nullable: True
 HH2c:
   required: False
   type: [list, integer]
   nullable: True
   regex: ^(\d{6})$
+  nullable: True
 HH2d:
   required: False
   type: [list, string]
   regex: ^(DOID:\d+)$
+  nullable: True
 HH3a:
   required: False
   type: string
   no_bangc: True
   dependencies: [HH1f]
+  nullable: True
 #     'HH3b', 'merge', ## not implemented
 HH3c:
   required: False
   type: string
   no_bangc: True
   allowed: [y, Y]
+  nullable: True
 HH3d:
   required: False
   type: string
   no_bangc: True
   allowed: [y, Y]
+  nullable: True
 HH4a:
   required: False
   at_required: True
   type: string
+  nullable: True
 HH4b:
   required: False
   at_required: True
   type: string
+  nullable: True
 HH4c:
   required: False
   at_required: True
   type: string
+  nullable: True
 # HH4d: ---
 HH4f:
   required: False
   type: [string, list]
   regex: ^(FBhh\d{7})$
+  nullable: True
 HH4g:
   required: False
   at_required: True
   type: string
+  nullable: True
 HH4h:
   required: False
   type: string
-
+  nullable: True
 HH5a:
   required: False
   type: string
@@ -98,13 +110,16 @@ HH6c:
   type: [string, list]
   nullable: True
   regex: ^(\d{6})$
+  nullable: True
 HH7a:
   required: False
   type: [string, list]
   regex: ^(Hsap.*)$
+  nullable: True
 HH7b:
   required: False
   type: [string, list]
+  nullable: True
 HH7c:
   required: False
   at_required: True
@@ -149,6 +164,7 @@ HH8d:
 HH8e:
   required: False
   type: [string, list]
+  nullable: True
   
 #    'HH10', 'hh_model_status' ,  #humanhealthprop
 #    'HH11a', 'mammalian_transgenics' ,  #humanhealthprop “y” or blank
@@ -211,4 +227,4 @@ HH20:
   required: False
   type: [string, list]
   at_required: False
-  
+  nullable: True 

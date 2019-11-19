@@ -33,7 +33,7 @@ class ValidatorPub(Validator):
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
-        if self.bang_c == field:
+        if field in self.bang_c:
             self._error(field, '{} not allowed with bang c or bang d'.format(field))
 
     def _validate_only_allowed(self, field_keys, field, comp_fields):
@@ -333,7 +333,7 @@ class ValidatorPub(Validator):
             if unallowed_fields:
                 self._error(field, 'Cannot set field(s) {} when using field {}.'.format(unallowed_fields, field))
 
-    def _validate_pages_format(self, do_test, field, value):
+    def _validate_pages_format(self, do_test, field, value):  # noqa: C901
         """
         Check for simple page numbers or variants and if two pages make sure page1 < page2.
         generate error if page does not match format ir page1 id higher than page2.

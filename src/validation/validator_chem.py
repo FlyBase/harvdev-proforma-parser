@@ -33,7 +33,7 @@ class ValidatorChem(Validator):
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
-        if self.bang_c == field:
+        if field in self.bang_c:
             self._error(field, '{} not allowed with bang c or bang d'.format(field))
 
     def _validate_only_allowed(self, field_keys, field, comp_fields):
@@ -333,7 +333,7 @@ class ValidatorChem(Validator):
             if unallowed_fields:
                 self._error(field, 'Cannot set field(s) {} when using field {}.'.format(unallowed_fields, field))
 
-    def _validate_pages_format(self, do_test, field, value):
+    def _validate_pages_format(self, do_test, field, value):  # noqa: C901
         """
         Check for simple page numbers or variants and if two pages make sure page1 < page2.
         generate error if page does not match format ir page1 id higher than page2.
@@ -354,21 +354,22 @@ class ValidatorChem(Validator):
         page1 = None
         page2 = None
         found = False
-        if value is not None:
-            for regex in simple_pages_regex:
-                fields = re.search(regex[0], value)
-                if fields:
-                    found = True
-                    if fields.group(1):
-                        page1 = int(fields.group(1))
-                    try:
-                        page2 = int(fields.group(2))
-                    except IndexError:
-                        pass
-                if found:
-                    continue
-            if found and page1 and page2:
-                if page1 > page2:
-                    self._error(field, 'Error {}: {} is higher than {}.'.format(field, page2, page2))
-            if not found:
-                self._error(field, 'Error {}: {} is of non-standard format.'.format(field, value))
+        if value is None:
+            return
+        for regex in simple_pages_regex:
+            fields = re.search(regex[0], value)
+            if fields:
+                found = True
+                if fields.group(1):
+                    page1 = int(fields.group(1))
+                try:
+                    page2 = int(fields.group(2))
+                except IndexError:
+                    pass
+            if found:
+                continue
+        if found and page1 and page2:
+            if page1 > page2:
+                self._error(field, 'Error {}: {} is higher than {}.'.format(field, page2, page2))
+        if not found:
+            self._error(field, 'Error {}: {} is of non-standard format.'.format(field, value))

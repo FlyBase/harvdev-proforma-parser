@@ -43,7 +43,7 @@ class ValidatorHumanhealth(Validator):
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
-        if self.bang_c == field:
+        if field in self.bang_c:
             self._error(field, '{} not allowed with bang c or bang d'.format(field))
 
     def _validate_at_required(self, required, field, value):

@@ -207,6 +207,11 @@ def process_hh7_e_and_f(self, set_key, data_set, params):
     """
 
     db_acc_key = set_key + 'e'
+    dis_key = set_key + 'f'
+
+    if db_acc_key not in data_set:
+        return False
+
     params['cvterm'] = self.process_data[set_key]['e_cvterm']
     params['cvname'] = self.process_data[set_key]['e_cv']
     params['tuple'] = data_set[db_acc_key]
@@ -215,7 +220,7 @@ def process_hh7_e_and_f(self, set_key, data_set, params):
         params['dbname'] = fields[0].strip()
         params['accession'] = fields[1].strip()
     except IndexError:
-        error_message = "{} Not in the corect format of dbname:accession".format(params['tuple'][FIELD_VALUE])
+        error_message = "{} Not in the correct format of dbname:accession".format(params['tuple'][FIELD_VALUE])
         self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
         return False
 
