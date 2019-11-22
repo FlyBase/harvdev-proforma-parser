@@ -4,7 +4,6 @@
 
 .. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
-from bioservices import ChEBI
 from .chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.production import (
     Cv, Cvterm, Pub, Db, Dbxref, Organism,
@@ -12,16 +11,14 @@ from harvdev_utils.production import (
     FeatureSynonym, Synonym
 )
 from harvdev_utils.chado_functions import get_or_create
+from harvdev_utils.chado_functions.external_lookups import ExternalLookup
+
 from datetime import datetime
 from pprint import pformat
 import os
 import logging
-import pubchempy
-import json
 
 log = logging.getLogger(__name__)
-# Stop bioservices from outputting tons of unnecessary info in DEBUG mode.
-logging.getLogger("suds").setLevel(logging.INFO)
 
 
 class ChadoChem(ChadoObject):
@@ -388,50 +385,42 @@ class ChadoChem(ChadoObject):
         # Return True if data is successfully found.
         # Return False if there are any issues.
 
-        ch = ChEBI()
-        result = ch.getCompleteEntity(identifier)
-        if not result:
-            self.critical_error(self.process_data['CH3a']['data'],
-                                'No results found when querying ChEBI for {}'
-                                .format(identifier))
+        chebi = ExternalLookup.lookup_chebi(identifier)
+        if not chebi:
+            self.critical_error(self.process_data['CH3a']['data'], chebi.error)
             return False
 
-        # Obtain name and inchikey from results.
-        name_from_chebi = result.chebiAsciiName
-        inchikey = None
-        try:
-            inchikey = result.inchiKey
-        except AttributeError:
+        if not chebi.inchikey:
             self.warning_error(self.process_data['CH3a']['data'],
                                'No InChIKey found for entry: {}'
                                .format(identifier))
 
         # Check whether the name intended to be used in FlyBase matches
         # the name returned from the database.
-        if name_from_chebi != self.process_data['CH1a']['data'][FIELD_VALUE]:
+        if chebi.name != self.process_data['CH1a']['data'][FIELD_VALUE]:
             self.warning_error(self.process_data['CH1a']['data'],
                                'ChEBI name does not match name specified for FlyBase: {} -> {}'
-                               .format(name_from_chebi,
+                               .format(chebi.name,
                                        self.process_data['CH1a']['data'][FIELD_VALUE]))
         else:
             log.info('Queried name \'{}\' matches name used in proforma \'{}\''
-                     .format(name_from_chebi, self.process_data['CH1a']['data'][FIELD_VALUE]))
+                     .format(chebi.name, self.process_data['CH1a']['data'][FIELD_VALUE]))
 
         # Check whether the identifier_name supplied by the curator matches
         # the name returned from the database.
         if identifier_name:
-            if name_from_chebi != identifier_name:
+            if chebi.name != identifier_name:
                 self.critical_error(self.process_data['CH3a']['data'],
                                     'ChEBI name does not match name specified in identifier field: {} -> {}'
-                                    .format(name_from_chebi,
+                                    .format(chebi.name,
                                             identifier_name))
                 return False
 
         self.chemical_information['identifier']['data'] = identifier
         self.chemical_information['identifier']['source'] = 'ChEBI'
-        self.chemical_information['name']['data'] = name_from_chebi
+        self.chemical_information['name']['data'] = chebi.name
         self.chemical_information['name']['source'] = 'ChEBI'
-        self.chemical_information['inchikey']['data'] = inchikey
+        self.chemical_information['inchikey']['data'] = chebi.inchikey
         self.chemical_information['inchikey']['source'] = 'ChEBI'
 
         return True
@@ -442,31 +431,13 @@ class ChadoChem(ChadoObject):
         # Definitions always come from PubChem, regardless of identifier source.
         if not self.chemical_information['description']['data']:  # If the list is empty.
 
-            log.info('Searching for definitions on PubChem.')
-            results = pubchempy.get_compounds(identifier_name, 'name')
-            cid_for_definition = results[0].cid
-            log.info('Found PubChem CID: {} from query using {}'. format(cid_for_definition, identifier_name))
-
-            description = pubchempy.request(cid_for_definition, operation='description')
-
-            raw_data = description.read()
-            encoding = description.info().get_content_charset('utf8')  # JSON default
-            description_data = json.loads(raw_data.decode(encoding))
-            log.debug(pformat(description_data))
-
-            # We need to format the description from PubChem into a string to be loaded as a featureprop.
-            string_to_add_for_description = ''
-
-            # TODO Need to coordinate with IU on how to store / retrieve this data.
-            for description_item in description_data['InformationList']['Information']:
-                if 'Description' in description_item.keys() and 'DescriptionSourceName' in description_item.keys():
-                    formatted_string = '{}: {}'.format(description_item['DescriptionSourceName'],
-                                                       description_item['Description'])
-
-                    string_to_add_for_description += formatted_string
-
-            self.chemical_information['description']['data'] = string_to_add_for_description
-            log.debug(pformat(self.chemical_information['description']['data']))
+            log.info('Searching for definitions on PubChem. Using {}'.format(identifier_name))
+            pubchem = ExternalLookup.lookup_by_name('pubchem', identifier_name)
+            if pubchem.error:
+                log.error(pubchem.error)
+            else:
+                self.chemical_information['description']['data'] = pubchem.description
+                log.debug(pformat(self.chemical_information['description']['data']))
 
     def check_valid_id(self, identifier):
         # Added regex checks for identifiers here.
