@@ -1,20 +1,14 @@
-FROM python:3.6.3-alpine3.6
-
-RUN apk add --no-cache \
-    postgresql-dev \
-    gcc \ 
-    python3-dev \
-    musl-dev \
-    git
+FROM flybase/harvdev-docker:alpine_3.10.2
 
 WORKDIR /usr/src/app
 
-ADD . .
+COPY requirements-test.txt .
 
 RUN pip install -r requirements-test.txt
 
+COPY . .
+
 RUN cd /usr/src/app/harvdev-utils && \
     python3 setup.py install
-
 
 CMD ["python3", "-u", "src/app.py"]
