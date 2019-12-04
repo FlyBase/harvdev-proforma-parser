@@ -61,6 +61,7 @@ HH2c: #humanhealth_dbxref db = OMIM_PHENOTYPE, humanhealth_dbxrefprop hh2c_link
   db: OMIM_PHENOTYPE
   cv: property type
   cvterm: hh2c_link
+  external_lookup: [OMIM_PHENOTYPE]
 HH2d: 
   type: cvterm
   cv: humanhealth_cvtermprop type
@@ -134,6 +135,7 @@ HH6c:
   db: OMIM_PHENOTYPE
   cv: property type
   cvterm: OMIM_pheno_table
+  external_lookup: [OMIM_PHENOTYPE]
   description: Ordered list of OMIM phenotype entries
 
 # HH7 set.
@@ -147,6 +149,7 @@ HH7:
   c_cvterm: hh_ortho_rel_comment
   d_cv: property type
   d_cvterm: diopt_ortholog
+  external_lookup: [HGNC]
 
 HH7a:
   type: featureprop

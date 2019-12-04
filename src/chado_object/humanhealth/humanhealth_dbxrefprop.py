@@ -5,6 +5,7 @@ from harvdev_utils.production import (
 import logging
 from ..chado_base import FIELD_VALUE, SET_BANG
 from harvdev_utils.chado_functions import get_or_create
+# from harvdev_utils.chado_functions.external_lookups import ExternalLookup
 from error.error_tracking import CRITICAL_ERROR
 log = logging.getLogger(__name__)
 
@@ -36,10 +37,9 @@ def process_dbxrefprop(self, key):
                 params['dbname'] = fields[0].strip()
                 params['accession'] = fields[1].strip()
             except IndexError:
-                error_message = "{} Not in the corect format of dbname:accession".format(item[FIELD_VALUE])
+                error_message = "{} Not in the correct format of dbname:accession".format(item[FIELD_VALUE])
                 self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
                 continue
-
         hh_dbxref, hh_dbxrefprop = self.get_or_create_dbxrefprop(params)
     return hh_dbxref, hh_dbxrefprop
 
@@ -133,14 +133,10 @@ def process_dbxref(self, params):
         accession:   accession for dbxref
         tuple:       one related tuple to help give better errors
     """
-
-    db = self.session.query(Db).filter(Db.name == params['dbname']).one_or_none()
-    if not db:
-        error_message = "{} Not found in db table".format(params['dbname'])
-        self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
+    dbxref, is_new = self.get_or_create_dbxref(params)
+    if not dbxref:
         return None
 
-    dbxref, is_new = get_or_create(self.session, Dbxref, db_id=db.db_id, accession=params['accession'])
     if is_new:
         if 'description' in params:
             dbxref.description = params['description']
@@ -270,7 +266,7 @@ def process_hh7_c_and_d(self, set_key, data_set, params):  # noqa: C901
                 params['value'] = ''
             hh_dbxref, hh_dbxrefprop = self.get_or_create_dbxrefprop(params)
 
-            if char_key == 'd':  # Add feature_hh_dbxref
+            if char_key == 'd' and hh_dbxref:  # Add feature_hh_dbxref
                 feature = self.session.query(Feature).\
                               filter(Feature.name == params['tuple'][FIELD_VALUE],
                                      Feature.uniquename.like("FBgn%")).one_or_none()

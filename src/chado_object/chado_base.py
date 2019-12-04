@@ -7,8 +7,10 @@
 import logging
 import yaml
 from harvdev_utils.production import (
-    Cv, Cvterm, Feature, Pub, Synonym
+    Cv, Cvterm, Feature, Pub, Synonym, Db, Dbxref
 )
+from harvdev_utils.chado_functions import get_or_create
+from harvdev_utils.chado_functions.external_lookups import ExternalLookup
 from error.error_tracking import ErrorTracking, CRITICAL_ERROR, WARNING_ERROR
 
 log = logging.getLogger(__name__)
@@ -176,6 +178,46 @@ class ChadoObject(object):
             one()
 
         return results[0]
+
+    def get_or_create_dbxref(self, params):
+        #
+        # Safely get or create dbxref using lookups if required.
+        # Requirement is set in the self.process_data[key]['external_lookup']
+        # and is obtained from the yml files.
+        #
+        # params needed :-
+        # dbname:      db name for dbxref
+        # accession:   accession for dbxref
+        # tuple:       one related tuple to help give better errors
+        #
+        db = self.session.query(Db).filter(Db.name == params['dbname']).one_or_none()
+        if not db:
+            error_message = "{} Not found in db table".format(params['dbname'])
+            self.error_track(params['tuple'], error_message, CRITICAL_ERROR)
+            return None, None
+
+        dbxref, is_new = get_or_create(self.session, Dbxref, db_id=db.db_id, accession=params['accession'])
+
+        key = params['tuple'][FIELD_NAME]
+        if key not in self.process_data:  # Set?
+            key = key[:-1]
+            if key not in self.process_data:
+                log.debug("PROBLEM?: {} Not in process_data".format(key))
+                return dbxref, is_new
+
+        if key in self.process_data and 'external_lookup' in self.process_data[key]:
+            if params['dbname'] in self.process_data[key]['external_lookup']:
+                item = ExternalLookup.lookup_by_id(params['dbname'], params['accession'])
+                if item.error and is_new:
+                    message = "{} is not found in the {} external database lookup or Chado.".format(params['accession'], params['dbname'])
+                    self.error_track(params['tuple'], message, CRITICAL_ERROR)
+                    self.session.delete(dbxref)  # Canm ake future stuff barf if we do not remove
+                    dbxref = None
+                elif item.error:
+                    message = "{} is not found in the {} external database lookup But in Chado.".format(params['accession'], params['dbname'])
+                    message += " Check it is still valid."
+                    self.error_track(params['tuple'], message, WARNING_ERROR)
+        return dbxref, is_new
 
     ########################################################################################
     # Deletion bangc and bangd methods.
