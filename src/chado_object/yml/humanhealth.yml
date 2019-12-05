@@ -117,6 +117,7 @@ HH5:
   set_db: b
   set_desc: c
   set_dis: d
+  external_lookup: [HGNC, OMIM]
 HH5a:
   type: dbxrefpropset
   cvterm: data_link

@@ -8,7 +8,7 @@ import os
 from .chado_base import FIELD_VALUE
 from .chado_pub import ChadoPub
 from harvdev_utils.production import (
-    Cv, Cvterm, Pub
+    Cv, Cvterm, Pub, Db, Dbxref, PubDbxref
 )
 from harvdev_utils.chado_functions import get_or_create
 
@@ -30,7 +30,8 @@ class ChadoMultipub(ChadoPub):
                           'dbxref': self.load_dbxref,
                           'cvterm': self.load_cvterm,
                           'ignore': self.ignore,
-                          'obsolete': self.make_obsolete}
+                          'obsolete': self.make_obsolete,
+                          'make_secondary': self.make_secondary}
 
         self.delete_dict = {'direct': self.delete_direct,
                             'author': self.delete_author,
@@ -54,6 +55,34 @@ class ChadoMultipub(ChadoPub):
         self.process_data = self.load_reference_yaml(yml_file, params)
         self.direct_key = 'MP1'
         self.editor = True
+
+    def add_Flybase_name_from_pub(self, obs_pub):
+        # copy flybase name xref to self.pub
+        dbxrefs = self.session.query(Dbxref).join(PubDbxref).join(Db).\
+            filter(PubDbxref.pub_id == obs_pub.pub_id,
+                   Db.name == 'FlyBase').all()
+        log.debug("ADD dbxrefs {}".format(dbxrefs))
+        for dbxref in dbxrefs:
+            log.debug("Adding dbxref {}".format(dbxref))
+            get_or_create(
+                self.session, PubDbxref,
+                pub_id=self.pub.pub_id,
+                dbxref_id=dbxref.dbxref_id
+            )
+
+    def make_secondary(self, key):
+        # Make these obsolete
+        for tuples in self.process_data[key]['data']:
+            log.debug("tuples is {}".format(tuples))
+            if tuples[FIELD_VALUE] is not None:
+                multi_name = "multipub_{}".format(tuples[FIELD_VALUE])
+                log.debug("Make obsolete {}".format(multi_name))
+                pub = self.session.query(Pub).filter(Pub.uniquename == multi_name).one_or_none()
+                if pub:
+                    pub.is_obsolete = True
+                    self.add_Flybase_name_from_pub(pub)
+                else:
+                    self.critical_error(tuples, 'Pub {} does not exist in the database.'.format(multi_name))
 
     def get_pub(self):
         """
