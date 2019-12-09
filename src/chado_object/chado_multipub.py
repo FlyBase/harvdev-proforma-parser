@@ -56,7 +56,7 @@ class ChadoMultipub(ChadoPub):
         self.direct_key = 'MP1'
         self.editor = True
 
-    def add_Flybase_name_from_pub(self, obs_pub):
+    def add_FlyBase_name_from_pub(self, obs_pub):
         # copy flybase name xref to self.pub
         dbxrefs = self.session.query(Dbxref).join(PubDbxref).join(Db).\
             filter(PubDbxref.pub_id == obs_pub.pub_id,
