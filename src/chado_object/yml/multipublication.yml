@@ -11,7 +11,7 @@ MP2b:
   name: title
   description: Title *u
 MP18:
-  type: ignore # Well until i know what this means
+  type: make_secondary
   description: Action - make this/these multipub ID(s) secondary IDs of MP1 *N
 MP19:
   type: obsolete
