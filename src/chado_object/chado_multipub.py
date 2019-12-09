@@ -80,7 +80,7 @@ class ChadoMultipub(ChadoPub):
                 pub = self.session.query(Pub).filter(Pub.uniquename == multi_name).one_or_none()
                 if pub:
                     pub.is_obsolete = True
-                    self.add_Flybase_name_from_pub(pub)
+                    self.add_FlyBase_name_from_pub(pub)
                 else:
                     self.critical_error(tuples, 'Pub {} does not exist in the database.'.format(multi_name))
 
