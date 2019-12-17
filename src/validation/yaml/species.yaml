@@ -1,0 +1,41 @@
+SP1a:
+    required: True
+    type: string
+    regex: ^([A-Z]+.*)$
+    no_bangc: True
+SP1b:
+    required: True
+    type: string
+SP1g:
+    required: True
+    allowed: [n,y]
+    no_bangc: True
+SP2:
+    type: string
+    if_new_required: True
+    nullable: True
+    no_bangc: True
+SP3a:
+    type: string
+    nullable: True
+    no_bangc: True
+    required: False
+SP3b:
+    required: False
+    allowed: [y]
+    no_bangc: True
+    nullable: True 
+SP4:
+    required: False
+    type: string
+    regex: ^(\d+)$
+    nullable: True
+SP5:
+    required: False
+    type: [string, list]
+    regex: ^(\d+)$
+    nullable: True
+SP6:
+    required: False
+    type: string
+    nullable: True
