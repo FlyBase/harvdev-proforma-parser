@@ -8,7 +8,7 @@ import os
 from .chado_base import ChadoObject, FIELD_VALUE
 
 from harvdev_utils.production import (
-    Cv, Cvterm, Pub, Db, Dbxref, OrganismDbxref, Organism, Organismprop, OrganismPub
+    Cv, Cvterm, Db, Dbxref, OrganismDbxref, Organism, Organismprop, OrganismPub
 )
 from harvdev_utils.chado_functions import get_or_create
 
@@ -82,8 +82,12 @@ class ChadoSpecies(ChadoObject):
             # add common name
             setattr(self.species, 'common_name', self.process_data['SP3a']['data'][FIELD_VALUE])
         else:
-            if self.process_data['SP3b']['data'][FIELD_VALUE] == 'y':
+            if self.has_data('SP3b') and self.process_data['SP3b']['data'][FIELD_VALUE] == 'y':
                 setattr(self.species, 'common_name', self.process_data['SP3a']['data'][FIELD_VALUE])
+            if self.has_data('SP2') and self.process_data['SP2']['data'][FIELD_VALUE] != self.species.abbreviation:
+                message = "Abbreviation already set to {}".format(self.species.abbreviation)
+                message += " But listed here as {}. Either correct or remove it".format(self.process_data['SP2']['data'][FIELD_VALUE])
+                self.critical_error(self.process_data['SP2']['data'], message)
 
         # bang c first as this supersedes all things
         if self.bang_c:
@@ -178,27 +182,64 @@ class ChadoSpecies(ChadoObject):
                 setattr(org_prop, 'value', self.process_data[key]['data'][FIELD_VALUE])
 
     def delete_cvterm(self, key, bangc=True):
-        pass
+        cvterm = self.session.query(Cvterm).join(Cv).filter(Cv.name == self.process_data[key]['cv'],
+                                                            Cvterm.name == self.process_data[key]['cvterm']).one()
+        if not cvterm:
+            message = 'Cvterm lookup failed for cv {} cvterm {}?'.format(self.process_data[key]['cv'],
+                                                                         self.process_data[key]['cvterm'])
+            self.critical_error(self.process_data[key]['data'], message)
+            return
+
+        if bangc:
+            count = 0
+            for item in self.session.query(Organismprop).join(Organism).filter(Organismprop.organism_id == self.species.organism_id,
+                                                                               Organismprop.type_id == cvterm.cvterm_id):
+                self.session.delete(item)
+                count += 1
+            if count:
+                log.debug("Deleted {} organismprops for cvterm {}".format(count, cvterm.name))
+            else:
+                message = "No organismprops deleted for cvterm {}?".format(cvterm.name)
+                self.warning_error(self.process_data[key]['data'], message)
+        else:
+            if type(self.process_data[key]['data']) is list:
+                prop_list = self.process_data[key]['data']
+            else:
+                prop_list = [self.process_data[key]['data']]
+            if not self.process_data[key]['data']:
+                self.critical_error(prop_list[0], "Must specify a value with !d.")
+                self.process_data[key]['data'] = None
+                return
+            for item in prop_list:
+                org_prop = self.session.query(Organismprop).join(Organism).\
+                    filter(Organismprop.organism_id == self.species.organism_id,
+                           Organismprop.type_id == cvterm.cvterm_id,
+                           Organismprop.value == item[FIELD_VALUE]).one_or_none()
+                if org_prop:
+                    self.session.delete(org_prop)
+                else:
+                    message = "cvterm {} has no value {} for this Organism/Species.".format(cvterm.name, item[FIELD_VALUE])
+                    self.critical_error(item, message)
 
     def delete_dbxref(self, key, bangc=True):
         db = self.session.query(Db).filter(Db.name == self.process_data[key]['dbname']).one()
         if bangc:
             # delete only the organism_dbxref or dbxref is no others exist.
             count = 0
-            for item in self.session.query(OrganismDbxref).filter(OrganismDbxref.pub_id == self.pub.pub_id,
-                                                                  OrganismDbxref.dbxref_id == Dbxref.dbxref_id,
-                                                                  Dbxref.db_id == db.db_id):
+            for item in self.session.query(OrganismDbxref).join(Dbxref).filter(OrganismDbxref.organism_id == self.species.organism_id,
+                                                                               OrganismDbxref.dbxref_id == Dbxref.dbxref_id,
+                                                                               Dbxref.db_id == db.db_id):
                 count += 1
                 self.session.delete(item)
-            log.debug("removed {} Or dbxref for {}.".format(count, key))
+            log.debug("Removed {} dbxref's for {}.".format(count, key))
         else:
             if not self.process_data[key]['data']:
                 self.critical_error(item, "Must specify a value with !d.")
                 self.process_data[key]['data'] = None
                 return
-            dbxref = self.session.query(OrganismDbxref).join(Pub).join(Dbxref).filter(
-                Pub.pub_id == OrganismDbxref.pub_id,
-                Pub.pub_id == self.pub.pub_id,
+            dbxref = self.session.query(OrganismDbxref).join(Organism).join(Dbxref).filter(
+                Organism.organism_id == OrganismDbxref.organism_id,
+                Organism.organism_id == self.species.organism_id,
                 OrganismDbxref.dbxref_id == Dbxref.dbxref_id,
                 Dbxref.db_id == db.db_id,
                 Dbxref.accession == self.process_data[key]['data'][FIELD_VALUE]).one_or_none()
