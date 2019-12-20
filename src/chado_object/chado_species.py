@@ -58,7 +58,7 @@ class ChadoSpecies(ChadoObject):
         """
         self.pub = super(ChadoSpecies, self).pub_from_fbrf(self.reference)
         if not self.pub:
-            message = "No publication specified!!"
+            message = "No publication specified!"
             self.critical_error(self.process_data['SP1g']['data'], message)
         # lookup species based on SP1a and SP1b
         self.species, self.new_species = get_or_create(self.session,
