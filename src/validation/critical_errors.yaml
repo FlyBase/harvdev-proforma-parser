@@ -32,3 +32,12 @@ MP15:
   - Must be set for new pubs.
 MP17:
   - Must be set for new pubs.
+SP1a:
+  - value does not match regex
+  - null value not allowed
+SP1b:
+  - null value not allowed
+SP1g:
+  - null value not allowed
+SP4:
+  - value does not match regex

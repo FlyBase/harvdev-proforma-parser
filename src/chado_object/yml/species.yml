@@ -1,0 +1,33 @@
+# By ignore means the "new/get" process will automatically do these so need no further actions
+SP1a:
+    type: ignore
+    description: Genus to use in FlyBase (organism.genus)
+SP1b:
+    type: ignore
+    description: Species to use in FlyBase (organism.species)
+SP1g:
+    type: ignore
+    description: Is SP1a+SP1b already in FlyBase? (y/n)
+SP2:
+    type: ignore
+    description: Abbreviation to use in FlyBase (organism.abbreviation)
+SP3a:
+    type: ignore
+    description: Common name (organism.common_name)
+SP3b:
+    type: ignore
+    description: Action - change existing organism.common_name? (blank/y)
+SP4:
+    type: dbxref
+    dbname: NCBITaxon
+    description: Taxon ID
+SP5:
+    type: cvterm
+    cv: property type
+    cvterm: taxgroup
+    description: Taxgroup
+SP6:
+    type: cvterm
+    cv: property type
+    cvterm: official_db
+    description: Official database for species
