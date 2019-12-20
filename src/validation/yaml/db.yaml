@@ -1,0 +1,76 @@
+#
+# We will allow old style proforma but give a warning and new i.e.:-
+#
+# OLD
+# ! DB2a. Description (db.description) :
+# ! DB2b. Action - change existing db.description? (blank/y) :
+#
+# NEW
+# !(c) DB2. Description (db.description) :
+#
+
+DB1a:
+    type: string
+    required: True
+    no_bangc: True
+DB1g:
+    type: string
+    required: True
+    no_bangc: True
+    allowed: [y,n]
+
+# db.description
+DB2:
+    type: string
+    nullable: True
+    required: False
+    required_if_bangc: True
+DB2a:
+    type: string
+    nullable: True
+    required: False
+    no_bangc: True
+DB2b:
+    type: string
+    nullable: True
+    required: False
+    no_bangc: True
+    allowed: [y]
+
+# db.url
+DB3:
+    type: string
+    nullable: True
+    required: False
+    # required_if_bangc: True
+    url_format: True
+DB3a:
+    type: string
+    nullable: True
+    required: False
+    no_bangc: True
+    url_format: True
+DB3c:
+    type: string
+    nullable: True
+    required: False
+    allowed: [y]
+
+# db.urlprefix
+DB4:
+    type: string
+    nullable: True
+    required: False
+    # required_if_bangc: True
+    url_format: True
+DB3b:
+    type: string
+    nullable: True
+    required: False
+    no_bangc: True
+DB3d:
+    type: string
+    nullable: True
+    required: False
+    no_bangc: True
+    allowed: [y]
