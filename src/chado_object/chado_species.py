@@ -73,7 +73,7 @@ class ChadoSpecies(ChadoObject):
             message = "SP1g (Is SP1a+SP1b already in FlyBase) set to y but Species NOT found."
             self.critical_error(self.process_data['SP1g']['data'], message)
         if not self.new_species and self.process_data['SP1g']['data'][FIELD_VALUE] == 'n':
-            message = "SP1g (Is SP1a+SP1b already in FlyBase) set to n but Species found in the database."
+            message = "SP1g (is SP1a+SP1b already in FlyBase?) set to n but species found in the database."
             self.critical_error(self.process_data['SP1g']['data'], message)
 
         if self.new_species:
