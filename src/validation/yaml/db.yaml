@@ -25,6 +25,7 @@ DB2:
     nullable: True
     required: False
     required_if_bangc: True
+    excludes: ['DB2a', 'DB2b']
 DB2a:
     type: string
     nullable: True
@@ -44,6 +45,7 @@ DB3:
     required: False
     # required_if_bangc: True
     url_format: True
+    excludes: ['DB3a', 'DB3c']
 DB3a:
     type: string
     nullable: True
@@ -63,6 +65,7 @@ DB4:
     required: False
     # required_if_bangc: True
     url_format: True
+    excludes: ['DB3b', 'DB3d']
 DB3b:
     type: string
     nullable: True
