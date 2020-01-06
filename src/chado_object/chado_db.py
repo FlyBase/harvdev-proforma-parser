@@ -108,7 +108,7 @@ class ChadoDb(ChadoObject):
                     self.warning_error(self.process_data[key]['data'], warning_message)
                     related_key = self.process_data[key]['related']
                     if related_key not in self.process_data:
-                        error_message = "cannot change {} as it already has a value and {} is not set to y".format(key, related_key)
+                        error_message = "Cannot change {} as it already has a value and {} is not set to y".format(key, related_key)
                         self.critical_error(self.process_data[key]['data'], error_message)
                         return
                     if self.process_data[related_key]['data'][FIELD_VALUE] != 'y':
