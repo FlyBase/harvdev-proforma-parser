@@ -42,8 +42,14 @@ class ValidatorDb(Validator):
         """
         if checkit and value:
             try:
-                urlparse(value)
+                ret = urlparse(value)
+                if not ret.scheme or not ret.netloc:
+                    self._error(field, '{} does not match a valid url format'.format(field))
+                    log.info("{} FAILED url checking".format(value))
+                    return
+                log.info("{} PASSED URL checking:".format(value))
             except URLError:
+                log.info("{} FAILED url checking".format(value))
                 self._error(field, '{} does not match a valid url format'.format(field))
 
     def _validate_required_if_bangc(self, check, field, value):
