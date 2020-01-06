@@ -105,9 +105,9 @@ class ChadoDb(ChadoObject):
             if old_attr:
                 if 'related' in self.process_data[key]:  # old style proforma
                     warning_message = "Using OLD style DB profoma. This will be deprecated soon please change in future proforma."
-                    self.warning_message(self.process_data[key]['data'], warning_message)
+                    self.warning_error(self.process_data[key]['data'], warning_message)
                     related_key = self.process_data[key]['related']
-                    if self.process_data[related_key]['name'] != 'y':
+                    if self.process_data[related_key]['data'][FIELD_VALUE] != 'y':
                         error_message = "cannot change {} as it already has a value and {} is not set to y".format(key, related_key)
                         self.critical_error(self.process_data[key]['data'], error_message)
                         return
