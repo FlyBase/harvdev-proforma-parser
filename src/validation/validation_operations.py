@@ -12,6 +12,7 @@ from validation.validator_multipub import ValidatorMultipub
 from validation.validator_chem import ValidatorChem
 from validation.validator_humanhealth import ValidatorHumanhealth
 from validation.validator_species import ValidatorSpecies
+from validation.validator_db import ValidatorDb
 from error.error_tracking import ErrorTracking, CRITICAL_ERROR, WARNING_ERROR
 
 # Additional tools for validation
@@ -72,6 +73,10 @@ def get_validate_species_schema(fields_values):
     return "species.yaml"
 
 
+def get_validate_db_schema(fields_values):
+    return "db.yaml"
+
+
 def validation_file_schema_lookup(proforma_type, fields_values):
     """
     Reads the proforma type and returns the appropriate yaml validation file
@@ -93,12 +98,14 @@ def validation_file_schema_lookup(proforma_type, fields_values):
                        "GENE": get_validate_gene_schema,
                        "CHEMICAL": get_validate_chemical_schema,
                        "HUMAN": get_validate_humanhealth_schema,
+                       "DATABASE": get_validate_db_schema,
                        "SPECIES": get_validate_species_schema}
     # if we have specific validation stuff set it up here.
     validation_base = {"PUBLICATION": ValidatorPub,
                        "MULTIPUBLICATION": ValidatorMultipub,
                        "CHEMICAL": ValidatorChem,
                        "HUMAN": ValidatorHumanhealth,
+                       "DATABASE": ValidatorDb,
                        "SPECIES": ValidatorSpecies}
     validator = None
 

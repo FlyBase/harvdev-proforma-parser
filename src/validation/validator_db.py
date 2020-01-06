@@ -1,8 +1,8 @@
 # Cerberus and yaml
 # Additional tools for validation
 from cerberus import Validator
-from urllib.parse import urlparse, URLError
-
+from urllib.parse import urlparse
+from urllib.error import URLError
 import logging
 log = logging.getLogger(__name__)
 

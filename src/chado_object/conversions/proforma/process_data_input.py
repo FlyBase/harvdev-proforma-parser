@@ -11,6 +11,7 @@ from ...chado_chem import ChadoChem
 from ...chado_multipub import ChadoMultipub
 from ...humanhealth.chado_humanhealth import ChadoHumanhealth
 from ...chado_species import ChadoSpecies
+from ...chado_db import ChadoDb
 
 import logging
 import sys
@@ -88,6 +89,7 @@ def process_data_input(proforma_object):
         'HUMAN': (ChadoHumanhealth),
         'MULTIPUBLICATION': (ChadoMultipub),
         'SPECIES': (ChadoSpecies),
+        'DATABASE': (ChadoDb),
     }
 
     try:
