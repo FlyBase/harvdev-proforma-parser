@@ -1,0 +1,49 @@
+
+#########################################################################################
+# Documentation for DB yml
+#
+# type: dependent on...
+#
+#       direct: direct fields
+#
+#########################################################################################
+
+# ignore as it is the first thing done.
+DB1a:
+    type: ignore
+DB1g:
+    type: ignore
+
+# db.description
+DB2:
+    type: direct
+    name: description
+DB2a:
+    type: direct    
+    name: description
+    related: DB2b
+DB2b: # part of DB2a
+    type: ignore
+
+# db.url
+DB3:
+    type: direct
+    name: url
+DB3a:
+    type: direct
+    name: url
+    related: DB3c
+DB3c: # part of DB3a
+    type: ignore
+
+# db.urlprefix
+DB4:
+    type: direct
+    name: urlprefix
+DB3b:
+    type: direct
+    name: urlprefix
+    related: DB3d
+DB3d:
+    # part of DB3b
+    type: ignore

@@ -41,3 +41,7 @@ SP1g:
   - null value not allowed
 SP4:
   - value does not match regex
+DB3:
+  - does not match a valid url format
+DB4:
+  - does not match a valid url format
