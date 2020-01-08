@@ -4,13 +4,16 @@
 
 .. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
+import os
 from .chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.production import (
-    Cvterm, FeaturePub, FeatureSynonym, Synonym, Feature
+    Feature, Cv, Cvterm, Synonym, FeatureSynonym, Organism
 )
 from harvdev_utils.chado_functions import get_or_create
+from .utils.feature_synonym import fs_add_by_synonym_name_and_type
 
-from sqlalchemy.orm.exc import NoResultFound
+# from sqlalchemy.orm.exc import NoResultFound
+from datetime import datetime
 
 import logging
 log = logging.getLogger(__name__)
@@ -20,147 +23,133 @@ class ChadoGene(ChadoObject):
     def __init__(self, params):
         log.info('Initializing ChadoGene object.')
 
-        self.P22_FlyBase_reference_ID = params['fields_values'].get('P22')
-
-        self.G1a_symbol_in_FB = params['fields_values'].get('G1a')
-        self.G1b_symbol_used_in_ref = params['fields_values'].get('G1b')
-        self.G2b_name_used_in_ref = params['fields_values'].get('G2b')
-
-        # Values queried later, placed here for reference purposes.
-        self.gene = None
-        self.pub = None
-
         # Initiate the parent.
         super(ChadoGene, self).__init__(params)
+        ##########################################
+        # Set up how to process each type of input
+        ##########################################
+        self.type_dict = {'synonym': self.load_synonym,
+                          'ignore': self.ignore,
+                          'cvterm': self.load_cvterm}
 
-    def is_current_symbol(self, G1b_entry):
-        log.debug('Checking whether \'{}\' is the current symbol in Chado'.format(G1b_entry[FIELD_VALUE]))
-        self.current_query_source = G1b_entry
-        self.current_query = 'Querying for \'%s\'.' % (G1b_entry[FIELD_VALUE])
-        log.debug(self.current_query)
+        self.delete_dict = {'synonym': self.delete_synonym,
+                            'cvterm': self.delete_cvterm}
 
-        filters = (
-            Feature.is_obsolete == 'f',
-            Feature.feature_id == FeatureSynonym.feature_id,
-            FeatureSynonym.synonym_id == Synonym.synonym_id,
-            FeatureSynonym.is_current == 't',
-            Cvterm.name == 'symbol',
-            Feature.uniquename == self.gene.uniquename
-        )
-        try:
-            results = self.session.query(Synonym.synonym_sgml).join(Cvterm, Cvterm.cvterm_id == Synonym.type_id).distinct().\
-                filter(*filters).one()
-        except NoResultFound:
-            return False
+        self.proforma_start_line_number = params.get('proforma_start_line_number')
 
-        symbol_name_from_results = results[0]
+        ###########################################################
+        # Values queried later, placed here for reference purposes.
+        ############################################################
+        self.pub = None
 
-        if symbol_name_from_results == G1b_entry[FIELD_VALUE]:
-            log.debug('\'{}\' matches the current symbol in Chado: \'{}\', FBgn: \'{}\'. Returning is_current = \'t\''.
-                      format(G1b_entry[FIELD_VALUE], self.G1a_symbol_in_FB[FIELD_VALUE], self.gene.uniquename))
-            return True
-        else:
-            log.debug('\'{}\' does not match the current symbol in Chado: \'{}\', FBgn: \'{}\'. Returning is_current = \'f\''.
-                      format(G1b_entry[FIELD_VALUE], self.G1a_symbol_in_FB[FIELD_VALUE], self.gene.uniquename))
-            return False
-
-    def process_G1b_symbols(self):
-
-        if self.bang_d == 'G1b':
-            # Remove only the entries listed in this field.
-            log.info('Removing the entries listed in field \'%s\'.' % (self.bang_d))
-            for G1b_entry in self.G1b_symbol_used_in_ref:
-
-                synonym_type_id = super(ChadoGene, self).cvterm_query('synonym type', 'symbol')
-                symbol_used_in_ref_synonym_id = super(ChadoGene, self).synonym_id_from_synonym_symbol(G1b_entry, synonym_type_id)
-
-                self.current_query_source = G1b_entry
-                self.current_query = 'Deleting feature synonym \'%s\'.' % (G1b_entry[FIELD_VALUE])
-                log.info(self.current_query)
-
-                filters = (
-                    FeatureSynonym.pub_id == self.pub_id,
-                    FeatureSynonym.feature_id == self.gene.feature_id,
-                    FeatureSynonym.synonym_id == symbol_used_in_ref_synonym_id
-                )
-
-                results = self.session.query(FeatureSynonym).\
-                    filter(*filters).\
-                    delete()
-
-        else:  # Normal loading for G1b only occurs if we don't have a !d flag.
-            if self.has_bang_type('G1b'):
-                # Clear the field if we have a !c
-                self.current_query_source = self.G1b_symbol_used_in_ref
-                self.current_query = 'Removing all previous entries for field \'%s\' and loading new data.' % ('G1b')
-                log.debug(self.current_query)
-
-                # Find all FeatureSynonyms matching a specific pub, feature, and synonym type ("symbol").
-                filters = (
-                    FeatureSynonym.pub_id == self.pub.pub_id,
-                    FeatureSynonym.feature_id == self.gene.feature_id,
-                    Synonym.type_id == Cvterm.cvterm_id,
-                    Cvterm.name == 'symbol',
-                    FeatureSynonym.synonym_id == Synonym.synonym_id,
-                )
-
-                results = self.session.query(FeatureSynonym, Synonym.type_id, Cvterm.cvterm_id, Cvterm.name).\
-                    filter(*filters).\
-                    all()
-
-                for item in results:
-                    self.session.delete(item.FeatureSynonym)
-            if self.G1b_symbol_used_in_ref is not None:
-                for G1b_entry in self.G1b_symbol_used_in_ref:
-
-                    synonym_type_id = super(ChadoGene, self).cvterm_query('synonym type', 'symbol')
-
-                    self.current_query_source = G1b_entry
-                    self.current_query = 'Querying for \'%s\'.' % (G1b_entry[FIELD_VALUE])
-                    log.debug(self.current_query)
-
-                    # Get one or create the synonym.
-                    synonym = get_or_create(
-                        self.session, Synonym,
-                        synonym_sgml=G1b_entry[FIELD_VALUE],
-                        name=G1b_entry[FIELD_VALUE],
-                        type_id=synonym_type_id)
-
-                    # Check if our symbol is the current symbol for the feature.
-                    is_current = self.is_current_symbol(G1b_entry)
-
-                    # Get one or create the feature_synonym relationship.
-                    get_or_create(
-                        self.session, FeatureSynonym,
-                        feature_id=self.gene.feature_id,
-                        is_current=is_current,
-                        pub_id=self.pub.pub_id,
-                        is_internal=False,
-                        synonym_id=synonym.synonym_id
-                    )
+        ############################################################
+        # Get processing info and data to be processed.
+        # Please see the yml/publication.yml file for more details
+        ############################################################
+        yml_file = os.path.join(os.path.dirname(__file__), 'yml/gene.yml')
+        # Populated self.process_data with all possible keys.
+        self.process_data = self.load_reference_yaml(yml_file, params)
+        self.reference = params.get('reference')
+        self.genus = "Drosophila"
+        self.species = "melanogaster"
+        # IF we need different species work out why params.get('species') is not working
+        # OR remove that code form proforma_operations.py.
+        log.info("species = {}, genus = {}".format(self.species, self.genus))
 
     def load_content(self):
+        """
+        Main processing routine
+        """
+        self.pub = super(ChadoGene, self).pub_from_fbrf(self.reference)
 
-        # Required querying and loading.
-        self.gene = self.feature_from_feature_name(self.G1a_symbol_in_FB[FIELD_VALUE])
-        self.pub = self.pub_from_fbrf(self.P22_FlyBase_reference_ID)
-        log.info("Loading content for gene {} in pub {}.".format(self.gene.uniquename, self.pub.uniquename))
+        self.gene = self.get_gene()
+        # bang c first as this supersedes all things
+        if self.bang_c:
+            self.bang_c_it()
+        if self.bang_d:
+            self.bang_d_it()
 
-        get_or_create(
-            self.session, FeaturePub,
-            feature_id=self.gene.feature_id,
-            pub_id=self.pub.pub_id)
+        for key in self.process_data:
+            log.debug("Processing {}".format(self.process_data[key]['data']))
+            self.type_dict[self.process_data[key]['type']](key)
 
-        # Optional loading.
-        if self.bang_c is not None:
-            log.info('Found !c entries: {}'.format(self.bang_c))
+        timestamp = datetime.now().strftime('%c')
+        curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short, timestamp)
+        log.info('Curator string assembled as:')
+        log.info('%s' % (curated_by_string))
+
+    def ignore(self, key):
+        pass
+
+    def load_synonym(self, key):
+        if not self.has_data(key):
+            return
+        # some are lists so might as well make life easier and make them all lists
+        if type(self.process_data[key]['data']) is not list:
+            self.process_data[key]['data'] = [self.process_data[key]['data']]
+        cv_name = self.process_data[key]['cv']
+        cvterm_name = self.process_data[key]['cvterm']
+        is_current = self.process_data[key]['is_current']
+        for item in self.process_data[key]['data']:
+            synonym_name =  item[FIELD_VALUE]
+
+            fs = fs_add_by_synonym_name_and_type(self.session, self.gene.feature_id, 
+                                                 synonym_name, cv_name, cvterm_name, self.pub.pub_id,
+                                                 synonym_sgml=None, is_current=is_current, is_internal=False)
+
+    def load_cvterm(self, key):
+        pass
+
+    def get_gene(self):
+        # G1h is used to check it matches with G1a
+        # For two reasons. 1) synonym has many genes, 2) curation sanity check
+        if self.has_data('G1h'):
+            gene = self.session.query(Feature).filter(Feature.uniquename == self.process_data['G1h']['data'][FIELD_VALUE],
+                                                      Feature.is_obsolete == 'f').one()
+            if not gene:
+                message = "Unable to find Gene with uniquename {}.".format(self.process_data['G1h']['data'][FIELD_VALUE])
+                self.critical_error(self.process_data['G1h']['data'], message)
+                return None
+            # Test the synonym used in Gla matches this.
+            synonym = self.session.query(FeatureSynonym).join(Synonym).join(Cvterm).\
+                filter(FeatureSynonym.feature_id == gene.feature_id,
+                       Synonym.name == self.process_data['G1a']['data'][FIELD_VALUE],
+                       FeatureSynonym.is_current == 't',
+                       Cvterm.name == 'symbol').one()
+            if not synonym:
+                message = "Symbol {} does not match that for {}.".format(self.process_data['G1a']['data'][FIELD_VALUE],
+                                                                         self.process_data['G1h']['data'][FIELD_VALUE])
+                self.critical_error(self.process_data['G1a']['data'], message)
+                return gene
+            return gene
+
+        if self.process_data['G1g']['data'][FIELD_VALUE] == 'y':  # Should exist already
+            gene = self.session.query(Feature).join(FeatureSynonym).join(synonym.join(Cvterm)).\
+                filter(Cvterm.name == 'symbol',
+                       Synonym.name == self.process_data['G1a']['data'][FIELD_VALUE],
+                       FeatureSynonym.is_current == 't',
+                       Feature.is_obsolete == 'f'
+                       ).one()
+            if not gene:
+                message = "Unable to find Gene with symbol {}.".format(self.process_data['G1a']['data'][FIELD_VALUE])
+                self.critical_error(self.process_data['G1a']['data'], message)
         else:
-            log.info('No !c entries found.')
+            cvterm = self.session.query(Cvterm).join(Cv).filter(Cv.name == 'SO', Cvterm.name == 'gene').one()
+            if not cvterm:
+                message = "Unable to find cvterm 'gene' for Cv 'SO'."
+                self.critical_error(self.process_data['G1a']['data'], message)
+                return None
+            log.info("looking up genus {} species {}".format(self.genus, self.species))
+            organism = self.session.query(Organism).filter(Organism.genus == self.genus, Organism.species == self.species).one()
+            if not organism:
+                message = "Unable to find Organism with genus {} and species {}.".format(self.genus, self.species)
+                self.critical_error(self.process_data['G1a']['data'], message)
+                return None
+            gene, _ = get_or_create(self.session, Feature, type_id=cvterm.cvterm_id, uniquename='FBgn:temp_0', organism_id=organism.organism_id)
+        return gene
 
-        if self.bang_d is not None:
-            log.info('Found !d entries: {}'.format(self.bang_d))
-        else:
-            log.info('No !d entries found.')
+    def delete_synonym(self, key):
+        pass
 
-        if self.G1b_symbol_used_in_ref or self.has_bang_type('G1b'):
-            self.process_G1b_symbols()
+    def delete_cvterm(self, key):
+        pass

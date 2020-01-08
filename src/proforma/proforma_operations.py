@@ -122,12 +122,23 @@ def process_proforma_file(file_location_from_list, curator_dict):
              (fields_values['P22'][1], 'P22', fields_values['P22'][2]))
 
     last_pub = list_of_proforma_objects[0].fields_values['P22']
+    last_genus = 'Drosophila'
+    last_species = 'melanogaster'
     for individual_proforma_object in list_of_processed_proforma_objects:
         log.info("TYPE: is {}".format(individual_proforma_object.proforma_type))
         if 'PUBLICATION' in individual_proforma_object.proforma_type:
             last_pub = individual_proforma_object.fields_values['P22']
             log.info("Setting new pub to be {}".format(last_pub))
+            last_genus = 'Drosophila'
+            last_species = 'melanogaster'
+            log.info("Resetting new genus {} and species {}".format(last_genus, last_species))
+        if 'SPECIES' in individual_proforma_object.proforma_type:
+            last_genus = individual_proforma_object.fields_values['SP1a']
+            last_species = individual_proforma_object.fields_values['SP1b']
+            log.info("Setting new genus {} and species {}".format(last_genus, last_species))
         individual_proforma_object.add_reference_data(last_pub)
+        individual_proforma_object.add_genus_data(last_genus)
+        individual_proforma_object.add_species_data(last_species)
 
     return list_of_processed_proforma_objects
 
@@ -427,6 +438,8 @@ class Proforma(object):
         self.bang_c = []                    # List of fields flagged for !c (if used).
         self.bang_d = []                    # List of fields flagged for !d (if used).
         self.reference = None               # Becomes the FBrf used for attribution.
+        self.genus = None
+        self.species = None
         self.proforma_start_line_number = line_number  # Used later for data retrieval.
         self.proforma_type = proforma_type  # Used later for data retrieval.
 
@@ -579,6 +592,12 @@ class Proforma(object):
 
     def add_reference_data(self, reference_data):
         self.reference = reference_data
+
+    def add_genus_data(self, reference_data):
+        self.genus = reference_data
+
+    def add_species_data(self, reference_data):
+        self.species = reference_data
 
     def get_file_metadata(self):
         return self.file_metadata

@@ -1,0 +1,98 @@
+# our %ti_fpr_type = (
+#     'G1a', 'symbol',      #feature_synonym
+G1a:  # Main gene symbol to be used. Processed first and seperately
+    type: ignore
+    cv: synonym type
+    cvterm: symbol
+    is_current: True
+#     'G1b', 'symbol',      #feature_synonym
+G1b:
+    type: synonym
+    cv: synonym type
+    cvterm: symbol
+    is_current: False
+#     'G1e', 'symbol',      #feature_synonym
+G1e:
+    type: rename
+#     'G1f', 'merge',       #merge_function
+G1f:
+    type: merge
+#     'G1g', 'new',         #checking
+G1g:
+    type: ignore # Done as part of initialisation with G1a
+#     'G2a', 'fullname',    #feature_synonym
+G1h: # FBgn0000000 check
+    type: ignore
+G2a:
+    type: synonym
+    cv: synonym type
+    cvterm: fullname
+    is_current: True
+#     'G2b', 'fullname',    #feature_synonym
+G2b:
+    type: synonym
+    cv: synonym type
+    cvterm: fullname
+    is_current: False 
+#     'G2c', 'fullname',    #feature_synonym
+
+#     'G30',  'SO',                #feature_cvterm
+#     'G31a', 'is_obsolete',       #feature.is_obsolete
+#     'G31b', 'dissociate_pub',    #feature_pub...
+#     'G27',  'etymology',         #feature_genotype,genotype,phendesc
+
+#     'G20a', 'in_title_or_abstract/significant_subject_in_review'
+#     ,                            #featureprop: Analysis:subject #not in chado
+#     'G20b', 'is_expression_analysed_in_wildtype', #featureprop:Analysis: WT-exp
+#     'G20c', 'is_expression_analysed_in_mutant',   #featureprop:Analysis: mut-exp
+#     'G20d', 'is_genome_annotation_analysed',      #featureprop:Analysis: genome
+#     'G20e', 'is_physical_interaction_analysed', # featureprop:Analysis: physical
+#     'G20f', 'is_cis-reg_analysed',              #featureprop:Analysis: cis-reg
+#     'G20g', 'is_gene_model_decorated',          #featureprop: Analysis: mut-map
+#     'G20h', 'is_polymorphism_reported',    #featureprop: Analysis: polymorph
+#     'G20i', 'has_GO_curation', 
+#     'G10a', 'cyto_left_end/cyto_right_end',    #feature_relationship.object_id
+#     'G10b', 'cyto_left_end/cyto_right_end',    #feature_relationshipprop
+#     'G11',  'cyto_loc_comment',                #featureprop
+#     'G25', 'maps_to_clone/nomaps_to_clone/identified_with',    #feature_relationship
+#     'G19a', 'gene_order',                               #featureprop
+#     'G19b', 'molecular_info',                           #featureprop
+#     'G12a', 'wild_type_role',                           #featureprop
+#     'G12b', 'gene_phenotypes',                          #feature_relationship
+#     'G14a', 'misc',                                     #featureprop
+#     'G14b', 'identified_by',                            #featureprop
+#     'G28a', 'gene_relationships',                       #featureprop
+#     'G28b', 'merge_source/identity_source',             #featureprop
+#     'G29a',
+#     'fnally_comps/fnally_noncomps/fnally_partcomps/gain_of_fn_species'
+#     ,    #feature_relationship.object_id, featureprop
+#     'G29b', 'func_comp_desc',          #featureprop
+#     'G18',  'interacts_genetically',   #???Rachel.feature_relationship.object_id
+#     'G22',  'homologue',               #feature_relationship.object_id
+#     'G24a', 'cellular_component',      #???feature_cvterm
+#     'G24b', 'molecular_function',      #???feature_cvterm
+#     'G24c', 'biological_process',      #???feature_cvterm
+#     'G24e', 'GO_internal_notes',       #featureprop
+#     'G24g', 'GO_review_date',       #featureprop
+#     'G15',  'internal_notes',          #featureprop
+#     'G17t', 'rec_position_effect',     #feature_relationship.object_id
+#     'G17u', 'no_position_effect',      #feature_relationship.object_id
+#     'G17v', 'dom_position_effect',     #feature_relatinoship.object_id
+#     'G5',   'genetic_location',        #featureprop
+#     'G6',   'gen_loc_error',           #featureprop
+#     'G7a',  'recom_left_end',          #??feature_relationship.object_id
+#     'G7b',  'recom_right_end',         #??feature_relationship.object_id
+#     'G8',   'gen_loc_comment',         #featureprop
+#     'G26',  'foreign_seq_data',
+#     'G33',  'feature_dbxref',          #feature_dbxref
+#     'G34',  'reported_antibod_gen' ,   #featureprop
+#     'G35',  'feature_dbxref',          #feature_dbxref
+#     'G91',  'library_feature',  #library_feature
+#     'G91a', 'library_featureprop',  #library_featureprop
+#     'G37',  'grpmember_feature', # feature_grpmember (grpmember.grp_id grpmember.type_id cv=grpmember type, cvterm=grpmember_feature feature_grpmember.feature_id G1a) plus organism_grpmember (grpmember.grp_id grpmember.type_id cv=grpmember type, cvterm=grpmember_organism organism_grpmember.organism_id G1a -- only 1 per grp??)
+#     'G39a',  'gene_summary_text', # featureprop single value
+#     'G39b',  'gene_summary_info',  #featureprop single value y or n
+#     'G39c',  'gene_summary_date', #featureprop single value behave like G24f
+#     'G39d',  'gene_summary_internal_notes', #featureprop multiple values
+#     'G40',   'FlyBase miscellaneous CV', #feature_cvterm Encoded experimental tools (CV) feature_cvtermprop type common_tool_uses
+#     'G38',  'member_gene_of',  # feature_relationship.object Valid Gene symbol TO7c single
