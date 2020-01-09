@@ -52,10 +52,7 @@ class ChadoGene(ChadoObject):
         self.reference = params.get('reference')
         self.genus = "Drosophila"
         self.species = "melanogaster"
-        # IF we need different species work out why params.get('species') is not working
-        # OR remove that code form proforma_operations.py.
-        log.info("species = {}, genus = {}".format(self.species, self.genus))
-
+ 
     def load_content(self):
         """
         Main processing routine
