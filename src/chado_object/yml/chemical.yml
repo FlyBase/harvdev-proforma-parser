@@ -9,6 +9,8 @@
 #########################################################################################
 CH1f:
   type: ignore
+  cv: FlyBase miscellaneous CV
+  cvterm: chemical entity
 CH1a:
   type: ignore
 CH1b:
@@ -20,7 +22,8 @@ CH3b:
 CH3c:
   type: ignore
 CH4a:
-  type: relationship
+  type: feature_relationship
+  cv: relationship type
   cvterm: derived_from
 CH4b:
   type: ignore
