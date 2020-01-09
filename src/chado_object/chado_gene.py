@@ -52,7 +52,7 @@ class ChadoGene(ChadoObject):
         self.reference = params.get('reference')
         self.genus = "Drosophila"
         self.species = "melanogaster"
- 
+
     def load_content(self):
         """
         Main processing routine
