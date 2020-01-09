@@ -62,7 +62,7 @@ class ChadoGene(ChadoObject):
         """
         self.pub = super(ChadoGene, self).pub_from_fbrf(self.reference)
 
-        self.gene = self.get_gene()
+        self.get_gene()
         # bang c first as this supersedes all things
         if self.bang_c:
             self.bang_c_it()
@@ -91,11 +91,11 @@ class ChadoGene(ChadoObject):
         cvterm_name = self.process_data[key]['cvterm']
         is_current = self.process_data[key]['is_current']
         for item in self.process_data[key]['data']:
-            synonym_name =  item[FIELD_VALUE]
+            synonym_name = item[FIELD_VALUE]
 
-            fs = fs_add_by_synonym_name_and_type(self.session, self.gene.feature_id, 
-                                                 synonym_name, cv_name, cvterm_name, self.pub.pub_id,
-                                                 synonym_sgml=None, is_current=is_current, is_internal=False)
+            fs_add_by_synonym_name_and_type(self.session, self.gene.feature_id,
+                                            synonym_name, cv_name, cvterm_name, self.pub.pub_id,
+                                            synonym_sgml=None, is_current=is_current, is_internal=False)
 
     def load_cvterm(self, key):
         pass
@@ -104,15 +104,15 @@ class ChadoGene(ChadoObject):
         # G1h is used to check it matches with G1a
         # For two reasons. 1) synonym has many genes, 2) curation sanity check
         if self.has_data('G1h'):
-            gene = self.session.query(Feature).filter(Feature.uniquename == self.process_data['G1h']['data'][FIELD_VALUE],
-                                                      Feature.is_obsolete == 'f').one()
-            if not gene:
+            self.gene = self.session.query(Feature).filter(Feature.uniquename == self.process_data['G1h']['data'][FIELD_VALUE],
+                                                           Feature.is_obsolete == 'f').one()
+            if not self.gene:
                 message = "Unable to find Gene with uniquename {}.".format(self.process_data['G1h']['data'][FIELD_VALUE])
                 self.critical_error(self.process_data['G1h']['data'], message)
                 return None
             # Test the synonym used in Gla matches this.
             synonym = self.session.query(FeatureSynonym).join(Synonym).join(Cvterm).\
-                filter(FeatureSynonym.feature_id == gene.feature_id,
+                filter(FeatureSynonym.feature_id == self.gene.feature_id,
                        Synonym.name == self.process_data['G1a']['data'][FIELD_VALUE],
                        FeatureSynonym.is_current == 't',
                        Cvterm.name == 'symbol').one()
@@ -120,17 +120,17 @@ class ChadoGene(ChadoObject):
                 message = "Symbol {} does not match that for {}.".format(self.process_data['G1a']['data'][FIELD_VALUE],
                                                                          self.process_data['G1h']['data'][FIELD_VALUE])
                 self.critical_error(self.process_data['G1a']['data'], message)
-                return gene
-            return gene
+                return self.gene
+            return self.gene
 
         if self.process_data['G1g']['data'][FIELD_VALUE] == 'y':  # Should exist already
-            gene = self.session.query(Feature).join(FeatureSynonym).join(synonym.join(Cvterm)).\
+            self.gene = self.session.query(Feature).join(FeatureSynonym).join(synonym.join(Cvterm)).\
                 filter(Cvterm.name == 'symbol',
                        Synonym.name == self.process_data['G1a']['data'][FIELD_VALUE],
                        FeatureSynonym.is_current == 't',
                        Feature.is_obsolete == 'f'
                        ).one()
-            if not gene:
+            if not self.gene:
                 message = "Unable to find Gene with symbol {}.".format(self.process_data['G1a']['data'][FIELD_VALUE])
                 self.critical_error(self.process_data['G1a']['data'], message)
         else:
@@ -145,8 +145,10 @@ class ChadoGene(ChadoObject):
                 message = "Unable to find Organism with genus {} and species {}.".format(self.genus, self.species)
                 self.critical_error(self.process_data['G1a']['data'], message)
                 return None
-            gene, _ = get_or_create(self.session, Feature, type_id=cvterm.cvterm_id, uniquename='FBgn:temp_0', organism_id=organism.organism_id)
-        return gene
+            self.gene, _ = get_or_create(self.session, Feature, name=self.process_data['G1a']['data'][FIELD_VALUE],
+                                         type_id=cvterm.cvterm_id, uniquename='FBgn:temp_0', organism_id=organism.organism_id)
+            # add default symbol
+            self.load_synonym('G1a')
 
     def delete_synonym(self, key):
         pass
