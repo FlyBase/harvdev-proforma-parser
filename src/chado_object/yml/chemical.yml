@@ -13,17 +13,30 @@ CH1f:
   cvterm: chemical entity
 CH1a:
   type: ignore
+  cv: synonym type
+  cvterm: symbol
+  is_current: True
 CH1b:
-  type: ignore
-CH3a:
+  type: synonym
+  cv: synonym type
+  cvterm: symbol
+  is_current: False
+CH3a: # main chebi ref. Done on creation.
   type: ignore
 CH3b:
-  type: ignore
-CH3c:
+  type: featureprop
+  cv: property type
+  cvterm: is_variant
+  value: CH3c
+CH3c: # Processed by CH3b if new
   type: ignore
 CH4a:
   type: feature_relationship
   cv: relationship type
   cvterm: derived_from
-CH4b:
+  prop: CH4b
+CH4b: # processed by CH4a
   type: ignore
+  # feature_relationshipprop
+  cv: property type
+  cvterm: comment

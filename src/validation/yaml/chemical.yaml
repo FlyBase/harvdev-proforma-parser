@@ -15,6 +15,7 @@ CH1b:
   nullable: True
 CH3a:
   type: string
+  required: True
 CH3b:
   nullable: True
   required: false
