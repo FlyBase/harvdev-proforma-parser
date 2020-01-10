@@ -13,6 +13,7 @@ from validation.validator_chem import ValidatorChem
 from validation.validator_humanhealth import ValidatorHumanhealth
 from validation.validator_species import ValidatorSpecies
 from validation.validator_db import ValidatorDb
+from validation.validator_gene import ValidatorGene
 from error.error_tracking import ErrorTracking, CRITICAL_ERROR, WARNING_ERROR
 
 # Additional tools for validation
@@ -103,6 +104,7 @@ def validation_file_schema_lookup(proforma_type, fields_values):
     # if we have specific validation stuff set it up here.
     validation_base = {"PUBLICATION": ValidatorPub,
                        "MULTIPUBLICATION": ValidatorMultipub,
+                       "GENE": ValidatorGene,
                        "CHEMICAL": ValidatorChem,
                        "HUMAN": ValidatorHumanhealth,
                        "DATABASE": ValidatorDb,

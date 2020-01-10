@@ -1,19 +1,24 @@
 G1a:
-  type: string
-  plain_text: True
-  required: True
-G1b:
-  type: list
-  schema:
     type: string
-    plain_text: True
+    required: True
+    no_bangc: True
+G1b:
+    type: [string, list]
+G1e:
+    type: string
+    no_bangc: True
+G1f:
+    type: [string, list]
+    no_bangc: True
 G1g:
+    type: string
+    required: True
+    allowed: [y,n]
+G1h:
   type: string
+  regex: ^(FBgn\d{7})$
+G2a:
+    type: string
+    no_bangc: True
 G2b:
-  type: list
-G15:
-  type: string
-G30:
-  type: string
-G34:
-  type: string
+    type: [string, list]
