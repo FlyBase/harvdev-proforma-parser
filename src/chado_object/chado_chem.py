@@ -10,8 +10,12 @@ from harvdev_utils.production import (
     Feature, Featureprop, FeaturePub, FeatureRelationship,
     FeatureSynonym, Synonym, FeatureRelationshipprop
 )
+
 from harvdev_utils.chado_functions import get_or_create
 from harvdev_utils.chado_functions.external_lookups import ExternalLookup
+from .utils.feature_synonym import fs_add_by_synonym_name_and_type, fs_remove_current_symbol
+from .utils.feature import feature_symbol_lookup
+from .utils.util_errors import CodingError
 
 from sqlalchemy.orm.exc import NoResultFound
 from datetime import datetime
@@ -49,7 +53,8 @@ class ChadoChem(ChadoObject):
                           'ignore': self.ignore}
 
         self.delete_dict = {'feature_relationship': self.delete_feature_relationship,
-                            'ignore': self.ignore}
+                            'ignore': self.ignore,
+                            'name_and_synonym': self.change_name_and_synonym}
         # Chemical storage dictionary.
         # This dictionary contains all the information required to create a new FBch.
         # The nested dictionaries contain the data as well as the source.
@@ -122,6 +127,32 @@ class ChadoChem(ChadoObject):
         log.info('Curator string assembled as:')
         log.info('%s' % curated_by_string)
 
+    # Do not change name anymore just the synonym.
+    # May have to reverse co keep commented out code for now.
+    #
+    # def load_name_and_synonym(self, key):
+    #     if not self.has_data(key):
+    #         return
+
+    #     # change name? and see if it is just a check
+    #     old_attr = getattr(self.chemical, self.process_data[key]['name'])
+    #     if old_attr and not self.has_bang_type(key):
+    #         # Just a check?
+    #         if old_attr != self.process_data[key]['data'][FIELD_VALUE]:
+    #             message = "No !c So will not overwrite {} with {}".format(old_attr, self.process_data[key]['data'][FIELD_VALUE])
+    #             self.critical_error(self.process_data[key]['data'], message)
+    #             return
+    #     # change the name
+    #     setattr(self.chemical, self.process_data[key]['name'], self.process_data[key]['data'][FIELD_VALUE])
+
+    #     # if synonym already exists then set is_current to False
+    #     cv_name = self.process_data[key]['cv']
+    #     cvterm_name = self.process_data[key]['cvterm']
+    #     fs_remove_current_symbol(self.session, self.chemical.feature_id, cv_name, cvterm_name, self.pub.pub_id)
+
+    #     # add the new synonym
+    #     self.load_synonym(key)
+
     def fetch_by_FBch_and_check(self, chemical_cvterm_id):
         #
         # Fetch by the FBch (CH1f) and check the name is the same if it is given (CH1a)
@@ -144,6 +175,10 @@ class ChadoChem(ChadoObject):
         # Also looks for conflicts between the external name and
         # the name specified for FlyBase. It also returns data that we use
         # to populate fields in Chado.
+
+        # Look up the ChEBI / PubChem reference pub_id's.
+        # Assigns a value to 'self.chebi_pub_id' and 'self.pubchem_pub_id'
+        self.look_up_static_references()
 
         # Look up chemical cv term id. Ch1f yaml data for cv and cvterms
         chemical_cvterm_id = self.cvterm_query(self.process_data['CH1f']['cv'], self.process_data['CH1f']['cvterm'])
@@ -194,11 +229,11 @@ class ChadoChem(ChadoObject):
                 return
 
         self.chemical, _ = get_or_create(self.session, Feature, organism_id=organism.organism_id,
-                                         name=self.process_data['CH1a']['data'][FIELD_VALUE],
+                                         # name=self.process_data['CH1a']['data'][FIELD_VALUE],
+                                         name=self.chemical_information['name']['data'],
                                          type_id=chemical_cvterm_id,
                                          uniquename='FBch:temp_0')
 
-        # IDL: But is it? What if it already existed. Do not see any return etc if it existed.
         log.info("New chemical entry created: {}".format(self.chemical.name))
 
         dbx_ref, _ = get_or_create(self.session, Dbxref, db_id=chebi_database.db_id,
@@ -231,8 +266,40 @@ class ChadoChem(ChadoObject):
     def delete_feature_relationship(self, key, bangc=True):
         pass
 
-    def load_synonym(self, key):
+    def change_name_and_synonym(self, key):
         pass
+
+    def load_synonym(self, key):
+        # some are lists so might as well make life easier and make them all lists
+        # Do the synonym first
+        cv_name = self.process_data[key]['cv']
+        cvterm_name = self.process_data[key]['cvterm']
+        is_current = self.process_data[key]['is_current']
+
+        if 'pub' in self.process_data[key] and self.process_data[key]['pub'] == 'current':
+            pub_id = self.pub.pub_id
+        else:
+            # is this chebi or pubchem
+            db_type = self.session.query(Db).join(Dbxref).join(Feature).\
+                filter(Feature.dbxref_id == Dbxref.dbxref_id,
+                       Db.db_id == Dbxref.db_id,
+                       Feature.feature_id == self.chemical.feature_id).one()
+            if db_type.name == "CHEBI":
+                pub_id = self.chebi_pub_id
+            elif db_type.name == "PubChem":
+                pub_id = self.pubchem_pub_id
+            else:
+                message = "Do not know how to look up pub for the feature {} based on db {}.".format(self.chemical.name, db_type.name)
+                self.critical_error(self.process_data[key]['data'], message)
+
+        # remove the current symbol if is_current is set and yaml says remove old is_current
+        if 'remove_old' in self.process_data[key] and self.process_data[key]['remove_old']:
+            fs_remove_current_symbol(self.session, self.chemical.feature_id, cv_name, cvterm_name, pub_id)
+
+        # add the new synonym
+        fs_add_by_synonym_name_and_type(self.session, self.chemical.feature_id,
+                                        self.process_data[key]['data'][FIELD_VALUE], cv_name, cvterm_name, pub_id,
+                                        synonym_sgml=None, is_current=is_current, is_internal=False)
 
     def load_featureprop(self, key):
         """
@@ -262,11 +329,13 @@ class ChadoChem(ChadoObject):
                 filter(Feature.uniquename == ch4a_value).one()
         else:
             try:
-                feature_for_related_fbch = self.session.query(Feature). \
-                    filter(Feature.name == ch4a_value).one()
+                feature_for_related_fbch = feature_symbol_lookup(self.session, 'chemical entity', ch4a_value)
             except NoResultFound:
                 message = "Could not find {} in database.".format(ch4a_value)
                 self.critical_error(self.process_data[key]['data'], message)
+                return
+            except CodingError as e:
+                self.critical_error(self.process_data[key]['data'], e.error)
                 return
 
         related_fbch_feature_id = feature_for_related_fbch.feature_id
@@ -313,10 +382,6 @@ class ChadoChem(ChadoObject):
         log.debug('Looking up synonym type cv and symbol cv term.')
         symbol_cv_id = self.cvterm_query('synonym type', 'symbol')
 
-        # Look up the ChEBI / PubChem reference pub_id's.
-        # Assigns a value to 'self.chebi_pub_id' and 'self.pubchem_pub_id'
-        self.look_up_static_references()
-
         if process == 'add':
             log.info("Adding new synonym entry for {}.".format(self.chemical_information['identifier']['data']))
             new_synonym, _ = get_or_create(self.session, Synonym, type_id=symbol_cv_id,
@@ -325,7 +390,7 @@ class ChadoChem(ChadoObject):
 
             get_or_create(self.session, FeatureSynonym, feature_id=self.chemical.feature_id,
                           pub_id=self.chebi_pub_id, synonym_id=new_synonym.synonym_id,
-                          is_current=False)
+                          is_current=True)
 
         elif process == 'remove':
             log.info("Removing synonym entry for {}.".format(self.chemical_information['identifier']['data']))

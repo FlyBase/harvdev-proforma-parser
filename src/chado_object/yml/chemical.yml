@@ -6,21 +6,26 @@
 #       direct:       Needs 'name' of field in chado database.
 #       relationship: Needs 'cvterm' of the relationship.
 #
+#       For synonyms and pubs USE the current pub ONLY if pub: current is defined
+#       Else we use the chebi or pubchem pub references.
+#       At present only CH1b (name used in reference) is assigned to the current pub.
 #########################################################################################
 CH1f:
   type: ignore
   cv: FlyBase miscellaneous CV
   cvterm: chemical entity
 CH1a:
-  type: ignore
+  type: synonym
   cv: synonym type
   cvterm: symbol
   is_current: True
+  remove_old: True
 CH1b:
   type: synonym
   cv: synonym type
   cvterm: symbol
   is_current: False
+  pub: current
 CH3a: # main chebi ref. Done on creation.
   type: ignore
 CH3b:
