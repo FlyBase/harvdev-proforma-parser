@@ -67,7 +67,7 @@ def feature_symbol_lookup(session, type_name, synonym_name, cv_name='synonym typ
         feature = session.query(Feature).join(FeatureSynonym).join(Synonym).\
             filter(Synonym.type_id == synonym_type.cvterm_id,
                    Synonym.synonym_sgml == synonym_name,
-                   FeatureSynonym.is_current == True,
+                   FeatureSynonym.is_current == 't',
                    Feature.type_id == feature_type.cvterm_id).one()
     except NoResultFound:
         raise CodingError("HarvdevError: Could not find current synonym {}, for type {}.".format(synonym_name, cvterm_name))
