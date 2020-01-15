@@ -19,7 +19,9 @@ def fs_add_by_ids(session, feature_id, synonym_id, pub_id, is_current=True, is_i
     # get/create feature_synonym from the ids of feature, synonym and pub.
     #
     fs, _ = get_or_create(session, FeatureSynonym, feature_id=feature_id, synonym_id=synonym_id,
-                          pub_id=pub_id, is_current=is_current, is_internal=is_internal)
+                          pub_id=pub_id)
+    fs.is_current = is_current
+    fs.is_internal = is_internal
     return fs
 
 

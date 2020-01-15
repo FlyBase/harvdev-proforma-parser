@@ -109,6 +109,8 @@ class ChadoChem(ChadoObject):
         self.pub = super(ChadoChem, self).pub_from_fbrf(self.reference)
 
         self.get_or_create_chemical()
+        if not self.chemical:
+            return
 
         # bang c first as this supersedes all things
         if self.bang_c:
@@ -451,6 +453,8 @@ class ChadoChem(ChadoObject):
         identifier_unprocessed = self.process_data['CH3a']['data'][FIELD_VALUE]
 
         identifier, identifier_name = self.split_identifier_and_name(identifier_unprocessed)
+        if not identifier_name:
+            return False
         log.debug('Found identifier: {} and identifier_name: {}'.format(identifier, identifier_name))
 
         database_to_query = identifier.split(':')[0]
