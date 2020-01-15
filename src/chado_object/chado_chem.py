@@ -129,32 +129,6 @@ class ChadoChem(ChadoObject):
         log.info('Curator string assembled as:')
         log.info('%s' % curated_by_string)
 
-    # Do not change name anymore just the synonym.
-    # May have to reverse co keep commented out code for now.
-    #
-    # def load_name_and_synonym(self, key):
-    #     if not self.has_data(key):
-    #         return
-
-    #     # change name? and see if it is just a check
-    #     old_attr = getattr(self.chemical, self.process_data[key]['name'])
-    #     if old_attr and not self.has_bang_type(key):
-    #         # Just a check?
-    #         if old_attr != self.process_data[key]['data'][FIELD_VALUE]:
-    #             message = "No !c So will not overwrite {} with {}".format(old_attr, self.process_data[key]['data'][FIELD_VALUE])
-    #             self.critical_error(self.process_data[key]['data'], message)
-    #             return
-    #     # change the name
-    #     setattr(self.chemical, self.process_data[key]['name'], self.process_data[key]['data'][FIELD_VALUE])
-
-    #     # if synonym already exists then set is_current to False
-    #     cv_name = self.process_data[key]['cv']
-    #     cvterm_name = self.process_data[key]['cvterm']
-    #     fs_remove_current_symbol(self.session, self.chemical.feature_id, cv_name, cvterm_name, self.pub.pub_id)
-
-    #     # add the new synonym
-    #     self.load_synonym(key)
-
     def fetch_by_FBch_and_check(self, chemical_cvterm_id):
         #
         # Fetch by the FBch (CH1f) and check the name is the same if it is given (CH1a)
