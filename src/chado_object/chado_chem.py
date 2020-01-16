@@ -47,13 +47,11 @@ class ChadoChem(ChadoObject):
         self.pubchem_pub_id = None  # Used for attributing chemical curation.
 
         # yaml file defines what to do with each field. Follow the light
-        self.type_dict = {'feature_relationship': self.load_feature_relationship,
-                          'featureprop': self.load_featureprop,
+        self.type_dict = {'featureprop': self.load_featureprop,
                           'synonym': self.load_synonym,
                           'ignore': self.ignore}
 
-        self.delete_dict = {'feature_relationship': self.delete_feature_relationship,
-                            'ignore': self.ignore,
+        self.delete_dict = {'ignore': self.ignore,
                             'name_and_synonym': self.change_name_and_synonym}
         # Chemical storage dictionary.
         # This dictionary contains all the information required to create a new FBch.
@@ -136,7 +134,7 @@ class ChadoChem(ChadoObject):
         self.chemical, is_new = get_or_create(self.session, Feature, type_id=chemical_cvterm_id,
                                               uniquename=self.process_data['CH1f']['data'][FIELD_VALUE])
         if is_new:
-            message = "Could not find {} in the database. Please check it exists."
+            message = "Could not find {} in the database. Please check it exists.".format(self.process_data['CH1f']['data'][FIELD_VALUE])
             self.critical_error(self.process_data['CH1f']['data'], message)
         if self.has_data('CH1a'):
             if self.process_data['CH1a']['data'][FIELD_VALUE] != self.chemical.name:
@@ -239,9 +237,6 @@ class ChadoChem(ChadoObject):
         # If CH3b is declared as 'y', store that information in feature_dbxrefprop
         # TODO Are we creating a feature_dbxrefprop table? More discussion needed.
 
-    def delete_feature_relationship(self, key, bangc=True):
-        pass
-
     def change_name_and_synonym(self, key):
         pass
 
@@ -295,6 +290,9 @@ class ChadoChem(ChadoObject):
         Adds a relationship between the FBch features of CH1f and key (at the moment just CH4a).
 
         :return:
+
+        NOTE: Never called as this functionality was removed.
+              Keeping code here for a short while incase that changes.
         """
         ch4a_value = self.process_data[key]['data'][FIELD_VALUE]
 
@@ -394,10 +392,12 @@ class ChadoChem(ChadoObject):
                                 .format(feature_dbxref_chemical_chebi_result[0].uniquename))
 
     def chemical_feature_lookup(self, organism_id, description_id):
-        entry = self.session.query(Feature). \
-            filter(Feature.name == self.process_data['CH1a']['data'][FIELD_VALUE],
-                   Feature.type_id == description_id,
-                   Feature.organism_id == organism_id).one_or_none()
+        entry = None
+        if self.has_data('CH1a'):
+            entry = self.session.query(Feature). \
+                filter(Feature.name == self.process_data['CH1a']['data'][FIELD_VALUE],
+                       Feature.type_id == description_id,
+                       Feature.organism_id == organism_id).one_or_none()
 
         return entry
 
@@ -432,7 +432,7 @@ class ChadoChem(ChadoObject):
         log.debug('Found identifier: {} and identifier_name: {}'.format(identifier, identifier_name))
 
         database_to_query = identifier.split(':')[0]
-
+        log.debug("DB is '{}'".format(database_to_query))
         database_dispatch_dictionary = {
             'CHEBI': self.check_chebi_for_identifier,
             'PubChem': self.check_pubchem_for_identifier
@@ -444,9 +444,9 @@ class ChadoChem(ChadoObject):
         # Obtain our identifier, name, definition, and InChIKey from ChEBI / PubChem.
         try:
             identifier_and_data = database_dispatch_dictionary[database_to_query](identifier, identifier_name)
-        except KeyError:
+        except KeyError as e:
             self.critical_error(self.process_data['CH3a']['data'],
-                                'Database name not recognized from identifier: {}'.format(database_to_query))
+                                'Database name not recognized from identifier: {}. {}'.format(database_to_query, e))
             return False
 
         if identifier_and_data is False:  # Errors are already declared in the sub-functions.
@@ -477,14 +477,15 @@ class ChadoChem(ChadoObject):
 
         # Check whether the name intended to be used in FlyBase matches
         # the name returned from the database.
-        if chebi.name != self.process_data['CH1a']['data'][FIELD_VALUE]:
-            self.warning_error(self.process_data['CH1a']['data'],
-                               'ChEBI name does not match name specified for FlyBase: {} -> {}'
-                               .format(chebi.name,
-                                       self.process_data['CH1a']['data'][FIELD_VALUE]))
-        else:
-            log.info('Queried name \'{}\' matches name used in proforma \'{}\''
-                     .format(chebi.name, self.process_data['CH1a']['data'][FIELD_VALUE]))
+        if self.has_data('CH1a'):
+            if chebi.name != self.process_data['CH1a']['data'][FIELD_VALUE]:
+                self.warning_error(self.process_data['CH1a']['data'],
+                                   'ChEBI name does not match name specified for FlyBase: {} -> {}'
+                                   .format(chebi.name,
+                                           self.process_data['CH1a']['data'][FIELD_VALUE]))
+            else:
+                log.info('Queried name \'{}\' matches name used in proforma \'{}\''
+                         .format(chebi.name, self.process_data['CH1a']['data'][FIELD_VALUE]))
 
         # Check whether the identifier_name supplied by the curator matches
         # the name returned from the database.

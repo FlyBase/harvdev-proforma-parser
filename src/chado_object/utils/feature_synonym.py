@@ -2,12 +2,15 @@
 #
 # Module to deal with general feature_synonym db stuff
 #
-# Errors are raised if things go wrong for some reason
+# Errors are raised, if things go wrong for some reason
 from .util_errors import CodingError
 from harvdev_utils.chado_functions import get_or_create
 from harvdev_utils.production import (
     Cv, Cvterm, Synonym, FeatureSynonym
 )
+from harvdev_utils.char_conversions import sgml_to_plain_text
+from harvdev_utils.char_conversions import sub_sup_to_sgml
+from harvdev_utils.char_conversions import sgml_to_unicode
 from sqlalchemy.orm.exc import NoResultFound
 
 import logging
@@ -29,7 +32,7 @@ def fs_add_by_synonym_name_and_type(session, feature_id, synonym_name, cv_name, 
                                     synonym_sgml=None, is_current=True, is_internal=False):
     #
     # Add a feature_synonym given a feature_id and an synonym_name and type_name.
-    # It is envisioned we will always have a feature_id as this is th start point of all proforma,
+    # It is envisioned we will always have a feature_id as this is the start point of all proforma,
     # if this turns out not to be the case we can add feature name and type in another function and
     # then call this one.
     #
@@ -45,7 +48,8 @@ def fs_add_by_synonym_name_and_type(session, feature_id, synonym_name, cv_name, 
 
     # Then get_create the synonym
     if not synonym_sgml:
-        synonym_sgml = synonym_name
+        synonym_sgml = sgml_to_unicode(sub_sup_to_sgml(synonym_name))
+    synonym_name = sgml_to_plain_text(synonym_name)
     synonym, _ = get_or_create(session, Synonym, type_id=cvterm.cvterm_id, name=synonym_name, synonym_sgml=synonym_sgml)
     if not synonym:
         raise CodingError("HarvdevError: Could not create synonym")
@@ -74,5 +78,5 @@ def fs_remove_current_symbol(session, feature_id, cv_name, cvterm_name, pub_id):
                    Synonym.type_id == cvterm.cvterm_id,
                    FeatureSynonym.is_current == 't').one()
         fs.is_current = False
-    except NoResultFound:  # not ket error put in correct one later
+    except NoResultFound:
         return

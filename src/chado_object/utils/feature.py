@@ -8,6 +8,8 @@ from harvdev_utils.production import (
     Cv, Cvterm, Synonym, FeatureSynonym, Feature
 )
 from sqlalchemy.orm.exc import NoResultFound
+from harvdev_utils.char_conversions import sub_sup_to_sgml
+from harvdev_utils.char_conversions import sgml_to_unicode
 
 import logging
 log = logging.getLogger(__name__)
@@ -36,6 +38,9 @@ def feature_symbol_lookup(session, type_name, synonym_name, cv_name='synonym typ
     ONLY replace cvterm_name and cv_name if you know what exactly you are doing.
     symbol lookups are kind of special and initialized here for ease of use.
     """
+
+    # convert name to sgml format for lookup
+    synonym_sgml = sgml_to_unicode(sub_sup_to_sgml(synonym_name))
 
     # get feature type expected from type_name
     # NOTE: most are SO apart from these 3 rascals.
@@ -66,11 +71,11 @@ def feature_symbol_lookup(session, type_name, synonym_name, cv_name='synonym typ
     try:
         feature = session.query(Feature).join(FeatureSynonym).join(Synonym).\
             filter(Synonym.type_id == synonym_type.cvterm_id,
-                   Synonym.synonym_sgml == synonym_name,
+                   Synonym.synonym_sgml == synonym_sgml,
                    FeatureSynonym.is_current == 't',
                    Feature.type_id == feature_type.cvterm_id).one()
     except NoResultFound:
-        raise CodingError("HarvdevError: Could not find current synonym {}, for type {}.".format(synonym_name, cvterm_name))
+        raise CodingError("HarvdevError: Could not find current synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
         return None
 
     return feature

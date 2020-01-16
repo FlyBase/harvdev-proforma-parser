@@ -26,12 +26,14 @@ CH3c:
   required: false
   type: string
   wrapping_values: True
-CH4a:
-  nullable: True
-  required: false
-  type: string
-CH4b:
-  nullable: True
-  required: false
-  type: string
-  wrapping_values: True
+#CH4a now removed, keeping for a short while until
+# certain it does not come back
+#CH4a:
+#  nullable: True
+#  required: false
+#  type: string
+#CH4b:
+#  nullable: True
+#  required: false
+#  type: string
+#  wrapping_values: True
