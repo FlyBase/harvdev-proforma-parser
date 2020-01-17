@@ -19,7 +19,6 @@ from .utils.util_errors import CodingError
 
 from sqlalchemy.orm.exc import NoResultFound
 from datetime import datetime
-from pprint import pformat
 import os
 import logging
 
@@ -175,8 +174,9 @@ class ChadoChem(ChadoObject):
             filter(Organism.genus == 'Drosophila',
                    Organism.species == 'melanogaster').one()
 
-        chebi_database = self.session.query(Db). \
-            filter(Db.name == 'CHEBI').one()
+        log.debug(self.chemical_information)
+        database = self.session.query(Db). \
+            filter(Db.name == self.chemical_information['identifier']['source']).one()
 
         # Check if we already have an existing entry.
         entry_already_exists = self.chemical_feature_lookup(organism.organism_id, chemical_cvterm_id)
@@ -210,7 +210,7 @@ class ChadoChem(ChadoObject):
 
         log.info("New chemical entry created: {}".format(self.chemical.name))
 
-        dbx_ref, _ = get_or_create(self.session, Dbxref, db_id=chebi_database.db_id,
+        dbx_ref, _ = get_or_create(self.session, Dbxref, db_id=database.db_id,
                                    accession=identifier_accession_num_only)
 
         log.debug("Creating new dbxref: {}".format(dbx_ref.dbxref_id))
@@ -362,8 +362,12 @@ class ChadoChem(ChadoObject):
                                            synonym_sgml=self.chemical_information['name']['data'],
                                            name=self.chemical_information['name']['data'])
 
+            if self.chemical_information['identifier']['source'] == "CHEBI":
+                pub_id = self.chebi_pub_id
+            else:
+                pub_id = self.pubchem_pub_id
             get_or_create(self.session, FeatureSynonym, feature_id=self.chemical.feature_id,
-                          pub_id=self.chebi_pub_id, synonym_id=new_synonym.synonym_id,
+                          pub_id=pub_id, synonym_id=new_synonym.synonym_id,
                           is_current=True)
 
         elif process == 'remove':
@@ -444,6 +448,7 @@ class ChadoChem(ChadoObject):
         # Obtain our identifier, name, definition, and InChIKey from ChEBI / PubChem.
         try:
             identifier_and_data = database_dispatch_dictionary[database_to_query](identifier, identifier_name)
+            log.debug("identifier_and_data is {}".format(identifier_and_data))
         except KeyError as e:
             self.critical_error(self.process_data['CH3a']['data'],
                                 'Database name not recognized from identifier: {}. {}'.format(database_to_query, e))
@@ -457,7 +462,7 @@ class ChadoChem(ChadoObject):
         if self.chemical_information['identifier']['source'] != 'PubChem':
             # Set the identifier name to the result queried from ChEBI.
             identifier_name = self.chemical_information['name']['data']
-            self.check_pubchem_for_identifier(identifier, identifier_name)
+            self.add_description_from_pubchem(identifier, identifier_name)
 
         return True
 
@@ -506,19 +511,44 @@ class ChadoChem(ChadoObject):
 
         return True
 
-    def check_pubchem_for_identifier(self, identifier, identifier_name):
-        # TODO PubChem code for PubChem identifiers goes here.
-
-        # Definitions always come from PubChem, regardless of identifier source.
-        if not self.chemical_information['description']['data']:  # If the list is empty.
-
-            log.info('Searching for definitions on PubChem. Using {}'.format(identifier_name))
+    def add_description_from_pubchem(self, identifier, identifier_name):
+        if not self.chemical_information['description']['data']:
             pubchem = ExternalLookup.lookup_by_name('pubchem', identifier_name)
             if pubchem.error:
                 log.error(pubchem.error)
+                return False
             else:
                 self.chemical_information['description']['data'] = pubchem.description
-                log.debug(pformat(self.chemical_information['description']['data']))
+
+    def check_pubchem_for_identifier(self, identifier, identifier_name):
+
+        # Get data from pubchem
+
+        pubchem = ExternalLookup.lookup_by_name('pubchem', identifier_name)
+        if pubchem.error:
+            log.error(pubchem.error)
+            return False
+
+        if self.has_data('CH1a'):
+            if pubchem.name != self.process_data['CH1a']['data'][FIELD_VALUE]:
+                self.warning_error(self.process_data['CH1a']['data'],
+                                   'PubChem name does not match name specified for FlyBase: {} -> {}'
+                                   .format(pubchem.name,
+                                           self.process_data['CH1a']['data'][FIELD_VALUE]))
+            else:
+                log.info('Queried name \'{}\' matches name used in proforma \'{}\''
+                         .format(pubchem.name, self.process_data['CH1a']['data'][FIELD_VALUE]))
+
+        self.chemical_information['identifier']['data'] = identifier
+        self.chemical_information['identifier']['source'] = 'PubChem'
+        self.chemical_information['name']['data'] = pubchem.name
+        self.chemical_information['name']['source'] = 'PubChem'
+        self.chemical_information['inchikey']['data'] = pubchem.inchikey
+        self.chemical_information['inchikey']['source'] = 'PubChem'
+        self.chemical_information['description']['data'] = pubchem.description
+        self.chemical_information['description']['source'] = 'PubChem'
+
+        return True
 
     def check_valid_id(self, identifier):
         # Added regex checks for identifiers here.
