@@ -503,11 +503,11 @@ class ChadoChem(ChadoObject):
                 return False
 
         self.chemical_information['identifier']['data'] = identifier
-        self.chemical_information['identifier']['source'] = 'ChEBI'
+        self.chemical_information['identifier']['source'] = 'CHEBI'
         self.chemical_information['name']['data'] = chebi.name
-        self.chemical_information['name']['source'] = 'ChEBI'
+        self.chemical_information['name']['source'] = 'CHEBI'
         self.chemical_information['inchikey']['data'] = chebi.inchikey
-        self.chemical_information['inchikey']['source'] = 'ChEBI'
+        self.chemical_information['inchikey']['source'] = 'CHEBI'
 
         return True
 
