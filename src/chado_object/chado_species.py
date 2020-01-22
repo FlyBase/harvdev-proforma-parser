@@ -169,8 +169,6 @@ class ChadoSpecies(ChadoObject):
                                                                               Organismprop.type_id == cvterm.cvterm_id).one_or_none()
             if org_prop and org_prop.value:
                 message = "Organism already has a value for {}. Please use !c or !d".format(cvterm.name)
-                print(message)
-                print(self.process_data[key]['data'])
                 self.critical_error(self.process_data[key]['data'], message)
                 return
             elif not org_prop:
