@@ -6,8 +6,9 @@
 from .util_errors import CodingError
 from harvdev_utils.chado_functions import get_or_create
 from harvdev_utils.production import (
-    Cv, Cvterm, Synonym, FeatureSynonym
+    Synonym, FeatureSynonym
 )
+from .cvterm import get_cvterm
 from harvdev_utils.char_conversions import sgml_to_plain_text
 from harvdev_utils.char_conversions import sub_sup_to_sgml
 from harvdev_utils.char_conversions import sgml_to_unicode
@@ -40,9 +41,8 @@ def fs_add_by_synonym_name_and_type(session, feature_id, synonym_name, cv_name, 
     # Get/Create the synonym
 
     # First get the type_id from the type_name
-    cvterm = session.query(Cvterm).join(Cv).filter(Cv.name == cv_name,
-                                                   Cvterm.name == cvterm_name,
-                                                   Cvterm.is_obsolete == 0).one()
+    cvterm = get_cvterm(session, cv_name, cvterm_name)
+
     if not cvterm:
         raise CodingError("HarvdevError: Could not find cvterm '{}' for cv {}".format(cvterm_name, cv_name))
 
@@ -65,9 +65,7 @@ def fs_remove_current_symbol(session, feature_id, cv_name, cvterm_name, pub_id):
     Usually done when assigning a new symbol we want to set the old one
     to is_current = False and not to delete it.
     """
-    cvterm = session.query(Cvterm).join(Cv).filter(Cv.name == cv_name,
-                                                   Cvterm.name == cvterm_name,
-                                                   Cvterm.is_obsolete == 0).one()
+    cvterm = get_cvterm(session, cv_name, cvterm_name)
     if not cvterm:
         raise CodingError("HarvdevError: Could not find cvterm '{}' for cv {}".format(cvterm_name, cv_name))
 

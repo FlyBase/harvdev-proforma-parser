@@ -7,6 +7,7 @@
 import os
 from .chado_base import FIELD_VALUE
 from .chado_pub import ChadoPub
+from .utils.cvterm import get_cvterm
 from harvdev_utils.production import (
     Cv, Cvterm, Pub, Db, Dbxref, PubDbxref
 )
@@ -109,9 +110,7 @@ class ChadoMultipub(ChadoPub):
                 self.critical_error(self.process_data['MP2a']['data'], message)
             return pub
 
-        cvterm = self.session.query(Cvterm).join(Cv).filter(Cv.name == self.process_data['MP17']['cvname'],
-                                                            Cvterm.name == self.process_data['MP17']['data'][FIELD_VALUE],
-                                                            Cvterm.is_obsolete == 0).one()
+        cvterm = get_cvterm(self.session, self.process_data['MP17']['cvname'], self.process_data['MP17']['data'][FIELD_VALUE])
         if not cvterm:
             message = 'Pub type {} does not exist in the database.'.format(self.process_data['MP17']['data'][FIELD_VALUE])
             self.critical_error(self.process_data['MP17']['data'], message)
@@ -185,9 +184,7 @@ class ChadoMultipub(ChadoPub):
             old_cvterm = self.session.query(Cvterm).join(Cv).join(Pub, Pub.type_id == Cvterm.cvterm_id).\
                 filter(Cv.name == self.process_data[key]['cvname'], Pub.pub_id == self.pub.pub_id).one_or_none()
 
-            new_cvterm = self.session.query(Cvterm).join(Cv).filter(Cv.name == self.process_data[key]['cvname'],
-                                                                    Cvterm.name == self.process_data[key]['data'][FIELD_VALUE],
-                                                                    Cvterm.is_obsolete == 0).one_or_none()
+            new_cvterm = get_cvterm(self.session, self.process_data[key]['cvname'], self.process_data[key]['data'][FIELD_VALUE])
             if not old_cvterm:
                 message = 'Previous Pub type {} does not exist in the database???'.format(self.process_data['MP17']['data'][FIELD_VALUE])
                 self.critical_error(self.process_data[key]['data'], message)

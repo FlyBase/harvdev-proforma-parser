@@ -8,9 +8,10 @@ import os
 from .chado_base import ChadoObject, FIELD_VALUE
 
 from harvdev_utils.production import (
-    Cv, Cvterm, Db, Dbxref, OrganismDbxref, Organism, Organismprop, OrganismPub
+    Db, Dbxref, OrganismDbxref, Organism, Organismprop, OrganismPub
 )
 from harvdev_utils.chado_functions import get_or_create
+from .utils.cvterm import get_cvterm
 
 import logging
 from datetime import datetime
@@ -52,7 +53,7 @@ class ChadoSpecies(ChadoObject):
         self.direct_key = 'SP1a'
         self.reference = params.get('reference')
 
-    def load_content(self):
+    def load_content(self):  # noqa: C901
         """
         Main processing routine
         """
@@ -152,8 +153,7 @@ class ChadoSpecies(ChadoObject):
     def load_cvterm(self, key):
 
         if self.has_data(key):
-            cvterm = self.session.query(Cvterm).join(Cv).filter(Cv.name == self.process_data[key]['cv'],
-                                                                Cvterm.name == self.process_data[key]['cvterm']).one()
+            cvterm = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data[key]['cvterm'])
             if not cvterm:
                 message = 'Cvterm lookup failed for cv {} cvterm {}?'.format(self.process_data[key]['cv'],
                                                                              self.process_data[key]['cvterm'])
@@ -169,8 +169,6 @@ class ChadoSpecies(ChadoObject):
                                                                               Organismprop.type_id == cvterm.cvterm_id).one_or_none()
             if org_prop and org_prop.value:
                 message = "Organism already has a value for {}. Please use !c or !d".format(cvterm.name)
-                print(message)
-                print(self.process_data[key]['data'])
                 self.critical_error(self.process_data[key]['data'], message)
                 return
             elif not org_prop:
@@ -182,8 +180,7 @@ class ChadoSpecies(ChadoObject):
                 setattr(org_prop, 'value', self.process_data[key]['data'][FIELD_VALUE])
 
     def delete_cvterm(self, key, bangc=True):
-        cvterm = self.session.query(Cvterm).join(Cv).filter(Cv.name == self.process_data[key]['cv'],
-                                                            Cvterm.name == self.process_data[key]['cvterm']).one()
+        cvterm = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data[key]['cvterm'])
         if not cvterm:
             message = 'Cvterm lookup failed for cv {} cvterm {}?'.format(self.process_data[key]['cv'],
                                                                          self.process_data[key]['cvterm'])

@@ -7,10 +7,11 @@
 import logging
 import yaml
 from harvdev_utils.production import (
-    Cv, Cvterm, Feature, Pub, Synonym, Db, Dbxref
+    Feature, Pub, Synonym, Db, Dbxref
 )
 from harvdev_utils.chado_functions import get_or_create
 from harvdev_utils.chado_functions.external_lookups import ExternalLookup
+from .utils.cvterm import get_cvterm
 from error.error_tracking import ErrorTracking, CRITICAL_ERROR, WARNING_ERROR
 
 log = logging.getLogger(__name__)
@@ -134,19 +135,9 @@ class ChadoObject(object):
         :return: str. The cvterm_id from the query.
         """
         log.debug('Querying for cvterm: {} from cv: {}.'.format(cvterm, cv))
+        cvterm = get_cvterm(self.session, cv, cvterm)
 
-        filters = (
-            Cv.name == cv,
-            Cvterm.name == cvterm,
-            Cvterm.is_obsolete == 0
-        )
-
-        results = self.session.query(Cv.name, Cvterm.name, Cvterm.is_obsolete, Cvterm.cvterm_id).\
-            join(Cvterm).\
-            filter(*filters).\
-            one()
-
-        return results[3]
+        return cvterm.cvterm_id
 
     def pub_from_fbrf(self, fbrf_tuple):
         """
