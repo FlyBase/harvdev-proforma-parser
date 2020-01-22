@@ -7,10 +7,11 @@
 import os
 from .chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.production import (
-    Feature, Cv, Cvterm, Synonym, FeatureSynonym, Organism
+    Feature, Cvterm, Synonym, FeatureSynonym, Organism
 )
 from harvdev_utils.chado_functions import get_or_create
 from .utils.feature_synonym import fs_add_by_synonym_name_and_type
+from .utils.cvterm import get_cvterm
 
 # from sqlalchemy.orm.exc import NoResultFound
 from datetime import datetime
@@ -131,7 +132,7 @@ class ChadoGene(ChadoObject):
                 message = "Unable to find Gene with symbol {}.".format(self.process_data['G1a']['data'][FIELD_VALUE])
                 self.critical_error(self.process_data['G1a']['data'], message)
         else:
-            cvterm = self.session.query(Cvterm).join(Cv).filter(Cv.name == 'SO', Cvterm.name == 'gene').one()
+            cvterm = get_cvterm(self.session, 'SO', 'gene')
             if not cvterm:
                 message = "Unable to find cvterm 'gene' for Cv 'SO'."
                 self.critical_error(self.process_data['G1a']['data'], message)

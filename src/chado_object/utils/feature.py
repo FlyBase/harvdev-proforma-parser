@@ -1,16 +1,20 @@
-#
-#
-# Module to deal with general feature_synonym db stuff
-#
-# Errors are raised if things go wrong for some reason
-from .util_errors import CodingError
+"""
+.. module:: feature
+   :synopsis: Lookup and general Feature functions.
+
+.. moduleauthor:: Ian Longden <ilongden@morgan.harvard.edu>
+"""
+
 from harvdev_utils.production import (
-    Cv, Cvterm, Synonym, FeatureSynonym, Feature
+    Synonym, FeatureSynonym, Feature
 )
-from sqlalchemy.orm.exc import NoResultFound
 from harvdev_utils.char_conversions import sub_sup_to_sgml
 from harvdev_utils.char_conversions import sgml_to_unicode
+from .organism import get_default_organism_id
+from .cvterm import get_cvterm
+from .util_errors import CodingError
 
+from sqlalchemy.orm.exc import NoResultFound
 import logging
 log = logging.getLogger(__name__)
 
@@ -25,7 +29,64 @@ def get_feature_and_check_uname_name(uniquename, synonym):
     pass
 
 
-def feature_symbol_lookup(session, type_name, synonym_name, cv_name='synonym type', cvterm_name='symbol'):
+def feature_name_lookup(session, type_name, name, organism_id=None):
+    """
+    Lookup feature using the feature name.
+    type_name is the type of feature i.e. 'gene', 'chemical entity'
+    """
+    # Default to Dros if not organism specified.
+    if not organism_id:
+        organism_id = get_default_organism_id(session)
+    if type_name in ['bogus symbol', 'single balancer', 'chemical entity']:
+        cv_type = 'FlyBase miscellaneous CV'
+    else:
+        cv_type = 'SO'
+    feature_type = get_cvterm(session, cv_type, type_name)
+
+    feature = session.query(Feature).filter(Feature.type_id == feature_type.cvterm_id,
+                                            Feature.name == name,
+                                            Feature.organism_id == organism_id)
+    return feature
+
+
+def feature_synonym_lookup(session, type_name, synonym_name, organism_id=None, cv_name='synonym type', cvterm_name='symbol'):
+    """
+    Lookup to see if the synonym has been used before. Even if not current
+
+    Return features? if the synonym exists
+    Return None if not found
+    """
+    # Default to Dros if not organism specified.
+    if not organism_id:
+        organism_id = get_default_organism_id(session)
+
+    # convert name to sgml format for lookup
+    synonym_sgml = sgml_to_unicode(sub_sup_to_sgml(synonym_name))
+
+    # get feature type expected from type_name
+    # NOTE: most are SO apart from these 3 rascals.
+    if type_name in ['bogus symbol', 'single balancer', 'chemical entity']:
+        cv_type = 'FlyBase miscellaneous CV'
+    else:
+        cv_type = 'SO'
+
+    feature_type = get_cvterm(session, cv_type, type_name)
+    synonym_type = get_cvterm(session, cv_name, cvterm_name)
+
+    try:
+        feature = session.query(Feature).join(FeatureSynonym).join(Synonym).\
+            filter(Synonym.type_id == synonym_type.cvterm_id,
+                   Synonym.synonym_sgml == synonym_sgml,
+                   FeatureSynonym.is_current == 'f',
+                   Feature.organism_id == organism_id,
+                   Feature.type_id == feature_type.cvterm_id).all()
+        return feature
+    except NoResultFound:
+        raise CodingError("HarvdevError: Could not find current synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
+        return None
+
+
+def feature_symbol_lookup(session, type_name, synonym_name, organism_id=None, cv_name='synonym type', cvterm_name='symbol'):
     """
     Lookup feature that has a specific type and synonym name
 
@@ -38,6 +99,9 @@ def feature_symbol_lookup(session, type_name, synonym_name, cv_name='synonym typ
     ONLY replace cvterm_name and cv_name if you know what exactly you are doing.
     symbol lookups are kind of special and initialized here for ease of use.
     """
+    # Defualt to Dros if not organism specified.
+    if not organism_id:
+        organism_id = get_default_organism_id(session)
 
     # convert name to sgml format for lookup
     synonym_sgml = sgml_to_unicode(sub_sup_to_sgml(synonym_name))
@@ -49,31 +113,16 @@ def feature_symbol_lookup(session, type_name, synonym_name, cv_name='synonym typ
     else:
         cv_type = 'SO'
 
-    try:
-        feature_type = session.query(Cvterm).join(Cv).\
-            filter(Cvterm.name == type_name,
-                   Cv.name == cv_type,
-                   Cvterm.is_obsolete == 0).one()
-    except NoResultFound:
-        raise CodingError("HarvdevError: Could not find cv {}, cvterm {}.".format(cv_type, type_name))
-        return None
-
-    # get the type_id from cv and cvterm
-    try:
-        synonym_type = session.query(Cvterm).join(Cv).\
-            filter(Cvterm.name == cvterm_name,
-                   Cv.name == cv_name,
-                   Cvterm.is_obsolete == 0).one()
-    except NoResultFound:
-        raise CodingError("HarvdevError: Could not find cv {}, cvterm {}.".format(cv_name, cvterm_name))
-        return None
+    feature_type = get_cvterm(session, cv_type, type_name)
+    synonym_type = get_cvterm(session, cv_name, cvterm_name)
 
     try:
         feature = session.query(Feature).join(FeatureSynonym).join(Synonym).\
             filter(Synonym.type_id == synonym_type.cvterm_id,
                    Synonym.synonym_sgml == synonym_sgml,
+                   Feature.organism_id == organism_id,
                    FeatureSynonym.is_current == 't',
-                   Feature.type_id == feature_type.cvterm_id).one()
+                   Feature.type_id == feature_type.cvterm_id).one_or_none()
     except NoResultFound:
         raise CodingError("HarvdevError: Could not find current synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
         return None
