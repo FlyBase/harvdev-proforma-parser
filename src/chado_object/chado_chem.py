@@ -380,7 +380,7 @@ class ChadoChem(ChadoObject):
                 log.info("Adding non current synonyms {}".format(self.chemical_information['synonyms']['data']))
                 for item in self.chemical_information['synonyms']['data']:
                     if item.lower() in seen_it:
-                        log.debug("ignoring {} as already seen".format(item.lower()))
+                        log.debug("Ignoring {} as already seen".format(item.lower()))
                         continue
                     log.debug("Adding synonym {}".format(item.lower()))
                     new_synonym, _ = get_or_create(self.session, Synonym, type_id=symbol_cv_id,
