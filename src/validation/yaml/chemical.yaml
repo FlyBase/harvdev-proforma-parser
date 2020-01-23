@@ -7,7 +7,6 @@ CH1a:
   type: string
   required: False
   nullable: True
-  no_bangc: True
 CH1b:
   # bang_c/d permitted.
   type: string

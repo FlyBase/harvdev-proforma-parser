@@ -53,7 +53,7 @@ class ChadoChem(ChadoObject):
                           'ignore': self.ignore}
 
         self.delete_dict = {'ignore': self.ignore,
-                            'name_and_synonym': self.change_name_and_synonym}
+                            'synonym': self.rename_synonym}
         # Chemical storage dictionary.
         # This dictionary contains all the information required to create a new FBch.
         # The nested dictionaries contain the data as well as the source.
@@ -186,6 +186,7 @@ class ChadoChem(ChadoObject):
         # check name from lookup
         entry_already_exists = self.chemical_feature_lookup(organism_id, 'CH3a', self.chemical_information['name']['data'].lower(), current=True)
         if entry_already_exists:
+            self.new_chemical_entry = False
             self.warning_error(self.process_data['CH3a']['data'],
                                'An entry already exists in the database with this name: {}'
                                .format(entry_already_exists.name))
@@ -197,6 +198,7 @@ class ChadoChem(ChadoObject):
 
         # If we already have an entry and we already know it is new then we have a problem.
         if entry_already_exists:
+            self.new_chemical_entry = False
             self.warning_error(self.process_data['CH1a']['data'],
                                'An entry already exists in the database with this name: {}'
                                .format(entry_already_exists.name))
@@ -204,10 +206,18 @@ class ChadoChem(ChadoObject):
             return
 
         # Check for any symbol synonym can be not current and if found Just give a warning
-        self.chemical_feature_lookup(organism_id, 'CH3a', self.chemical_information['name']['data'].lower(), current=False)
+        entry_already_exists = self.chemical_feature_lookup(organism_id, 'CH3a', self.chemical_information['name']['data'].lower(), current=False)
+        if entry_already_exists:
+            self.new_chemical_entry = False
+            self.chemical = entry_already_exists
+            return
+
         if self.has_data('CH1a') and not entry_already_exists:
             entry_already_exists = self.chemical_feature_lookup(organism_id, 'CH1a', self.process_data['CH1a']['data'][FIELD_VALUE], current=False)
-
+            if entry_already_exists:
+                self.new_chemical_entry = False
+                self.chemical = entry_already_exists
+                return
         # Check if we already have an existing entry by feature name -> dbx xref.
         # FBch features -> dbxrefs are UNIQUE for EACH external database.
         # e.g. There should never be more than one connection from FBch -> ChEBI.
@@ -249,12 +259,23 @@ class ChadoChem(ChadoObject):
         # If CH3b is declared as 'y', store that information in feature_dbxrefprop
         # TODO Are we creating a feature_dbxrefprop table? More discussion needed.
 
-    def change_name_and_synonym(self, key):
-        pass
+    def rename_synonym(self, key, bangc=True):
+        if not self.has_data(key):
+            message = "Bangc MUST have a value."
+            self.critical_error(self.process_data[key]['data'], message)
+            return
+        self.load_synonym(key)
+        self.process_data[key]['data'] = None
 
     def load_synonym(self, key):
         # some are lists so might as well make life easier and make them all lists
         # Do the synonym first
+
+        # Chemicals can be listed more than once
+        # But are only loaded once. We do not allow synoym changes
+        # for these repeated chemicals. !c Should be used in this case
+        if not self.new_chemical_entry and key not in self.bang_c:
+            return
         cv_name = self.process_data[key]['cv']
         cvterm_name = self.process_data[key]['cvterm']
         is_current = self.process_data[key]['is_current']
@@ -440,9 +461,9 @@ class ChadoChem(ChadoObject):
                                               organism_id=organism_id)
             if features:
                 log.debug("features = {}".format(features))
-                message = "Synonym found for this already: Are we sure this not just PubChem/ChEBI switch?"
+                message = "Synonym found for this already: Therefore not reloading Chemical Entity but using existing one {}.".format(features[0].name)
                 self.warning_error(self.process_data[key_name]['data'], message)
-            log.debug("chemical feature lookup for {} and current = {} features = {}".format(name, current, features))
+                return features[0]
         return entry
 
     def look_up_static_references(self):
