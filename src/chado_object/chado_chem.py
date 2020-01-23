@@ -186,9 +186,10 @@ class ChadoChem(ChadoObject):
         # check name from lookup
         entry_already_exists = self.chemical_feature_lookup(organism_id, 'CH3a', self.chemical_information['name']['data'].lower(), current=True)
         if entry_already_exists:
-            self.critical_error(self.process_data['CH3a']['data'],
-                                'An entry already exists in the database with this name: {}'
-                                .format(entry_already_exists.name))
+            self.warning_error(self.process_data['CH3a']['data'],
+                               'An entry already exists in the database with this name: {}'
+                               .format(entry_already_exists.name))
+            self.chemical = entry_already_exists
             return
         # check Flybase name if given
         if self.has_data('CH1a'):
@@ -196,9 +197,10 @@ class ChadoChem(ChadoObject):
 
         # If we already have an entry and we already know it is new then we have a problem.
         if entry_already_exists:
-            self.critical_error(self.process_data['CH1a']['data'],
-                                'An entry already exists in the database with this name: {}'
-                                .format(entry_already_exists.name))
+            self.warning_error(self.process_data['CH1a']['data'],
+                               'An entry already exists in the database with this name: {}'
+                               .format(entry_already_exists.name))
+            self.chemical = entry_already_exists
             return
 
         # Check for any symbol synonym can be not current and if found Just give a warning
