@@ -28,10 +28,6 @@ log = logging.getLogger(__name__)
 
 
 class ChadoChem(ChadoObject):
-    # TODO
-    #  - Warn for mismatch between database ID; database name in CH1g.
-    #  - In initial YAML validator, regex for proper ChEBI name and other db identifiers.
-    #  - CHEBI or NCBI Chemical ID stored as synonym.
 
     def __init__(self, params):
         log.info('Initializing ChadoChem object.')
@@ -53,7 +49,7 @@ class ChadoChem(ChadoObject):
                           'ignore': self.ignore}
 
         self.delete_dict = {'ignore': self.ignore,
-                            'name_and_synonym': self.change_name_and_synonym}
+                            'synonym': self.rename_synonym}
         # Chemical storage dictionary.
         # This dictionary contains all the information required to create a new FBch.
         # The nested dictionaries contain the data as well as the source.
@@ -175,42 +171,22 @@ class ChadoChem(ChadoObject):
         identifier_accession_num_only = self.chemical_information['identifier']['data'].split(':')[1]
         log.debug('Identifier accession number only: {}'.format(identifier_accession_num_only))
 
-        # Look up organism id.
-        organism_id = get_default_organism_id(self.session)
-
-        log.debug(self.chemical_information)
-        database = self.session.query(Db). \
-            filter(Db.name == self.chemical_information['identifier']['source']).one()
-
-        # Check if we already have an existing entry.
-        # check name from lookup
-        entry_already_exists = self.chemical_feature_lookup(organism_id, 'CH3a', self.chemical_information['name']['data'].lower(), current=True)
-        if entry_already_exists:
-            self.critical_error(self.process_data['CH3a']['data'],
-                                'An entry already exists in the database with this name: {}'
-                                .format(entry_already_exists.name))
+        exists_already = self.check_existing_already()
+        if exists_already:
+            self.chemical = exists_already
             return
-        # check Flybase name if given
-        if self.has_data('CH1a'):
-            entry_already_exists = self.chemical_feature_lookup(organism_id, 'CH1a', self.process_data['CH1a']['data'][FIELD_VALUE], current=True)
-
-        # If we already have an entry and we already know it is new then we have a problem.
-        if entry_already_exists:
-            self.critical_error(self.process_data['CH1a']['data'],
-                                'An entry already exists in the database with this name: {}'
-                                .format(entry_already_exists.name))
-            return
-
-        # Check for any symbol synonym can be not current and if found Just give a warning
-        self.chemical_feature_lookup(organism_id, 'CH3a', self.chemical_information['name']['data'].lower(), current=False)
-        if self.has_data('CH1a') and not entry_already_exists:
-            entry_already_exists = self.chemical_feature_lookup(organism_id, 'CH1a', self.process_data['CH1a']['data'][FIELD_VALUE], current=False)
 
         # Check if we already have an existing entry by feature name -> dbx xref.
         # FBch features -> dbxrefs are UNIQUE for EACH external database.
         # e.g. There should never be more than one connection from FBch -> ChEBI.
         # If so, someone has already made an FBch which corresponds to the that CheBI.
         self.check_existing_dbxref(identifier_accession_num_only)
+
+        # Look up organism id.
+        organism_id = get_default_organism_id(self.session)
+
+        database = self.session.query(Db). \
+            filter(Db.name == self.chemical_information['identifier']['source']).one()
 
         self.chemical, _ = get_or_create(self.session, Feature, organism_id=organism_id,
                                          # name=self.process_data['CH1a']['data'][FIELD_VALUE],
@@ -224,35 +200,97 @@ class ChadoChem(ChadoObject):
                                    accession=identifier_accession_num_only)
 
         log.debug("Creating new dbxref: {}".format(dbx_ref.dbxref_id))
-
-        #  TODO Need pub_dbxref entry here?
-
         log.debug("Updating FBch with dbxref.dbxref_id: {}".format(dbx_ref.dbxref_id))
         self.chemical.dbxref_id = dbx_ref.dbxref_id
 
         feature_pub, _ = get_or_create(self.session, FeaturePub, feature_id=self.chemical.feature_id,
                                        pub_id=self.pub.pub_id)
-
-        log.debug("Creating new feature_pub: {}".format(feature_pub.feature_pub_id))
+        log.debug("Created new feature_pub: {}".format(feature_pub.feature_pub_id))
 
         # TODO Do we ever remove feature_pubs once all synonym connections are removed?
         # TODO Probably not because other objects can create feature_pub relationships?
 
-        # Add the identifier as a synonym.
-        self.modify_synonym('add')
+        # Add the identifier as a synonym and other synonyms
+        self.process_synonyms_from_external_db()
 
         # Add the description as a featureprop.
         self.add_description_to_featureprop()
 
-        # If CH3b is declared as 'y', store that information in feature_dbxrefprop
-        # TODO Are we creating a feature_dbxrefprop table? More discussion needed.
+    def check_existing_already(self):
+        # Check if we already have an existing entry.
+        #
+        # This needs a little explaining.
+        # We check the name and all the synonyms.
+        # This is becouse ChEBI and PubChem could be the same and we do not want
+        # duplicate entries. Does not matter if it is stored via ChEBI or PubChem
+        # but we only really want a chemical in the database once.
+        #
+        # This also sets self.new_chemical_entry to Flase if found even if the curator
+        # has set it to new in the proforma, Curators requested no consequences of loading
+        # a chemical more than once, apart from it not being duplicated again.
+        #
 
-    def change_name_and_synonym(self, key):
-        pass
+        #
+        # Look up organism id.
+        #
+        organism_id = get_default_organism_id(self.session)
+
+        #
+        # check name from lookup
+        #
+        entry_already_exists = None
+        entry_already_exists = self.chemical_feature_lookup(organism_id, 'CH3a', self.chemical_information['name']['data'].lower(), current=True)
+        if entry_already_exists:
+            self.new_chemical_entry = False
+            self.warning_error(self.process_data['CH3a']['data'],
+                               'An entry already exists in the database with this name: {}'
+                               .format(entry_already_exists.name))
+            return entry_already_exists
+
+        #
+        # check Flybase name if given
+        #
+        if self.has_data('CH1a'):
+            entry_already_exists = self.chemical_feature_lookup(organism_id, 'CH1a', self.process_data['CH1a']['data'][FIELD_VALUE], current=True)
+
+        # If we already have an entry and we already know it is new then we have a problem.
+        if entry_already_exists:
+            self.new_chemical_entry = False
+            self.warning_error(self.process_data['CH1a']['data'],
+                               'An entry already exists in the database with this name: {}'
+                               .format(entry_already_exists.name))
+            return entry_already_exists
+
+        #
+        # Check for any symbol synonym can be not current and if found Just give a warning
+        #
+        entry_already_exists = self.chemical_feature_lookup(organism_id, 'CH3a', self.chemical_information['name']['data'].lower(), current=False)
+        if entry_already_exists:
+            self.new_chemical_entry = False
+            return entry_already_exists
+
+        if self.has_data('CH1a') and not entry_already_exists:
+            entry_already_exists = self.chemical_feature_lookup(organism_id, 'CH1a', self.process_data['CH1a']['data'][FIELD_VALUE], current=False)
+            if entry_already_exists:
+                self.new_chemical_entry = False
+                return entry_already_exists
+        return entry_already_exists
+
+    def rename_synonym(self, key, bangc=True):
+        if not self.has_data(key):
+            message = "Bangc MUST have a value."
+            self.critical_error(self.process_data[key]['data'], message)
+            return
+        self.load_synonym(key)
+        self.process_data[key]['data'] = None
 
     def load_synonym(self, key):
-        # some are lists so might as well make life easier and make them all lists
-        # Do the synonym first
+
+        # Chemicals can be listed more than once
+        # But are only loaded once. We do not allow synoym changes
+        # for these repeated chemicals. !c Should be used in this case
+        if not self.new_chemical_entry and key not in self.bang_c:
+            return
         cv_name = self.process_data[key]['cv']
         cvterm_name = self.process_data[key]['cvterm']
         is_current = self.process_data[key]['is_current']
@@ -355,13 +393,9 @@ class ChadoChem(ChadoObject):
         get_or_create(self.session, Featureprop, feature_id=self.chemical.feature_id,
                       type_id=description_cvterm_id, value=self.chemical_information['description']['data'])
 
-    def modify_synonym(self, process):
+    def process_synonyms_from_external_db(self):
         """
-
-        :param process: accepts either 'add' or 'remove'.
-        'add' adds a new synonym to the chemical feature.
-        'remove' removes the synonym from the chemical feature.
-
+        Add the synonyms obtained from the external db for the chemical.
         :return:
         """
         # insert into feature_synonym(is_internal, pub_id, synonym_id, is_current, feature_id) values('FALSE', 221699, 6555779, 'FALSE', 3107733)
@@ -374,42 +408,32 @@ class ChadoChem(ChadoObject):
         else:
             pub_id = self.pubchem_pub_id
 
-        if process == 'add':
-            seen_it = {}
-            if self.chemical_information['synonyms']['data']:
-                log.info("Adding non current synonyms {}".format(self.chemical_information['synonyms']['data']))
-                for item in self.chemical_information['synonyms']['data']:
-                    if item.lower() in seen_it:
-                        log.debug("Ignoring {} as already seen".format(item.lower()))
-                        continue
-                    log.debug("Adding synonym {}".format(item.lower()))
-                    new_synonym, _ = get_or_create(self.session, Synonym, type_id=symbol_cv_id,
-                                                   synonym_sgml=item.lower(),
-                                                   name=item.lower())
-                    seen_it[item.lower()] = 1
-                    fs, _ = get_or_create(self.session, FeatureSynonym, feature_id=self.chemical.feature_id,
-                                          pub_id=pub_id, synonym_id=new_synonym.synonym_id)
-                    fs.is_current = False
+        seen_it = set()
+        if self.chemical_information['synonyms']['data']:
+            log.info("Adding non current synonyms {}".format(self.chemical_information['synonyms']['data']))
+            for item in self.chemical_information['synonyms']['data']:
+                item_lower = item.lower()[:255]  # Max 255 chars
+                if item_lower in seen_it:
+                    log.debug("Ignoring {} as already seen".format(item_lower))
+                    continue
+                log.debug("Adding synonym {}".format(item_lower))
+                new_synonym, _ = get_or_create(self.session, Synonym, type_id=symbol_cv_id,
+                                               synonym_sgml=item_lower,
+                                               name=item_lower)
+                seen_it.add(item_lower)
+                fs, _ = get_or_create(self.session, FeatureSynonym, feature_id=self.chemical.feature_id,
+                                      pub_id=pub_id, synonym_id=new_synonym.synonym_id)
+                fs.is_current = False
 
-            log.info("Adding new synonym entry for {}.".format(self.chemical_information['identifier']['data']))
-            new_synonym, _ = get_or_create(self.session, Synonym, type_id=symbol_cv_id,
-                                           synonym_sgml=self.chemical_information['name']['data'].lower(),
-                                           name=self.chemical_information['name']['data'].lower())
+        log.info("Adding new synonym entry for {}.".format(self.chemical_information['identifier']['data']))
+        name_lower = self.chemical_information['name']['data'].lower()[:255]
+        new_synonym, _ = get_or_create(self.session, Synonym, type_id=symbol_cv_id,
+                                       synonym_sgml=name_lower,
+                                       name=name_lower)
 
-            fs, _ = get_or_create(self.session, FeatureSynonym, feature_id=self.chemical.feature_id,
-                                  pub_id=pub_id, synonym_id=new_synonym.synonym_id)
-            fs.is_current = True
-
-        elif process == 'remove':
-            log.info("Removing synonym entry for {}.".format(self.chemical_information['identifier']['data']))
-            synonym_lookup = self.session.query(Synonym). \
-                filter(Synonym.name == self.chemical_information['name']['data'].lower()).\
-                filter(Synonym.synonym_sgml == self.chemical_information['name']['data'].lower()).\
-                filter(Synonym.type_id == symbol_cv_id).\
-                delete()
-
-            # TODO Remove feature_synonym row.
-            log.debug(synonym_lookup)
+        fs, _ = get_or_create(self.session, FeatureSynonym, feature_id=self.chemical.feature_id,
+                              pub_id=pub_id, synonym_id=new_synonym.synonym_id)
+        fs.is_current = True
 
     def check_existing_dbxref(self, identifier_access_num_only):
         log.debug('Querying for existing accession ({}) via feature -> dbx -> db.'.format(identifier_access_num_only))
@@ -438,9 +462,9 @@ class ChadoChem(ChadoObject):
                                               organism_id=organism_id)
             if features:
                 log.debug("features = {}".format(features))
-                message = "Synonym found for this already: Are we sure this not just PubChem/ChEBI switch?"
+                message = "Synonym found for this already: Therefore not reloading Chemical Entity but using existing one {}.".format(features[0].name)
                 self.warning_error(self.process_data[key_name]['data'], message)
-            log.debug("chemical feature lookup for {} and current = {} features = {}".format(name, current, features))
+                return features[0]
         return entry
 
     def look_up_static_references(self):

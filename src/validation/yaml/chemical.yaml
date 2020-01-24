@@ -4,10 +4,10 @@ CH1f:
   regex: ^(FBch\d{7}|new)$
   no_bangc: True
 CH1a:
+  # bangc permitted.
   type: string
   required: False
   nullable: True
-  no_bangc: True
 CH1b:
   # bang_c/d permitted.
   type: string
