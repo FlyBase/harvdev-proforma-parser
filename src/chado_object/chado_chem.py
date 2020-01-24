@@ -395,7 +395,7 @@ class ChadoChem(ChadoObject):
 
     def process_synonyms_from_external_db(self):
         """
-        Add the synonyms obtained form the external db for thie chemical.
+        Add the synonyms obtained from the external db for the chemical.
         :return:
         """
         # insert into feature_synonym(is_internal, pub_id, synonym_id, is_current, feature_id) values('FALSE', 221699, 6555779, 'FALSE', 3107733)
@@ -408,26 +408,28 @@ class ChadoChem(ChadoObject):
         else:
             pub_id = self.pubchem_pub_id
 
-        seen_it = {}
+        seen_it = set()
         if self.chemical_information['synonyms']['data']:
             log.info("Adding non current synonyms {}".format(self.chemical_information['synonyms']['data']))
             for item in self.chemical_information['synonyms']['data']:
-                if item.lower() in seen_it:
-                    log.debug("Ignoring {} as already seen".format(item.lower()))
+                item_lower = item.lower()[:255]  # Max 255 chars
+                if item_lower in seen_it:
+                    log.debug("Ignoring {} as already seen".format(item_lower))
                     continue
-                log.debug("Adding synonym {}".format(item.lower()))
+                log.debug("Adding synonym {}".format(item_lower))
                 new_synonym, _ = get_or_create(self.session, Synonym, type_id=symbol_cv_id,
-                                               synonym_sgml=item.lower(),
-                                               name=item.lower())
-                seen_it[item.lower()] = 1
+                                               synonym_sgml=item_lower,
+                                               name=item_lower)
+                seen_it.add(item_lower)
                 fs, _ = get_or_create(self.session, FeatureSynonym, feature_id=self.chemical.feature_id,
                                       pub_id=pub_id, synonym_id=new_synonym.synonym_id)
                 fs.is_current = False
 
         log.info("Adding new synonym entry for {}.".format(self.chemical_information['identifier']['data']))
+        name_lower = self.chemical_information['name']['data'].lower()[:255]
         new_synonym, _ = get_or_create(self.session, Synonym, type_id=symbol_cv_id,
-                                       synonym_sgml=self.chemical_information['name']['data'].lower(),
-                                       name=self.chemical_information['name']['data'].lower())
+                                       synonym_sgml=name_lower,
+                                       name=name_lower)
 
         fs, _ = get_or_create(self.session, FeatureSynonym, feature_id=self.chemical.feature_id,
                               pub_id=pub_id, synonym_id=new_synonym.synonym_id)
