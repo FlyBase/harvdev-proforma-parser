@@ -10,8 +10,7 @@ from .chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.production import (
     Db, Dbxref, OrganismDbxref, Organism, Organismprop, OrganismPub
 )
-from harvdev_utils.chado_functions import get_or_create
-from .utils.cvterm import get_cvterm
+from harvdev_utils.chado_functions import get_or_create, get_cvterm
 
 import logging
 from datetime import datetime

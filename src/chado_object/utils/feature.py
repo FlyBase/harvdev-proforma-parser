@@ -11,8 +11,7 @@ from harvdev_utils.production import (
 from harvdev_utils.char_conversions import sub_sup_to_sgml
 from harvdev_utils.char_conversions import sgml_to_unicode
 from .organism import get_default_organism_id
-from .cvterm import get_cvterm
-from .util_errors import CodingError
+from harvdev_utils.chado_functions import get_cvterm, CodingError
 
 from sqlalchemy.orm.exc import NoResultFound
 import logging

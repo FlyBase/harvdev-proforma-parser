@@ -9,9 +9,9 @@ import yaml
 from harvdev_utils.production import (
     Feature, Pub, Synonym, Db, Dbxref
 )
-from harvdev_utils.chado_functions import get_or_create
+from harvdev_utils.chado_functions import get_or_create, get_cvterm
 from harvdev_utils.chado_functions.external_lookups import ExternalLookup
-from .utils.cvterm import get_cvterm
+# from .utils.cvterm import get_cvterm
 from error.error_tracking import ErrorTracking, CRITICAL_ERROR, WARNING_ERROR
 
 log = logging.getLogger(__name__)

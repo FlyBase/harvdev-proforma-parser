@@ -9,9 +9,8 @@ from .chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.production import (
     Feature, Cvterm, Synonym, FeatureSynonym, Organism
 )
-from harvdev_utils.chado_functions import get_or_create
+from harvdev_utils.chado_functions import get_or_create, get_cvterm
 from .utils.feature_synonym import fs_add_by_synonym_name_and_type
-from .utils.cvterm import get_cvterm
 
 # from sqlalchemy.orm.exc import NoResultFound
 from datetime import datetime
