@@ -17,13 +17,14 @@ CH1f:
 CH1a:
   type: synonym
   cv: synonym type
-  cvterm: symbol
+  cvterm: fullname
   is_current: True
   remove_old: True
+  propname: 
 CH1b:
   type: synonym
   cv: synonym type
-  cvterm: symbol
+  cvterm: fullname
   is_current: False
   pub: current
 CH3a: # main chebi ref. Done on creation.

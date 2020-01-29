@@ -206,6 +206,10 @@ class ChadoChem(ChadoObject):
         feature_pub, _ = get_or_create(self.session, FeaturePub, feature_id=self.chemical.feature_id,
                                        pub_id=self.pub.pub_id)
         log.debug("Created new feature_pub: {}".format(feature_pub.feature_pub_id))
+        # Add pub link to Chebi or pubchem
+        pub_id = self.get_external_chemical_pub_id('CH3a')
+        feature_pub, _ = get_or_create(self.session, FeaturePub, feature_id=self.chemical.feature_id, pub_id=pub_id)
+        log.debug("Created new feature_pub: {}".format(feature_pub.feature_pub_id))
 
         # TODO Do we ever remove feature_pubs once all synonym connections are removed?
         # TODO Probably not because other objects can create feature_pub relationships?
@@ -215,6 +219,9 @@ class ChadoChem(ChadoObject):
 
         # Add the description as a featureprop.
         self.add_description_to_featureprop()
+
+        # Add the inchikey as a featureprop.
+        self.add_inchikey_to_featureprop()
 
     def check_existing_already(self):
         # Check if we already have an existing entry.
@@ -284,6 +291,21 @@ class ChadoChem(ChadoObject):
         self.load_synonym(key)
         self.process_data[key]['data'] = None
 
+    def get_external_chemical_pub_id(self, key):
+        pub_id = None
+        db_type = self.session.query(Db).join(Dbxref).join(Feature).\
+            filter(Feature.dbxref_id == Dbxref.dbxref_id,
+                   Db.db_id == Dbxref.db_id,
+                   Feature.feature_id == self.chemical.feature_id).one()
+        if db_type.name == "CHEBI":
+            pub_id = self.chebi_pub_id
+        elif db_type.name == "PubChem":
+            pub_id = self.pubchem_pub_id
+        else:
+            message = "Do not know how to look up pub for the feature {} based on db {}.".format(self.chemical.name, db_type.name)
+            self.critical_error(self.process_data[key]['data'], message)
+        return pub_id
+
     def load_synonym(self, key):
 
         # Chemicals can be listed more than once
@@ -299,17 +321,7 @@ class ChadoChem(ChadoObject):
             pub_id = self.pub.pub_id
         else:
             # is this chebi or pubchem
-            db_type = self.session.query(Db).join(Dbxref).join(Feature).\
-                filter(Feature.dbxref_id == Dbxref.dbxref_id,
-                       Db.db_id == Dbxref.db_id,
-                       Feature.feature_id == self.chemical.feature_id).one()
-            if db_type.name == "CHEBI":
-                pub_id = self.chebi_pub_id
-            elif db_type.name == "PubChem":
-                pub_id = self.pubchem_pub_id
-            else:
-                message = "Do not know how to look up pub for the feature {} based on db {}.".format(self.chemical.name, db_type.name)
-                self.critical_error(self.process_data[key]['data'], message)
+            pub_id = self.get_external_chemical_pub_id(key)
 
         # remove the current symbol if is_current is set and yaml says remove old is_current
         if 'remove_old' in self.process_data[key] and self.process_data[key]['remove_old']:
@@ -392,6 +404,22 @@ class ChadoChem(ChadoObject):
 
         get_or_create(self.session, Featureprop, feature_id=self.chemical.feature_id,
                       type_id=description_cvterm_id, value=self.chemical_information['description']['data'])
+
+    def add_inchikey_to_featureprop(self):
+        """
+        Associates the inchikey from PubChem to a feature via featureprop.
+
+        :return:
+        """
+        if not self.chemical_information['inchikey']['data']:
+            return
+
+        log.debug('Adding PubChem description to featureprop.')
+
+        description_cvterm_id = self.cvterm_query('property type', 'inchikey')
+
+        get_or_create(self.session, Featureprop, feature_id=self.chemical.feature_id,
+                      type_id=description_cvterm_id, value=self.chemical_information['inchikey']['data'])
 
     def process_synonyms_from_external_db(self):
         """
