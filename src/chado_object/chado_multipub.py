@@ -7,11 +7,10 @@
 import os
 from .chado_base import FIELD_VALUE
 from .chado_pub import ChadoPub
-from .utils.cvterm import get_cvterm
 from harvdev_utils.production import (
     Cv, Cvterm, Pub, Db, Dbxref, PubDbxref
 )
-from harvdev_utils.chado_functions import get_or_create
+from harvdev_utils.chado_functions import get_or_create, get_cvterm
 
 import logging
 from datetime import datetime

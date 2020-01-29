@@ -3,12 +3,10 @@
 # Module to deal with general feature_synonym db stuff
 #
 # Errors are raised, if things go wrong for some reason
-from .util_errors import CodingError
-from harvdev_utils.chado_functions import get_or_create
+from harvdev_utils.chado_functions import get_or_create, get_cvterm, CodingError
 from harvdev_utils.production import (
     Synonym, FeatureSynonym
 )
-from .cvterm import get_cvterm
 from harvdev_utils.char_conversions import sgml_to_plain_text
 from harvdev_utils.char_conversions import sub_sup_to_sgml
 from harvdev_utils.char_conversions import sgml_to_unicode
