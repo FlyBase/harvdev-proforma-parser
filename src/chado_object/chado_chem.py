@@ -46,10 +46,13 @@ class ChadoChem(ChadoObject):
         # yaml file defines what to do with each field. Follow the light
         self.type_dict = {'featureprop': self.load_featureprop,
                           'synonym': self.load_synonym,
-                          'ignore': self.ignore}
+                          'ignore': self.ignore,
+                          'value': self.ignore}
 
         self.delete_dict = {'ignore': self.ignore,
-                            'synonym': self.rename_synonym}
+                            'synonym': self.rename_synonym,
+                            'featureprop': self.delete_featureprop,
+                            'value': self.change_featurepropvalue}
         # Chemical storage dictionary.
         # This dictionary contains all the information required to create a new FBch.
         # The nested dictionaries contain the data as well as the source.
@@ -73,7 +76,7 @@ class ChadoChem(ChadoObject):
                 'source': None
             },
             'synonyms': {
-                'data': None,
+                'data': [],
                 'source': None
             }
         }
@@ -159,7 +162,7 @@ class ChadoChem(ChadoObject):
         chemical_cvterm_id = self.cvterm_query(self.process_data['CH1f']['cv'], self.process_data['CH1f']['cvterm'])
 
         if not self.new_chemical_entry:  # Fetch by FBch and check CH1a ONLY
-            self.chemical = self.fetch_by_FBch_and_check(chemical_cvterm_id)
+            self.fetch_by_FBch_and_check(chemical_cvterm_id)
             return
 
         # So we have a new chemical, lets get the data for this.
@@ -283,6 +286,31 @@ class ChadoChem(ChadoObject):
                 return entry_already_exists
         return entry_already_exists
 
+    def delete_featureprop(self, key, bangc=True):
+        prop_cv_id = self.cvterm_query(self.process_data[key]['cv'], self.process_data[key]['cvterm'])
+
+        fp, is_new = get_or_create(self.session, Featureprop, feature_id=self.chemical.feature_id,
+                                   type_id=prop_cv_id)
+        if is_new:
+            message = "No current {} field specified in chado so cannot bangc it".format(key)
+            self.critical_error(self.process_data[key]['data'], message)
+        else:
+            self.session.delete(fp)
+        self.process_data[key]['data'] = None
+
+    def change_featurepropvalue(self, key, bangc=True):
+        prop_cv_id = self.cvterm_query(self.process_data['CH3b']['cv'], self.process_data['CH3b']['cvterm'])
+
+        fp, is_new = get_or_create(self.session, Featureprop, feature_id=self.chemical.feature_id,
+                                   type_id=prop_cv_id)
+        if is_new:
+            message = "No current value specified in chado so cannot bangc it"
+            self.critical_error(self.process_data[key]['data'], message)
+        else:
+            fp.value = self.process_data[key]['data'][FIELD_VALUE]
+        self.process_data[key]['data'] = None
+        self.process_data['CH3b']['data'] = None
+
     def rename_synonym(self, key, bangc=True):
         if not self.has_data(key):
             message = "Bangc MUST have a value."
@@ -345,8 +373,13 @@ class ChadoChem(ChadoObject):
             value = self.process_data[self.process_data[key]['value']]['data'][FIELD_VALUE]
         prop_cv_id = self.cvterm_query(self.process_data[key]['cv'], self.process_data[key]['cvterm'])
 
-        get_or_create(self.session, Featureprop, feature_id=self.chemical.feature_id,
-                      type_id=prop_cv_id, value=value)
+        fp, is_new = get_or_create(self.session, Featureprop, feature_id=self.chemical.feature_id,
+                                   type_id=prop_cv_id)
+        if is_new:
+            fp.value = value
+        elif fp.value:
+            message = "Already has a value. Use bangc to change it"
+            self.critical_error(self.process_data[self.process_data[key]['value']]['data'], message)
 
     def load_feature_relationship(self, key):
         """
@@ -380,8 +413,8 @@ class ChadoChem(ChadoObject):
         description_cv_id = self.cvterm_query(self.process_data[key]['cv'], self.process_data[key]['cvterm'])
 
         log.debug('Creating relationship between feature in CH1f and CH4a.')
-        feat_rel, new = get_or_create(self.session, FeatureRelationship, subject_id=self.chemical.feature_id,
-                                      object_id=related_fbch_feature_id, type_id=description_cv_id)
+        feat_rel, _ = get_or_create(self.session, FeatureRelationship, subject_id=self.chemical.feature_id,
+                                    object_id=related_fbch_feature_id, type_id=description_cv_id)
         prop_key = self.process_data[key]['prop']
         if self.has_data(prop_key):
             prop_cv_id = self.cvterm_query(self.process_data[prop_key]['cv'], self.process_data[prop_key]['cvterm'])
