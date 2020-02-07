@@ -17,6 +17,8 @@ G1g:
 G1h:
   type: string
   regex: ^(FBgn\d{7})$
+  dependencies: [Gla]
+  excludes: [G1e, G1f]
 G2a:
     type: string
     no_bangc: True
