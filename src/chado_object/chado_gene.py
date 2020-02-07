@@ -96,7 +96,7 @@ class ChadoGene(ChadoObject):
         is_current = self.process_data[key]['is_current']
         for item in self.process_data[key]['data']:
             synonym_name = item[FIELD_VALUE]
-            synonym_name = synonym_name.replace('\\', '\\\\')
+            # synonym_name = synonym_name.replace('\\', '\\\\')
             fs_add_by_synonym_name_and_type(self.session, self.gene.feature_id,
                                             synonym_name, cv_name, cvterm_name, self.pub.pub_id,
                                             synonym_sgml=None, is_current=is_current, is_internal=False)
@@ -131,7 +131,7 @@ class ChadoGene(ChadoObject):
                 t_bit = 'T:'
                 abbr = s_res[0][2:]
             organism = get_organism(self.session, short=abbr)
-            name = "{}{}\\\\{}".format(t_bit, abbr, s_res[1])
+            name = "{}{}\\{}".format(t_bit, abbr, s_res[1])
             return organism, sgml_to_plain_text(name), sgml_to_unicode(sub_sup_to_sgml(name))
         else:
             return get_default_organism(self.session), sgml_to_plain_text(synonym_name), sgml_to_unicode(sub_sup_to_sgml(synonym_name))
