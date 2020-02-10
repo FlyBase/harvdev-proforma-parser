@@ -4,9 +4,11 @@ G1a:
     no_bangc: True
 G1b:
     type: [string, list]
+    nullable: True
 G1e:
     type: string
     no_bangc: True
+    nullable: True
 G1f:
     type: [string, list]
     no_bangc: True
@@ -17,10 +19,12 @@ G1g:
 G1h:
   type: string
   regex: ^(FBgn\d{7})$
-  dependencies: [Gla]
+  dependencies: [G1a]
   excludes: [G1e, G1f]
 G2a:
     type: string
     no_bangc: True
+    nullable: True
 G2b:
     type: [string, list]
+    nullable: True
