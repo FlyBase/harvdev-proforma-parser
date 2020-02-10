@@ -42,10 +42,13 @@ def feature_name_lookup(session, type_name, name, organism_id=None):
         cv_type = 'SO'
     feature_type = get_cvterm(session, cv_type, type_name)
 
-    feature = session.query(Feature).filter(Feature.type_id == feature_type.cvterm_id,
-                                            Feature.name == name,
-                                            Feature.is_obsolete == 'f',
-                                            Feature.organism_id == organism_id).one()
+    try:
+        feature = session.query(Feature).filter(Feature.type_id == feature_type.cvterm_id,
+                                                Feature.name == name,
+                                                Feature.is_obsolete == 'f',
+                                                Feature.organism_id == organism_id).one()
+    except NoResultFound:
+        feature = None
     return feature
 
 

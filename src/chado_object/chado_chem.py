@@ -516,7 +516,7 @@ class ChadoChem(ChadoObject):
         if current:
             entry = feature_name_lookup(self.session, 'chemical entity',
                                         name.lower(),
-                                        organism_id=organism_id).one_or_none()
+                                        organism_id=organism_id)
         else:
             features = feature_synonym_lookup(self.session, 'chemical entity',
                                               name.lower(),
