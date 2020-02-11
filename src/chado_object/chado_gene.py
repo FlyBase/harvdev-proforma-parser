@@ -13,10 +13,10 @@ from harvdev_utils.chado_functions import get_or_create, get_cvterm, DataError
 from .utils.feature_synonym import fs_add_by_synonym_name_and_type
 from .utils.feature import (
     feature_symbol_lookup,
-    get_feature_and_check_uname_name
+    get_feature_and_check_uname_symbol
 )
 from .utils.synonym import synonym_name_details
-
+from sqlalchemy.orm.exc import NoResultFound
 from datetime import datetime
 
 import logging
@@ -109,19 +109,22 @@ class ChadoGene(ChadoObject):
         if self.has_data('G1h'):
             self.gene = None
             try:
-                self.gene = get_feature_and_check_uname_name(self.session,
-                                                             self.process_data['G1h']['data'][FIELD_VALUE],
-                                                             self.process_data['G1a']['data'][FIELD_VALUE])
+                self.gene = get_feature_and_check_uname_symbol(self.session,
+                                                               self.process_data['G1h']['data'][FIELD_VALUE],
+                                                               self.process_data['G1a']['data'][FIELD_VALUE],
+                                                               type_name='gene')
             except DataError as e:
                 self.critical_error(self.process_data['G1h']['data'], e.error)
 
             return self.gene
         if self.process_data['G1g']['data'][FIELD_VALUE] == 'y':  # Should exist already
             organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['G1a']['data'][FIELD_VALUE])
-            self.gene = feature_symbol_lookup(self.session, 'gene', self.process_data['G1a']['data'][FIELD_VALUE], organism_id=organism.organism_id)
-            if not self.gene:
+            try:
+                self.gene = feature_symbol_lookup(self.session, 'gene', self.process_data['G1a']['data'][FIELD_VALUE], organism_id=organism.organism_id)
+            except NoResultFound:
                 message = "Unable to find Gene with symbol {}.".format(self.process_data['G1a']['data'][FIELD_VALUE])
                 self.critical_error(self.process_data['G1a']['data'], message)
+                return
         else:
             cvterm = get_cvterm(self.session, 'SO', 'gene')
             if not cvterm:
