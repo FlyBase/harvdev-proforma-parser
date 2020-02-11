@@ -11,12 +11,12 @@ from harvdev_utils.production import (
 )
 from harvdev_utils.chado_functions import get_or_create, get_cvterm
 from .utils.feature_synonym import fs_add_by_synonym_name_and_type
-from .utils.feature import feature_symbol_lookup, feature_name_lookup
-from .utils.organism import get_default_organism, get_organism
-from harvdev_utils.char_conversions import (
-    sgml_to_plain_text, sub_sup_to_sgml, sgml_to_unicode
+from .utils.feature import (
+    feature_symbol_lookup,
+    get_feature_and_check_uname_name
 )
-# from sqlalchemy.orm.exc import NoResultFound
+from .utils.synonym import synonym_name_details
+
 from datetime import datetime
 
 import logging
@@ -104,64 +104,20 @@ class ChadoGene(ChadoObject):
     def load_cvterm(self, key):
         pass
 
-    def synonym_check(self, synonym_name):
-        """
-        Process the synonym_name given and check for organism specific stuff
-
-        if synonym has '\' in it the split and use first bit as the species abbreviation
-        Also check for species starting with T: as this is some special shit.
-
-        returns:
-        organism for the entry
-        plain-text version of name
-        unicode version of text woth sup to sgml
-
-
-        So for synonym_name of 'Hsap\0005-&agr;-[001]
-
-        organism returned is the Organism object for homo sapiens
-        plain text -> 'Hsap\\00005-alpha-[001]'
-        unicode version -> 'Hsap\\00005-α-<up>001</up>'
-        """
-        s_res = synonym_name.split('\\')
-        if len(s_res) > 1:  # we have a '\' in the synonym
-            t_bit = ''
-            abbr = s_res[0]
-            if s_res[0].startswith('T:'):
-                t_bit = 'T:'
-                abbr = s_res[0][2:]
-            organism = get_organism(self.session, short=abbr)
-            name = "{}{}\\{}".format(t_bit, abbr, s_res[1])
-            return organism, sgml_to_plain_text(name), sgml_to_unicode(sub_sup_to_sgml(name))
-        else:
-            return get_default_organism(self.session), sgml_to_plain_text(synonym_name), sgml_to_unicode(sub_sup_to_sgml(synonym_name))
-
     def get_gene(self):
         # G1h is used to check it matches with G1a
         if self.has_data('G1h'):
-            self.gene = self.session.query(Feature).filter(Feature.uniquename == self.process_data['G1h']['data'][FIELD_VALUE],
-                                                           Feature.is_obsolete == 'f').one()
+            self.gene = get_feature_and_check_uname_name(self.session,
+                                                         self.process_data['G1h']['data'][FIELD_VALUE],
+                                                         self.process_data['G1a']['data'][FIELD_VALUE])
+
             if not self.gene:
                 message = "Unable to find Gene with uniquename {}.".format(self.process_data['G1h']['data'][FIELD_VALUE])
                 self.critical_error(self.process_data['G1h']['data'], message)
                 return None
-            # Test the synonym used in Gla matches this.
-            organism, plain_name, sgml_name = self.synonym_check(self.process_data['G1a']['data'][FIELD_VALUE])
-            feat_check = feature_name_lookup(self.session, 'gene', plain_name, organism_id=organism.organism_id)
-            if not feat_check:
-                message = "Unable to lookup '{}' using '{}' in chado db.".format(self.process_data['G1a']['data'][FIELD_VALUE], plain_name)
-                self.critical_error(self.process_data['G1a']['data'], message)
-                return None
-            if feat_check.feature_id != self.gene.feature_id:
-                message = "Symbol {} does not match that for {}.".format(self.process_data['G1a']['data'][FIELD_VALUE],
-                                                                         self.process_data['G1h']['data'][FIELD_VALUE])
-
-                self.critical_error(self.process_data['G1a']['data'], message)
-                return None
             return self.gene
-
         if self.process_data['G1g']['data'][FIELD_VALUE] == 'y':  # Should exist already
-            organism, plain_name, sgml = self.synonym_check(self.process_data['G1a']['data'][FIELD_VALUE])
+            organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['G1a']['data'][FIELD_VALUE])
             self.gene = feature_symbol_lookup(self.session, 'gene', self.process_data['G1a']['data'][FIELD_VALUE], organism_id=organism.organism_id)
             if not self.gene:
                 message = "Unable to find Gene with symbol {}.".format(self.process_data['G1a']['data'][FIELD_VALUE])
@@ -172,7 +128,7 @@ class ChadoGene(ChadoObject):
                 message = "Unable to find cvterm 'gene' for Cv 'SO'."
                 self.critical_error(self.process_data['G1a']['data'], message)
                 return None
-            organism, plain_name, sgml = self.synonym_check(self.process_data['G1a']['data'][FIELD_VALUE])
+            organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['G1a']['data'][FIELD_VALUE])
             self.gene, _ = get_or_create(self.session, Feature, name=plain_name,
                                          type_id=cvterm.cvterm_id, uniquename='FBgn:temp_0', organism_id=organism.organism_id)
             # add default symbol

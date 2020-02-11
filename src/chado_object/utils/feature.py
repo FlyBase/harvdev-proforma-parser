@@ -11,21 +11,39 @@ from harvdev_utils.production import (
 from harvdev_utils.char_conversions import sub_sup_to_sgml
 from harvdev_utils.char_conversions import sgml_to_unicode
 from .organism import get_default_organism_id
-from harvdev_utils.chado_functions import get_cvterm, CodingError
-
-from sqlalchemy.orm.exc import NoResultFound
+from .synonym import synonym_name_details
+from harvdev_utils.chado_functions import get_cvterm, DataError
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 import logging
 log = logging.getLogger(__name__)
 
 
-def get_feature_and_check_uname_name(uniquename, synonym):
+def get_feature_and_check_uname_name(session, uniquename, synonym):
     """
      uniquename : FBxx0000001 type.
                  If PRESENT only that is needed to find featue,
                  if synonym_name is given use as a check.
 
     """
-    pass
+    try:
+        feature = session.query(Feature).filter(Feature.uniquename == uniquename,
+                                                Feature.is_obsolete == 'f').one()
+    except NoResultFound:
+        message = "Unable to find Feature with uniquename {}.".format(uniquename)
+        raise DataError(message)
+
+    # Test the synonym passed matches this.
+    organism, plain_name, sgml_name = synonym_name_details(session, synonym)
+    feat_check = feature_name_lookup(session, 'gene', plain_name, organism_id=organism.organism_id)
+    if not feat_check:
+        message = "Unable to lookup '{}' using '{}' in chado db.".format(synonym, plain_name)
+        raise DataError(message)
+
+    if feat_check.feature_id != feature.feature_id:
+        message = "Symbol {} does not match that for {}.".format(synonym,
+                                                                 uniquename)
+        raise DataError(message)
+    return feature
 
 
 def feature_name_lookup(session, type_name, name, organism_id=None):
@@ -46,8 +64,9 @@ def feature_name_lookup(session, type_name, name, organism_id=None):
         feature = session.query(Feature).filter(Feature.type_id == feature_type.cvterm_id,
                                                 Feature.name == name,
                                                 Feature.is_obsolete == 'f',
-                                                Feature.organism_id == organism_id).one()
-    except NoResultFound:
+                                                Feature.organism_id == organism_id).one_or_none()
+    except MultipleResultsFound:
+        raise DataError("DataError: Found multiple with name for type '{}'.".format(name, feature_type.name))
         feature = None
     return feature
 
@@ -85,7 +104,7 @@ def feature_synonym_lookup(session, type_name, synonym_name, organism_id=None, c
                    Feature.type_id == feature_type.cvterm_id).all()
         return feature
     except NoResultFound:
-        raise CodingError("HarvdevError: Could not find current synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
+        raise DataError("DataError: Could not find current synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
         return None
 
 
@@ -127,7 +146,7 @@ def feature_symbol_lookup(session, type_name, synonym_name, organism_id=None, cv
                    FeatureSynonym.is_current == 't',
                    Feature.type_id == feature_type.cvterm_id).one_or_none()
     except NoResultFound:
-        raise CodingError("HarvdevError: Could not find current synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
+        raise DataError("DataError: Found multiple with current synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
         return None
 
     return feature
