@@ -209,7 +209,7 @@ def _simple_uniquename_lookup(session, uniquename):
     Lookup feature by uniquename only. Will probably work most times.
 
     returns feature if found uniquely or None if more than one found.
-    
+
     Raises error NoResultFound if not found
     """
     try:
