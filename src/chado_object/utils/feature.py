@@ -24,12 +24,16 @@ def get_feature_and_check_uname_name(session, uniquename, synonym):
                  If PRESENT only that is needed to find featue,
                  if synonym_name is given use as a check.
 
+    Raises DataError if feature cannot be found uniquely.
     """
     try:
         feature = session.query(Feature).filter(Feature.uniquename == uniquename,
                                                 Feature.is_obsolete == 'f').one()
     except NoResultFound:
         message = "Unable to find Feature with uniquename {}.".format(uniquename)
+        raise DataError(message)
+    except MultipleResultsFound:
+        message = "Found more than feature with this 'uniquename'"
         raise DataError(message)
 
     # Test the synonym passed matches this.

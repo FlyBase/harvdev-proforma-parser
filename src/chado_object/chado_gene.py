@@ -9,7 +9,7 @@ from .chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.production import (
     Feature
 )
-from harvdev_utils.chado_functions import get_or_create, get_cvterm
+from harvdev_utils.chado_functions import get_or_create, get_cvterm, DataError
 from .utils.feature_synonym import fs_add_by_synonym_name_and_type
 from .utils.feature import (
     feature_symbol_lookup,
@@ -107,14 +107,14 @@ class ChadoGene(ChadoObject):
     def get_gene(self):
         # G1h is used to check it matches with G1a
         if self.has_data('G1h'):
-            self.gene = get_feature_and_check_uname_name(self.session,
-                                                         self.process_data['G1h']['data'][FIELD_VALUE],
-                                                         self.process_data['G1a']['data'][FIELD_VALUE])
+            self.gene = None
+            try:
+                self.gene = get_feature_and_check_uname_name(self.session,
+                                                             self.process_data['G1h']['data'][FIELD_VALUE],
+                                                             self.process_data['G1a']['data'][FIELD_VALUE])
+            except DataError as e:
+                self.critical_error(self.process_data['G1h']['data'], e.error)
 
-            if not self.gene:
-                message = "Unable to find Gene with uniquename {}.".format(self.process_data['G1h']['data'][FIELD_VALUE])
-                self.critical_error(self.process_data['G1h']['data'], message)
-                return None
             return self.gene
         if self.process_data['G1g']['data'][FIELD_VALUE] == 'y':  # Should exist already
             organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['G1a']['data'][FIELD_VALUE])
