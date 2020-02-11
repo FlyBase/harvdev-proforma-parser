@@ -27,17 +27,18 @@ def process_entry(entry, session, filename):
     Process Entry and deal with excpetions etc and just return if an error was seen.
     """
     error_occurred = False
-    executed_queries = ["fake"]  # List for tracking all the executed queries.
+    last_query = None  # Track the last executed query.
 
     engine = session.get_bind()
     @event.listens_for(engine, "before_cursor_execute")
     def comment_sql_calls(conn, cursor, statement, parameters,
                           context, executemany):
         # Add all executed queries to a list.
+        global last_query
         try:
-            executed_queries.append(statement % parameters)
+            last_query = statement % parameters
         except TypeError:  # If we don't have parameters to insert.
-            executed_queries.append(statement)
+            last_query = statement
 
     try:
         entry.load_content()
@@ -45,27 +46,22 @@ def process_entry(entry, session, filename):
     except NoResultFound:
         # Create an error object.
         ErrorTracking(filename, None, None, 'Unexpected internal parser error. Please contact Harvdev. \n{} '
-                                            'Last query below:'.format(traceback.format_exc()), executed_queries[-1], CRITICAL_ERROR)
+                                            'Last query below:'.format(traceback.format_exc()), last_query, CRITICAL_ERROR)
         error_occurred = True
     except MultipleResultsFound:
         # Create an error object.
         ErrorTracking(filename, None, None, 'Unexpected internal parser error. Please contact Harvdev. \n{} '
-                                            'Last query below:'.format(traceback.format_exc()), executed_queries[-1], CRITICAL_ERROR)
+                                            'Last query below:'.format(traceback.format_exc()), last_query, CRITICAL_ERROR)
         error_occurred = True
     except Exception:
         # Create an error object.
         ErrorTracking(filename, None, None, 'Unexpected internal parser error. Please contact Harvdev. \n{} '
-                                            'Last query below:'.format(traceback.format_exc()), executed_queries[-1], CRITICAL_ERROR)
+                                            'Last query below:'.format(traceback.format_exc()), last_query, CRITICAL_ERROR)
         error_occurred = True
     return error_occurred
 
 
-def process_chado_objects_for_transaction(session, list_of_objects_to_load, load_type):
-    """
-    session: sql session
-    list_of_objects_to_load: list of objects to load, of various different proforma
-    load_type: 'test' or 'production'
-    """
+def load_message(load_type):
     if load_type == 'production':
         log.warning('Production load specified. Changes to the production database will occur.')
     elif load_type == 'test':
@@ -75,6 +71,11 @@ def process_chado_objects_for_transaction(session, list_of_objects_to_load, load
         log.critical('Exiting.')
         sys.exit(-1)
 
+
+def process_entries(session, list_of_objects_to_load):
+    """
+    Process the list of objects.
+    """
     error_occurred = False
     for entry in list_of_objects_to_load:
         entry.obtain_session(session)  # Send session to object.
@@ -88,6 +89,19 @@ def process_chado_objects_for_transaction(session, list_of_objects_to_load, load
         log.info('Proforma object starts from line: %s' % (entry.proforma_start_line_number))
 
         error_occurred |= process_entry(entry, session, filename)
+    return error_occurred
+
+
+def process_chado_objects_for_transaction(session, list_of_objects_to_load, load_type):
+    """
+    session: sql session
+    list_of_objects_to_load: list of objects to load, of various different proforma
+    load_type: 'test' or 'production'
+    """
+
+    load_message(load_type)
+
+    error_occurred = process_entries(session, list_of_objects_to_load)
 
     # Check for critical errors.
     list_of_errors_transactions = [instance for instance in ErrorTracking.instances]
