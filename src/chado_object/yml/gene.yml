@@ -13,7 +13,10 @@ G1b:
     is_current: False
 #     'G1e', 'symbol',      #feature_synonym
 G1e:
-    type: rename
+    type: synonym
+    cv: synonym type
+    cvterm: symbol
+    is_current: False
 #     'G1f', 'merge',       #merge_function
 G1f:
     type: merge
