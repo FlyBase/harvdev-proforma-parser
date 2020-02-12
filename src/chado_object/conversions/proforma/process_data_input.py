@@ -5,13 +5,13 @@
 
 .. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
-from ...chado_gene import ChadoGene
-from ...chado_pub import ChadoPub
-from ...chado_chem import ChadoChem
-from ...chado_multipub import ChadoMultipub
-from ...humanhealth.chado_humanhealth import ChadoHumanhealth
-from ...chado_species import ChadoSpecies
-from ...chado_db import ChadoDb
+from chado_object.chado_gene import ChadoGene
+from chado_object.chado_pub import ChadoPub
+from chado_object.chado_chem import ChadoChem
+from chado_object.chado_multipub import ChadoMultipub
+from chado_object.humanhealth.chado_humanhealth import ChadoHumanhealth
+from chado_object.chado_species import ChadoSpecies
+from chado_object.chado_db import ChadoDb
 
 import logging
 import sys
