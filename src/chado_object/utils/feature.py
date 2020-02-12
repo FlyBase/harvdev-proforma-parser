@@ -14,7 +14,7 @@ from harvdev_utils.char_conversions import sgml_to_unicode
 from harvdev_utils.chado_functions import get_cvterm, DataError, CodingError
 
 # local utils
-from .organism import get_default_organism_id
+from chado_object.utils.organism import get_default_organism_id
 
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 import logging

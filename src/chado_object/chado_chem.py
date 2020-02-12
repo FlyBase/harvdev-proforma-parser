@@ -4,7 +4,7 @@
 
 .. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
-from .chado_base import ChadoObject, FIELD_VALUE
+
 from harvdev_utils.production import (
     Pub, Db, Dbxref,
     Feature, Featureprop, FeaturePub, FeatureRelationship,
@@ -14,10 +14,11 @@ from harvdev_utils.production import (
 from harvdev_utils.chado_functions import get_or_create
 from harvdev_utils.chado_functions.external_lookups import ExternalLookup
 from harvdev_utils.char_conversions import sgml_to_plain_text
-from .utils.feature_synonym import fs_add_by_synonym_name_and_type, fs_remove_current_symbol
-from .utils.feature import feature_symbol_lookup, feature_synonym_lookup, feature_name_lookup
-from .utils.organism import get_default_organism_id
-from .utils.util_errors import CodingError
+from chado_object.chado_base import ChadoObject, FIELD_VALUE
+from chado_object.utils.feature_synonym import fs_add_by_synonym_name_and_type, fs_remove_current_symbol
+from chado_object.utils.feature import feature_symbol_lookup, feature_synonym_lookup, feature_name_lookup
+from chado_object.utils.organism import get_default_organism_id
+from chado_object.utils.util_errors import CodingError
 
 from sqlalchemy.orm.exc import NoResultFound
 from datetime import datetime

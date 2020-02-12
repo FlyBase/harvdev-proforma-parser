@@ -1,5 +1,5 @@
 from harvdev_utils.chado_functions import CodingError
-from .organism import get_default_organism, get_organism
+from chado_object.utils.organism import get_default_organism, get_organism
 import re
 from harvdev_utils.char_conversions import (
     sgml_to_plain_text, sub_sup_to_sgml, sgml_to_unicode
