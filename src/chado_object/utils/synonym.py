@@ -1,3 +1,10 @@
+"""Synonym, general routines.
+
+.. module:: Synonym
+   :synopsis: Lookup and general synonym functions.
+
+.. moduleauthor:: Ian Longden <ilongden@morgan.harvard.edu>
+"""
 from harvdev_utils.chado_functions import CodingError
 from chado_object.utils.organism import get_default_organism, get_organism
 import re
@@ -7,26 +14,33 @@ from harvdev_utils.char_conversions import (
 
 
 def synonym_name_details(session, synonym_name):
-    """
+    r"""Get synonym details.
+
         Process the synonym_name given and check for organism specific stuff
         and report back organism as well as the plain text and sgml versions.
 
         if synonym has '\' in it the split and use first bit as the species abbreviation
         Also check for species starting with T: as this is some special shit.
 
-        returns:
-        organism for the entry
-        plain-text version of name
+    Args:
+        session (sqlalchemy.orm.session.Session object): db connection to use.
+
+        synonym_name (str): synonym name to be processed.
+
+    Returns:
+        organism for the entry,
+
+        plain-text version of name,
+
         unicode version of text with sup to sgml
 
-
+    NOTE:
         So for synonym_name of 'Hsap\0005-&agr;-[001]
 
         organism returned is the Organism object for homo sapiens
         plain text -> 'Hsap\\00005-alpha-[001]'
         unicode version -> 'Hsap\\00005-α-<up>001</up>'
     """
-
     pattern = r"""
         ^([A-Z]:){0,1}  # May have T: or not {0 or 1} Not sure of variety so any captial letter is fine
         ([A-Z]{1}       # 1 Capital letter
