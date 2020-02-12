@@ -10,12 +10,12 @@ from harvdev_utils.production import (
     Feature
 )
 from harvdev_utils.chado_functions import get_or_create, get_cvterm, DataError
-from .utils.feature_synonym import fs_add_by_synonym_name_and_type
-from .utils.feature import (
+from chado_object.utils.feature_synonym import fs_add_by_synonym_name_and_type
+from chado_object.utils.feature import (
     feature_symbol_lookup,
     get_feature_and_check_uname_symbol
 )
-from .utils.synonym import synonym_name_details
+from chado_object.utils.synonym import synonym_name_details
 from sqlalchemy.orm.exc import NoResultFound
 from datetime import datetime
 

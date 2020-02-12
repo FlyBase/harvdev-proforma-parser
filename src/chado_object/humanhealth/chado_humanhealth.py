@@ -1,11 +1,14 @@
-"""
+# -*- coding: utf-8 -*-
+"""Chado Humanhealth main module.
+
 .. module:: chado_humanhealth
    :synopsis: The "humanhealth" ChadoObject.
 
 .. moduleauthor:: Ian Longden <ilongden@morgan.harvard.edu>
 """
+
 import os
-from ..chado_base import ChadoObject, FIELD_VALUE
+from chado_object.chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.production import (
     Humanhealth, HumanhealthPub, Humanhealthprop, HumanhealthpropPub,
     HumanhealthRelationship, HumanhealthSynonym, HumanhealthFeature,
@@ -21,6 +24,11 @@ log = logging.getLogger(__name__)
 
 
 class ChadoHumanhealth(ChadoObject):
+    """Class object for Chado Humanhealth.
+
+    Main chado object for humanhealth.
+    """
+
     from .humanhealth_dbxrefprop import (
         process_dbxrefprop, process_set_dbxrefprop, process_data_link,
         process_dbxref, get_or_create_dbxrefprop, load_dbxrefprop,
@@ -35,6 +43,11 @@ class ChadoHumanhealth(ChadoObject):
     )
 
     def __init__(self, params):
+        """Initialisation for humanhealth.
+
+        type dict and delete_dict determine which methods are called
+        based on the conrolling yml file.
+        """
         log.info('Initializing ChadoHumanhealth object.')
         ##########################################
         #
@@ -85,9 +98,7 @@ class ChadoHumanhealth(ChadoObject):
         self.process_data = self.load_reference_yaml(yml_file, params)
 
     def load_content(self):
-        """
-        Main processing routine
-        """
+        """Main processing routine."""
         self.pub = super(ChadoHumanhealth, self).pub_from_fbrf(self.reference)
 
         if self.process_data['HH1f']['data'][FIELD_VALUE] == "new":
@@ -119,8 +130,9 @@ class ChadoHumanhealth(ChadoObject):
         log.info('%s' % (curated_by_string))
 
     def get_humanhealth(self):
-        """
-        get humanhealth or create humanhealth if new.
+        """Get the humanhealth chado object.
+
+        Get humanhealth or create humanhealth if new.
         returns None or the humanhealth to be used.
         """
         if self.newhumanhealth:
@@ -151,6 +163,10 @@ class ChadoHumanhealth(ChadoObject):
         return hh
 
     def extra_checks(self):
+        """Extra checks.
+
+        cerberus validator cannot do some checks very easily, do we do them here.
+        """
         # If HH2b is specified then must have a category of 'parent-entity'
         # and self.humanhealth must have a category of 'sub-entity'
         if 'HH2b' in self.process_data and self.process_data['HH2b']['data'][FIELD_VALUE] != '':
@@ -184,7 +200,8 @@ class ChadoHumanhealth(ChadoObject):
                                         '{} must be a sub-entity but this is not the case here.'.format(self.humanhealth.uniquename))
 
     def process_sets(self):
-        """
+        """Process the set data.
+
         Sets have a specific key, normally the shortened version of the fields
         that it uses. i.e. For HH5a, HH5b etc this becomes HH5.
         self.set_values is a dictionary of these and points to an list of the
@@ -224,6 +241,7 @@ class ChadoHumanhealth(ChadoObject):
                 return
 
     def load_direct(self, key):
+        """Load the direct fields."""
         if self.has_data(key):
             old_attr = getattr(self.humanhealth, self.process_data[key]['name'])
             if old_attr:
@@ -235,6 +253,7 @@ class ChadoHumanhealth(ChadoObject):
                 setattr(self.humanhealth, self.process_data[key]['name'], self.process_data[key]['data'][FIELD_VALUE])
 
     def load_cvterm(self, key):
+        """Load the cvterms."""
         # lookup dbxref DOID:nnnnn
         # get the cvterm for this cv:'disease_ontology' (joined by dbxref)
         # lookup cvterm for doid_term
@@ -280,9 +299,7 @@ class ChadoHumanhealth(ChadoObject):
                                     type_id=doid_cvterm.cvterm_id)
 
     def load_relationship(self, key):
-        """
-        Load relationships between humanhealths
-        """
+        """Load relationships between humanhealths."""
         cvterm = self.session.query(Cvterm).join(Cv).\
             filter(Cv.name == self.process_data[key]['cv'],
                    Cvterm.name == self.process_data[key]['cvterm']).\
@@ -317,6 +334,7 @@ class ChadoHumanhealth(ChadoObject):
         return
 
     def load_prop(self, key):
+        """Load the properties."""
         if not self.has_data(key):
             return
 
@@ -347,6 +365,7 @@ class ChadoHumanhealth(ChadoObject):
         return
 
     def load_synonym(self, key):
+        """Load the synonyms."""
         cvterm = self.session.query(Cvterm).join(Cv).\
             filter(Cv.name == self.process_data[key]['cv'],
                    Cvterm.name == self.process_data[key]['cvterm']).\
@@ -377,7 +396,8 @@ class ChadoHumanhealth(ChadoObject):
 ########################
 
     def dissociate_pub(self, key):
-        """
+        """Dissaociate pub.
+
         Remove humanhealth_pub, humanhealth_synonym, humanhealth_cvterm, humanhealth_relationship,
         feature_humanhealth_dbxref, humanhealth_dbxref, humanhealth_dbxrefprop and humanhealth_feature
 
@@ -419,7 +439,10 @@ class ChadoHumanhealth(ChadoObject):
             filter(HumanhealthDbxref.humanhealth_id == self.humanhealth.humanhealth_id).delete()
 
     def delete_synonym(self, key, bangc=False):
+        """Delete synonym.
 
+        Well actually set is_current to false for this entry.
+        """
         if type(self.process_data[key]['data']) is not list:
             data_list = []
             data_list.append(self.process_data[key]['data'])
@@ -458,6 +481,7 @@ class ChadoHumanhealth(ChadoObject):
                     continue
 
     def delete_cvterm(self, key, bangc=False):
+        """Delete the cvterm."""
         if bangc:
             self.session.query(HumanhealthCvterm).\
                 filter(HumanhealthCvterm.humanhealth_id == self.humanhealth.humanhealth_id).delete()
@@ -491,6 +515,7 @@ class ChadoHumanhealth(ChadoObject):
                 self.session.delete(hhc)
 
     def delete_relationship(self, key, bangc=False):
+        """Delete the relationship."""
         cvterm = self.session.query(Cvterm).join(Cv).\
             filter(Cv.name == self.process_data[key]['cv'],
                    Cvterm.name == self.process_data[key]['cvterm']).\
@@ -533,15 +558,19 @@ class ChadoHumanhealth(ChadoObject):
                     return
 
     def make_obsolete(self, key):
+        """Make the humanhealth recid obsolete."""
         self.humanhealth.is_obsolete = True
 
     def ignore(self, key):
+        """Ignore!"""
         return
 
     def delete_ignore(self, key, bangc=False):
+        """Delete filler code."""
         return
 
     def delete_direct(self, key, bangc=True):
+        """Delete the direct fileds."""
         try:
             new_value = self.process_data[key]['data'][FIELD_VALUE]
         except KeyError:
@@ -551,6 +580,7 @@ class ChadoHumanhealth(ChadoObject):
         self.process_data[key]['data'] = None
 
     def delete_prop(self, key, bangc=True):
+        """Delete the prop."""
         cvterm = self.session.query(Cvterm).join(Cv).\
             filter(Cv.name == self.process_data[key]['cv'],
                    Cvterm.name == self.process_data[key]['cvterm']).\

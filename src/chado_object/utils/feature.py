@@ -1,4 +1,5 @@
-"""
+"""Feature, general routines.
+
 .. module:: feature
    :synopsis: Lookup and general Feature functions.
 
@@ -14,7 +15,7 @@ from harvdev_utils.char_conversions import sgml_to_unicode
 from harvdev_utils.chado_functions import get_cvterm, DataError, CodingError
 
 # local utils
-from .organism import get_default_organism_id
+from chado_object.utils.organism import get_default_organism_id
 
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 import logging
@@ -22,10 +23,26 @@ log = logging.getLogger(__name__)
 
 
 def get_feature_by_uniquename(session, uniquename, type_name=None, organism_id=None):
-    """
+    """Get feature by the unique name.
+
     Get the feature from the uniquename and aswell optionally from the organsism_id and type i.e. 'gene', 'chemical entity'
 
-    Raises errors NoResultFound or MultipleResultsFound accordingly.
+    Args:
+        session (sqlalchemy.orm.session.Session object): db connection  to use.
+
+        uniquename (str): feature uniquename.
+
+        type_name (str) : <optional> cvterm name for the type of feature.
+
+        organism_id (int): <optional> chado organism_id.
+
+    Returns:
+        Feature object
+
+    Raises:
+        NoResultFound: Feature not found.
+
+        MultipleResultsFound: uniquename is not unique.
     """
     feature = None
     if not type_name and not organism_id:
@@ -47,7 +64,10 @@ def get_feature_by_uniquename(session, uniquename, type_name=None, organism_id=N
 
 
 def get_feature_and_check_uname_symbol(session, uniquename, synonym, type_name=None, organism_id=None):
-    """
+    """Fetch the feature and check the symbol.
+
+    Lookup the feature by uniquename and by symbol and make sure this is the same.
+
     features are unique wrt:- uniquename, organism_id and type_id
     So we need to make sure we have all 3 to be safe. (though normally just the uniquename may do)
 
@@ -56,7 +76,21 @@ def get_feature_and_check_uname_symbol(session, uniquename, synonym, type_name=N
     NOTE: If user supplies no type_name or organism, we can get the probable organism form the synonym
           then lookup just using unique name and report problem if more than one found.
 
-    Raises DataError if feature cannot be found uniquely.
+    Args:
+        session (sqlalchemy.orm.session.Session object): db connection  to use.
+
+        uniquename (str): feature uniquename.
+
+        synonym (str): symbol to look up.
+
+        type_name (str) : <optional> cvterm name for the type of feature.
+
+        organism_id (int): <optional> chado organism_id.
+    Returns:
+        Feature object.
+
+    Raises:
+        DataError: if feature cannot be found uniquely.
     """
     try:
         feature = get_feature_by_uniquename(session, uniquename, type_name=type_name, organism_id=organism_id)
@@ -83,18 +117,26 @@ def get_feature_and_check_uname_symbol(session, uniquename, synonym, type_name=N
 
 
 def feature_name_lookup(session, name, organism_id=None, type_name=None, type_id=None):
-    """
+    """Get feature by its name.
+
     Lookup feature using the feature name.
 
-    If no organism_id is given thenm it will default to Dmel
+    If no organism_id is given then it will default to Dmel
 
-    Optional args of type_name or type_id to refine further.
+    Args:
+        session (sqlalchemy.orm.session.Session object): db connection  to use.
 
-    type_name is the type of feature i.e. 'gene', 'chemical entity'
-    or
-    type_id is the type_id of the feature to lookup.
+        name (str): feature name.
 
-    Raises DataError if not found uniquely.
+        type_name (str) : <optional> cvterm name for the type of feature.
+
+        organism_id (int): <optional> chado organism_id.
+
+    Returns:
+        Feature object.
+
+    Raises:
+        DataError: if feature not found uniquely.
     """
     if type_name and type_id:
         raise CodingError("Cannot specify type_name and type_id")
@@ -125,12 +167,28 @@ def feature_name_lookup(session, name, organism_id=None, type_name=None, type_id
 
 
 def feature_synonym_lookup(session, type_name, synonym_name, organism_id=None, cv_name='synonym type', cvterm_name='symbol'):
-    """
+    """Get feature form the synonym.
+
     Lookup to see if the synonym has been used before. Even if not current
 
-    Return features if the synonym exists
+    Args:
+        session (sqlalchemy.orm.session.Session object): db connection  to use.
 
-    Raises DataError if not found at least once.
+        type_name (str): cvterm name, defining the type of feature.
+
+        synonym_name (str): symbol to look up.
+
+        organism_id (int): <optional> chado organism_id.
+
+        cv_name (str): <optional> cv name defaults too 'synonym type'
+
+        cvterm_name (str): <optional> cvterm name defaults too 'symbol'
+
+    Returns:
+        Feature object.
+
+    Raises:
+        DataError: if feature cannot be found at least once.
 
     """
     # Default to Dros if not organism specified.
@@ -164,19 +222,32 @@ def feature_synonym_lookup(session, type_name, synonym_name, organism_id=None, c
 
 
 def feature_symbol_lookup(session, type_name, synonym_name, organism_id=None, cv_name='synonym type', cvterm_name='symbol'):
-    """
-    Lookup feature that has a specific type and synonym name
+    """Lookup feature that has a specific type and synonym name.
 
-    type_name: feature 'SO' name.  i.e. gene, chemical entity, chromosome
-               NOTE we have 3 deviants that are not SO and these are checked for
-               by changing the cv_type from 'SO' to 'FlyBase miscellaneous CV'
+    Args:
+        session (sqlalchemy.orm.session.Session object): db connection  to use.
 
-    synonym_name: The synonym Name.   REQUIRED if no uniquename
+        type_name (str): cvterm name, defining the type of feature.
+
+        synonym_name (str): symbol to look up.
+
+        organism_id (int): <optional> chado organism_id.
+
+        cv_name (str): <optional> cv name defaults too 'synonym type'
+
+        cvterm_name (str): <optional> cvterm name defaults too 'symbol'
+
 
     ONLY replace cvterm_name and cv_name if you know what exactly you are doing.
     symbol lookups are kind of special and initialized here for ease of use.
 
-    Raises errors of NoResultFound and MultipleResultsFound on errors.
+    Returns:
+        Feature object.
+
+    Raises:
+        NoResultFound: If no feature found matching the synonym.
+
+        MultipleResultsFound: If more than one feature found matching the synonym.
     """
     # Defualt to Dros if not organism specified.
     if not organism_id:

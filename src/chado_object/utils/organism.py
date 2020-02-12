@@ -1,6 +1,11 @@
-#
-# Help utility for Organisms
-#
+"""Organism, general routines.
+
+.. module:: Organism
+   :synopsis: Lookup and general organism functions.
+
+.. moduleauthor:: Ian Longden <ilongden@morgan.harvard.edu>
+"""
+
 from harvdev_utils.production import Organism
 from harvdev_utils.chado_functions import CodingError
 from sqlalchemy.orm.exc import NoResultFound
@@ -13,8 +18,13 @@ organism_dict = {}
 
 
 def get_default_organism_id(session):
-    """
-    Get the default organism_id for Dmel
+    """Get the default organism_id for Dmel.
+
+    Args:
+        session (sqlalchemy.orm.session.Session object): db connection to use.
+
+    Returns:
+        organism_id (internal chado id).
     """
     global organism_dict
 
@@ -24,8 +34,13 @@ def get_default_organism_id(session):
 
 
 def get_default_organism(session):
-    """
-    Get the default sqlalchemy organism object for Dmel (default)
+    """Get the default sqlalchemy organism object for Dmel (default).
+
+    Args:
+        session (sqlalchemy.orm.session.Session object): db connection to use.
+
+    Returns:
+        organism object.
     """
     global organism_dict
 
@@ -36,12 +51,27 @@ def get_default_organism(session):
 
 
 def get_organism(session, short=None, genus=None, species=None):
-    """
-    Get the organism based on short (abbreviation) or genus and  species
+    """Get the organism based on short (abbreviation) or genus and species.
 
-    Return the sql alchemy object for the organism.
+    Args:
+        session (sqlalchemy.orm.session.Session object): db connection to use.
 
-    Raises an Error if organism failed for some reason.
+        short (str): organisms abbreviation. i.e. 'Dmel'
+
+        genus (str): organisms genus
+
+        species (str): organisms species
+
+    NOTE:
+        Either short name or genus and species must be specified.
+
+    Returns:
+        the sql alchemy object for the organism.
+
+    Raises:
+       CodingError: if note above failed or could not find organism.
+
+
     """
     global organism_dict
     if not short and not (genus and species):
