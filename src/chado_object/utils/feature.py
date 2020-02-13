@@ -1,6 +1,6 @@
 """Feature, general routines.
 
-.. module:: feature
+.. module:: chado_object.utils.feature
    :synopsis: Lookup and general Feature functions.
 
 .. moduleauthor:: Ian Longden <ilongden@morgan.harvard.edu>

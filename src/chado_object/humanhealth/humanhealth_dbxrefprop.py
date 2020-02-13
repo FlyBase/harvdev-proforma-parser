@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""Chado Humanhealth dbxref and dbxrefprop module.
+
+.. module:: chado_humanhealth.humanhealth_dbxrefprop
+   :synopsis: Deal with humanhealth dbxrefprops.
+.. moduleauthor:: Ian Longden <ilongden@morgan.harvard.edu>
+"""
 from harvdev_utils.production import (
     HumanhealthDbxref, HumanhealthDbxrefprop, HumanhealthDbxrefpropPub, Humanhealth,
     FeatureHumanhealthDbxref, Cvterm, Cv, Db, Dbxref, Feature
@@ -5,14 +12,23 @@ from harvdev_utils.production import (
 import logging
 from ..chado_base import FIELD_VALUE, SET_BANG
 from harvdev_utils.chado_functions import get_or_create
-# from harvdev_utils.chado_functions.external_lookups import ExternalLookup
+
 from error.error_tracking import CRITICAL_ERROR
 log = logging.getLogger(__name__)
 
 
 def process_dbxrefprop(self, key):
-    """
-    Add hh_dbxrefprop
+    """Process the dbxref prop.
+
+    Args:
+        self (HumanhealthChado):
+
+        key (str): proforma field key/name
+
+    Returns:
+        hh_dbxref object
+
+        hh_dbxrefporp object
     """
     log.debug("key = {}".format(key))
     log.debug("cv is {}, cvterm is {}".format(self.process_data[key]['cv'], self.process_data[key]['cvterm']))
@@ -45,8 +61,19 @@ def process_dbxrefprop(self, key):
 
 
 def create_set_initial_params(self, set_key, data_set):
-    """
+    """Create params for a set.
+
     Create initial params to be used for dbxrefprop generation.
+
+    Args:
+        self (ChadoHumanhealth):
+
+        set_key (str): the key for the set  i.e. HH5 or HH14.
+
+        data_set (dict): dictionary from yml control file.
+
+    Returns:
+        params (dict): dictionary fo elements needed to create a dbxrefprop
     """
     params = {'cvterm': self.process_data[set_key]['cvterm'],
               'cvname': self.process_data[set_key]['cv']}
@@ -73,12 +100,18 @@ def create_set_initial_params(self, set_key, data_set):
 
 
 def process_set_dbxrefprop(self, set_key, data_set):
-    """
-    Create/Dissociate the dbxref and prop, pubs for this data_set.
-    set_key: Key for the set i.r. HH5 or HH14
-    data_set: One complete set of data. (dictionary)
-    """
+    """Create/Dissociate the dbxref and prop, pubs for this data_set.
 
+    Args:
+        self (ChadoHumanhealth):
+
+        set_key (str): Key for the set i.e. HH5 or HH14
+
+        data_set (dict): One complete set of data.
+
+    Returns:
+        None
+    """
     valid_key = self.get_valid_key_for_data_set(data_set)
     if not valid_key:
         return
@@ -113,7 +146,8 @@ def process_set_dbxrefprop(self, set_key, data_set):
 
 
 def process_data_link(self, set_key):
-    """
+    """Set the hh dbxrefprop.
+
     set_key: Key to process i.e HH5 or HH14
 
     TODO: disassociation 'd' still needs to be coded.
@@ -126,7 +160,8 @@ def process_data_link(self, set_key):
 
 
 def process_dbxref(self, params):
-    """
+    """Process hh dbxref.
+
     General rountine for adding humanhealth dbxrefs.
     params should contain:-
         dbname:      db name for dbxref
@@ -149,8 +184,12 @@ def process_dbxref(self, params):
 
 
 def get_or_create_dbxrefprop(self, params):
-    """
-        General rountine for adding humanhealth dbxrefs and their props + pubs
+    """Get or create dbxrefprop from param list.
+
+    General rountine for adding humanhealth dbxrefs and their props + pubs
+
+    Params:
+
         params should contain:-
         dbname:      db name for dbxref
         accession:   accession for dbxref
@@ -300,7 +339,8 @@ def process_dbxref_link_item(self, set_key, data_set):
 
 
 def process_hh7(self, set_key):
-    """
+    """Process HH7.
+
     Load HH7 sets c,d, e and f only. (a,b) NOT part of set.
     """
 
@@ -309,8 +349,7 @@ def process_hh7(self, set_key):
 
 
 def load_dbxrefprop(self, key):
-    """
-    load the hh_dbxref and hh_dbxrefprop.
+    """Load the hh_dbxref and hh_dbxrefprop.
 
     If db not in yml file then the format must be dbname:accession
     Else just the accession
@@ -333,7 +372,8 @@ def load_dbxrefprop(self, key):
 ############################################################################
 
 def delete_dbxref(self, key, bangc):
-    """
+    """Delete the dbxref.
+
     General first call from
     """
     params = {'cvterm': self.process_data[key]['cvterm'],
@@ -359,7 +399,8 @@ def delete_dbxref(self, key, bangc):
 
 
 def bangd_dbxref(self, params):
-    """
+    """Remove specific hh dbxref.
+
     Params needed are:-
     'dbname' and 'accession': to get the dbxref.
     'tuple': to allow reporting of problems
@@ -380,7 +421,8 @@ def bangd_dbxref(self, params):
 
 
 def bangc_dbxref(self, params):
-    """
+    """Remove all hh dbxrefs for specific cv, cvterm.
+
     Params needed are:-
     'cvterm', 'cv': to get cvterm of those to remove
     'dbname': to get the db type. *Optional else remove all dbnames*.
@@ -391,7 +433,6 @@ def bangc_dbxref(self, params):
     Dbxrefs given by links to cvterms and possibly db's.
     The cvterm is defined in the hh_dbxref_prop.
     """
-
     # get cvterm
     cvterm = self.session.query(Cvterm).join(Cv).\
         filter(Cv.name == params['cvname'],
@@ -425,7 +466,8 @@ def bangc_dbxref(self, params):
 
 
 def bang_dbxrefprop_only(self, params):
-    """
+    """Remove one or more hh dbxrefprops.
+
     Params needed are:-
     'cvterm', 'cvname': to get prop
     'dbname' and 'accession': to get the dbxref.
@@ -474,7 +516,7 @@ def bang_dbxrefprop_only(self, params):
 
 
 def bang_feature_hh_dbxref(self, params):
-    # get dbxref
+    """Remove feature hh dbxref."""
     dbxref = self.session.query(Dbxref).join(Db).\
         filter(Dbxref.db_id == Db.db_id,
                Db.name == params['dbname'],

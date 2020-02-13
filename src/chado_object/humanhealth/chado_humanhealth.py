@@ -3,7 +3,7 @@
 
 .. module:: chado_humanhealth
    :synopsis: The "humanhealth" ChadoObject.
-
+.. class:: chado_humanhealth.ChadoHumanhealth
 .. moduleauthor:: Ian Longden <ilongden@morgan.harvard.edu>
 """
 
@@ -43,8 +43,9 @@ class ChadoHumanhealth(ChadoObject):
     )
 
     def __init__(self, params):
-        """Initialisation for humanhealth.
+        """Initialise the humanhealth object.
 
+        .. function:: __init__
         type dict and delete_dict determine which methods are called
         based on the conrolling yml file.
         """
@@ -98,7 +99,10 @@ class ChadoHumanhealth(ChadoObject):
         self.process_data = self.load_reference_yaml(yml_file, params)
 
     def load_content(self):
-        """Main processing routine."""
+        """Process the proforma data.
+
+        .. function:: load_content
+        """
         self.pub = super(ChadoHumanhealth, self).pub_from_fbrf(self.reference)
 
         if self.process_data['HH1f']['data'][FIELD_VALUE] == "new":
@@ -481,7 +485,11 @@ class ChadoHumanhealth(ChadoObject):
                     continue
 
     def delete_cvterm(self, key, bangc=False):
-        """Delete the cvterm."""
+        """Delete the cvterm.
+
+        .. class:: ChadoHumanhealth
+        .. function:: delete_cvterm
+        """
         if bangc:
             self.session.query(HumanhealthCvterm).\
                 filter(HumanhealthCvterm.humanhealth_id == self.humanhealth.humanhealth_id).delete()
@@ -561,8 +569,7 @@ class ChadoHumanhealth(ChadoObject):
         """Make the humanhealth recid obsolete."""
         self.humanhealth.is_obsolete = True
 
-    def ignore(self, key):
-        """Ignore!"""
+    def ignore(self, key):  # noqa D102
         return
 
     def delete_ignore(self, key, bangc=False):
