@@ -1,8 +1,8 @@
 """
-.. module:: chado_species
-   :synopsis: The "Species" ChadoObject.
 
-.. moduleauthor:: Ian Longden <ilongden@morgan.harvard.edu>
+:synopsis: The "Species" ChadoObject.
+
+:moduleauthor: Ian Longden <ilongden@morgan.harvard.edu>
 """
 import os
 from .chado_base import ChadoObject, FIELD_VALUE

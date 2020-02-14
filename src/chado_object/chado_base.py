@@ -1,8 +1,8 @@
 """
-.. module:: chado_base
-   :synopsis: The "base" object for a ChadoObject. The properties here are shared by all other ChadoObjects.
 
-.. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
+:synopsis: The "base" object for a ChadoObject. The properties here are shared by all other ChadoObjects.
+
+:moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
 import logging
 import yaml

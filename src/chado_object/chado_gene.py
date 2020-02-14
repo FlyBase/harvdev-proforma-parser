@@ -1,8 +1,7 @@
 """
-.. module:: chado_gene
-   :synopsis: The "gene" ChadoObject.
+:synopsis: The Gene ChadoObject.
 
-.. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
+:moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>, Ian Longden <ilongden@morgan.harvard.edu>
 """
 import os
 from .chado_base import ChadoObject, FIELD_VALUE

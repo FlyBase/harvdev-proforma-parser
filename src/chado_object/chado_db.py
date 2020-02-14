@@ -1,8 +1,8 @@
 """
-.. module:: chado_db
-   :synopsis: The "db" ChadoObject.
 
-.. moduleauthor:: Ian Longden <ianlongden@morgan.harvard.edu>
+:synopsis: The "db" ChadoObject.
+
+:moduleauthor: Ian Longden <ianlongden@morgan.harvard.edu>
 """
 import os
 from .chado_base import ChadoObject, FIELD_VALUE

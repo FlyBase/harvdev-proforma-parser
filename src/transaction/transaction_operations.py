@@ -1,8 +1,8 @@
 """
-.. module:: transactions
-   :synopsis: A set of functions to insert ChadoObjects into the Chado database.
 
-.. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
+:synopsis: A set of functions to insert ChadoObjects into the Chado database.
+
+:moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
 import sys
 import logging

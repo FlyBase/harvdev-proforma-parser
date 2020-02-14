@@ -1,8 +1,8 @@
 """
-.. module:: error
-   :synopsis: The error tracking class used to track and report errors.
 
-.. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
+:synopsis: The error tracking class used to track and report errors.
+
+:moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
 import logging
 import inspect

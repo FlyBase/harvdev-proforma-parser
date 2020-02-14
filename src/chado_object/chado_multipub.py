@@ -1,8 +1,8 @@
 """
-.. module:: chado_pub
-   :synopsis: The "multipub" ChadoObject.
 
-.. moduleauthor:: Ian Longden <ilongden@morgan.harvard.edu>
+:synopsis: The "multipub" ChadoObject.
+
+"moduleauthor: Ian Longden <ilongden@morgan.harvard.edu>
 """
 import os
 from .chado_base import FIELD_VALUE

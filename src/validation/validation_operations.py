@@ -1,8 +1,8 @@
 """
-.. module:: validation
-   :synopsis: Functions and Classes for validating data within proformae.
 
-.. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
+:synopsis: Functions and Classes for validating data within proformae.
+
+:moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
 
 # Cerberus and yaml
@@ -79,12 +79,15 @@ def get_validate_db_schema(fields_values):
 
 
 def validation_file_schema_lookup(proforma_type, fields_values):
-    """
+    """Lookup the file schema.
+
     Reads the proforma type and returns the appropriate yaml validation file
     and the appropriate schema(s) to validation against.
 
     Args:
         proforma_type (str): The type of proforma
+
+        field_values (dict): A dictionary of fields and values from the proforma.
 
     Returns:
         yaml_file_location (str): The file location of the appropriate yaml files
@@ -174,10 +177,8 @@ def validate_proforma_object(proforma):
     """
     Validate a proforma object against a YAML schema using Cerberus.
 
-    Args:# Error tracking modules
-        proforma_type (str): The type of proforma.
-
-        field_values (dict): A dictionary of fields and values from the proforma.
+    Args:
+        proforma (proforma pbject): To be validated.
 
     Returns:
         errors (dict): A dictionary containing errors from validation.

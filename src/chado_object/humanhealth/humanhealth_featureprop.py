@@ -11,12 +11,19 @@ log = logging.getLogger(__name__)
 
 
 def process_feature(self, params):
-    """
-    General rountine for adding humanhealth features.
-    params should contain:-
-        name: feature.name
-        feature_code: FB(xx), (xx, see process_featureprop for more info)
-        tuple: one related tuple to help give better errors
+    """Create humanhealth feature.
+
+    Args:
+        params (dict):
+            * name:       feature.name
+
+            * feature_code:   FB(xx), (xx, see process_featureprop for more info)
+
+            * tuple:       one related tuple to help give better errors
+
+    Returns:
+        HumanhealthFeature
+
     """
 
     feature = self.session.query(Feature).\
@@ -36,23 +43,34 @@ def process_feature(self, params):
 
 
 def process_featureprop(self, params):
-    """
-         General rountine for adding humanhealth dbxrefs and their props
-         params should contain:-
-         name:         name of the feature (feature.name)
-         feature_code: FBxx, pass the xx here.
-         cvname:       cv name for prop
-         cvterm:       cvterm name for prop
-         tuple:        one related tuple to help give better errors
+    r"""General rountine for adding humanhealth dbxrefs and their props.
 
-         NOTE: feature code needed as names are not unique i.e.
-         select f.uniquename, f.name from feature f where f.name = E'Hsap\\PTEN';
-            uniquename   |   name
-         ----------------+-----------
-          FBgn0028728    | Hsap\\PTEN
-          FBog0000209256 | Hsap\\PTEN
+    .. note::
+        feature code needed as names are not unique i.e.
 
-         Do i also need to look up synonyms???
+        select f.uniquename, f.name from feature f where f.name = E'Hsap\\PTEN';
+
+        uniquename     |   name
+
+        ---------------+-----------
+
+        FBgn0028728    | Hsap\PTEN
+
+        FBog0000209256 | Hsap\PTEN
+
+    Do i also need to look up synonyms???
+
+    Args:
+        params (dict):
+            * name:       feature.name
+            * feature_code:   FB(xx), (xx, see process_featureprop for more info)
+            * cvname:       cv name for prop
+            * cvterm:       cvterm name for prop
+            * tuple:       one related tuple to help give better errors
+
+    Returns:
+        HumanhealthFeature
+
     """
     hh_feature = self.process_feature(params)
 

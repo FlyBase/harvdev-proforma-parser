@@ -1,6 +1,5 @@
 """Feature_synonym, general routines.
 
-.. module:: feature_synonym
    :synopsis: General Feature_synonym functions.
 
 .. moduleauthor:: Ian Longden <ilongden@morgan.harvard.edu>
