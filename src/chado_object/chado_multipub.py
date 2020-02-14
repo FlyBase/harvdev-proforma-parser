@@ -122,9 +122,7 @@ class ChadoMultipub(ChadoPub):
         return pub
 
     def load_content(self):
-        """
-        Main processing routine
-        """
+        """Process the data."""
         if self.process_data['MP1']['data'][FIELD_VALUE] == "new":
             self.newpub = True
 

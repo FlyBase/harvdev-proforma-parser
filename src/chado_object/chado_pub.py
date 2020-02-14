@@ -22,6 +22,7 @@ log = logging.getLogger(__name__)
 
 class ChadoPub(ChadoObject):
     """ChadoPub Class."""
+
     def __init__(self, params):
         """Initialise ChadoPub onject."""
         log.info('Initializing ChadoPub object.')
@@ -570,7 +571,6 @@ class ChadoPub(ChadoObject):
             # convert '[' to '<up>' etc.
             value = sub_sup_to_sgml(value)
 
-        log.debug("Looking up cvterm: {} {}.".format(cv_name, cvterm_name))
         cv_term_id = super(ChadoPub, self).cvterm_query(cv_name, cvterm_name)
 
         log.debug('Querying for FBrf \'%s\'.' % (value))
@@ -584,7 +584,17 @@ class ChadoPub(ChadoObject):
         return pub_prop
 
     def load_pubdbxref(self, db_name, value_to_add_tuple):
-        """Add dbxref to the pub (self.pub)."""
+        """Add dbxref to the pub (self.pub).
+
+        Args:
+            db_name (str): db name to use for dbxref.
+
+            value_to_add_tuple (tuple): Holds the accession.
+
+        Returns:
+           None
+
+        """
         db = self.session.query(Db).filter(Db.name == db_name).one()
 
         dbxref, _ = get_or_create(
@@ -602,6 +612,17 @@ class ChadoPub(ChadoObject):
         )
 
     def delete_direct(self, key, bangc=True):
+        """Delete the direct value.
+
+        Args:
+            key (str): key for process_data.
+
+            bangc (bool): bangc or bangd
+
+        Returns:
+            None
+
+        """
         try:
             new_value = self.process_data[key]['data'][FIELD_VALUE]
         except KeyError:
@@ -611,6 +632,20 @@ class ChadoPub(ChadoObject):
         self.process_data[key]['data'] = None
 
     def delete_author(self, key, bangc=True):
+        """Delete the author.
+
+        Args:
+            key (str): key for process_data.
+
+            bangc (bool): bangc or bangd
+
+        Returns:
+            None
+
+        Critical Error:
+            Author does not exist so cannot delete.
+
+        """
         if bangc:
             count = self.session.query(Pubauthor).filter(Pubauthor.pub_id == self.pub.pub_id).delete()
             log.debug("Removed {} pub authors".format(count))
@@ -628,6 +663,23 @@ class ChadoPub(ChadoObject):
                     log.debug("{} removed".format(pubauthor))
 
     def delete_relationship(self, cvterm, item, uniquename):
+        """Delete the pub relationship.
+
+        Args:
+            cvterm (Cvterm): cvterm object.
+
+            item (tuple): field data.
+
+            uniquename (bool): Use unique name if true else miniref for lookup.
+
+        Returns:
+            None
+
+        Critical Error:
+            Publication not found
+            Publication is not related
+
+        """
         if not item[FIELD_VALUE]:
             self.critical_error(item, "Must specify a value with !d.")
             self.process_data[item[FIELD_NAME]]['data'] = None
@@ -649,6 +701,17 @@ class ChadoPub(ChadoObject):
         log.debug("{} removed".format(pubrel))
 
     def delete_relationships(self, key, bangc=True):
+        """Delete all relationships.
+
+        Args:
+            key (str): key for process_data.
+
+            bangc (bool): bangc or bangd
+
+        Returns:
+            None
+
+        """
         cvterm = self.session.query(Cvterm).join(Cv).filter(Cv.name == 'pub relationship type',
                                                             Cvterm.name == self.process_data[key]['cvterm'],
                                                             Cvterm.is_obsolete == 0).one()
@@ -664,9 +727,22 @@ class ChadoPub(ChadoObject):
                 self.delete_relationship(cvterm, self.process_data[key]['data'], False)
 
     def delete_pubprop(self, cvterm, item):
-        """
+        """Delete the pub relationship.
+
         Delete specific pubprop specified by the value and cvterm.
         Give critical error if there is no value or value not found.
+
+        Args:
+            cvterm (Cvterm): cvterm object.
+
+            item (tuple): field data.
+
+        Returns:
+            None
+
+        Critical Error:
+            Publication has no pubprop of this type
+
         """
         if not item[FIELD_VALUE]:
             self.critical_error(item, "Must specify a value with !d.")
@@ -685,9 +761,19 @@ class ChadoPub(ChadoObject):
         log.debug("{} removed".format(pubprop))
 
     def delete_pubprops(self, key, bangc=True):
-        """
+        """Delete pub prop.
+
         Delete the pubprops specified by self.process_data[key]['cvterm']
         and if not bangc then by just the one with the value.
+
+        Args:
+            key (str): key for process_data.
+
+            bangc (bool): bangc or bangd
+
+        Returns:
+            None
+
         """
         cv_term = self.session.query(Cvterm).join(Cv).filter(Cv.name == 'pubprop type',
                                                              Cvterm.name == self.process_data[key]['cvterm'],
@@ -705,8 +791,21 @@ class ChadoPub(ChadoObject):
                 self.delete_pubprop(cv_term, self.process_data[key]['data'])
 
     def delete_dbxref(self, key, bangc=True):
-        """
+        """Delete the dxxref.
+
         Bangc and bangd for dbxrefs.
+
+        Args:
+            key (str): key for process_data.
+
+            bangc (bool): bangc or bangd
+
+        Returns:
+            None
+
+        Critical Errors:
+            Publication does not have that dbxref.
+
         """
         db = self.session.query(Db).filter(Db.name == self.process_data[key]['dbname']).one()
         if bangc:
@@ -740,7 +839,8 @@ class ChadoPub(ChadoObject):
             log.debug("{} removed".format(dbxref))
 
     def delete_ignore(self, key, bangc=True):
-        """
+        """Delete P1 data.
+
         Presently P1 only.
         P22 cannot be banged.
         Cannot be blank as it is a required field.
@@ -749,6 +849,18 @@ class ChadoPub(ChadoObject):
         they get processed again.
 
         Bangc and Bangd are the same here as we have to have a value and each one has only one.
+
+        Args:
+            key (str): key for process_data.
+
+            bangc (bool): bangc or bangd
+
+        Returns:
+            None
+
+        Critial Errors:
+            P1 cannot be blank so cannot bangc with blank value.
+
         """
         if not self.process_data[key]['data']:
             self.critical_error(self.process_data[key]['data'], "Must specify a value with !d or !c for this field.")
@@ -777,4 +889,5 @@ class ChadoPub(ChadoObject):
         self.process_data[key]['data'] = None
 
     def delete_obsolete(self, key, bangc=True):
+        """Do nothing."""
         pass
