@@ -1,8 +1,8 @@
 """
-.. module:: proforma
-   :synopsis: Functions and Classes for opening and extracting data from proformae.
 
-.. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
+:synopsis: Functions and Classes for opening and extracting data from proformae.
+
+:moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
 # TODO Split this file into individual files by class.
 

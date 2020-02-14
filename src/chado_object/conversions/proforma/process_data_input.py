@@ -1,9 +1,10 @@
-"""
-.. module:: process_data_input
-   :synopsis: A set of functions to convert different types of data into ChadoObjects.
-   Multiple ChadoObjects can be created from single Proforma (or other) objects.
+"""Process the data input.
 
-.. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
+:synopsis: A set of functions to convert different types of data into ChadoObjects.
+
+Multiple ChadoObjects can be created from single Proforma (or other) objects.
+
+:moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
 from chado_object.chado_gene import ChadoGene
 from chado_object.chado_pub import ChadoPub
@@ -20,7 +21,7 @@ log = logging.getLogger(__name__)
 
 
 def create_chado_objects(ChadoObjectType, proforma_object):
-
+    """Create the chado objects."""
     (file_metadata, bang_c, bang_d,
      proforma_start_line_number, fields_values, set_values, reference) = proforma_object.get_data_for_loading()
 
@@ -45,7 +46,8 @@ def create_chado_objects(ChadoObjectType, proforma_object):
 
 
 def process_data_input(proforma_object):
-    """
+    """Convert data to chadoObject.
+
     Process an object containing data to be loaded into Chado and convert it
     into the appropriate ChadoObject.
 
@@ -56,8 +58,8 @@ def process_data_input(proforma_object):
 
     Returns:
         chado_objects (list): An anonymous list of ChadoObjects to be processed.
-    """
 
+    """
     # TODO These should be simple get functions.
     proforma_type = proforma_object.proforma_type
     proforma_start_line_number = proforma_object.proforma_start_line_number

@@ -1,8 +1,8 @@
 """
-.. module:: chado_chem
-   :synopsis: The "chem" ChadoObject.
 
-.. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
+:synopsis: The "chem" ChadoObject.
+
+:moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>, Ian Longden <ilongden@morgan.harvard.edu>
 """
 
 from harvdev_utils.production import (

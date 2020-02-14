@@ -1,18 +1,32 @@
+# -*- coding: utf-8 -*-
+"""Chado Humanhealth dbxref and dbxrefprop module.
+
+:synopsis: Deal with humanhealth dbxrefprops.
+:moduleauthor: Ian Longden <ilongden@morgan.harvard.edu>
+"""
 from harvdev_utils.production import (
     HumanhealthDbxref, HumanhealthDbxrefprop, HumanhealthDbxrefpropPub, Humanhealth,
     FeatureHumanhealthDbxref, Cvterm, Cv, Db, Dbxref, Feature
 )
 import logging
-from ..chado_base import FIELD_VALUE, SET_BANG
+from chado_object.chado_base import FIELD_VALUE, SET_BANG
 from harvdev_utils.chado_functions import get_or_create
-# from harvdev_utils.chado_functions.external_lookups import ExternalLookup
+
 from error.error_tracking import CRITICAL_ERROR
 log = logging.getLogger(__name__)
 
 
 def process_dbxrefprop(self, key):
-    """
-    Add hh_dbxrefprop
+    """Process the dbxref prop.
+
+    Args:
+        key (str): proforma field key/name
+
+    Returns:
+        hh_dbxref object
+
+        hh_dbxrefporp object
+
     """
     log.debug("key = {}".format(key))
     log.debug("cv is {}, cvterm is {}".format(self.process_data[key]['cv'], self.process_data[key]['cvterm']))
@@ -45,8 +59,18 @@ def process_dbxrefprop(self, key):
 
 
 def create_set_initial_params(self, set_key, data_set):
-    """
+    """Create params for a set.
+
     Create initial params to be used for dbxrefprop generation.
+
+    Args:
+        set_key (str): the key for the set  i.e. HH5 or HH14.
+
+        data_set (dict): dictionary from yml control file.
+
+    Returns:
+        params (dict): dictionary fo elements needed to create a dbxrefprop
+
     """
     params = {'cvterm': self.process_data[set_key]['cvterm'],
               'cvname': self.process_data[set_key]['cv']}
@@ -73,12 +97,17 @@ def create_set_initial_params(self, set_key, data_set):
 
 
 def process_set_dbxrefprop(self, set_key, data_set):
-    """
-    Create/Dissociate the dbxref and prop, pubs for this data_set.
-    set_key: Key for the set i.r. HH5 or HH14
-    data_set: One complete set of data. (dictionary)
-    """
+    """Create/Dissociate the dbxref and prop, pubs for this data_set.
 
+    Args:
+        set_key (str): Key for the set i.e. HH5 or HH14
+
+        data_set (dict): One complete set of data.
+
+    Returns:
+        None
+
+    """
     valid_key = self.get_valid_key_for_data_set(data_set)
     if not valid_key:
         return
@@ -113,8 +142,10 @@ def process_set_dbxrefprop(self, set_key, data_set):
 
 
 def process_data_link(self, set_key):
-    """
-    set_key: Key to process i.e HH5 or HH14
+    """Set the hh dbxrefprop.
+
+    Args:
+        set_key: Key to process i.e HH5 or HH14
 
     TODO: disassociation 'd' still needs to be coded.
     """
@@ -126,12 +157,21 @@ def process_data_link(self, set_key):
 
 
 def process_dbxref(self, params):
-    """
+    """Process hh dbxref.
+
     General rountine for adding humanhealth dbxrefs.
-    params should contain:-
-        dbname:      db name for dbxref
-        accession:   accession for dbxref
-        tuple:       one related tuple to help give better errors
+
+    Args:
+        params (dict):
+            * dbname:      db name for dbxref
+
+            * accession:   accession for dbxref
+
+            * tuple:       one related tuple to help give better errors
+
+    Returns:
+        HumanhealthDbxref
+
     """
     dbxref, is_new = self.get_or_create_dbxref(params)
     if not dbxref:
@@ -149,18 +189,31 @@ def process_dbxref(self, params):
 
 
 def get_or_create_dbxrefprop(self, params):
-    """
-        General rountine for adding humanhealth dbxrefs and their props + pubs
-        params should contain:-
-        dbname:      db name for dbxref
-        accession:   accession for dbxref
-        cvname:      cv name for prop
-        cvterm:      cvterm name for prop
-        description: dbxref description (only used if new dbxref) *Also Optional*
-        tuple:       one related tuple to help give better errors
-        value:       prop value.
+    """Get or create dbxrefprop from param list.
 
-        Return dbxref, dbxrefprop
+    General rountine for adding humanhealth dbxrefs and their props + pubs
+
+    Args:
+        params (dict):
+            * dbname:      db name for dbxref
+
+            * accession:   accession for dbxref
+
+            * cvname:      cv name for prop
+
+            * cvterm:      cvterm name for prop
+
+            * description: dbxref description (only used if new dbxref) *Also Optional*
+
+            * tuple:       one related tuple to help give better errors
+
+            * value:       prop value.
+
+    Returns:
+        hh_dbxref object
+
+        hh_dbxrefprop object
+
     """
     hh_dbxref = self.process_dbxref(params)
 
@@ -190,18 +243,27 @@ def get_or_create_dbxrefprop(self, params):
 
 
 def process_hh7_e_and_f(self, set_key, data_set, params):
-    """
-    Process hh7 e and f.
-     need to create params for get_or_create_dbxrefprop
-        dbname:      db name for dbxref
-        accession:   accession for dbxref
-        cvname:      cv name for prop
-        cvterm:      cvterm name for prop
-        description: dbxref description (only used if new dbxref) *Also Optional*
-        tuple:       one related tuple to help give better errors
-        value:       prop value
-    """
+    """Get or create hh dbxrefprop.
 
+    Process hh7 e and f.
+
+    Args:
+        set_key (str): Set key HH7.
+
+        data_set (dict): Contains orginal tuple form proforma.
+
+        params (dict):
+            * dbname:      db name for dbxref
+            * accession:   accession for dbxref
+            * cvname:      cv name for prop
+            * cvterm:      cvterm name for prop
+            * description: dbxref description (only used if new dbxref) *Also Optional*
+            * tuple:       one related tuple to help give better errors
+            * value:       prop value
+
+    Returns:
+        Bool: Whether successful or not.
+    """
     db_acc_key = set_key + 'e'
     dis_key = set_key + 'f'
 
@@ -230,17 +292,26 @@ def process_hh7_e_and_f(self, set_key, data_set, params):
 
 
 def process_hh7_c_and_d(self, set_key, data_set, params):  # noqa: C901
-    """
-    Process hh7 c and d.
-      params already defined
-        dbname:      db name for dbxref
-        accession:   accession for dbxref
-      need to create params for get_or_create_dbxrefprop
-        cvname:      cv name for prop
-        cvterm:      cvterm name for prop
-        description: dbxref description (only used if new dbxref) *Also Optional*
-        tuple:       one related tuple to help give better errors
-        value:       prop value
+    """Process hh7 c and d.
+
+    Args:
+        set_key (str): Set key HH7.
+
+        data_set (dict): Contains orginal tuple form proforma.
+
+        params (dict):
+            * params already defined
+                * dbname:      db name for dbxref
+                * accession:   accession for dbxref
+            * need to create params for get_or_create_dbxrefprop
+                * cvname:      cv name for prop
+                * cvterm:      cvterm name for prop
+                * description: dbxref description (only used if new dbxref) *Also Optional*
+                * tuple:       one related tuple to help give better errors
+                * value:       prop value
+    Return:
+         None
+
     """
     for char_key in ('c', 'd'):
         sub_key = set_key + char_key
@@ -282,8 +353,16 @@ def process_hh7_c_and_d(self, set_key, data_set, params):  # noqa: C901
 
 
 def process_dbxref_link_item(self, set_key, data_set):
-    """
-    Add hh_dbxref for HH7e and then add hh_dbxrefprops for
+    """Add hh_dbxref for HH7e and then add hh_dbxrefprops.
+
+    Args:
+        set_key (str): Set key HH7.
+
+        data_set (dict): Contains orginal tuple form proforma.
+
+    Returns:
+        None
+
     """
     valid_key = None  # need a valid key incase something is wrong to report line number etc
     for key in data_set.keys():
@@ -300,20 +379,29 @@ def process_dbxref_link_item(self, set_key, data_set):
 
 
 def process_hh7(self, set_key):
-    """
-    Load HH7 sets c,d, e and f only. (a,b) NOT part of set.
-    """
+    """Process HH7.
 
+    Load HH7 sets c,d, e and f only. (a,b) NOT part of set.
+
+    Args:
+        set_key (str): Set key HH7.
+
+    Returns:
+        None
+
+    """
     for data_set in self.set_values[set_key]:
         self.process_dbxref_link_item(set_key, data_set)
 
 
 def load_dbxrefprop(self, key):
-    """
-    load the hh_dbxref and hh_dbxrefprop.
+    """Load the hh_dbxref and hh_dbxrefprop.
 
     If db not in yml file then the format must be dbname:accession
     Else just the accession
+
+    Args:
+        key (str): field key.
     """
     # If this is to be deleted rather than created by then return
     if 'not_if_defined' in self.process_data[key]:
@@ -333,7 +421,8 @@ def load_dbxrefprop(self, key):
 ############################################################################
 
 def delete_dbxref(self, key, bangc):
-    """
+    """Delete the dbxref.
+
     General first call from
     """
     params = {'cvterm': self.process_data[key]['cvterm'],
@@ -359,11 +448,17 @@ def delete_dbxref(self, key, bangc):
 
 
 def bangd_dbxref(self, params):
-    """
-    Params needed are:-
-    'dbname' and 'accession': to get the dbxref.
-    'tuple': to allow reporting of problems
-    humanhealth obtained from self.
+    """Remove specific hh dbxref.
+
+    Args:
+        params (dict):
+            * dbname
+            * accession
+            * tuple - to allow reporting of problems
+
+    Returns:
+        None
+
     """
     dbxref = self.session.query(Dbxref).join(Db).\
         filter(Dbxref.db_id == Db.db_id,
@@ -380,18 +475,23 @@ def bangd_dbxref(self, params):
 
 
 def bangc_dbxref(self, params):
-    """
-    Params needed are:-
-    'cvterm', 'cv': to get cvterm of those to remove
-    'dbname': to get the db type. *Optional else remove all dbnames*.
-    'tuple': to allow reporting of problems
-    humanhealth obtained from self.
+    """Remove all hh dbxrefs for specific cv, cvterm.
 
     So for this humanhealth and cvterm remove all hh_dbxrefs.
     Dbxrefs given by links to cvterms and possibly db's.
     The cvterm is defined in the hh_dbxref_prop.
-    """
 
+    Args:
+        params (dict):
+            * cvterm
+            * cv
+            * dbname <Optional else remove all dbnames>
+            * tuple
+
+    Returns:
+        None
+
+    """
     # get cvterm
     cvterm = self.session.query(Cvterm).join(Cv).\
         filter(Cv.name == params['cvname'],
@@ -425,13 +525,20 @@ def bangc_dbxref(self, params):
 
 
 def bang_dbxrefprop_only(self, params):
-    """
-    Params needed are:-
-    'cvterm', 'cvname': to get prop
-    'dbname' and 'accession': to get the dbxref.
-    'tuple': to allow reporting of problems
-    'bang_type': d or c
-    humanhealth and pub obtained from self.
+    """Remove one or more hh dbxrefprops.
+
+    Args:
+        params (dict):
+            * cvterm
+            * cv
+            * dbname <Optional else remove all dbnames>
+            * accession
+            * tuple
+            * bang_type 'c' or 'd'
+
+    Returns:
+        None
+
     """
     # get dbxref
     dbxref = self.session.query(Dbxref).join(Db).\
@@ -474,7 +581,20 @@ def bang_dbxrefprop_only(self, params):
 
 
 def bang_feature_hh_dbxref(self, params):
-    # get dbxref
+    """Remove feature hh dbxref.
+
+     Args:
+        params (dict):
+            * name - feature name
+            * dbname <Optional else remove all dbnames>
+            * accession
+            * tuple
+            * bang_type - 'c' or 'd'
+
+    Returns:
+        None
+
+    """
     dbxref = self.session.query(Dbxref).join(Db).\
         filter(Dbxref.db_id == Db.db_id,
                Db.name == params['dbname'],

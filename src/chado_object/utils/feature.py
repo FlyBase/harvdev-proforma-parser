@@ -1,6 +1,6 @@
 """Feature, general routines.
 
-.. module:: feature
+.. module:: chado_object.utils.feature
    :synopsis: Lookup and general Feature functions.
 
 .. moduleauthor:: Ian Longden <ilongden@morgan.harvard.edu>
@@ -73,8 +73,9 @@ def get_feature_and_check_uname_symbol(session, uniquename, synonym, type_name=N
 
     uniquename : FBxx0000001 type. Also be aware of things like FBgn0000014:11 which is an exon.
 
-    NOTE: If user supplies no type_name or organism, we can get the probable organism form the synonym
-          then lookup just using unique name and report problem if more than one found.
+    .. note::
+        If user supplies no type_name or organism, we can get the probable organism form the synonym
+        then lookup just using unique name and report problem if more than one found.
 
     Args:
         session (sqlalchemy.orm.session.Session object): db connection  to use.

@@ -1,8 +1,7 @@
 """
-.. module:: app
-   :synopsis: The root (main) file for the proforma parser.
+:synopsis: The root (main) file for the proforma parser.
 
-.. moduleauthor:: Christopher Tabone <ctabone@morgan.harvard.edu>
+:moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>
 """
 
 from harvdev_utils.production import Pub
@@ -40,6 +39,7 @@ config.read(args.config)
 
 
 def create_postgres_session():
+    """Create the postgres seesion."""
     USER = config['connection']['USER']
     PASSWORD = config['connection']['PASSWORD']
     SERVER = config['connection']['SERVER']
@@ -61,9 +61,7 @@ def create_postgres_session():
 
 
 def split_it(page):
-    """
-    split pages by certain criteria
-    """
+    """Split pages by certain criteria."""
     sub_pages = page.replace('--', ' ')
     sub_pages = sub_pages.replace('+', ' ')
     sub_pages = sub_pages.replace(';', ' ')
@@ -72,7 +70,8 @@ def split_it(page):
 
 
 def simple_line(session, page):
-    """
+    """Check Page format.
+
     Check for simple page numbers or varaints and if two pages make sure page1 < page2.
     return True if ant regex matches else False
     """
@@ -109,7 +108,8 @@ def simple_line(session, page):
 
 
 def pages_regex_test(session):
-    """
+    """Check page using regexs.
+
     Complicated tests. Not used in production but here for sanity.
     """
     part_regexs = [

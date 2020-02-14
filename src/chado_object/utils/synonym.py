@@ -37,8 +37,10 @@ def synonym_name_details(session, synonym_name):
     NOTE:
         So for synonym_name of 'Hsap\0005-&agr;-[001]
 
-        organism returned is the Organism object for homo sapiens
+        organism -> Organism object for homo sapiens
+
         plain text -> 'Hsap\\00005-alpha-[001]'
+
         unicode version -> 'Hsap\\00005-α-<up>001</up>'
     """
     pattern = r"""

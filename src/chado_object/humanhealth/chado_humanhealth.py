@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 """Chado Humanhealth main module.
 
-.. module:: chado_humanhealth
-   :synopsis: The "humanhealth" ChadoObject.
-
 .. moduleauthor:: Ian Longden <ilongden@morgan.harvard.edu>
 """
 
@@ -43,7 +40,7 @@ class ChadoHumanhealth(ChadoObject):
     )
 
     def __init__(self, params):
-        """Initialisation for humanhealth.
+        """Initialise the humanhealth object.
 
         type dict and delete_dict determine which methods are called
         based on the conrolling yml file.
@@ -98,7 +95,7 @@ class ChadoHumanhealth(ChadoObject):
         self.process_data = self.load_reference_yaml(yml_file, params)
 
     def load_content(self):
-        """Main processing routine."""
+        """Process the proforma data."""
         self.pub = super(ChadoHumanhealth, self).pub_from_fbrf(self.reference)
 
         if self.process_data['HH1f']['data'][FIELD_VALUE] == "new":
@@ -206,8 +203,12 @@ class ChadoHumanhealth(ChadoObject):
         that it uses. i.e. For HH5a, HH5b etc this becomes HH5.
         self.set_values is a dictionary of these and points to an list of the
         actual values the curators have added i.e. HH5a, HH5c
-        This is an example of what the set_vales will look like.
-        HH5: [{'HH5a': ('HH5a', '1111111', 16),
+        This is an example of what the set_values will look like.
+
+        .. code-block:: JSON
+
+            {
+              HH5: [{'HH5a': ('HH5a', '1111111', 16),
                'HH5b': ('HH5b', 'HGNC', 17),
                'HH5c': ('HH5c', 'hgnc_1', 18)},
               {'HH5a': ('HH5a', '2', 20),
@@ -226,6 +227,8 @@ class ChadoHumanhealth(ChadoObject):
                'HH5b': ('HH5b', None, 37),
                'HH5c': ('HH5c', None, 38)
              ]
+            }
+
         This comes from the test 1505_HH_5abc_good_set.txt.sm.edit.1
         """
         for key in self.set_values.keys():
@@ -401,8 +404,10 @@ class ChadoHumanhealth(ChadoObject):
         Remove humanhealth_pub, humanhealth_synonym, humanhealth_cvterm, humanhealth_relationship,
         feature_humanhealth_dbxref, humanhealth_dbxref, humanhealth_dbxrefprop and humanhealth_feature
 
-        NOTE: humanhealth_phenotype and library_humanhealth seem to be empty are not
-            : filled in by anything here.
+        .. note::
+            humanhealth_phenotype and library_humanhealth seem to be empty are not
+            filled in by anything here.
+
         """
         #################
         # Humanhealth_pub
@@ -481,7 +486,11 @@ class ChadoHumanhealth(ChadoObject):
                     continue
 
     def delete_cvterm(self, key, bangc=False):
-        """Delete the cvterm."""
+        """Delete the cvterm.
+
+        .. class:: ChadoHumanhealth
+        .. function:: delete_cvterm
+        """
         if bangc:
             self.session.query(HumanhealthCvterm).\
                 filter(HumanhealthCvterm.humanhealth_id == self.humanhealth.humanhealth_id).delete()
@@ -561,8 +570,7 @@ class ChadoHumanhealth(ChadoObject):
         """Make the humanhealth recid obsolete."""
         self.humanhealth.is_obsolete = True
 
-    def ignore(self, key):
-        """Ignore!"""
+    def ignore(self, key):  # noqa D102
         return
 
     def delete_ignore(self, key, bangc=False):
