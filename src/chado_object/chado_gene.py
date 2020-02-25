@@ -6,7 +6,7 @@
 import os
 from .chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.production import (
-    Feature
+    Feature, Featureloc, Featureprop
 )
 from harvdev_utils.chado_functions import get_or_create, get_cvterm, DataError
 from chado_object.utils.feature_synonym import fs_add_by_synonym_name_and_type
@@ -23,7 +23,10 @@ log = logging.getLogger(__name__)
 
 
 class ChadoGene(ChadoObject):
+    """ChadoGene object."""
+
     def __init__(self, params):
+        """Initialise the ChadoGene Object."""
         log.info('Initializing ChadoGene object.')
 
         # Initiate the parent.
@@ -33,7 +36,9 @@ class ChadoGene(ChadoObject):
         ##########################################
         self.type_dict = {'synonym': self.load_synonym,
                           'ignore': self.ignore,
-                          'cvterm': self.load_cvterm}
+                          'cvterm': self.load_cvterm,
+                          'merge': self.merge,
+                          'prop': self.load_prop}
 
         self.delete_dict = {'synonym': self.delete_synonym,
                             'cvterm': self.delete_cvterm}
@@ -44,6 +49,7 @@ class ChadoGene(ChadoObject):
         # Values queried later, placed here for reference purposes.
         ############################################################
         self.pub = None
+        self.gene = None
 
         ############################################################
         # Get processing info and data to be processed.
@@ -57,9 +63,7 @@ class ChadoGene(ChadoObject):
         self.species = "melanogaster"
 
     def load_content(self):
-        """
-        Main processing routine
-        """
+        """Process the data."""
         self.pub = super(ChadoGene, self).pub_from_fbrf(self.reference)
 
         self.get_gene()
@@ -80,10 +84,72 @@ class ChadoGene(ChadoObject):
         log.info('Curator string assembled as:')
         log.info('%s' % (curated_by_string))
 
+    def get_merge_genes(self, key):
+        """Get genes to be merged.
+
+        Get genes to be merged and do some checks.
+
+        Returns: list of valid gene objects to be merged.
+
+        Raise: Critical errors on:-
+           If G1g = 'y' then G1a (self.gene now) MUST be in G1f list.
+           Non valid symbol.
+           Gene has featureloc
+        """
+        genes = []
+        found = False
+        # Check gene from G1a (self.gene) is in the list to be merged
+        for merge_gene_symbol_tuple in self.process_data[key]['data']:
+            merge_gene_symbol = merge_gene_symbol_tuple[FIELD_VALUE]
+            organism, plain_name, sgml = synonym_name_details(self.session, merge_gene_symbol)
+            try:
+                gene = feature_symbol_lookup(self.session, 'gene', merge_gene_symbol, organism_id=organism.organism_id)
+                genes.append(gene)
+            except NoResultFound:
+                message = "Unable to find Gene with symbol {}.".format(merge_gene_symbol)
+                self.critical_error(merge_gene_symbol_tuple, message)
+                continue
+            if self.gene.name == gene.name:
+                found = True
+            # Not allowed to merge genes with featureloc
+            if self.session.query(Featureloc).filter(Featureloc.feature_id == gene.feature_id).one_or_none():
+                message = "{} Gene has featureloc which is not allowed in merges".format(merge_gene_symbol)
+                self.critical_error(merge_gene_symbol_tuple, message)
+        if self.process_data['G1g']['data'][FIELD_VALUE] == 'y' and not found:
+            message = "G1a {} must be in G1f list when G1g is set to y".format(self.process_data['G1a']['data'][FIELD_VALUE])
+            self.critical_error(self.process_data[key]['data'][0], message)
+        return genes
+
+    def load_prop(self, key):
+        """Load featureprop."""
+        if not self.has_data(key):
+            return
+        cv_name = self.process_data[key]['cv']
+        cvterm_name = self.process_data[key]['cvterm']
+        cvterm = get_cvterm(self.session, cv_name, cvterm_name)
+        if not cvterm:
+            message = "Unable to find cvterm {} for Cv {}.".format(cvterm_name, cv_name)
+            self.critical_error(self.process_data[key]['data'], message)
+            return None
+
+        prop, _ = get_or_create(self.session, Featureprop, value=self.process_data[key]['data'][FIELD_VALUE],
+                                type_id=cvterm.cvterm_id, feature_id=self.gene.feature_id)
+        if not prop:
+            message = "Unable to create Featue prop??? Sorry wierd one!!"
+            self.critical_error(self.process_data[key]['data'], message)
+
+    def merge(self, key):
+        """Merge gene list into new gene."""
+        genes = self.get_merge_genes(key)
+        for gene in genes:
+            log.debug("Gene to be merged is {}".format(gene))
+
     def ignore(self, key):
+        """Ignore, done by initial setup."""
         pass
 
     def load_synonym(self, key):
+        """Load synonym."""
         if not self.has_data(key):
             return
 
@@ -101,9 +167,11 @@ class ChadoGene(ChadoObject):
                                             synonym_sgml=None, is_current=is_current, is_internal=False)
 
     def load_cvterm(self, key):
+        """Ignore, done by initial setup."""
         pass
 
     def get_gene(self):
+        """Get initial gene and check."""
         # G1h is used to check it matches with G1a
         if self.has_data('G1h'):
             self.gene = None
@@ -137,7 +205,9 @@ class ChadoGene(ChadoObject):
             self.load_synonym('G1a')
 
     def delete_synonym(self, key):
+        """Ignore, done by initial setup."""
         pass
 
     def delete_cvterm(self, key):
+        """Ignore, done by initial setup."""
         pass

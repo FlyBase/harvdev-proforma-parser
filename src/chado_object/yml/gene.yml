@@ -38,7 +38,8 @@ G2b:
     cvterm: fullname
     is_current: False 
 #     'G2c', 'fullname',    #feature_synonym
-
+G2c: # NOT done yet but excluded so needs to exist
+   type: ignore
 #     'G30',  'SO',                #feature_cvterm
 #     'G31a', 'is_obsolete',       #feature.is_obsolete
 #     'G31b', 'dissociate_pub',    #feature_pub...
@@ -66,6 +67,10 @@ G2b:
 #     'G14b', 'identified_by',                            #featureprop
 #     'G28a', 'gene_relationships',                       #featureprop
 #     'G28b', 'merge_source/identity_source',             #featureprop
+G28b:
+    type: prop
+    cv: property type
+    cvterm: merge_source
 #     'G29a',
 #     'fnally_comps/fnally_noncomps/fnally_partcomps/gain_of_fn_species'
 #     ,    #feature_relationship.object_id, featureprop

@@ -45,3 +45,7 @@ DB3:
   - does not match a valid url format
 DB4:
   - does not match a valid url format
+G1A:
+  - required
+G1f: 
+  - field 'G28b' is required
