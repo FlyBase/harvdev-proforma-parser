@@ -3,15 +3,16 @@
 
 :moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>, Ian Longden <ilongden@morgan.harvard.edu>
 """
-from chado_object.chado_base import FIELD_VALUE
 from harvdev_utils.production import (
-    FeatureDbxref, Featureloc
+    FeatureDbxref, Featureloc, FeatureSynonym
 )
+from harvdev_utils.chado_functions import get_or_create
 # from harvdev_utils.chado_functions import get_or_create, get_cvterm, DataError
 from chado_object.utils.feature import (
     feature_symbol_lookup
 )
 from chado_object.utils.synonym import synonym_name_details
+from chado_object.chado_base import FIELD_VALUE
 from sqlalchemy.orm.exc import NoResultFound
 
 import logging
@@ -19,11 +20,25 @@ log = logging.getLogger(__name__)
 
 
 def transfer_dbxrefs(self, gene):
-    """Transfer dbxref from gene to self.gene."""
-    dbxrefs = self.session.query(FeatureDbxref).filter(FeatureDbxref.feature_id == gene.feature_id)
-    for dbxref in dbxrefs:
-        # add to self.gene
-        pass
+    """Transfer dbxref from gene to self.gene.
+
+    If dbxref is from a Flybase db then we want move it to the merge
+    gene and set is_current to False.
+
+    Else we want to copy the dbxref.
+    """
+    # copy feature's dbxref to dbxref table
+    get_or_create(self.session, FeatureDbxref, dbxref_id=gene.dbxref_id, feature_id=self.gene.feature_id, is_current=False)
+
+    for featdbx in self.session.query(FeatureDbxref).filter(FeatureDbxref.feature_id == gene.feature_id):
+        get_or_create(self.session, FeatureDbxref, dbxref_id=featdbx.dbxref.dbxref_id, feature_id=self.gene.feature_id)
+
+
+def transfer_synonyms(self, gene):
+    """Transfer synonyms and make is_current False."""
+    for feat_syn in self.session.query(FeatureSynonym).filter(FeatureSynonym.feature_id == gene.feature_id):
+        get_or_create(self.session, FeatureSynonym, synonym_id=feat_syn.synonym_id, feature_id=self.gene.feature_id,
+                      pub_id=feat_syn.pub_id, is_current=False)
 
 
 def get_merge_genes(self, key):
@@ -36,10 +51,11 @@ def get_merge_genes(self, key):
     Raise: Critical errors on:-
         If G1g = 'y' then G1a (self.gene now) MUST be in G1f list.
         Non valid symbol.
-        Gene has featureloc
+        More than one featureloc
     """
     genes = []
     found = False
+    featlock_count = 0
     # Check gene from G1a (self.gene) is in the list to be merged
     for merge_gene_symbol_tuple in self.process_data[key]['data']:
         merge_gene_symbol = merge_gene_symbol_tuple[FIELD_VALUE]
@@ -55,8 +71,13 @@ def get_merge_genes(self, key):
             found = True
         # Not allowed to merge genes with featureloc
         if self.session.query(Featureloc).filter(Featureloc.feature_id == gene.feature_id).one_or_none():
-            message = "{} Gene has featureloc which is not allowed in merges".format(merge_gene_symbol)
-            self.critical_error(merge_gene_symbol_tuple, message)
+            featlock_count += 1
+
+    if self.session.query(Featureloc).filter(Featureloc.feature_id == self.gene.feature_id).one_or_none():
+        featlock_count += 1
+    if featlock_count > 1:
+        message = "More than one Gene has featureloc which is not allowed in merges".format(self.process_data[key]['data'][0])
+        self.critical_error(merge_gene_symbol_tuple, message)
     if self.process_data['G1g']['data'][FIELD_VALUE] == 'y' and not found:
         message = "G1a {} must be in G1f list when G1g is set to y".format(self.process_data['G1a']['data'][FIELD_VALUE])
         self.critical_error(self.process_data[key]['data'][0], message)
@@ -72,4 +93,4 @@ def merge(self, key):
         # Transfer dbxrefs
         self.transfer_dbxrefs(gene)
         # Transfer synonyms
-        self.tranfer_synonyms(gene)
+        self.transfer_synonyms(gene)
