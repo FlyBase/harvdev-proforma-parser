@@ -48,4 +48,6 @@ DB4:
 G1A:
   - required
 G1f: 
-  - field 'G28b' is required
+  - is required
+  - must be in G1f list when G1g is set to y
+  - must not be present with

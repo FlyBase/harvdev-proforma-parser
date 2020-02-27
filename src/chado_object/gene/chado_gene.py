@@ -142,7 +142,19 @@ class ChadoGene(ChadoObject):
 
     def get_gene(self):
         """Get initial gene and check."""
-        # G1h is used to check it matches with G1a
+        if self.has_data('G1f'):  # if gene merge we want to create a new gene even if one exist already
+            cvterm = get_cvterm(self.session, 'SO', 'gene')
+            if not cvterm:
+                message = "Unable to find cvterm 'gene' for Cv 'SO'."
+                self.critical_error(self.process_data['G1a']['data'], message)
+                return None
+            organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['G1a']['data'][FIELD_VALUE])
+            self.gene, _ = get_or_create(self.session, Feature, name=plain_name,
+                                         type_id=cvterm.cvterm_id, uniquename='FBgn:temp_0', organism_id=organism.organism_id)
+            # feature pub
+            get_or_create(self.session, FeaturePub, feature_id=self.gene.feature_id, pub_id=self.pub.pub_id)
+            return
+
         if self.has_data('G1h'):
             self.gene = None
             try:

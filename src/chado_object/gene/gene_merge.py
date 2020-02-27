@@ -37,8 +37,9 @@ def transfer_dbxrefs(self, gene):
 def transfer_synonyms(self, gene):
     """Transfer synonyms and make is_current False."""
     for feat_syn in self.session.query(FeatureSynonym).filter(FeatureSynonym.feature_id == gene.feature_id):
-        get_or_create(self.session, FeatureSynonym, synonym_id=feat_syn.synonym_id, feature_id=self.gene.feature_id,
-                      pub_id=feat_syn.pub_id, is_current=False)
+        fs, _ = get_or_create(self.session, FeatureSynonym, synonym_id=feat_syn.synonym_id, feature_id=self.gene.feature_id,
+                              pub_id=feat_syn.pub_id)
+        fs.is_current = False
 
 
 def get_merge_genes(self, key):
@@ -86,6 +87,9 @@ def get_merge_genes(self, key):
 
 def merge(self, key):
     """Merge gene list into new gene."""
+    # change the pub
+    self.gene.pub_id = self.pub.pub_id
+
     genes = self.get_merge_genes(key)
     for gene in genes:
         log.debug("Gene to be merged is {}".format(gene))
