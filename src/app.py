@@ -33,8 +33,11 @@ parser.add_argument('-l', '--load_type', help='Specify whether the load is \'tes
 args = parser.parse_args()
 
 if args.verbose:
+    print("Running in Verbose mode")
     logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format='%(levelname)s -- %(message)s')
     logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
+    # comment/uncomment out below to notsee/see NOTICE messages for sql functions.
+    # logging.getLogger('sqlalchemy.dialects.postgresql').setLevel(logging.INFO)
 else:
     logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(levelname)s -- %(message)s')
 

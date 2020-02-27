@@ -12,6 +12,8 @@ G1e:
 G1f:
     type: [string, list]
     no_bangc: True
+    dependencies: [G28b, G2a]
+    excludes: [G1e, G2c]
 G1g:
     type: string
     required: True
@@ -28,3 +30,11 @@ G2a:
 G2b:
     type: [string, list]
     nullable: True
+G2c:
+    type: string
+    nullable: True
+    required: False
+G28b:
+    type: string
+    nullable: True
+    required: False

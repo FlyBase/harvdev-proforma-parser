@@ -4,9 +4,9 @@
 :moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>, Ian Longden <ilongden@morgan.harvard.edu>
 """
 import os
-from .chado_base import ChadoObject, FIELD_VALUE
+from chado_object.chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.production import (
-    Feature
+    Feature, Featureprop, Pub, FeaturePub
 )
 from harvdev_utils.chado_functions import get_or_create, get_cvterm, DataError
 from chado_object.utils.feature_synonym import fs_add_by_synonym_name_and_type
@@ -23,7 +23,14 @@ log = logging.getLogger(__name__)
 
 
 class ChadoGene(ChadoObject):
+    """ChadoGene object."""
+
+    from chado_object.gene.gene_merge import (
+        merge, get_merge_genes, transfer_dbxrefs, transfer_synonyms
+    )
+
     def __init__(self, params):
+        """Initialise the ChadoGene Object."""
         log.info('Initializing ChadoGene object.')
 
         # Initiate the parent.
@@ -33,7 +40,9 @@ class ChadoGene(ChadoObject):
         ##########################################
         self.type_dict = {'synonym': self.load_synonym,
                           'ignore': self.ignore,
-                          'cvterm': self.load_cvterm}
+                          'cvterm': self.load_cvterm,
+                          'merge': self.merge,
+                          'prop': self.load_prop}
 
         self.delete_dict = {'synonym': self.delete_synonym,
                             'cvterm': self.delete_cvterm}
@@ -44,12 +53,13 @@ class ChadoGene(ChadoObject):
         # Values queried later, placed here for reference purposes.
         ############################################################
         self.pub = None
+        self.gene = None
 
         ############################################################
         # Get processing info and data to be processed.
         # Please see the yml/publication.yml file for more details
         ############################################################
-        yml_file = os.path.join(os.path.dirname(__file__), 'yml/gene.yml')
+        yml_file = os.path.join(os.path.dirname(__file__), '../yml/gene.yml')
         # Populated self.process_data with all possible keys.
         self.process_data = self.load_reference_yaml(yml_file, params)
         self.reference = params.get('reference')
@@ -57,9 +67,7 @@ class ChadoGene(ChadoObject):
         self.species = "melanogaster"
 
     def load_content(self):
-        """
-        Main processing routine
-        """
+        """Process the data."""
         self.pub = super(ChadoGene, self).pub_from_fbrf(self.reference)
 
         self.get_gene()
@@ -80,10 +88,30 @@ class ChadoGene(ChadoObject):
         log.info('Curator string assembled as:')
         log.info('%s' % (curated_by_string))
 
+    def load_prop(self, key):
+        """Load featureprop."""
+        if not self.has_data(key):
+            return
+        cv_name = self.process_data[key]['cv']
+        cvterm_name = self.process_data[key]['cvterm']
+        cvterm = get_cvterm(self.session, cv_name, cvterm_name)
+        if not cvterm:
+            message = "Unable to find cvterm {} for Cv {}.".format(cvterm_name, cv_name)
+            self.critical_error(self.process_data[key]['data'], message)
+            return None
+
+        prop, _ = get_or_create(self.session, Featureprop, value=self.process_data[key]['data'][FIELD_VALUE],
+                                type_id=cvterm.cvterm_id, feature_id=self.gene.feature_id)
+        if not prop:
+            message = "Unable to create Featue prop??? Sorry wierd one!!"
+            self.critical_error(self.process_data[key]['data'], message)
+
     def ignore(self, key):
+        """Ignore, done by initial setup."""
         pass
 
     def load_synonym(self, key):
+        """Load synonym."""
         if not self.has_data(key):
             return
 
@@ -93,18 +121,40 @@ class ChadoGene(ChadoObject):
         cv_name = self.process_data[key]['cv']
         cvterm_name = self.process_data[key]['cvterm']
         is_current = self.process_data[key]['is_current']
+
+        # For some bizzare reason if a merge is taking place then the synonyms
+        # have the pud unattributed and not the self.pub???
+        if self.has_data('G1f'):
+            pub, _ = get_or_create(self.session, Pub, uniquename='unattributed')
+        else:
+            pub = self.pub
+
         for item in self.process_data[key]['data']:
             synonym_name = item[FIELD_VALUE]
             # synonym_name = synonym_name.replace('\\', '\\\\')
             fs_add_by_synonym_name_and_type(self.session, self.gene.feature_id,
-                                            synonym_name, cv_name, cvterm_name, self.pub.pub_id,
+                                            synonym_name, cv_name, cvterm_name, pub.pub_id,
                                             synonym_sgml=None, is_current=is_current, is_internal=False)
 
     def load_cvterm(self, key):
+        """Ignore, done by initial setup."""
         pass
 
     def get_gene(self):
-        # G1h is used to check it matches with G1a
+        """Get initial gene and check."""
+        if self.has_data('G1f'):  # if gene merge we want to create a new gene even if one exist already
+            cvterm = get_cvterm(self.session, 'SO', 'gene')
+            if not cvterm:
+                message = "Unable to find cvterm 'gene' for Cv 'SO'."
+                self.critical_error(self.process_data['G1a']['data'], message)
+                return None
+            organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['G1a']['data'][FIELD_VALUE])
+            self.gene, _ = get_or_create(self.session, Feature, name=plain_name,
+                                         type_id=cvterm.cvterm_id, uniquename='FBgn:temp_0', organism_id=organism.organism_id)
+            # feature pub
+            get_or_create(self.session, FeaturePub, feature_id=self.gene.feature_id, pub_id=self.pub.pub_id)
+            return
+
         if self.has_data('G1h'):
             self.gene = None
             try:
@@ -133,11 +183,15 @@ class ChadoGene(ChadoObject):
             organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['G1a']['data'][FIELD_VALUE])
             self.gene, _ = get_or_create(self.session, Feature, name=plain_name,
                                          type_id=cvterm.cvterm_id, uniquename='FBgn:temp_0', organism_id=organism.organism_id)
+            # feature pub
+            get_or_create(self.session, FeaturePub, feature_id=self.gene.feature_id, pub_id=self.pub.pub_id)
             # add default symbol
             self.load_synonym('G1a')
 
     def delete_synonym(self, key):
+        """Ignore, done by initial setup."""
         pass
 
     def delete_cvterm(self, key):
+        """Ignore, done by initial setup."""
         pass

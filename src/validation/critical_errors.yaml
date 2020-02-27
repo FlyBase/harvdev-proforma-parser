@@ -45,3 +45,9 @@ DB3:
   - does not match a valid url format
 DB4:
   - does not match a valid url format
+G1A:
+  - required
+G1f: 
+  - is required
+  - must be in G1f list when G1g is set to y
+  - must not be present with
