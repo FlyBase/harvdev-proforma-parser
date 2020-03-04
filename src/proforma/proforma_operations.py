@@ -481,8 +481,8 @@ class Proforma(object):
                     log.critical('Attempted to add an additional value: {} to field: {} from line: {}'.format(value, field, line_number))
                     log.critical('Unfortunately, this field is not current specified to support multiple values.')
                     log.critical('Please contact Harvdev if you believe this is a mistake.')
-                    log.critical('Exiting.')
-                    sys.exit(-1)
+                    # log.critical('Exiting.')
+                    # sys.exit(-1)
         else:  # If the key doesn't exist, add it.
             # Always add None objects as strings, not lists. 'None' in list format breaks Cerberus (as of 1.2)!
             if field in Proforma.set_fields_to_key:

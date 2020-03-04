@@ -10,7 +10,7 @@ CH1a:
   nullable: True
 CH1b:
   # bang_c/d permitted.
-  type: string
+  type: [list, string]
   required: False
   nullable: True
 CH3a:

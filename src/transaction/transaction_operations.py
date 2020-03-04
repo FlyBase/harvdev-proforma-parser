@@ -110,7 +110,8 @@ def process_chado_objects_for_transaction(session, list_of_objects_to_load, load
         for instance in ErrorTracking.instances:
             if instance.error_level == CRITICAL_ERROR:
                 error_occurred = True
-                break
+                if load_type == 'production':
+                    break
 
     if not error_occurred:
         if load_type == 'production':
