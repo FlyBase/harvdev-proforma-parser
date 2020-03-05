@@ -167,10 +167,11 @@ def feature_name_lookup(session, name, organism_id=None, type_name=None, type_id
     return feature
 
 
-def feature_synonym_lookup(session, type_name, synonym_name, organism_id=None, cv_name='synonym type', cvterm_name='symbol'):
-    """Get feature form the synonym.
+def feature_synonym_lookup(session, type_name, synonym_name, organism_id=None, cv_name='synonym type', cvterm_name='symbol', check_unique=False):
+    """Get feature from the synonym.
 
-    Lookup to see if the synonym has been used before. Even if not current
+    Lookup to see if the synonym has been used before. Even if not current.
+    Check for uniqueness if requested.
 
     Args:
         session (sqlalchemy.orm.session.Session object): db connection  to use.
@@ -189,7 +190,7 @@ def feature_synonym_lookup(session, type_name, synonym_name, organism_id=None, c
         Feature object.
 
     Raises:
-        DataError: if feature cannot be found at least once.
+        DataError: if feature cannot be found uniquely
 
     """
     # Default to Dros if not organism specified.
@@ -210,16 +211,32 @@ def feature_synonym_lookup(session, type_name, synonym_name, organism_id=None, c
     synonym_type = get_cvterm(session, cv_name, cvterm_name)
 
     try:
-        feature = session.query(Feature).join(FeatureSynonym).join(Synonym).\
+        features = session.query(Feature).join(FeatureSynonym).join(Synonym).\
             filter(Synonym.type_id == synonym_type.cvterm_id,
                    Synonym.synonym_sgml == synonym_sgml,
-                   FeatureSynonym.is_current == 'f',
                    Feature.organism_id == organism_id,
+                   Feature.is_obsolete == 'f',
                    Feature.type_id == feature_type.cvterm_id).all()
-        return feature
     except NoResultFound:
         raise DataError("DataError: Could not find current synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
         return None
+
+    if not check_unique:
+        return features
+
+    # fs has pub so there may be many of the same symbols with different pubs
+    # check this is the case.
+    uniquecheck = None
+    for feat in features:
+        if uniquecheck and uniquecheck != feat.uniquename:
+            raise DataError("DataError: Could not find UNIQUE current synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
+        else:
+            uniquecheck = feat.uniquename
+
+    if uniquecheck:
+        return feat
+
+    raise DataError("DataError: Could not find current unique synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
 
 
 def feature_symbol_lookup(session, type_name, synonym_name, organism_id=None, cv_name='synonym type', cvterm_name='symbol'):

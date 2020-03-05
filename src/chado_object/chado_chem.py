@@ -11,7 +11,7 @@ from harvdev_utils.production import (
     FeatureSynonym, Synonym, FeatureRelationshipprop
 )
 
-from harvdev_utils.chado_functions import get_or_create
+from harvdev_utils.chado_functions import get_or_create, DataError
 from harvdev_utils.chado_functions.external_lookups import ExternalLookup
 from harvdev_utils.char_conversions import sgml_to_plain_text
 from chado_object.chado_base import ChadoObject, FIELD_VALUE
@@ -357,12 +357,18 @@ class ChadoChem(ChadoObject):
             fs_remove_current_symbol(self.session, self.chemical.feature_id, cv_name, cvterm_name, pub_id)
 
         # add the new synonym
-        fs_add_by_synonym_name_and_type(self.session, self.chemical.feature_id,
-                                        self.process_data[key]['data'][FIELD_VALUE], cv_name, cvterm_name, pub_id,
-                                        synonym_sgml=None, is_current=is_current, is_internal=False)
+        if type(self.process_data[key]['data']) is list:
+            for item in self.process_data[key]['data']:
+                fs_add_by_synonym_name_and_type(self.session, self.chemical.feature_id,
+                                                item[FIELD_VALUE], cv_name, cvterm_name, pub_id,
+                                                synonym_sgml=None, is_current=is_current, is_internal=False)
+        else:
+            fs_add_by_synonym_name_and_type(self.session, self.chemical.feature_id,
+                                            self.process_data[key]['data'][FIELD_VALUE], cv_name, cvterm_name, pub_id,
+                                            synonym_sgml=None, is_current=is_current, is_internal=False)
 
-        if is_current and cvterm_name == 'symbol':
-            self.chemical.name = sgml_to_plain_text(self.process_data[key]['data'][FIELD_VALUE])
+            if is_current and cvterm_name == 'symbol':
+                self.chemical.name = sgml_to_plain_text(self.process_data[key]['data'][FIELD_VALUE])
 
     def load_featureprop(self, key):
         """
@@ -518,9 +524,12 @@ class ChadoChem(ChadoObject):
             entry = feature_name_lookup(self.session, name.lower(),
                                         organism_id=organism_id, type_name='chemical entity')
         else:
-            features = feature_synonym_lookup(self.session, 'chemical entity',
-                                              name.lower(),
-                                              organism_id=organism_id)
+            try:
+                features = feature_synonym_lookup(self.session, 'chemical entity',
+                                                  name.lower(),
+                                                  organism_id=organism_id)
+            except DataError:
+                return entry
             if features:
                 log.debug("features = {}".format(features))
                 message = "Synonym found for this already: Therefore not reloading Chemical Entity but using existing one {}.".format(features[0].name)
@@ -656,7 +665,7 @@ class ChadoChem(ChadoObject):
             return False
 
         if self.has_data('CH1a'):
-            if pubchem.name != self.process_data['CH1a']['data'][FIELD_VALUE]:
+            if pubchem.name.lower() != self.process_data['CH1a']['data'][FIELD_VALUE].lower():
                 self.warning_error(self.process_data['CH1a']['data'],
                                    'PubChem name does not match name specified for FlyBase: {} -> {}'
                                    .format(pubchem.name,
@@ -693,7 +702,7 @@ class ChadoChem(ChadoObject):
             identifier_name = identifier_split_list.pop(0).strip()
             if identifier_split_list:  # If the list is not empty by this point, raise an error.
                 self.critical_error(self.process_data['CH3a']['data'],
-                                    'Error splitting identifier and name using semicolon.')
+                                    "Error splitting identifier and name using semicolon. {}".format(identifier_unprocessed))
                 identifier_name = None  # Set name to None before returning. It might be wrong otherwise.
                 return identifier, identifier_name
         else:
