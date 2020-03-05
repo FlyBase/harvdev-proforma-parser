@@ -135,7 +135,8 @@ class ChadoHumanhealth(ChadoObject):
         if self.newhumanhealth:
             # triggers add dbxref and proper uniquename
             # check we have HH2a, HH1g and HH1b
-            organism, _ = get_or_create(self.session, Organism, abbreviation='Hsap')
+            # organism, _ = get_or_create(self.session, Organism, abbreviation='Hsap')
+            organism = self.session.query(Organism).filter(Organism.abbreviation == 'Hsap').one()
             hh, _ = get_or_create(self.session, Humanhealth, name=self.process_data['HH1b']['data'][FIELD_VALUE],
                                   organism_id=organism.organism_id, uniquename='FBhh:temp_0')
             # db has correct FBhh0000000x in it but here still has 'FBhh:temp_0'. ???
