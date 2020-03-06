@@ -21,10 +21,13 @@ log = logging.getLogger(__name__)
 #             filter(Gene.is_obsolete == 'f')
 #     return query
 
+last_query = None
+
 
 def process_entry(entry, session, filename):
-    """
-    Process Entry and deal with excpetions etc and just return if an error was seen.
+    """Process Entry.
+
+    Process entry and deal with exceptions etc and just return if an error was seen.
     """
     error_occurred = False
     last_query = None  # Track the last executed query.
@@ -62,6 +65,7 @@ def process_entry(entry, session, filename):
 
 
 def load_message(load_type):
+    """Print message wrt type."""
     if load_type == 'production':
         log.warning('Production load specified. Changes to the production database will occur.')
     elif load_type == 'test':
@@ -73,9 +77,7 @@ def load_message(load_type):
 
 
 def process_entries(session, list_of_objects_to_load):
-    """
-    Process the list of objects.
-    """
+    """Process the list of objects."""
     error_occurred = False
     for entry in list_of_objects_to_load:
         entry.obtain_session(session)  # Send session to object.
@@ -84,21 +86,22 @@ def process_entries(session, list_of_objects_to_load):
         log.debug('All variables for entry:')
         log.debug(vars(entry))
         # TODO Add proforma field to error tracking from Chado Object.
-        log.info('Initiating transaction for %s' % (class_name))
-        log.info('Source file: %s' % (filename))
-        log.info('Proforma object starts from line: %s' % (entry.proforma_start_line_number))
+        log.debug('Initiating transaction for %s' % (class_name))
+        log.debug('Source file: %s' % (filename))
+        log.debug('Proforma object starts from line: %s' % (entry.proforma_start_line_number))
 
         error_occurred |= process_entry(entry, session, filename)
     return error_occurred
 
 
 def process_chado_objects_for_transaction(session, list_of_objects_to_load, load_type):
-    """
-    session: sql session
-    list_of_objects_to_load: list of objects to load, of various different proforma
-    load_type: 'test' or 'production'
-    """
+    """Process object for a transaction.
 
+    Args:
+        session: sql session
+        list_of_objects_to_load: list of objects to load, of various different proforma
+        load_type: 'test' or 'production'
+    """
     load_message(load_type)
 
     error_occurred = process_entries(session, list_of_objects_to_load)

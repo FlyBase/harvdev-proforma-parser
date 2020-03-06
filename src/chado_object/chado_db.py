@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 
 class ChadoDb(ChadoObject):
     def __init__(self, params):
-        log.info('Initializing ChadoDb object.')
+        log.debug('Initializing ChadoDb object.')
         ##########################################
         # Set up how to process each type of input
         ##########################################
@@ -68,8 +68,8 @@ class ChadoDb(ChadoObject):
 
         timestamp = datetime.now().strftime('%c')
         curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short, timestamp)
-        log.info('Curator string assembled as:')
-        log.info('%s' % (curated_by_string))
+        log.debug('Curator string assembled as:')
+        log.debug('%s' % (curated_by_string))
 
     def get_db(self):
         """

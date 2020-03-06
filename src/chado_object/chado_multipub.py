@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 
 class ChadoMultipub(ChadoPub):
     def __init__(self, params):
-        log.info('Initializing ChadoMultipub object.')
+        log.debug('Initializing ChadoMultipub object.')
         # Initiate the parent.
         super(ChadoPub, self).__init__(params)
         ##########################################
@@ -117,8 +117,8 @@ class ChadoMultipub(ChadoPub):
 
         # A trigger will swap out multipub:temp_0 to the next rf in the sequence.
         pub, _ = get_or_create(self.session, Pub, type_id=cvterm.cvterm_id, uniquename='multipub:temp_0')
-        log.info(pub)
-        log.info("New pub created with fbrf {}.".format(pub.uniquename))
+        log.debug(pub)
+        log.debug("New pub created with fbrf {}.".format(pub.uniquename))
         return pub
 
     def load_content(self):
@@ -145,8 +145,8 @@ class ChadoMultipub(ChadoPub):
 
         timestamp = datetime.now().strftime('%c')
         curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short, timestamp)
-        log.info('Curator string assembled as:')
-        log.info('%s' % (curated_by_string))
+        log.debug('Curator string assembled as:')
+        log.debug('%s' % (curated_by_string))
 
     def extra_checks(self):
         """

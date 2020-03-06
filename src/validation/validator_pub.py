@@ -21,7 +21,7 @@ class ValidatorPub(Validator):
 
     def _validate_type_None(self, value):
         if value is None:
-            log.info('Value is {}'.foramt(value))
+            log.debug('Value is {}'.foramt(value))
             return True
 
     def _validate_no_bangc(self, no_bangc, field, value):
@@ -135,7 +135,7 @@ class ValidatorPub(Validator):
         """
 
         for with_field in comp_fields.split():
-            log.info("Looking up {}".format(with_field))
+            log.debug("Looking up {}".format(with_field))
             # compare to list given by field
             if with_field in self.document:
                 dict2 = {}

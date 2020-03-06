@@ -1,4 +1,5 @@
-"""
+"""The App.
+
 .. module:: app
    :synopsis: The root (main) file for the proforma parser.
 
@@ -53,6 +54,7 @@ config.read(args.config)
 
 
 def create_postgres_session():
+    """Create the db connection/session."""
     USER = config['connection']['USER']
     PASSWORD = config['connection']['PASSWORD']
     SERVER = config['connection']['SERVER']
@@ -75,9 +77,10 @@ def create_postgres_session():
 
 
 def get_error_summary():
-    """
-    Get the numbers and types or errors generated.
-    Return the counts of critical and warning errors.
+    """Get the numbers and types or errors generated.
+
+    Returns:
+       the counts of critical and warning errors.
     """
     critical_count = 0
     warning_count = 0
@@ -90,7 +93,7 @@ def get_error_summary():
 
 
 def obtain_list_of_proformae():
-    # Obtain file list of proformae to be processed.
+    """Obtain file list of proformae to be processed."""
     directory_to_process = args.directory
 
     list_of_proformae = process_proforma_directory(directory_to_process)
@@ -99,8 +102,10 @@ def obtain_list_of_proformae():
 
 
 def check_load_type(load_type):
-    """
-    Exit immediately if load type is not one of the recognised types.
+    """Check load type.
+
+    Raise:
+       Exit immediately if load type is not one of the recognised types.
     """
     if load_type not in ('test', 'production'):
         log.critical('load_type must be specified as either \'test\' or \'production\'')
@@ -109,12 +114,11 @@ def check_load_type(load_type):
 
 
 def process_proforma(list_of_proformae):
-    """
-    Process the list of proforma and return a dict of object
-    """
+    """Process the list of proforma and return a dict of object."""
     dict_of_processed_files = dict()
     curator_dict = dict(config['curators'])
     for proforma_location in list_of_proformae:
+        log.info("Validating file {}".format(proforma_location))
         list_of_processed_proforma_objects = process_proforma_file(proforma_location, curator_dict)  # Processing individual proforma file.
 
         for processed_proforma_object in list_of_processed_proforma_objects:
@@ -128,16 +132,15 @@ def process_proforma(list_of_proformae):
     log.info('')
     log.info('Validation Summary.')
     log.info('Processed %s file(s).' % (len(dict_of_processed_files)))
+    log.info('')
     return dict_of_processed_files
 
 
 def proforma_to_chado(dict_of_processed_files):
-    """
-    Convert the proforma object to chado ones.
-    """
+    """Convert the proforma object to chado ones."""
     main_list_of_chado_objects_to_load = []
     for filename in dict_of_processed_files:
-        log.info('Converting proforma from file %s into ChadoObjects' % filename)
+        log.debug('Converting proforma from file %s into ChadoObjects' % filename)
         for proforma_object_to_load in dict_of_processed_files[filename]:
             returned_list_of_chado_objects = process_data_input(proforma_object_to_load)
             main_list_of_chado_objects_to_load.extend(returned_list_of_chado_objects)
@@ -145,8 +148,8 @@ def proforma_to_chado(dict_of_processed_files):
 
 
 def process_errors(load_type):
-    """
-    Look at the errors and generate a summary and exit.
+    """Look at the errors and generate a summary and exit.
+
     If critical errors are found, no writing to the database occurs.
     """
     list_of_errors_transactions = [instance for instance in ErrorTracking.instances]
@@ -182,7 +185,7 @@ def process_errors(load_type):
 
 
 def main(session, list_of_proformae):
-
+    """Process list of proformae."""
     check_load_type(args.load_type)
 
     log.info('Opening and processing the list of proformae.')
@@ -198,6 +201,9 @@ def main(session, list_of_proformae):
     log.info('--------------------')
     log.info('')
     log.info('Transactions complete.')
+    log.info('')
+    log.info('Processed {} files'.format(len(list_of_proformae)))
+    log.info('          {} proformae.'.format(len(main_list_of_chado_objects_to_load)))
     log.info('')
 
     # List errors and warning and Exit if any are critical
