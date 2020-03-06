@@ -25,7 +25,7 @@ class ChadoPub(ChadoObject):
 
     def __init__(self, params):
         """Initialise ChadoPub onject."""
-        log.info('Initializing ChadoPub object.')
+        log.debug('Initializing ChadoPub object.')
         ##########################################
         # Set up how to process each type of input
         ##########################################
@@ -251,12 +251,12 @@ class ChadoPub(ChadoObject):
         else:
             if not P1_cvterm:  # ErrorTracking already knows, so just return.
                 return None
-            log.info("Creating new publication")
+            log.debug("Creating new publication")
 
             # A trigger will swap out FBrf:temp_0 to the next rf in the sequence.
             self.pub, _ = get_or_create(self.session, Pub, type_id=P1_cvterm.cvterm_id, uniquename='FBrf:temp_0')
-            log.info(self.pub)
-            log.info("New pub created with fbrf {}.".format(self.pub.uniquename))
+            log.debug(self.pub)
+            log.debug("New pub created with fbrf {}.".format(self.pub.uniquename))
         return
 
     def graphical_abstracts_check(self):
@@ -502,8 +502,8 @@ class ChadoPub(ChadoObject):
 
         timestamp = datetime.now().strftime('%c')
         curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short, timestamp)
-        log.info('Curator string assembled as:')
-        log.info('%s' % (curated_by_string))
+        log.debug('Curator string assembled as:')
+        log.debug('%s' % (curated_by_string))
 
     def get_author(self, author):
         """Return surname and givennames for the author string.

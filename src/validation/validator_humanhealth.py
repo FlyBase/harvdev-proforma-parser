@@ -31,7 +31,7 @@ class ValidatorHumanhealth(Validator):
 
     def _validate_type_None(self, value):
         if value is None:
-            log.info('Value is {}'.format(value))
+            log.debug('Value is {}'.format(value))
             return True
 
     def _validate_no_bangc(self, no_bangc, field, value):

@@ -45,8 +45,8 @@ def create_postgres_session():
     SERVER = config['connection']['SERVER']
     DB = config['connection']['DB']
 
-    log.info('Using server: {}'.format(SERVER))
-    log.info('Using database: {}'.format(DB))
+    log.debug('Using server: {}'.format(SERVER))
+    log.debug('Using database: {}'.format(DB))
 
     # Create our SQL Alchemy engine from our environmental variables.
     engine_var = 'postgresql://' + USER + ":" + PASSWORD + '@' + SERVER + '/' + DB
@@ -144,7 +144,7 @@ def pages_regex_test(session):
                     all_subpages_found = False
             if not all_subpages_found:
                 count += 1
-                log.info("'{}'\t\t'{}'".format(bob.pages, bob.uniquename))
+                log.debug("'{}'\t\t'{}'".format(bob.pages, bob.uniquename))
 
 
 if __name__ == '__main__':

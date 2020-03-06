@@ -64,8 +64,8 @@ def process_data_input(proforma_object):
     proforma_type = proforma_object.proforma_type
     proforma_start_line_number = proforma_object.proforma_start_line_number
 
-    log.info('Processing %s.' % (proforma_type))
-    log.info('From line %s.' % (proforma_start_line_number))
+    log.debug('Processing %s.' % (proforma_type))
+    log.debug('From line %s.' % (proforma_start_line_number))
 
     # This dictionary should be very similar to 'validation_file_schema_dict' found in validation_operations
     # Be sure both are updated whenever new data type sources are incorporated (for proforma-based data types).

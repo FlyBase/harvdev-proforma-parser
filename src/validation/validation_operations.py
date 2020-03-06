@@ -31,7 +31,7 @@ log = logging.getLogger(__name__)
 
 
 def validate_proforma_file():
-    log.info('Validating proforma file.')
+    log.debug('Validating proforma file.')
 
     # TODO Add whole file validation.
 
@@ -141,7 +141,7 @@ def validation_file_schema_lookup(proforma_type, fields_values):
 
     yaml_file_location = root_directory + '/' + yaml_file
 
-    log.info('Initializing validator using schema %s.' % (yaml_file))
+    log.debug('Initializing validator using schema %s.' % (yaml_file))
 
     return yaml_file_location, validator
 
@@ -188,7 +188,7 @@ def validate_proforma_object(proforma):
     proforma_start_line = proforma.proforma_start_line_number
     fields_values = proforma.fields_values
 
-    log.info('Validating proforma object.')
+    log.debug('Validating proforma object.')
 
     (yaml_file_location, validatortype) = validation_file_schema_lookup(proforma_type, fields_values)
     try:
@@ -217,7 +217,7 @@ def validate_proforma_object(proforma):
     results = validator.validate(field_value_validation_dict, schema)
 
     if results is True:
-        log.info('Validation successful.')
+        log.debug('Validation successful.')
         # No critical errors.
         return False
     else:

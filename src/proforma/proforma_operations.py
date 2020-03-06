@@ -23,8 +23,7 @@ log = logging.getLogger(__name__)
 
 
 def process_proforma_directory(location):
-    """
-    Creates a list of proformae from a given directory.
+    """Create a list of proformae from a given directory.
 
     Args:
         location (str): A directory of proforma files.
@@ -35,14 +34,13 @@ def process_proforma_directory(location):
     Note:
         Checks for duplciate filenames and fails if found.
     """
-
     filename_list = []      # A list for storing file names.
     filelocation_list = []  # A list for storing file locations.
-    log.info('Searching for files to process in the directory: %s', location)
+    log.debug('Searching for files to process in the directory: %s', location)
     for root, dirs, files in os.walk(location):
         for name in files:
             file_location = os.path.join(root, name)
-            log.info('Adding %s to the list of files to be processed.', file_location)
+            log.debug('Adding %s to the list of files to be processed.', file_location)
             filename_list.append(name)
             filelocation_list.append(file_location)
     # Checking for duplicate files.
@@ -61,7 +59,7 @@ def process_proforma_directory(location):
         log.critical('Exiting.')
         sys.exit(1)
 
-    log.info('Found %s file(s).', len(filename_list))
+    log.debug('Found %s file(s).', len(filename_list))
     return filelocation_list
 
 
@@ -76,7 +74,7 @@ def process_proforma_file(file_location_from_list, curator_dict):
 
     list_of_proforma_objects = proforma_file_object.separate_and_identify_proforma_type()
 
-    log.info('Processed %s proforma objects from %s' % (len(list_of_proforma_objects), file_location_from_list))
+    log.debug('Processed %s proforma objects from %s' % (len(list_of_proforma_objects), file_location_from_list))
 
     # Process and validate the proforma objects.
     list_of_processed_proforma_objects = []
@@ -87,9 +85,9 @@ def process_proforma_file(file_location_from_list, curator_dict):
 
         proforma_type, filename, proforma_start_line_number, fields_values = individual_proforma_object.get_data_for_processing()
 
-        log.info('Processing Proforma object type %s' % (individual_proforma_object.proforma_type))
-        log.info('From file: %s' % (individual_proforma_object.file_metadata['filename']))
-        log.info('From line: %s' % (individual_proforma_object.proforma_start_line_number))
+        log.debug('Processing Proforma object type %s' % (individual_proforma_object.proforma_type))
+        log.debug('From file: %s' % (individual_proforma_object.file_metadata['filename']))
+        log.debug('From line: %s' % (individual_proforma_object.proforma_start_line_number))
 
         critical_error_list = validate_proforma_object(individual_proforma_object)
 
@@ -116,27 +114,26 @@ def process_proforma_file(file_location_from_list, curator_dict):
     if 'MULTIPUBLICATION' in list_of_proforma_objects[0].proforma_type:
         return list_of_processed_proforma_objects
 
-    log.info('Found first reference %s.' %
-             (list_of_proforma_objects[0].fields_values['P22'][1]))
-    log.info('Attaching %s from field %s, line %s to all subsequent proforma objects.' %
-             (fields_values['P22'][1], 'P22', fields_values['P22'][2]))
+    log.debug('Found first reference %s.' % (list_of_proforma_objects[0].fields_values['P22'][1]))
+    log.debug('Attaching %s from field %s, line %s to all subsequent proforma objects.' % (fields_values['P22'][1], 'P22', fields_values['P22'][2]))
 
     last_pub = list_of_proforma_objects[0].fields_values['P22']
     for individual_proforma_object in list_of_processed_proforma_objects:
-        log.info("TYPE: is {}".format(individual_proforma_object.proforma_type))
+        log.debug("TYPE: is {}".format(individual_proforma_object.proforma_type))
         if 'PUBLICATION' in individual_proforma_object.proforma_type:
             last_pub = individual_proforma_object.fields_values['P22']
-            log.info("Setting new pub to be {}".format(last_pub))
+            log.debug("Setting new pub to be {}".format(last_pub))
             last_genus = 'Drosophila'
             last_species = 'melanogaster'
-            log.info("Resetting new genus {} and species {}".format(last_genus, last_species))
+            log.debug("Resetting new genus {} and species {}".format(last_genus, last_species))
         individual_proforma_object.add_reference_data(last_pub)
 
     return list_of_processed_proforma_objects
 
 
 class ProformaFile(object):
-    """
+    """Proforma class object.
+
     The main proforma class. Handles data from proforma files: opening and validation of file-level data.
     This data is "highest level" looking at overall file structure.
     Individual proforma entries within a proforma file are handled by the separate "Proforma" class.
@@ -144,8 +141,10 @@ class ProformaFile(object):
     Args:
         filename (str): The filename (including directory) of a proforma.
     """
+
     def __init__(self, filename, curator_dict):
-        log.info('Creating ProformaFile class object from file: %s', filename)
+        """Initise Object."""
+        log.debug('Creating ProformaFile class object from file: %s', filename)
         self.filename = filename
         self.proforma_file_data = []
         self.curator_dict = curator_dict
@@ -154,8 +153,7 @@ class ProformaFile(object):
         self.open_file()
 
     def open_file(self):
-        """
-        Opens the proforma file loads the lines into a self list stored in the class.
+        """Open the proforma file loads the lines into a self list stored in the class.
 
         Args:
             filename (str): The filename (including directory) of a proforma.
@@ -164,7 +162,6 @@ class ProformaFile(object):
             Useful for filtering or applying functions to each line.
             Checks for empty files.
         """
-
         # This approach does load the entire contents of the file into memory (as a list)
         # Alternatively, you could process the file line-by-line.
         # However, these files are small and memory is plentiful, so we're reading everything for now.
@@ -177,11 +174,10 @@ class ProformaFile(object):
         if len(self.proforma_file_data) == 0:
             log.error("Empty Proforma file found: %s" % (the_file))
 
-        log.info("Processed %s lines." % (len(self.proforma_file_data)))
+        log.debug("Processed %s lines." % (len(self.proforma_file_data)))
 
     def get_proforma_field_and_content(self, individual_proforma_line):
-        """
-        Extracts the value after a colon from a line of proforma data.
+        """Extract the value after a colon from a line of proforma data.
 
         Args:
             individual_proforma_line (str): An individual line of proforma data with a colon.
@@ -193,7 +189,6 @@ class ProformaFile(object):
 
             result_bang (str): The second character if it is c or d
         """
-
         result_field = None
         result_value = None
         result_bang = None
@@ -221,17 +216,16 @@ class ProformaFile(object):
         return(result_field, result_value, result_bang)
 
     def next_and_current_item(self, proforma_content):
-        """
-        Show the current and next item in an array.
+        """Show the current and next item in an array.
+
         Used to find proforma values which span more than one line.
         """
-
         current, nxt = tee(proforma_content, 2)
         nxt = chain(islice(nxt, 1, None), [None])
         return zip(current, nxt)
 
     def extract_curator_initials_and_filename_short(self):
-
+        """Get curator name info."""
         # Grab the filename after the last slash.
         filename_short = self.filename.rsplit('/', 1)[-1]
 
@@ -269,12 +263,12 @@ class ProformaFile(object):
         return curator_initials, record_type, filename_short
 
     def extract_curator_fullname(self, curator_initials):
-
-        log.info('Looking up curator based on filename initials.')
+        """Get curator fullname."""
+        log.debug('Looking up curator based on filename initials.')
 
         try:
             curator_fullname = self.curator_dict[curator_initials]
-            log.info('Found curator %s -> %s' % (curator_initials, curator_fullname))
+            log.debug('Found curator %s -> %s' % (curator_initials, curator_fullname))
         except KeyError:
             log.critical('Curator not found for filename: {} using initials: {}'.format(self.filename, curator_initials))
             log.critical('Please check config file specified in the execution of this program.')
@@ -284,9 +278,7 @@ class ProformaFile(object):
         return curator_fullname
 
     def process_line(self, field, line_number, current_line, individual_proforma, file_metadata):
-        """
-        Process the line and store in the data in the proforma object
-        """
+        """Process the line and store in the data in the proforma object."""
         # Can't use startswith ('! C') due to CHEMICAL proforma.
         if re.match(r'^! C[0-9]', current_line):
             field, value, type_of_bang = self.get_proforma_field_and_content(current_line)
@@ -316,19 +308,18 @@ class ProformaFile(object):
         return field
 
     def separate_and_identify_proforma_type(self):
-        """
-        Scan the incoming data from the proforma file and identify the type.
+        """Scan the incoming data from the proforma file and identify the type.
+
         Splits the proforma data into groups and constructs individual Proforma objects for further processing.
 
         Returns:
             list_of_proforma_objects (list): A list of new Proforma objects extracted from the file.
         """
-
         list_of_proforma_objects = []
 
         # Obtain curator information from the filename and the curator dictionary from the config file.
         curator_initials, record_type, filename_short = self.extract_curator_initials_and_filename_short()
-        log.info('Initials are %s' % (curator_initials))
+        log.debug('Initials are %s' % (curator_initials))
         if curator_initials:
             curator_fullname = self.extract_curator_fullname(curator_initials)
         else:
@@ -359,7 +350,7 @@ class ProformaFile(object):
         # Iterate through the content looking at the current and next line.
         for current_line, next_line in self.next_and_current_item(self.proforma_file_data):
             line_number += 1
-            # log.info('next line: %s' % (next_line))
+            # log.debug('next line: %s' % (next_line))
             # If we find the start of a proforma section, create a new proforma object and set the type.
             if current_line.startswith('!!!!!!!!!!!!!!!!'):
                 if individual_proforma is not None:
@@ -381,15 +372,11 @@ class ProformaFile(object):
 
 
 class Proforma(object):
-    """
-    This class handles the individual proforma entries obtained from a ProformaFile class.
+    """This class handles the individual proforma entries obtained from a ProformaFile class."""
 
-    Args:
-        filename (str): The filename (including directory) of a proforma.
-    """
     #
-    # NOTE: first two are 'sets' where as the set_fileds_to_key needs info
-    # on what the 'mian' key is for the set
+    # NOTE: first two are 'sets' where as the set_fields_to_key needs info
+    # on what the 'main' key is for the set
     #
     set_of_fields_that_should_be_lists = set()
     set_of_fields_with_wrapping_values = set()
@@ -425,6 +412,7 @@ class Proforma(object):
                         continue
 
     def __init__(self, file_metadata, proforma_type, line_number):
+        """Initialise Object."""
         self.file_metadata = file_metadata  # Store our file metadata dictionary.
         self.errors = None                  # Error tracking. This will become a dict if used.
         self.bang_c = []                    # List of fields flagged for !c (if used).
@@ -438,15 +426,14 @@ class Proforma(object):
         self.fields_values = {}
         self.set_values = {}
 
-        log.info('Creating Proforma class object from individual proforma entry in: %s', self.file_metadata['filename'])
-        log.info('Proforma type defined as: %s' % proforma_type)
-        log.info('Proforma object begins at line: %s' % line_number)
+        log.debug('Creating Proforma class object from individual proforma entry in: %s', self.file_metadata['filename'])
+        log.debug('Proforma type defined as: %s' % proforma_type)
+        log.debug('Proforma object begins at line: %s' % line_number)
 
         log.debug("Global set is: {}".format(Proforma.set_of_fields_that_should_be_lists))
 
     def add_field_and_value(self, field, value, type_of_bang, line_number, new_line):
-        """
-        Adds the field and value from a proforma into a dictionary.
+        """Add the field and value from a proforma into a dictionary.
 
         Args:
             field (str): The field from the proforma.
@@ -454,7 +441,6 @@ class Proforma(object):
             line_number: The line number.
             new_line: True if line starts with ! blah else False (continuation of line)
         """
-
         if type_of_bang and field not in Proforma.set_fields_to_key:
             self.add_bang(field, value, type_of_bang, line_number)
 
@@ -469,14 +455,14 @@ class Proforma(object):
 
         if field in self.fields_values:  # If we have a previously defined key.
             if field in Proforma.set_of_fields_with_wrapping_values:  # In this case, we want to concantenate the existing and new values.
-                log.info('Found field %s with wrapping values over multiple lines.' % (field))
-                log.info('Concatenating field %s existing value \'%s\' with new value \'%s\'' % (field, self.fields_values[field][1], value))
+                log.debug('Found field %s with wrapping values over multiple lines.' % (field))
+                log.debug('Concatenating field %s existing value \'%s\' with new value \'%s\'' % (field, self.fields_values[field][1], value))
                 # This following is currently stored with a newline. Keeping the same system, unfortunately.
                 self.fields_values[field] = (field, self.fields_values[field][1] + '\n' + value, line_number)
             else:
                 if type(self.fields_values[field]) is list and value is not None:
                     self.fields_values[field].append((field, value, line_number))  # Otherwise, if it is a list already, just append the value.
-                    log.info('Appending field %s : value %s from line %s to the existing list for this field.' % (field, value, line_number))
+                    log.debug('Appending field %s : value %s from line %s to the existing list for this field.' % (field, value, line_number))
                 else:
                     log.critical('Attempted to add an additional value: {} to field: {} from line: {}'.format(value, field, line_number))
                     log.critical('Unfortunately, this field is not current specified to support multiple values.')
@@ -497,6 +483,15 @@ class Proforma(object):
                 log.debug('Adding field %s : value %s from line %s to the Proforma object.' % (field, value, line_number))
 
     def process_set(self, field, value, line_number, new_line, type_of_bang):
+        """Process set data.
+
+        Args:
+            field (str): The field from the proforma.
+            value (str): The value from the proforma.
+            line_number: The line number.
+            new_line: True if line starts with ! blah else False (continuation of line)
+            type_of_bang: 'c' or 'd'
+        """
         # Example:
         # self.set_values['HH5'] = [{'HH5a': [('HH5a','acc1', 17), ('HH5a', 'acc4', 18)]}, 'HH5b': ('HH5b', 'SWISSPROT', 19)},
         #                           {'HH5a': [('HH5a','acc2', 23)], 'HH5b': ('HH5b', 'SWISSPROT', 24)}]
@@ -530,8 +525,7 @@ class Proforma(object):
                 CRITICAL_ERROR)
 
     def add_bang(self, field, value, type_of_bang, line_number):
-        """
-        Sets the bang_c or bang_d property of the object if found on a proforma line.
+        """Set the bang_c or bang_d property of the object if found on a proforma line.
 
         Args:
             field (str): The field to be assigned to the bang_c or bang_d variable.
@@ -564,15 +558,18 @@ class Proforma(object):
             log.debug('!d field detected for %s. Adding flag to object.' % field)
 
     def get_data_for_processing(self):
+        """Get data for processing."""
         return self.proforma_type, self.file_metadata['filename'], self.proforma_start_line_number, self.fields_values
 
     def get_data_for_loading(self):
+        """Get data for loading."""
         return self.file_metadata, \
             self.bang_c, self.bang_d, self.proforma_start_line_number, self.fields_values, self.set_values, self.reference
 
     def update_errors(self, errors):
-        """
-        Adds errors to a proforma object. Creates a dictionary for self.errors if one doesn't already exist.
+        """Add errors to a proforma object.
+
+        Creates a dictionary for self.errors if one doesn't already exist.
 
         Args:
             errors (dict): A dictionary containing {field : [values]} for errors. Values must be a list.
@@ -583,10 +580,13 @@ class Proforma(object):
             self.errors.update(errors)
 
     def add_reference_data(self, reference_data):
+        """Add reference data to self."""
         self.reference = reference_data
 
     def get_file_metadata(self):
+        """Return metadata form reference data."""
         return self.file_metadata
 
     def get_errors(self):
+        """Get the errors."""
         return self.errors

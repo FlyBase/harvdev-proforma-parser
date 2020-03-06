@@ -45,7 +45,7 @@ class ChadoHumanhealth(ChadoObject):
         type dict and delete_dict determine which methods are called
         based on the conrolling yml file.
         """
-        log.info('Initializing ChadoHumanhealth object.')
+        log.debug('Initializing ChadoHumanhealth object.')
         ##########################################
         #
         # Set up how to process each type of input
@@ -123,8 +123,8 @@ class ChadoHumanhealth(ChadoObject):
 
         timestamp = datetime.now().strftime('%c')
         curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short, timestamp)
-        log.info('Curator string assembled as:')
-        log.info('%s' % (curated_by_string))
+        log.debug('Curator string assembled as:')
+        log.debug('%s' % (curated_by_string))
 
     def get_humanhealth(self):
         """Get the humanhealth chado object.
@@ -141,7 +141,7 @@ class ChadoHumanhealth(ChadoObject):
                                   organism_id=organism.organism_id, uniquename='FBhh:temp_0')
             # db has correct FBhh0000000x in it but here still has 'FBhh:temp_0'. ???
             # presume triggers start after hh is returned. Maybe worth getting form db again
-            log.info("New humanhealth created with fbhh {} id={}.".format(hh.uniquename, hh.humanhealth_id))
+            log.debug("New humanhealth created with fbhh {} id={}.".format(hh.uniquename, hh.humanhealth_id))
         else:
             not_obsolete = False
             hh = self.session.query(Humanhealth).\

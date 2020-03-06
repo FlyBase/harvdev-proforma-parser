@@ -31,7 +31,7 @@ class ChadoGene(ChadoObject):
 
     def __init__(self, params):
         """Initialise the ChadoGene Object."""
-        log.info('Initializing ChadoGene object.')
+        log.debug('Initializing ChadoGene object.')
 
         # Initiate the parent.
         super(ChadoGene, self).__init__(params)
@@ -85,8 +85,8 @@ class ChadoGene(ChadoObject):
 
         timestamp = datetime.now().strftime('%c')
         curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short, timestamp)
-        log.info('Curator string assembled as:')
-        log.info('%s' % (curated_by_string))
+        log.debug('Curator string assembled as:')
+        log.debug('%s' % (curated_by_string))
 
     def load_prop(self, key):
         """Load featureprop."""

@@ -29,9 +29,11 @@ log = logging.getLogger(__name__)
 
 
 class ChadoChem(ChadoObject):
+    """Process the Chemical Proforma."""
 
     def __init__(self, params):
-        log.info('Initializing ChadoChem object.')
+        """Initialise the chado object."""
+        log.debug('Initializing ChadoChem object.')
 
         self.proforma_start_line_number = params.get('proforma_start_line_number')
         self.reference = params.get('reference')
@@ -102,13 +104,11 @@ class ChadoChem(ChadoObject):
             self.new_chemical_entry = False
 
     def ignore(self, key):
+        """Ignore."""
         pass
 
     def load_content(self):
-        """
-        Main processing routine.
-        """
-
+        """Process the proforma fields."""
         self.pub = super(ChadoChem, self).pub_from_fbrf(self.reference)
 
         self.get_or_create_chemical()
@@ -129,13 +129,18 @@ class ChadoChem(ChadoObject):
         timestamp = datetime.now().strftime('%c')
         curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (
             self.curator_fullname, self.filename_short, timestamp)
-        log.info('Curator string assembled as:')
-        log.info('%s' % curated_by_string)
+        log.debug('Curator string assembled as:')
+        log.debug('%s' % curated_by_string)
 
     def fetch_by_FBch_and_check(self, chemical_cvterm_id):
-        #
-        # Fetch by the FBch (CH1f) and check the name is the same if it is given (CH1a)
-        #
+        """Fetch by the FBch (CH1f) and check the name is the same if it is given (CH1a).
+
+        Args:
+            chemical_cvterm_id: cvterm_id to be used as type in getting feature.
+
+        Raises:
+            critical error if CH1f and CH1a are specified and do not match.
+        """
         self.chemical, is_new = get_or_create(self.session, Feature, type_id=chemical_cvterm_id,
                                               uniquename=self.process_data['CH1f']['data'][FIELD_VALUE])
         if is_new:
@@ -149,14 +154,15 @@ class ChadoChem(ChadoObject):
                 self.critical_error(self.process_data['CH1a']['data'], message)
 
     def get_or_create_chemical(self):
+        """Validate the identifier in an external database.
 
-        # Validate the identifier in an external database.
-        # Also looks for conflicts between the external name and
-        # the name specified for FlyBase. It also returns data that we use
-        # to populate fields in Chado.
+        Also looks for conflicts between the external name and
+        the name specified for FlyBase. It also returns data that we use
+        to populate fields in Chado.
 
-        # Look up the ChEBI / PubChem reference pub_id's.
-        # Assigns a value to 'self.chebi_pub_id' and 'self.pubchem_pub_id'
+        Look up the ChEBI / PubChem reference pub_id's.
+        Assigns a value to 'self.chebi_pub_id' and 'self.pubchem_pub_id'
+        """
         self.look_up_static_references()
 
         # Look up chemical cv term id. Ch1f yaml data for cv and cvterms
@@ -198,7 +204,7 @@ class ChadoChem(ChadoObject):
                                          type_id=chemical_cvterm_id,
                                          uniquename='FBch:temp_0')
 
-        log.info("New chemical entry created: {}".format(self.chemical.name))
+        log.debug("New chemical entry created: {}".format(self.chemical.name))
 
         dbx_ref, _ = get_or_create(self.session, Dbxref, db_id=database.db_id,
                                    accession=identifier_accession_num_only)
@@ -478,7 +484,7 @@ class ChadoChem(ChadoObject):
 
         seen_it = set()
         if self.chemical_information['synonyms']['data']:
-            log.info("Adding non current synonyms {}".format(self.chemical_information['synonyms']['data']))
+            log.debug("Adding non current synonyms {}".format(self.chemical_information['synonyms']['data']))
             for item in self.chemical_information['synonyms']['data']:
                 item_lower = item.lower()[:255]  # Max 255 chars
                 if item_lower in seen_it:
@@ -493,7 +499,7 @@ class ChadoChem(ChadoObject):
                                       pub_id=pub_id, synonym_id=new_synonym.synonym_id)
                 fs.is_current = False
 
-        log.info("Adding new synonym entry for {}.".format(self.chemical_information['identifier']['data']))
+        log.debug("Adding new synonym entry for {}.".format(self.chemical_information['identifier']['data']))
         name_lower = self.chemical_information['name']['data'].lower()[:255]
         new_synonym, _ = get_or_create(self.session, Synonym, type_id=symbol_cv_id,
                                        synonym_sgml=name_lower,
@@ -621,8 +627,7 @@ class ChadoChem(ChadoObject):
                                    .format(chebi.name,
                                            self.process_data['CH1a']['data'][FIELD_VALUE]))
             else:
-                log.info('Queried name \'{}\' matches name used in proforma \'{}\''
-                         .format(chebi.name, self.process_data['CH1a']['data'][FIELD_VALUE]))
+                log.debug('Queried name \'{}\' matches name used in proforma \'{}\''.format(chebi.name, self.process_data['CH1a']['data'][FIELD_VALUE]))
 
         # Check whether the identifier_name supplied by the curator matches
         # the name returned from the database.
@@ -671,8 +676,7 @@ class ChadoChem(ChadoObject):
                                    .format(pubchem.name,
                                            self.process_data['CH1a']['data'][FIELD_VALUE]))
             else:
-                log.info('Queried name \'{}\' matches name used in proforma \'{}\''
-                         .format(pubchem.name, self.process_data['CH1a']['data'][FIELD_VALUE]))
+                log.debug('Queried name \'{}\' matches name used in proforma \'{}\''.format(pubchem.name, self.process_data['CH1a']['data'][FIELD_VALUE]))
 
         self.chemical_information['identifier']['data'] = identifier
         self.chemical_information['identifier']['source'] = 'PubChem'
@@ -697,7 +701,7 @@ class ChadoChem(ChadoObject):
         identifier_name = None
         if ';' in identifier_unprocessed:
             log.debug('Semicolon found, splitting identifier: {}'.format(identifier_unprocessed))
-            identifier_split_list = identifier_unprocessed.split(';')
+            identifier_split_list = identifier_unprocessed.split('; ')
             identifier = identifier_split_list.pop(0).strip()
             identifier_name = identifier_split_list.pop(0).strip()
             if identifier_split_list:  # If the list is not empty by this point, raise an error.
