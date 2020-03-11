@@ -4,7 +4,8 @@
 :moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>, Ian Longden <ilongden@morgan.harvard.edu>
 """
 from harvdev_utils.production import (
-    FeatureDbxref, Featureloc, FeatureSynonym, FeatureGrpmember
+    FeatureDbxref, Featureloc, FeatureSynonym, FeatureGrpmember, FeatureHumanhealthDbxref,
+    FeatureCvterm
 )
 from harvdev_utils.chado_functions import get_or_create
 from chado_object.utils.feature import (
@@ -34,7 +35,7 @@ def transfer_dbxrefs(self, gene):
 
 
 def transfer_synonyms(self, gene):
-    """Transfer synonyms and make is_current False."""
+    """Transfer feature synonyms and make is_current False."""
     for feat_syn in self.session.query(FeatureSynonym).filter(FeatureSynonym.feature_id == gene.feature_id):
         fs, _ = get_or_create(self.session, FeatureSynonym, synonym_id=feat_syn.synonym_id, feature_id=self.gene.feature_id,
                               pub_id=feat_syn.pub_id)
@@ -42,9 +43,23 @@ def transfer_synonyms(self, gene):
 
 
 def transfer_grpmembers(self, gene):
-    """Transfer grpmembers."""
+    """Transfer feature grpmembers."""
     for feat_gm in self.session.query(FeatureGrpmember).filter(FeatureGrpmember.feature_id == gene.feature_id):
         feat_gm.feature_id = self.gene.feature_id
+
+
+def transfer_hh_dbxrefs(self, gene):
+    """Transfer feature humanhealth_dbxref data."""
+    for feat_hh_d in self.session.query(FeatureHumanhealthDbxref).filter(FeatureHumanhealthDbxref.feature_id == gene.feature_id):
+        get_or_create(self.session, FeatureHumanhealthDbxref, feature_id=self.gene.feature_id, humanhealth_dbxref_id=feat_hh_d.humanhealth_dbxref_id,
+                      pub_id=feat_hh_d.pub_id)
+
+
+def transfer_cvterms(self, gene):
+    """Transfer feature cvterms."""
+    for feat_cvterm in self.session.query(FeatureCvterm).filter(FeatureCvterm.feature_id == gene.feature_id):
+        get_or_create(self.session, FeatureCvterm, feature_id=self.gene.feature_id, cvterm_id=feat_cvterm.cvterm_id,
+                      pub_id=feat_cvterm.pub_id)
 
 
 def get_merge_genes(self, key):
@@ -99,9 +114,13 @@ def merge(self, key):
     for gene in genes:
         log.debug("Gene to be merged is {}".format(gene))
         gene.is_obsolete = True
+        # Transfer cvterms
+        self.transfer_cvterms(gene)
         # Transfer dbxrefs
         self.transfer_dbxrefs(gene)
         # Transfer synonyms
         self.transfer_synonyms(gene)
         # Transfer grpmembers
         self.transfer_grpmembers(gene)
+        # humanhealth_dbxrefs
+        self.transfer_hh_dbxrefs(gene)
