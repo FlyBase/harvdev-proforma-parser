@@ -26,7 +26,8 @@ class ChadoGene(ChadoObject):
     """ChadoGene object."""
 
     from chado_object.gene.gene_merge import (
-        merge, get_merge_genes, transfer_dbxrefs, transfer_synonyms
+        merge, get_merge_genes, transfer_dbxrefs, transfer_synonyms, transfer_grpmembers,
+        transfer_hh_dbxrefs, transfer_cvterms
     )
 
     def __init__(self, params):
@@ -123,7 +124,7 @@ class ChadoGene(ChadoObject):
         is_current = self.process_data[key]['is_current']
 
         # For some bizzare reason if a merge is taking place then the synonyms
-        # have the pud unattributed and not the self.pub???
+        # have the pub unattributed and not the self.pub???
         if self.has_data('G1f'):
             pub, _ = get_or_create(self.session, Pub, uniquename='unattributed')
         else:
@@ -131,7 +132,6 @@ class ChadoGene(ChadoObject):
 
         for item in self.process_data[key]['data']:
             synonym_name = item[FIELD_VALUE]
-            # synonym_name = synonym_name.replace('\\', '\\\\')
             fs_add_by_synonym_name_and_type(self.session, self.gene.feature_id,
                                             synonym_name, cv_name, cvterm_name, pub.pub_id,
                                             synonym_sgml=None, is_current=is_current, is_internal=False)
