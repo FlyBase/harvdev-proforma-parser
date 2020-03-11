@@ -45,8 +45,6 @@ def transfer_grpmembers(self, gene):
     """Transfer grpmembers."""
     for feat_gm in self.session.query(FeatureGrpmember).filter(FeatureGrpmember.feature_id == gene.feature_id):
         feat_gm.feature_id = self.gene.feature_id
-        # get_or_create(self.session, FeatureGrpmember, feature_id=self.gene.feature_id, grpmember_id=feat_gm.grpmember_id,
-        #              pub_id=feat_gm.pub_id)
 
 
 def get_merge_genes(self, key):
