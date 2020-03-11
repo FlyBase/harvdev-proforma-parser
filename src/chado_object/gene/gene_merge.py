@@ -4,10 +4,9 @@
 :moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>, Ian Longden <ilongden@morgan.harvard.edu>
 """
 from harvdev_utils.production import (
-    FeatureDbxref, Featureloc, FeatureSynonym
+    FeatureDbxref, Featureloc, FeatureSynonym, FeatureGrpmember
 )
 from harvdev_utils.chado_functions import get_or_create
-# from harvdev_utils.chado_functions import get_or_create, get_cvterm, DataError
 from chado_object.utils.feature import (
     feature_symbol_lookup
 )
@@ -40,6 +39,14 @@ def transfer_synonyms(self, gene):
         fs, _ = get_or_create(self.session, FeatureSynonym, synonym_id=feat_syn.synonym_id, feature_id=self.gene.feature_id,
                               pub_id=feat_syn.pub_id)
         fs.is_current = False
+
+
+def transfer_grpmembers(self, gene):
+    """Transfer grpmembers."""
+    for feat_gm in self.session.query(FeatureGrpmember).filter(FeatureGrpmember.feature_id == gene.feature_id):
+        feat_gm.feature_id = self.gene.feature_id
+        # get_or_create(self.session, FeatureGrpmember, feature_id=self.gene.feature_id, grpmember_id=feat_gm.grpmember_id,
+        #              pub_id=feat_gm.pub_id)
 
 
 def get_merge_genes(self, key):
@@ -98,3 +105,5 @@ def merge(self, key):
         self.transfer_dbxrefs(gene)
         # Transfer synonyms
         self.transfer_synonyms(gene)
+        # Transfer grpmembers
+        self.transfer_grpmembers(gene)

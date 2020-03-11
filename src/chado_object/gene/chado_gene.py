@@ -26,7 +26,7 @@ class ChadoGene(ChadoObject):
     """ChadoGene object."""
 
     from chado_object.gene.gene_merge import (
-        merge, get_merge_genes, transfer_dbxrefs, transfer_synonyms
+        merge, get_merge_genes, transfer_dbxrefs, transfer_synonyms, transfer_grpmembers
     )
 
     def __init__(self, params):
