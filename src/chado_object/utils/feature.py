@@ -15,7 +15,7 @@ from harvdev_utils.char_conversions import sgml_to_unicode
 from harvdev_utils.chado_functions import get_cvterm, DataError, CodingError
 
 # local utils
-from chado_object.utils.organism import get_default_organism_id
+from organism import get_default_organism_id
 
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 import logging
@@ -162,8 +162,7 @@ def feature_name_lookup(session, name, organism_id=None, type_name=None, type_id
     try:
         feature = session.query(Feature).filter(*filter_spec).one_or_none()
     except MultipleResultsFound:
-        raise DataError("DataError: Found multiple with name for type '{}'.".format(name, feature_type.name))
-        feature = None
+        raise DataError("DataError: Found multiple with name {} for type '{}'.".format(name, feature_type.name))
     return feature
 
 
@@ -219,7 +218,7 @@ def feature_synonym_lookup(session, type_name, synonym_name, organism_id=None, c
                    Feature.type_id == feature_type.cvterm_id).all()
     except NoResultFound:
         raise DataError("DataError: Could not find current synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
-        return None
+
 
     if not check_unique:
         return features

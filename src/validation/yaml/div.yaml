@@ -1,0 +1,51 @@
+DIV1a:
+  required: True
+  type: string
+  no_bangc: True
+DIV1b:
+  required: False
+  type: string
+  nullable: True
+DIV1c:
+  required: True
+  type: string
+  allowed: [y,n]
+  nullable: False
+DIV1d:
+  required: False
+  nullable: True
+  type: string
+  allowed: [y]
+DIV2a:
+  type: [list, string]
+  required: False
+  regex: ^(FBhh\d{7})$
+  nullable: True
+DIV3a:
+  required: False
+  type: string
+  no_bangc: True 
+  dependencies: [DIV3b, DIV3c]
+  set: DIV3
+DIV3b:
+  required: False
+  type: string
+  no_bangc: True 
+  dependencies: [DIV3a, DIV3c]
+  set: DIV3
+DIV3c:
+  required: False
+  type: string
+  no_bangc: True 
+  dependencies: [DIV3a, DIV3b]
+  set: DIV3
+DIV3d:
+  required: false
+  type: string
+  no_bangc: True
+  allowed: [y, Y]
+  set: DIV3
+DIV4:
+  required: false
+  type: string
+  nullable: True
