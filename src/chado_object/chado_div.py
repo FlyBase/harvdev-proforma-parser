@@ -4,19 +4,18 @@
 
 :moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>, Ian Longden <ilongden@morgan.harvard.edu>
 """
-from harvdev_utils.production import (
-    Feature
-)
-from src.chado_object.chado_base import ChadoObject, FIELD_VALUE
-from harvdev_utils.chado_functions import get_or_create
-from src.error.error_tracking import CRITICAL_ERROR
-from src.chado_object.utils.feature_dbxref import fd_add_by_ids
-from src.chado_object.utils.dbxref import get_dbxref_by_params
-
-# from sqlalchemy.orm.exc import NoResultFound
-from datetime import datetime
-import os
 import logging
+import os
+from datetime import datetime
+from sqlalchemy.orm.exc import NoResultFound
+
+from harvdev_utils.chado_functions import get_or_create
+from harvdev_utils.production import Feature, FeatureDbxref
+from chado_object.chado_base import FIELD_VALUE, ChadoObject
+from chado_object.utils.dbxref import get_dbxref_by_params
+from chado_object.utils.feature_dbxref import fd_add_by_ids
+from chado_object.utils.organism import get_default_organism
+from error.error_tracking import CRITICAL_ERROR
 
 log = logging.getLogger(__name__)
 
@@ -67,8 +66,9 @@ class ChadoDiv(ChadoObject):
         div_name = self.process_data['DIV1a']['data'][FIELD_VALUE]
         if self.process_data['DIV1c']['data'][FIELD_VALUE] == "n":
             self.new = True
-        cvterm = self.cvterm_query(self.process_data['DIV1a']['cv'], self.process_data['DIV1a']['cvname'])
-        self.div, is_new = get_or_create(self.session, Feature, uniquename=div_name, name=div_name, type_id=cvterm.cvterm_id)
+        cvterm = self.cvterm_query(self.process_data['DIV1a']['cv'], self.process_data['DIV1a']['cvterm'])
+        organism = get_default_organism(self.session)
+        self.div, is_new = get_or_create(self.session, Feature, organism_id=organism.organism_id, uniquename=div_name, name=div_name, type_id=cvterm)
         if self.new != is_new:
             if self.new:
                 message = "{} already exists but DIV1d specifys it should not.".format(div_name)
@@ -234,7 +234,20 @@ class ChadoDiv(ChadoObject):
         if dis_key in data_set and data_set[dis_key][FIELD_VALUE] == 'y':
             log.debug("dis_key is set so delete stuff")
             params['tuple'] = data_set[acc_key]
-            self.bangd_feature_dbxref(params)
+            dbxref, is_new = get_dbxref_by_params(self.session, params)
+            if is_new:
+                error_message = "Cannot dissociate as dbxref does not exist"
+                self.error_track(data_set[acc_key], error_message, CRITICAL_ERROR)
+            else:
+                try:
+                    f_db = self.session.query(FeatureDbxref).\
+                        filter(FeatureDbxref.feature_id == self.div.feature_id,
+                               FeatureDbxref.dbxref_id == dbxref.dbxref_id,
+                               FeatureDbxref.is_current == 't').one()
+                    f_db.is_current = False
+                except NoResultFound:
+                    error_message = "Cannot dissociate as feature dbxref does not exist"
+                    self.error_track(data_set[acc_key], error_message, CRITICAL_ERROR)
             return
         else:
             log.debug("Dis key NOT set so create stuff")

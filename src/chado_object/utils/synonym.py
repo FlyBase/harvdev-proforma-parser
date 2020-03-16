@@ -6,7 +6,7 @@
 .. moduleauthor:: Ian Longden <ilongden@morgan.harvard.edu>
 """
 from harvdev_utils.chado_functions import CodingError
-from src.chado_object.utils.organism import get_default_organism, get_organism
+from .organism import get_default_organism, get_organism
 import re
 from harvdev_utils.char_conversions import (
     sgml_to_plain_text, sub_sup_to_sgml, sgml_to_unicode

@@ -6,9 +6,7 @@
 """
 
 from harvdev_utils.chado_functions import get_or_create
-from harvdev_utils.production import (
-    FeatureDbxref
-)
+from harvdev_utils.production import FeatureDbxref
 
 
 def fd_add_by_ids(session, feature_id, dbxref_id, is_current=True):

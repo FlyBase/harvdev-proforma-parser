@@ -15,7 +15,7 @@ from harvdev_utils.char_conversions import sgml_to_unicode
 from harvdev_utils.chado_functions import get_cvterm, DataError, CodingError
 
 # local utils
-from organism import get_default_organism_id
+from .organism import get_default_organism_id
 
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 import logging
@@ -218,7 +218,6 @@ def feature_synonym_lookup(session, type_name, synonym_name, organism_id=None, c
                    Feature.type_id == feature_type.cvterm_id).all()
     except NoResultFound:
         raise DataError("DataError: Could not find current synonym '{}', sgml = '{}' for type '{}'.".format(synonym_name, synonym_sgml, cvterm_name))
-
 
     if not check_unique:
         return features
