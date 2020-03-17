@@ -22,9 +22,7 @@ DIV1c:
 DIV1d:
   type: dissociate
 DIV2a:
-  type: feature_relationship
-  cv: relationship type
-  cvterm: human_disease
+  type: humanhealth_feature
 DIV3:
   type: data_set
   sub_type: feature_dbxref

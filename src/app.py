@@ -38,7 +38,7 @@ if args.verbose:
     logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format='%(levelname)s -- %(message)s')
     logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
     # comment/uncomment out below to notsee/see NOTICE messages for sql functions.
-    # logging.getLogger('sqlalchemy.dialects.postgresql').setLevel(logging.INFO)
+    logging.getLogger('sqlalchemy.dialects.postgresql').setLevel(logging.INFO)
 else:
     logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(levelname)s -- %(message)s')
 

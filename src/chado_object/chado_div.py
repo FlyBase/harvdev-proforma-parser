@@ -10,7 +10,9 @@ from datetime import datetime
 from sqlalchemy.orm.exc import NoResultFound
 
 from harvdev_utils.chado_functions import get_or_create
-from harvdev_utils.production import Feature, FeatureDbxref
+from harvdev_utils.production import (
+    Feature, FeatureDbxref, Humanhealth, HumanhealthFeature
+)
 from chado_object.chado_base import FIELD_VALUE, ChadoObject
 from chado_object.utils.dbxref import get_dbxref_by_params
 from chado_object.utils.feature_dbxref import fd_add_by_ids
@@ -38,7 +40,7 @@ class ChadoDiv(ChadoObject):
         self.pub = None             # All other proforma need a reference to a pub
 
         # yaml file defines what to do with each field. Follow the light
-        self.type_dict = {'feature_relationship': self.load_feature_relationship,
+        self.type_dict = {'humanhealth_feature': self.load_humanhealth_feature,
                           'synonym': self.load_synonym,
                           'ignore': self.ignore,
                           'data_set': self.ignore,  # Done separately
@@ -90,8 +92,9 @@ class ChadoDiv(ChadoObject):
             params (dict): dictionary fo elements needed to create a dbxrefprop
 
         """
-        params = {'cvterm': self.process_data[set_key]['cvterm'],
-                  'cvname': self.process_data[set_key]['cv']}
+        # params = {'cvterm': self.process_data[set_key]['cvterm'],
+        #          'cvname': self.process_data[set_key]['cv']}
+        params = {}
 
         db_key = set_key + self.process_data[set_key]['set_db']
         if db_key not in data_set:
@@ -261,9 +264,15 @@ class ChadoDiv(ChadoObject):
         """Ignore."""
         pass
 
-    def load_feature_relationship(self, key):
-        """Ignore."""
-        pass
+    def load_humanhealth_feature(self, key):
+        """Load humanhealth feature."""
+        if not self.has_data(key):
+            return
+        for hh_tup in self.process_data[key]['data']:
+            hh_obj = self.session.query(Humanhealth).\
+                filter(Humanhealth.uniquename == hh_tup[FIELD_VALUE],
+                       Humanhealth.is_obsolete == 'f').one()
+            get_or_create(self.session, HumanhealthFeature, feature_id=self.div.feature_id, humanhealth_id=hh_obj.humanhealth_id, pub_id=self.pub.pub_id)
 
     def load_synonym(self, key):
         """Ignore."""
