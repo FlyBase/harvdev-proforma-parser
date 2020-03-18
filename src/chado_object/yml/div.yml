@@ -23,6 +23,10 @@ DIV1d:
   type: dissociate
 DIV2a:
   type: humanhealth_feature
+DIV2b: # Dealt with by 2a
+  type: ignore
+  cv: humanhealth_featureprop type
+  cvterm: deliberate_omission
 DIV3:
   type: data_set
   sub_type: feature_dbxref
@@ -45,4 +49,6 @@ DIV3d:
   type: ignore # dealt with as part of DIV3a
   description:
 DIV4:
-  type: comment
+  type: featureprop
+  cv: FlyBase miscellaneous CV
+  cvterm: comment

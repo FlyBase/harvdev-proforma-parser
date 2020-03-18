@@ -11,7 +11,8 @@ from sqlalchemy.orm.exc import NoResultFound
 
 from harvdev_utils.chado_functions import get_or_create
 from harvdev_utils.production import (
-    Feature, FeatureDbxref, Humanhealth, HumanhealthFeature
+    Feature, FeatureDbxref, Featureprop,
+    Humanhealth, HumanhealthFeature, HumanhealthFeatureprop
 )
 from chado_object.chado_base import FIELD_VALUE, ChadoObject
 from chado_object.utils.dbxref import get_dbxref_by_params
@@ -44,7 +45,8 @@ class ChadoDiv(ChadoObject):
                           'synonym': self.load_synonym,
                           'ignore': self.ignore,
                           'data_set': self.ignore,  # Done separately
-                          'comment': self.load_comment,
+                          # 'comment': self.load_comment,
+                          'featureprop': self.load_featureprop,
                           'dissociate': self.delete}
 
         self.delete_dict = {'ignore': self.ignore,
@@ -75,7 +77,7 @@ class ChadoDiv(ChadoObject):
             if self.new:
                 message = "{} already exists but DIV1d specifys it should not.".format(div_name)
             else:
-                message == "{} does not exist but DIV1d specifys it should.".format(div_name)
+                message = "{} does not exist but DIV1d specifys it should.".format(div_name)
             self.critical_error(self.process_data['DIV1a']['data'], message)
 
     def create_set_initial_params(self, set_key, data_set):
@@ -148,36 +150,18 @@ class ChadoDiv(ChadoObject):
         """Process the set data.
 
         Sets have a specific key, normally the shortened version of the fields
-        that it uses. i.e. For HH5a, HH5b etc this becomes HH5.
+        that it uses. i.e. For Div3a, Div3b etc this becomes DIV3.
         self.set_values is a dictionary of these and points to an list of the
-        actual values the curators have added i.e. HH5a, HH5c
+        actual values the curators have added i.e. Div3a, Div3c
         This is an example of what the set_values will look like.
 
         .. code-block:: JSON
 
-            {
-              HH5: [{'HH5a': ('HH5a', '1111111', 16),
-               'HH5b': ('HH5b', 'HGNC', 17),
-               'HH5c': ('HH5c', 'hgnc_1', 18)},
-              {'HH5a': ('HH5a', '2', 20),
-               'HH5b': ('HH5b', 'UniProtKB/Swiss-Prot', 21),
-               'HH5c': ('HH5c', 'sw_2', 22)},
-              {'HH5a': ('HH5a', '3', 24),
-                'HH5b': ('HH5b', 'UniProtKB/Swiss-Prot', 25),
-                'HH5c': ('HH5c', None, 26)},
-              {'HH5a': ('HH5a', '4444444', 28),
-               'HH5b': ('HH5b', 'HGNC', 29),
-               'HH5c': ('HH5c', 'hgnc_4', 30)},
-              {'HH5a': ('HH5a', '1', 32),
-               'HH5b': ('HH5b', 'HGNC', 33),
-               'HH5c': ('HH5c', 'already exists so desc not updated', 34)},
-              {'HH5a': ('HH5a', None, 36),
-               'HH5b': ('HH5b', None, 37),
-               'HH5c': ('HH5c', None, 38)
-             ]
-            }
+            'DIV3': [{'DIV3a': ('DIV3a', '1900', 18, None),
+                      'DIV3b': ('DIV3b', 'HGNC', 19, None),
+                      'DIV3c': ('DIV3c', 'hgnc - 1900 -- description', 20, None)}]
 
-        This comes from the test 1505_HH_5abc_good_set.txt.sm.edit.1
+        This comes from the test 1900_Div_cretae,txt
         """
         for key in self.set_values.keys():
             log.debug("SV: {}: {}".format(key, self.set_values[key]))
@@ -257,7 +241,12 @@ class ChadoDiv(ChadoObject):
 
         params['tuple'] = data_set[acc_key]
         params['feature_id'] = self.div.feature_id
-        dbxref, _ = get_dbxref_by_params(self.session, params)
+        try:
+            dbxref, _ = get_dbxref_by_params(self.session, params)
+        except NoResultFound:
+            error_message = "DB {} Could not be found in chado?".format(params['dbname'])
+            self.error_track(data_set[acc_key], error_message, CRITICAL_ERROR)
+            return
         fd_add_by_ids(self.session, self.div.feature_id, dbxref.dbxref_id)
 
     def ignore(self, key):
@@ -268,19 +257,36 @@ class ChadoDiv(ChadoObject):
         """Load humanhealth feature."""
         if not self.has_data(key):
             return
+        if self.has_data('DIV2b'):
+            cvterm_id = self.cvterm_query(self.process_data['DIV2b']['cv'], self.process_data['DIV2b']['cvterm'])
+
         for hh_tup in self.process_data[key]['data']:
-            hh_obj = self.session.query(Humanhealth).\
-                filter(Humanhealth.uniquename == hh_tup[FIELD_VALUE],
-                       Humanhealth.is_obsolete == 'f').one()
-            get_or_create(self.session, HumanhealthFeature, feature_id=self.div.feature_id, humanhealth_id=hh_obj.humanhealth_id, pub_id=self.pub.pub_id)
+            try:
+                hh_obj = self.session.query(Humanhealth).\
+                    filter(Humanhealth.uniquename == hh_tup[FIELD_VALUE],
+                           Humanhealth.is_obsolete == 'f').one()
+            except NoResultFound:
+                error_message = "Humanhealth {} Could not be found in chado?".format(hh_tup[FIELD_VALUE])
+                self.error_track(hh_tup, error_message, CRITICAL_ERROR)
+                continue
+            hhf, _ = get_or_create(self.session, HumanhealthFeature, feature_id=self.div.feature_id,
+                                   humanhealth_id=hh_obj.humanhealth_id, pub_id=self.pub.pub_id)
+            if self.has_data('DIV2b'):
+                log.info("Adding: HhFP")
+                get_or_create(self.session, HumanhealthFeatureprop, humanhealth_feature_id=hhf.humanhealth_feature_id,
+                              type_id=cvterm_id)
 
     def load_synonym(self, key):
         """Ignore."""
         pass
 
-    def load_comment(self, key):
-        """Ignore."""
-        pass
+    def load_featureprop(self, key):
+        """Featureprop comment."""
+        if not self.has_data(key):
+            return
+        cvterm_id = self.cvterm_query(self.process_data[key]['cv'], self.process_data[key]['cvterm'])
+        get_or_create(self.session, Featureprop, feature_id=self.div.feature_id, type_id=cvterm_id,
+                      value=self.process_data[key]['data'][FIELD_VALUE])
 
 # Deletion routines
     def delete(self, key):

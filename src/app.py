@@ -28,7 +28,7 @@ parser = argparse.ArgumentParser(description='Parse proforma files and load them
 parser.add_argument('-v', '--verbose', help='Enable verbose mode.', action='store_true')
 parser.add_argument('-c', '--config', help='Specify the location of the configuration file.', required=True)
 parser.add_argument('-d', '--directory', help='Specify the directory of proformae to be loaded.', required=True)
-parser.add_argument('-m', '--multithread', help='Specify the thread numbe if threaded.', required=False)
+parser.add_argument('-m', '--multithread', help='Specify the thread number if threaded.', required=False)
 parser.add_argument('-l', '--load_type', help='Specify whether the load is \'test\' or \'production\'', required=True,
                     choices=['test', 'production'])
 args = parser.parse_args()
@@ -38,7 +38,7 @@ if args.verbose:
     logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format='%(levelname)s -- %(message)s')
     logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
     # comment/uncomment out below to notsee/see NOTICE messages for sql functions.
-    logging.getLogger('sqlalchemy.dialects.postgresql').setLevel(logging.INFO)
+    # logging.getLogger('sqlalchemy.dialects.postgresql').setLevel(logging.INFO)
 else:
     logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(levelname)s -- %(message)s')
 

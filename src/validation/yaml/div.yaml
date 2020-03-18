@@ -21,6 +21,11 @@ DIV2a:
   required: False
   regex: ^(FBhh\d{7})$
   nullable: True
+DIV2b:
+  required: False
+  nullable: True
+  type: string
+  allowed: [y]
 DIV3a:
   required: False
   type: string
