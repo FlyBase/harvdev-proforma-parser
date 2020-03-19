@@ -15,8 +15,8 @@ DIV1a:
   cvterm: div
 DIV1b:
   type: synonym
-  cv: somecv
-  cvterm: somecvterm
+  cv: synonym type
+  cvterm: symbol
 DIV1c:
   type: ignore
 DIV1d:

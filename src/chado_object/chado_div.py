@@ -11,10 +11,11 @@ from sqlalchemy.orm.exc import NoResultFound
 
 from harvdev_utils.chado_functions import get_or_create
 from harvdev_utils.production import (
-    Feature, FeatureDbxref, Featureprop,
+    Feature, FeatureDbxref, Featureprop, FeatureSynonym,
     Humanhealth, HumanhealthFeature, HumanhealthFeatureprop
 )
 from chado_object.chado_base import FIELD_VALUE, ChadoObject
+from chado_object.utils.feature_synonym import fs_add_by_synonym_name_and_type
 from chado_object.utils.dbxref import get_dbxref_by_params
 from chado_object.utils.feature_dbxref import fd_add_by_ids
 from chado_object.utils.organism import get_default_organism
@@ -51,7 +52,7 @@ class ChadoDiv(ChadoObject):
 
         self.delete_dict = {'ignore': self.ignore,
                             'synonym': self.delete_synonym,
-                            'feature_relationship': self.delete_feature_relationship,
+                            'humanhealth_feature': self.delete_humanhealth_feature,
                             'comment': self.delete_comment}
 
         # Initiate the parent.
@@ -79,6 +80,9 @@ class ChadoDiv(ChadoObject):
             else:
                 message = "{} does not exist but DIV1d specifys it should.".format(div_name)
             self.critical_error(self.process_data['DIV1a']['data'], message)
+        if self.has_data('DIV1d'):
+            self.session.delete(self.div)
+            return None
 
     def create_set_initial_params(self, set_key, data_set):
         """Create params for a set.
@@ -126,7 +130,6 @@ class ChadoDiv(ChadoObject):
 
         if not self.div:  # Only proceed if we have a div. Otherwise we had an error.
             return
-
         # bang c/d first as this supersedes all things
         if self.bang_c:
             self.bang_c_it()
@@ -277,8 +280,22 @@ class ChadoDiv(ChadoObject):
                               type_id=cvterm_id)
 
     def load_synonym(self, key):
-        """Ignore."""
-        pass
+        """Load synonym."""
+        if not self.has_data(key):
+            return
+
+        # some are lists so might as well make life easier and make them all lists
+        if type(self.process_data[key]['data']) is not list:
+            self.process_data[key]['data'] = [self.process_data[key]['data']]
+        cv_name = self.process_data[key]['cv']
+        cvterm_name = self.process_data[key]['cvterm']
+        is_current = True
+
+        for item in self.process_data[key]['data']:
+            synonym_name = item[FIELD_VALUE]
+            fs_add_by_synonym_name_and_type(self.session, self.div.feature_id,
+                                            synonym_name, cv_name, cvterm_name, self.pub.pub_id,
+                                            synonym_sgml=None, is_current=is_current, is_internal=False)
 
     def load_featureprop(self, key):
         """Featureprop comment."""
@@ -293,13 +310,39 @@ class ChadoDiv(ChadoObject):
         """Ignore."""
         pass
 
-    def delete_synonym(self, key):
-        """Ignore."""
-        pass
+    def delete_synonym(self, key, bangc):
+        """Delete Synonym bangc only allowed."""
+        if not self.has_data(key):
+            return
 
-    def delete_feature_relationship(self, key):
-        """Ignore."""
-        pass
+        # make all synonyms not current
+        for fs in self.session.query(FeatureSynonym).\
+            filter(FeatureSynonym.feature_id == self.dev.feature_id,
+                   FeatureSynonym.pub_id == self.pub_id):
+            fs.is_current = False
+
+    def delete_humanhealth_feature(self, key, bangc):
+        """Delete the humanhealth feature."""
+        if bangc:
+            # delete them all
+            self.session.query(HumanhealthFeature).\
+                filter(HumanhealthFeature.feature_id == self.div.feature_id).delete()
+            return
+        for hh_tup in self.process_data[key]['data']:
+            # get specific hh
+            try:
+                hh_obj = self.session.query(Humanhealth).\
+                    filter(Humanhealth.uniquename == hh_tup[FIELD_VALUE],
+                           Humanhealth.is_obsolete == 'f').one()
+            except NoResultFound:
+                error_message = "Humanhealth {} Could not be found in chado?".format(hh_tup[FIELD_VALUE])
+                self.error_track(hh_tup, error_message, CRITICAL_ERROR)
+                continue
+            # delete hh_f
+            self.session.query(HumanhealthFeature).\
+                filter(HumanhealthFeature.feature_id == self.div.feature_id,
+                       HumanhealthFeature.humanhealth_id == hh_obj.humanhealth_id).delete()
+        self.process_data[key]['data'] = None
 
     def delete_comment(self, key):
         """Ignore."""
