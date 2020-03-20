@@ -24,8 +24,10 @@ SET_BANG = 3  # For 'set' data we hold the wether it is a bangc, bangd or None.
 
 
 class ChadoObject(object):
-    def __init__(self, params):
+    """Base Chado object."""
 
+    def __init__(self, params):
+        """Initialise the object."""
         # Metadata
         self.proforma_start_line_number = params.get('proforma_start_line_number')
         self.filename = params['file_metadata'].get('filename')
@@ -38,9 +40,11 @@ class ChadoObject(object):
         self.process_data = None
 
     def obtain_session(self, session):
+        """Set the session."""
         self.session = session
 
     def load_reference_yaml(self, filename, params):
+        """Load reference Yaml."""
         # TODO Change bang_c "blank" processing to not require an empty process_data[key]['data'] entry.
         process_data = yaml.load(open(filename), Loader=yaml.FullLoader)
         keys_to_remove = []
@@ -77,7 +81,8 @@ class ChadoObject(object):
         return process_data
 
     def get_valid_key_for_data_set(self, data_set):
-        """
+        """Get key for data set.
+
         Basically check we have at least one valid key and the data is
         not empty.
         """
@@ -91,8 +96,10 @@ class ChadoObject(object):
         return valid_key
 
     def has_bang_type(self, key, bang_type=None):
-        # Checks if a key is in the bang lists.
-        # If bang_type is defined then only that one is checked.
+        """Check if a key is in the bang lists.
+
+        If bang_type is defined then only that one is checked.
+        """
         if not bang_type or bang_type == 'c':
             if key in self.bang_c:
                 return True
@@ -102,7 +109,10 @@ class ChadoObject(object):
         return False
 
     def has_data(self, key):
-        # Checks whether a key exists and contains a FIELD_VALUE that isn't None.
+        """Return true if key has data.
+
+        Checks whether a key exists and contains a FIELD_VALUE that isn't None.
+        """
         if key in self.process_data:
             log.debug('Checking whether we have data (not-None) in {}'.format(self.process_data[key]))
             if self.process_data[key]['data'] is not None:
@@ -129,10 +139,13 @@ class ChadoObject(object):
         self.error_track(tuple, error_message, WARNING_ERROR)
 
     def cvterm_query(self, cv, cvterm):
-        """
-        :param cv: str. The name of the cv to lookup.
-        :param cvterm: str. The name of the cvterm to lookup.
-        :return: str. The cvterm_id from the query.
+        """Get cvterm.
+
+        Args:
+          cv: str. The name of the cv to lookup.
+          cvterm: str. The name of the cvterm to lookup.
+        Returns:
+          str. The cvterm_id from the query.
         """
         log.debug('Querying for cvterm: {} from cv: {}.'.format(cvterm, cv))
         cvterm = get_cvterm(self.session, cv, cvterm)

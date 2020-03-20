@@ -14,7 +14,7 @@ from harvdev_utils.production import (
 from harvdev_utils.chado_functions import get_or_create, DataError
 from harvdev_utils.chado_functions.external_lookups import ExternalLookup
 from harvdev_utils.char_conversions import sgml_to_plain_text
-from chado_object.chado_base import ChadoObject, FIELD_VALUE
+from .chado_base import ChadoObject, FIELD_VALUE
 from chado_object.utils.feature_synonym import fs_add_by_synonym_name_and_type, fs_remove_current_symbol
 from chado_object.utils.feature import feature_symbol_lookup, feature_synonym_lookup, feature_name_lookup
 from chado_object.utils.organism import get_default_organism_id

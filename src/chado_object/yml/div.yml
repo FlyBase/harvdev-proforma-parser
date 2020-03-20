@@ -1,0 +1,54 @@
+#########################################################################################
+# Documentation for disease implicated variants yml
+#
+# type: dependent on...
+#
+#       direct:       Needs 'name' of field in chado database.
+#       relationship: Needs 'cvterm' of the relationship.
+#
+#       For synonyms and pubs USE the current pub ONLY if pub: current is defined
+# 
+#########################################################################################
+DIV1a:
+  type: ignore
+  cv: FlyBase miscellaneous CV
+  cvterm: div
+DIV1b:
+  type: synonym
+  cv: synonym type
+  cvterm: symbol
+DIV1c:
+  type: ignore
+DIV1d:
+  type: dissociate
+DIV2a:
+  type: humanhealth_feature
+DIV2b: # Dealt with by 2a
+  type: ignore
+  cv: humanhealth_featureprop type
+  cvterm: deliberate_omission
+DIV3:
+  type: data_set
+  sub_type: feature_dbxref
+  description: External link DIV3 [a,b,c and d]
+  set_acc: a
+  set_db: b
+  set_desc: c
+  set_dis: d
+DIV3a:
+  type: dbxrefpropset
+  cvterm: data_link
+  description: External link - accession number
+DIV3b:
+  type: ignore # dealt with as part of DIV3a
+  description: FB database ID 
+DIV3c:
+  type: ignore # dealt with as part of DIV3a
+  description: title/description of specific accession  
+DIV3d:
+  type: ignore # dealt with as part of DIV3a
+  description:
+DIV4:
+  type: featureprop
+  cv: FlyBase miscellaneous CV
+  cvterm: comment
