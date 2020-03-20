@@ -4,7 +4,7 @@ DIV1a:
   no_bangc: True
 DIV1b:
   required: False
-  type: string
+  type: [list, string]
   nullable: True
 DIV1c:
   required: True
@@ -21,11 +21,13 @@ DIV2a:
   required: False
   regex: ^(FBhh\d{7})$
   nullable: True
+  exclude: 'DIV2b'
 DIV2b:
   required: False
   nullable: True
   type: string
   allowed: [y]
+  exclude: 'DIV2a'
 DIV3a:
   required: False
   type: string

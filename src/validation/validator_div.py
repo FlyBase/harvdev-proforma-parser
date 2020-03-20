@@ -40,3 +40,16 @@ class ValidatorDiv(Validator):
         """
         if field in self.bang_c:
             self._error(field, '{} not allowed with bang c or bang d'.format(field))
+
+    def _validate_exclude(self, other, field, value):
+        """
+        If set then make sure the exclude filed has no data.
+
+        The docstring statement below provides a schema to validate the 'other' argument.
+
+        The rule's arguments are validated against this schema:
+        {'type': 'string'}
+        """
+        log.info("Testing EXCLUDE {} {} {}".format(field, other, value))
+        if other in self.document and self.document[other] and value and len(value):
+            self._error(field, 'Cannot set {} if {} is set.'.format(field, other))
