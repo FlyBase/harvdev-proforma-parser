@@ -23,9 +23,9 @@ DIV1d:
   type: dissociate
 DIV2a:
   type: humanhealth_feature
-DIV2b: # Dealt with by 2a
-  type: ignore
-  cv: humanhealth_featureprop type
+DIV2b:
+  type: featureprop
+  cv: property type
   cvterm: deliberate_omission
 DIV3:
   type: data_set

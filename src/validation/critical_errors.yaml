@@ -53,3 +53,7 @@ G1f:
   - must not be present with
 DIV1a:
   - null value not allowed
+DIV2a:
+  - Cannot set DIV2a if DIV2b is set.
+DIV2b:
+  - Cannot set DIV2b if DIV2a is set.

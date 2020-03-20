@@ -12,7 +12,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from harvdev_utils.chado_functions import get_or_create
 from harvdev_utils.production import (
     Feature, FeatureDbxref, Featureprop, FeatureSynonym,
-    Humanhealth, HumanhealthFeature, HumanhealthFeatureprop
+    Humanhealth, HumanhealthFeature
 )
 from chado_object.chado_base import FIELD_VALUE, ChadoObject
 from chado_object.utils.feature_synonym import fs_add_by_synonym_name_and_type
@@ -46,7 +46,6 @@ class ChadoDiv(ChadoObject):
                           'synonym': self.load_synonym,
                           'ignore': self.ignore,
                           'data_set': self.ignore,  # Done separately
-                          # 'comment': self.load_comment,
                           'featureprop': self.load_featureprop,
                           'dissociate': self.delete}
 
@@ -260,8 +259,6 @@ class ChadoDiv(ChadoObject):
         """Load humanhealth feature."""
         if not self.has_data(key):
             return
-        if self.has_data('DIV2b'):
-            cvterm_id = self.cvterm_query(self.process_data['DIV2b']['cv'], self.process_data['DIV2b']['cvterm'])
 
         for hh_tup in self.process_data[key]['data']:
             try:
@@ -274,10 +271,6 @@ class ChadoDiv(ChadoObject):
                 continue
             hhf, _ = get_or_create(self.session, HumanhealthFeature, feature_id=self.div.feature_id,
                                    humanhealth_id=hh_obj.humanhealth_id, pub_id=self.pub.pub_id)
-            if self.has_data('DIV2b'):
-                log.info("Adding: HhFP")
-                get_or_create(self.session, HumanhealthFeatureprop, humanhealth_feature_id=hhf.humanhealth_feature_id,
-                              type_id=cvterm_id)
 
     def load_synonym(self, key):
         """Load synonym."""
