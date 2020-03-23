@@ -94,9 +94,9 @@ class ChadoHumanhealth(ChadoObject):
         # Populated self.process_data with all possible keys.
         self.process_data = self.load_reference_yaml(yml_file, params)
 
-    def load_content(self):
+    def load_content(self, references):
         """Process the proforma data."""
-        self.pub = super(ChadoHumanhealth, self).pub_from_fbrf(self.reference)
+        self.pub = references['ChadoPub']
 
         if self.process_data['HH1f']['data'][FIELD_VALUE] == "new":
             self.newhumanhealth = True

@@ -121,14 +121,14 @@ class ChadoDiv(ChadoObject):
 
         return params
 
-    def load_content(self):
+    def load_content(self, references):
         """Process the proforma data."""
-        self.pub = super(ChadoDiv, self).pub_from_fbrf(self.reference)
+        self.pub = references['ChadoPub']
 
         self.get_div()
 
         if not self.div:  # Only proceed if we have a div. Otherwise we had an error.
-            return
+            return self.div
         # bang c/d first as this supersedes all things
         if self.bang_c:
             self.bang_c_it()
@@ -147,6 +147,7 @@ class ChadoDiv(ChadoObject):
         curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short, timestamp)
         log.debug('Curator string assembled as:')
         log.debug('%s' % (curated_by_string))
+        return self.div
 
     def process_sets(self):
         """Process the set data.

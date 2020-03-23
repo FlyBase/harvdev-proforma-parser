@@ -14,6 +14,7 @@ from validation.validator_humanhealth import ValidatorHumanhealth
 from validation.validator_species import ValidatorSpecies
 from validation.validator_db import ValidatorDb
 from validation.validator_gene import ValidatorGene
+from validation.validator_allele import ValidatorAllele
 from validation.validator_div import ValidatorDiv
 from error.error_tracking import ErrorTracking, CRITICAL_ERROR, WARNING_ERROR
 
@@ -67,6 +68,10 @@ def get_validate_gene_schema(fields_values):
     return "gene.yaml"
 
 
+def get_validate_allele_schema(fields_values):
+    return "allele.yaml"
+
+
 def get_validate_chemical_schema(fields_values):
     return "chemical.yaml"
 
@@ -105,6 +110,7 @@ def validation_file_schema_lookup(proforma_type, fields_values):
     validation_dict = {"PUBLICATION": get_validate_pub_schema,
                        "MULTIPUBLICATION": get_validate_multipub_schema,
                        "GENE": get_validate_gene_schema,
+                       "ALLELE": get_validate_allele_schema,
                        "CHEMICAL": get_validate_chemical_schema,
                        "DIV": get_validate_div_schema,
                        "HUMAN": get_validate_humanhealth_schema,
@@ -114,6 +120,7 @@ def validation_file_schema_lookup(proforma_type, fields_values):
     validation_base = {"PUBLICATION": ValidatorPub,
                        "MULTIPUBLICATION": ValidatorMultipub,
                        "GENE": ValidatorGene,
+                       "ALLELE": ValidatorAllele,
                        "CHEMICAL": ValidatorChem,
                        "DIV": ValidatorDiv,
                        "HUMAN": ValidatorHumanhealth,

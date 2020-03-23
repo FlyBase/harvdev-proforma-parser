@@ -1,0 +1,12 @@
+GA1a:  # Main gene symbol to be used. Processed first and seperately
+    type: ignore
+    cv: synonym type
+    cvterm: symbol
+    is_current: True
+#     'G1g', 'new',         #checking
+GA1g:
+    type: ignore # Done as part of initialisation with GA1a
+GA81a:
+    type: feature_relationship
+    cv: relationship type
+    cvterm: has_variant

@@ -52,7 +52,6 @@ class ChadoPub(ChadoObject):
         ############################################################
         self.pub = None   # All other proforma need a reference to a pub
         self.parent_pub = None  # Various checks refer to this so just get it once
-        self.gene = None  # Needed reference for alleles
         self.newpub = False  # Modified later for new publications.
 
         # Initiate the parent.
@@ -474,7 +473,7 @@ class ChadoPub(ChadoObject):
                     self.load_single_pubprop('pubprop type', self.process_data[key]['cvterm'],
                                              self.process_data[key]['data'])
 
-    def load_content(self):
+    def load_content(self, references):
         """Load the proforma context.
 
         Main processing routine
@@ -504,6 +503,8 @@ class ChadoPub(ChadoObject):
         curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short, timestamp)
         log.debug('Curator string assembled as:')
         log.debug('%s' % (curated_by_string))
+        log.info("pub load_content Returning {}".format(self.pub))
+        return self.pub
 
     def get_author(self, author):
         """Return surname and givennames for the author string.

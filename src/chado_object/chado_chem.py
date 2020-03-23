@@ -107,9 +107,9 @@ class ChadoChem(ChadoObject):
         """Ignore."""
         pass
 
-    def load_content(self):
+    def load_content(self, references):
         """Process the proforma fields."""
-        self.pub = super(ChadoChem, self).pub_from_fbrf(self.reference)
+        self.pub = references['ChadoPub']
 
         self.get_or_create_chemical()
         if not self.chemical:

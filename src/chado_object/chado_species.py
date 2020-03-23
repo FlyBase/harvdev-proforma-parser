@@ -52,11 +52,11 @@ class ChadoSpecies(ChadoObject):
         self.direct_key = 'SP1a'
         self.reference = params.get('reference')
 
-    def load_content(self):  # noqa: C901
+    def load_content(self, references):  # noqa: C901
         """
         Main processing routine
         """
-        self.pub = super(ChadoSpecies, self).pub_from_fbrf(self.reference)
+        self.pub = references['ChadoPub']
         if not self.pub:
             message = "No publication specified!"
             self.critical_error(self.process_data['SP1g']['data'], message)

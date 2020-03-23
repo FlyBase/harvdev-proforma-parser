@@ -49,33 +49,33 @@ class ChadoObject(object):
         process_data = yaml.load(open(filename), Loader=yaml.FullLoader)
         keys_to_remove = []
         for key in process_data:
-            log.debug('process data {}'.format(process_data[key]))
+            # log.debug('process data {}'.format(process_data[key]))
             if process_data[key]['type'] == 'data_set':
                 continue
             if key in params['fields_values']:
                 if type(params['fields_values'][key]) is list:
                     # Skip if the first value in the list contains None.
                     if params['fields_values'][key][0][FIELD_VALUE] is None and not self.has_bang_type(key, 'c'):
-                        log.debug("Skipping field {} -- its value is empty in the proforma.".format(key))
+                        # log.debug("Skipping field {} -- its value is empty in the proforma.".format(key))
                         keys_to_remove.append(key)
                 else:
                     # Skip if the value contains None.
                     if params['fields_values'][key][FIELD_VALUE] is None and not self.has_bang_type(key, 'c'):
-                        log.debug("Skipping field {} -- it's value is empty in the proforma.".format(key))
+                        # log.debug("Skipping field {} -- it's value is empty in the proforma.".format(key))
                         keys_to_remove.append(key)
 
                 # If the key exists and it has a non-None value, add it.
                 process_data[key]['data'] = params['fields_values'][key]
-                log.debug("{}: {}".format(key, process_data[key]))
+                # log.debug("{}: {}".format(key, process_data[key]))
             else:
                 # If the key is missing from the proforma.
-                log.debug("Skipping field {} -- it's absent from the proforma.".format(key))
+                # log.debug("Skipping field {} -- it's absent from the proforma.".format(key))
                 keys_to_remove.append(key)
 
         # Remove all unused keys from the dictionary.
         # This has to be a second loop so we don't modify the first loop while it's running.
         for key in keys_to_remove:
-            log.debug("Removing unused key {} from the process_data dictionary".format(key))
+            # log.debug("Removing unused key {} from the process_data dictionary".format(key))
             process_data.pop(key)
 
         return process_data
