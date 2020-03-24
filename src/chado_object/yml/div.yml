@@ -52,3 +52,9 @@ DIV4:
   type: featureprop
   cv: FlyBase miscellaneous CV
   cvterm: comment
+DIV5:
+  type: rename
+  cv: synonym type
+  cvterm: symbol
+  is_current: True
+  remove_old: True

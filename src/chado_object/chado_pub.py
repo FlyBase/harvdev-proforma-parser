@@ -503,7 +503,6 @@ class ChadoPub(ChadoObject):
         curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short, timestamp)
         log.debug('Curator string assembled as:')
         log.debug('%s' % (curated_by_string))
-        log.info("pub load_content Returning {}".format(self.pub))
         return self.pub
 
     def get_author(self, author):

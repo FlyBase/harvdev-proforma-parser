@@ -56,7 +56,13 @@ class ChadoSpecies(ChadoObject):
         """
         Main processing routine
         """
-        self.pub = references['ChadoPub']
+        try:
+            self.pub = references['ChadoPub']
+        except KeyError:
+            message = "Unable to find publication."
+            self.critical_error(self.process_data['G1a']['data'], message)
+            return None
+
         if not self.pub:
             message = "No publication specified!"
             self.critical_error(self.process_data['SP1g']['data'], message)

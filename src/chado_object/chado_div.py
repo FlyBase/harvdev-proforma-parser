@@ -15,7 +15,7 @@ from harvdev_utils.production import (
     Humanhealth, HumanhealthFeature
 )
 from chado_object.chado_base import FIELD_VALUE, ChadoObject
-from chado_object.utils.feature_synonym import fs_add_by_synonym_name_and_type
+from chado_object.utils.feature_synonym import fs_add_by_synonym_name_and_type, fs_remove_current_symbol
 from chado_object.utils.dbxref import get_dbxref_by_params
 from chado_object.utils.feature_dbxref import fd_add_by_ids
 from chado_object.utils.organism import get_default_organism
@@ -47,7 +47,8 @@ class ChadoDiv(ChadoObject):
                           'ignore': self.ignore,
                           'data_set': self.ignore,  # Done separately
                           'featureprop': self.load_featureprop,
-                          'dissociate': self.delete}
+                          'dissociate': self.delete,
+                          'rename': self.rename}
 
         self.delete_dict = {'ignore': self.ignore,
                             'synonym': self.delete_synonym,
@@ -82,6 +83,14 @@ class ChadoDiv(ChadoObject):
         if self.has_data('DIV1d'):
             self.session.delete(self.div)
             return None
+
+    def rename(self, key):
+        """Rename the DIV."""
+        if not self.has_data(key):
+            return
+        self.div.uniquename = self.process_data[key]['data'][FIELD_VALUE]
+        self.div.name = self.process_data[key]['data'][FIELD_VALUE]
+        self.load_synonym(key)
 
     def create_set_initial_params(self, set_key, data_set):
         """Create params for a set.
@@ -123,7 +132,12 @@ class ChadoDiv(ChadoObject):
 
     def load_content(self, references):
         """Process the proforma data."""
-        self.pub = references['ChadoPub']
+        try:
+            self.pub = references['ChadoPub']
+        except KeyError:
+            message = "Unable to find publication."
+            self.critical_error(self.process_data['G1a']['data'], message)
+            return None
 
         self.get_div()
 
@@ -278,17 +292,23 @@ class ChadoDiv(ChadoObject):
         if not self.has_data(key):
             return
 
-        # some are lists so might as well make life easier and make them all lists
-        if type(self.process_data[key]['data']) is not list:
-            self.process_data[key]['data'] = [self.process_data[key]['data']]
         cv_name = self.process_data[key]['cv']
         cvterm_name = self.process_data[key]['cvterm']
-        is_current = True
+        is_current = self.process_data[key]['is_current']
 
-        for item in self.process_data[key]['data']:
-            synonym_name = item[FIELD_VALUE]
+        # remove the current symbol if is_current is set and yaml says remove old is_current
+        if 'remove_old' in self.process_data[key] and self.process_data[key]['remove_old']:
+            fs_remove_current_symbol(self.session, self.div.feature_id, cv_name, cvterm_name, self.pub.pub_id)
+
+        # add the new synonym
+        if type(self.process_data[key]['data']) is list:
+            for item in self.process_data[key]['data']:
+                fs_add_by_synonym_name_and_type(self.session, self.div.feature_id,
+                                                item[FIELD_VALUE], cv_name, cvterm_name, self.pub.pub_id,
+                                                synonym_sgml=None, is_current=is_current, is_internal=False)
+        else:
             fs_add_by_synonym_name_and_type(self.session, self.div.feature_id,
-                                            synonym_name, cv_name, cvterm_name, self.pub.pub_id,
+                                            self.process_data[key]['data'][FIELD_VALUE], cv_name, cvterm_name, self.pub.pub_id,
                                             synonym_sgml=None, is_current=is_current, is_internal=False)
 
     def load_featureprop(self, key):
