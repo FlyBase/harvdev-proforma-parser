@@ -69,7 +69,12 @@ class ChadoGene(ChadoObject):
 
     def load_content(self, references):
         """Process the data."""
-        self.pub = references['ChadoPub']
+        try:
+            self.pub = references['ChadoPub']
+        except KeyError:
+            message = "Unable to find publication."
+            self.critical_error(self.process_data['G1a']['data'], message)
+            return None
 
         self.get_gene()
         if not self.gene:  # problem getting gene, lets finish

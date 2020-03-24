@@ -11,13 +11,14 @@ import os
 from sqlalchemy.orm.exc import NoResultFound
 
 # from harvdev_utils.chado_functions import get_or_create
-# from harvdev_utils.production import (
-#    Feature, FeatureRelationship, FeatureRelationshipPub
-# )
+from harvdev_utils.production import (
+    FeatureRelationship, FeatureRelationshipPub
+)
 from chado_object.chado_base import FIELD_VALUE, ChadoObject
 from chado_object.utils.feature import (
-    feature_symbol_lookup
+    feature_symbol_lookup, feature_name_lookup
 )
+from harvdev_utils.chado_functions import get_or_create, get_cvterm
 from chado_object.utils.synonym import synonym_name_details
 log = logging.getLogger(__name__)
 
@@ -60,8 +61,18 @@ class ChadoAllele(ChadoObject):
 
     def load_content(self, references):
         """Process the data."""
-        self.pub = references['ChadoPub']
-        self.gene = references['ChadoGene']
+        try:
+            self.pub = references['ChadoPub']
+        except KeyError:
+            message = "Unable to find publication."
+            self.critical_error(self.process_data['GA1a']['data'], message)
+            return None
+        try:
+            self.gene = references['ChadoGene']
+        except KeyError:
+            message = "Unable to find gene. Normally Allele should have a gene before."
+            self.warning_error(self.process_data['GA1a']['data'], message)
+            return None
 
         self.get_allele()
         if not self.allele:  # problem getting gene, lets finish
@@ -101,4 +112,24 @@ class ChadoAllele(ChadoObject):
 
     def load_feature_relationship(self, key):
         """Add Feature Relationship."""
-        pass
+        if not self.has_data(key):
+            return
+
+        cv_name = self.process_data[key]['cv']
+        cvterm_name = self.process_data[key]['cvterm']
+        cvterm = get_cvterm(self.session, cv_name, cvterm_name)
+        if not cvterm:
+            message = "Unable to find cvterm {} for Cv {}.".format(cvterm_name, cv_name)
+            self.critical_error(self.process_data[key]['data'], message)
+            return None
+
+        name = self.process_data[key]['data'][FIELD_VALUE]
+        obj_feat = feature_name_lookup(self.session, name, type_name='div')
+        fr, _ = get_or_create(self.session, FeatureRelationship,
+                              subject_id=self.allele.feature_id,
+                              object_id=obj_feat.feature_id,
+                              type_id=cvterm.cvterm_id)
+
+        frp, _ = get_or_create(self.session, FeatureRelationshipPub,
+                               feature_relationship_id=fr.feature_relationship_id,
+                               pub_id=self.pub.pub_id)
