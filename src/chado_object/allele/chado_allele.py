@@ -1,7 +1,7 @@
 """
 :synopsis: The "Allele" ChadoObject.
 
-:overview: Cut down version fo Allele to start with to enable DIV Proforma to work.
+:overview: Cut down version of Allele to start with to enable DIV Proforma to work.
 
 :moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>, Ian Longden <ilongden@morgan.harvard.edu>
 """
