@@ -11,11 +11,11 @@ from sqlalchemy.orm.exc import NoResultFound
 
 from harvdev_utils.chado_functions import get_or_create
 from harvdev_utils.production import (
-    Feature, FeatureDbxref, Featureprop, FeatureSynonym,
+    Feature, FeatureDbxref, FeatureSynonym,
     Humanhealth, HumanhealthFeature
 )
-from chado_object.chado_base import FIELD_VALUE, ChadoObject
-from chado_object.utils.feature_synonym import fs_add_by_synonym_name_and_type, fs_remove_current_symbol
+from chado_object.chado_base import FIELD_VALUE
+from chado_object.feature.chado_feature import ChadoFeatureObject
 from chado_object.utils.dbxref import get_dbxref_by_params
 from chado_object.utils.feature_dbxref import fd_add_by_ids
 from chado_object.utils.organism import get_default_organism
@@ -24,7 +24,7 @@ from error.error_tracking import CRITICAL_ERROR
 log = logging.getLogger(__name__)
 
 
-class ChadoDiv(ChadoObject):
+class ChadoDiv(ChadoFeatureObject):
     """Process the Disease Implicated Variation (DIV) Proforma."""
 
     def __init__(self, params):
@@ -65,6 +65,8 @@ class ChadoDiv(ChadoObject):
         yml_file = os.path.join(os.path.dirname(__file__), 'yml/div.yml')
         # Populated self.process_data with all possible keys.
         self.process_data = self.load_reference_yaml(yml_file, params)
+        self.feature = None
+        self.type_name = 'div'
 
     def get_div(self):
         """Get the DIV."""
@@ -73,7 +75,7 @@ class ChadoDiv(ChadoObject):
             self.new = True
         cvterm = self.cvterm_query(self.process_data['DIV1a']['cv'], self.process_data['DIV1a']['cvterm'])
         organism = get_default_organism(self.session)
-        self.div, is_new = get_or_create(self.session, Feature, organism_id=organism.organism_id, uniquename=div_name, name=div_name, type_id=cvterm)
+        self.feature, is_new = get_or_create(self.session, Feature, organism_id=organism.organism_id, uniquename=div_name, name=div_name, type_id=cvterm)
         if self.new != is_new:
             if self.new:
                 message = "{} already exists but DIV1d specifys it should not.".format(div_name)
@@ -81,15 +83,15 @@ class ChadoDiv(ChadoObject):
                 message = "{} does not exist but DIV1d specifys it should.".format(div_name)
             self.critical_error(self.process_data['DIV1a']['data'], message)
         if self.has_data('DIV1d'):
-            self.session.delete(self.div)
+            self.session.delete(self.feature)
             return None
 
     def rename(self, key):
         """Rename the DIV."""
         if not self.has_data(key):
             return
-        self.div.uniquename = self.process_data[key]['data'][FIELD_VALUE]
-        self.div.name = self.process_data[key]['data'][FIELD_VALUE]
+        self.feature.uniquename = self.process_data[key]['data'][FIELD_VALUE]
+        self.feature.name = self.process_data[key]['data'][FIELD_VALUE]
         self.load_synonym(key)
 
     def create_set_initial_params(self, set_key, data_set):
@@ -141,8 +143,8 @@ class ChadoDiv(ChadoObject):
 
         self.get_div()
 
-        if not self.div:  # Only proceed if we have a div. Otherwise we had an error.
-            return self.div
+        if not self.feature:  # Only proceed if we have a div. Otherwise we had an error.
+            return self.feature
         # bang c/d first as this supersedes all things
         if self.bang_c:
             self.bang_c_it()
@@ -161,7 +163,7 @@ class ChadoDiv(ChadoObject):
         curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short, timestamp)
         log.debug('Curator string assembled as:')
         log.debug('%s' % (curated_by_string))
-        return self.div
+        return self.feature
 
     def process_sets(self):
         """Process the set data.
@@ -245,7 +247,7 @@ class ChadoDiv(ChadoObject):
             else:
                 try:
                     f_db = self.session.query(FeatureDbxref).\
-                        filter(FeatureDbxref.feature_id == self.div.feature_id,
+                        filter(FeatureDbxref.feature_id == self.feature.feature_id,
                                FeatureDbxref.dbxref_id == dbxref.dbxref_id,
                                FeatureDbxref.is_current == 't').one()
                     f_db.is_current = False
@@ -257,14 +259,14 @@ class ChadoDiv(ChadoObject):
             log.debug("Dis key NOT set so create stuff")
 
         params['tuple'] = data_set[acc_key]
-        params['feature_id'] = self.div.feature_id
+        params['feature_id'] = self.feature.feature_id
         try:
             dbxref, _ = get_dbxref_by_params(self.session, params)
         except NoResultFound:
             error_message = "DB {} Could not be found in chado?".format(params['dbname'])
             self.error_track(data_set[acc_key], error_message, CRITICAL_ERROR)
             return
-        fd_add_by_ids(self.session, self.div.feature_id, dbxref.dbxref_id)
+        fd_add_by_ids(self.session, self.feature.feature_id, dbxref.dbxref_id)
 
     def ignore(self, key):
         """Ignore."""
@@ -284,40 +286,8 @@ class ChadoDiv(ChadoObject):
                 error_message = "Humanhealth {} Could not be found in chado?".format(hh_tup[FIELD_VALUE])
                 self.error_track(hh_tup, error_message, CRITICAL_ERROR)
                 continue
-            hhf, _ = get_or_create(self.session, HumanhealthFeature, feature_id=self.div.feature_id,
+            hhf, _ = get_or_create(self.session, HumanhealthFeature, feature_id=self.feature.feature_id,
                                    humanhealth_id=hh_obj.humanhealth_id, pub_id=self.pub.pub_id)
-
-    def load_synonym(self, key):
-        """Load synonym."""
-        if not self.has_data(key):
-            return
-
-        cv_name = self.process_data[key]['cv']
-        cvterm_name = self.process_data[key]['cvterm']
-        is_current = self.process_data[key]['is_current']
-
-        # remove the current symbol if is_current is set and yaml says remove old is_current
-        if 'remove_old' in self.process_data[key] and self.process_data[key]['remove_old']:
-            fs_remove_current_symbol(self.session, self.div.feature_id, cv_name, cvterm_name, self.pub.pub_id)
-
-        # add the new synonym
-        if type(self.process_data[key]['data']) is list:
-            for item in self.process_data[key]['data']:
-                fs_add_by_synonym_name_and_type(self.session, self.div.feature_id,
-                                                item[FIELD_VALUE], cv_name, cvterm_name, self.pub.pub_id,
-                                                synonym_sgml=None, is_current=is_current, is_internal=False)
-        else:
-            fs_add_by_synonym_name_and_type(self.session, self.div.feature_id,
-                                            self.process_data[key]['data'][FIELD_VALUE], cv_name, cvterm_name, self.pub.pub_id,
-                                            synonym_sgml=None, is_current=is_current, is_internal=False)
-
-    def load_featureprop(self, key):
-        """Featureprop comment."""
-        if not self.has_data(key):
-            return
-        cvterm_id = self.cvterm_query(self.process_data[key]['cv'], self.process_data[key]['cvterm'])
-        get_or_create(self.session, Featureprop, feature_id=self.div.feature_id, type_id=cvterm_id,
-                      value=self.process_data[key]['data'][FIELD_VALUE])
 
 # Deletion routines
     def delete(self, key):
@@ -331,7 +301,7 @@ class ChadoDiv(ChadoObject):
 
         # make all synonyms not current
         for fs in self.session.query(FeatureSynonym).\
-            filter(FeatureSynonym.feature_id == self.dev.feature_id,
+            filter(FeatureSynonym.feature_id == self.feature.feature_id,
                    FeatureSynonym.pub_id == self.pub_id):
             fs.is_current = False
 
@@ -340,7 +310,7 @@ class ChadoDiv(ChadoObject):
         if bangc:
             # delete them all
             self.session.query(HumanhealthFeature).\
-                filter(HumanhealthFeature.feature_id == self.div.feature_id).delete()
+                filter(HumanhealthFeature.feature_id == self.feature.feature_id).delete()
             return
         for hh_tup in self.process_data[key]['data']:
             # get specific hh
@@ -354,7 +324,7 @@ class ChadoDiv(ChadoObject):
                 continue
             # delete hh_f
             self.session.query(HumanhealthFeature).\
-                filter(HumanhealthFeature.feature_id == self.div.feature_id,
+                filter(HumanhealthFeature.feature_id == self.feature.feature_id,
                        HumanhealthFeature.humanhealth_id == hh_obj.humanhealth_id).delete()
         self.process_data[key]['data'] = None
 

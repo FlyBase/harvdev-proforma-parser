@@ -68,7 +68,7 @@ G2c: # NOT done yet but excluded so needs to exist
 #     'G28a', 'gene_relationships',                       #featureprop
 #     'G28b', 'merge_source/identity_source',             #featureprop
 G28b:
-    type: prop
+    type: featureprop
     cv: property type
     cvterm: merge_source
 #     'G29a',
