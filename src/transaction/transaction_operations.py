@@ -91,8 +91,6 @@ def process_entries(session, list_of_objects_to_load):
             references = {}
             last_file = filename
         class_name = entry.__class__.__name__
-        # log.debug('All variables for entry:')
-        # log.debug(vars(entry))
         # TODO Add proforma field to error tracking from Chado Object.
         log.info('Initiating transaction for %s' % (class_name))
         log.info('Source file: %s' % (filename))
@@ -100,8 +98,6 @@ def process_entries(session, list_of_objects_to_load):
 
         chado_object, error_occurred = process_entry(entry, session, filename, references)
         references[class_name] = chado_object
-        for bob in references:
-            log.info("key={}, value = {}, type={}".format(bob, references[bob], type(references[bob])))
         error_occurred |= error_occurred
     return error_occurred
 
