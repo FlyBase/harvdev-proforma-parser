@@ -49,7 +49,7 @@ class ChadoDb(ChadoObject):
         self.process_data = self.load_reference_yaml(yml_file, params)
         self.main_key = 'DB1a'
 
-    def load_content(self):
+    def load_content(self, references):
         """
         Main processing routine
         """

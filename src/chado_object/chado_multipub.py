@@ -121,7 +121,7 @@ class ChadoMultipub(ChadoPub):
         log.debug("New pub created with fbrf {}.".format(pub.uniquename))
         return pub
 
-    def load_content(self):
+    def load_content(self, references):
         """Process the data."""
         if self.process_data['MP1']['data'][FIELD_VALUE] == "new":
             self.newpub = True

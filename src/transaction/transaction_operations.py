@@ -24,13 +24,14 @@ log = logging.getLogger(__name__)
 last_query = None
 
 
-def process_entry(entry, session, filename):
+def process_entry(entry, session, filename, references):
     """Process Entry.
 
     Process entry and deal with exceptions etc and just return if an error was seen.
     """
     error_occurred = False
     last_query = None  # Track the last executed query.
+    chado_object = None
 
     engine = session.get_bind()
     @event.listens_for(engine, "before_cursor_execute")
@@ -44,7 +45,8 @@ def process_entry(entry, session, filename):
             last_query = statement
 
     try:
-        entry.load_content()
+        chado_object = entry.load_content(references)
+        log.info("Chado object returned is {}".format(chado_object))
         session.flush()  # For printing out SQL statements in debug mode.
     except NoResultFound:
         # Create an error object.
@@ -61,7 +63,7 @@ def process_entry(entry, session, filename):
         ErrorTracking(filename, None, None, 'Unexpected internal parser error. Please contact Harvdev. \n{} '
                                             'Last query below:'.format(traceback.format_exc()), last_query, CRITICAL_ERROR)
         error_occurred = True
-    return error_occurred
+    return chado_object, error_occurred
 
 
 def load_message(load_type):
@@ -79,18 +81,24 @@ def load_message(load_type):
 def process_entries(session, list_of_objects_to_load):
     """Process the list of objects."""
     error_occurred = False
+    references = {}
+    last_file = None
     for entry in list_of_objects_to_load:
         entry.obtain_session(session)  # Send session to object.
         filename = entry.filename
+        if filename != last_file:
+            log.info("{} DOEs not equal {}".format(filename, last_file))
+            references = {}
+            last_file = filename
         class_name = entry.__class__.__name__
-        log.debug('All variables for entry:')
-        log.debug(vars(entry))
         # TODO Add proforma field to error tracking from Chado Object.
-        log.debug('Initiating transaction for %s' % (class_name))
-        log.debug('Source file: %s' % (filename))
-        log.debug('Proforma object starts from line: %s' % (entry.proforma_start_line_number))
+        log.info('Initiating transaction for %s' % (class_name))
+        log.info('Source file: %s' % (filename))
+        log.info('Proforma object starts from line: %s' % (entry.proforma_start_line_number))
 
-        error_occurred |= process_entry(entry, session, filename)
+        chado_object, error_occurred = process_entry(entry, session, filename, references)
+        references[class_name] = chado_object
+        error_occurred |= error_occurred
     return error_occurred
 
 

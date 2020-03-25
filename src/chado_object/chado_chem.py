@@ -107,9 +107,14 @@ class ChadoChem(ChadoObject):
         """Ignore."""
         pass
 
-    def load_content(self):
+    def load_content(self, references):
         """Process the proforma fields."""
-        self.pub = super(ChadoChem, self).pub_from_fbrf(self.reference)
+        try:
+            self.pub = references['ChadoPub']
+        except KeyError:
+            message = "Unable to find publication."
+            self.critical_error(self.process_data['CH1a']['data'], message)
+            return None
 
         self.get_or_create_chemical()
         if not self.chemical:

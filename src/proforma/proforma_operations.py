@@ -114,19 +114,19 @@ def process_proforma_file(file_location_from_list, curator_dict):
     if 'MULTIPUBLICATION' in list_of_proforma_objects[0].proforma_type:
         return list_of_processed_proforma_objects
 
-    log.debug('Found first reference %s.' % (list_of_proforma_objects[0].fields_values['P22'][1]))
-    log.debug('Attaching %s from field %s, line %s to all subsequent proforma objects.' % (fields_values['P22'][1], 'P22', fields_values['P22'][2]))
+    # log.debug('Found first reference %s.' % (list_of_proforma_objects[0].fields_values['P22'][1]))
+    # log.debug('Attaching %s from field %s, line %s to all subsequent proforma objects.' % (fields_values['P22'][1], 'P22', fields_values['P22'][2]))
 
-    last_pub = list_of_proforma_objects[0].fields_values['P22']
-    for individual_proforma_object in list_of_processed_proforma_objects:
-        log.debug("TYPE: is {}".format(individual_proforma_object.proforma_type))
-        if 'PUBLICATION' in individual_proforma_object.proforma_type:
-            last_pub = individual_proforma_object.fields_values['P22']
-            log.debug("Setting new pub to be {}".format(last_pub))
-            last_genus = 'Drosophila'
-            last_species = 'melanogaster'
-            log.debug("Resetting new genus {} and species {}".format(last_genus, last_species))
-        individual_proforma_object.add_reference_data(last_pub)
+    # last_pub = list_of_proforma_objects[0].fields_values['P22']
+    # for individual_proforma_object in list_of_processed_proforma_objects:
+    #    log.debug("TYPE: is {}".format(individual_proforma_object.proforma_type))
+    #    if 'PUBLICATION' in individual_proforma_object.proforma_type:
+    #        last_pub = individual_proforma_object.fields_values['P22']
+    #        log.debug("Setting new pub to be {}".format(last_pub))
+    #        last_genus = 'Drosophila'
+    #        last_species = 'melanogaster'
+    #        log.debug("Resetting new genus {} and species {}".format(last_genus, last_species))
+    #    individual_proforma_object.add_reference_data(last_pub)
 
     return list_of_processed_proforma_objects
 

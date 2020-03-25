@@ -1,0 +1,11 @@
+GA1a:
+    type: string
+    required: True
+    no_bangc: True
+GA1g:
+    type: string
+    required: True
+    allowed: [y]
+GA81a:
+    type: string
+    required: False

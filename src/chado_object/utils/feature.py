@@ -147,7 +147,7 @@ def feature_name_lookup(session, name, organism_id=None, type_name=None, type_id
         organism_id = get_default_organism_id(session)
 
     if type_name:
-        if type_name in ['bogus symbol', 'single balancer', 'chemical entity']:
+        if type_name in ['bogus symbol', 'single balancer', 'chemical entity', 'div']:
             cv_type = 'FlyBase miscellaneous CV'
         else:
             cv_type = 'SO'

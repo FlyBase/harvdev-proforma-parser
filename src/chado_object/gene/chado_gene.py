@@ -67,13 +67,18 @@ class ChadoGene(ChadoObject):
         self.genus = "Drosophila"
         self.species = "melanogaster"
 
-    def load_content(self):
+    def load_content(self, references):
         """Process the data."""
-        self.pub = super(ChadoGene, self).pub_from_fbrf(self.reference)
+        try:
+            self.pub = references['ChadoPub']
+        except KeyError:
+            message = "Unable to find publication."
+            self.critical_error(self.process_data['G1a']['data'], message)
+            return None
 
         self.get_gene()
         if not self.gene:  # problem getting gene, lets finish
-            return
+            return None
         # bang c first as this supersedes all things
         if self.bang_c:
             self.bang_c_it()
@@ -88,6 +93,7 @@ class ChadoGene(ChadoObject):
         curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short, timestamp)
         log.debug('Curator string assembled as:')
         log.debug('%s' % (curated_by_string))
+        return self.gene
 
     def load_prop(self, key):
         """Load featureprop."""
