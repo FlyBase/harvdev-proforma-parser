@@ -10,3 +10,11 @@ GA81a:
     type: feature_relationship
     cv: relationship type
     cvterm: has_variant
+GA84b:
+    type: featureprop
+    cv: property type
+    cvterm: div_comment
+GA85:
+    type: featureprop
+    cv: property type
+    cvterm: deliberate_omission

@@ -10,12 +10,9 @@ from harvdev_utils.production import (
     Feature, Featureprop, FeaturePub, FeatureRelationship,
     FeatureSynonym, Synonym, FeatureRelationshipprop
 )
-
 from harvdev_utils.chado_functions import get_or_create, DataError
 from harvdev_utils.chado_functions.external_lookups import ExternalLookup
-from harvdev_utils.char_conversions import sgml_to_plain_text
-from .chado_base import ChadoObject, FIELD_VALUE
-from chado_object.utils.feature_synonym import fs_add_by_synonym_name_and_type, fs_remove_current_symbol
+from chado_object.feature.chado_feature import ChadoFeatureObject, FIELD_VALUE
 from chado_object.utils.feature import feature_symbol_lookup, feature_synonym_lookup, feature_name_lookup
 from chado_object.utils.organism import get_default_organism_id
 from chado_object.utils.util_errors import CodingError
@@ -28,11 +25,13 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class ChadoChem(ChadoObject):
+class ChadoChem(ChadoFeatureObject):
     """Process the Chemical Proforma."""
 
     def __init__(self, params):
         """Initialise the chado object."""
+        # Initiate the parent.
+        super(ChadoChem, self).__init__(params)
         log.debug('Initializing ChadoChem object.')
 
         self.proforma_start_line_number = params.get('proforma_start_line_number')
@@ -42,13 +41,13 @@ class ChadoChem(ChadoObject):
         # Values queried later, placed here for reference purposes.
         ############################################################
         self.pub = None             # All other proforma need a reference to a pub
-        self.chemical = None        # The chemical object, to get feature_id use self.chemical.feature_id.
+        self.feature = None        # The chemical object, to get feature_id use self.chemical.feature_id.
         self.chebi_pub_id = None    # Used for attributing chemical curation.
         self.pubchem_pub_id = None  # Used for attributing chemical curation.
 
         # yaml file defines what to do with each field. Follow the light
         self.type_dict = {'featureprop': self.load_featureprop,
-                          'synonym': self.load_synonym,
+                          'synonym': self.load_synonym_chem,
                           'ignore': self.ignore,
                           'value': self.ignore}
 
@@ -84,8 +83,8 @@ class ChadoChem(ChadoObject):
             }
         }
 
-        # Initiate the parent.
-        super(ChadoChem, self).__init__(params)
+        self.feature = None
+        self.type_name = 'chemical entity'
 
         ############################################################
         # Get processing info and data to be processed.
@@ -117,7 +116,8 @@ class ChadoChem(ChadoObject):
             return None
 
         self.get_or_create_chemical()
-        if not self.chemical:
+        if not self.feature:
+            log.info("CHEM/FEAT NO FEATURE???")
             return
 
         # bang c first as this supersedes all things
@@ -136,6 +136,7 @@ class ChadoChem(ChadoObject):
             self.curator_fullname, self.filename_short, timestamp)
         log.debug('Curator string assembled as:')
         log.debug('%s' % curated_by_string)
+        return self.feature
 
     def fetch_by_FBch_and_check(self, chemical_cvterm_id):
         """Fetch by the FBch (CH1f) and check the name is the same if it is given (CH1a).
@@ -146,16 +147,16 @@ class ChadoChem(ChadoObject):
         Raises:
             critical error if CH1f and CH1a are specified and do not match.
         """
-        self.chemical, is_new = get_or_create(self.session, Feature, type_id=chemical_cvterm_id,
-                                              uniquename=self.process_data['CH1f']['data'][FIELD_VALUE])
+        self.feature, is_new = get_or_create(self.session, Feature, type_id=chemical_cvterm_id,
+                                             uniquename=self.process_data['CH1f']['data'][FIELD_VALUE])
         if is_new:
             message = "Could not find {} in the database. Please check it exists.".format(self.process_data['CH1f']['data'][FIELD_VALUE])
             self.critical_error(self.process_data['CH1f']['data'], message)
         if self.has_data('CH1a'):
-            if self.process_data['CH1a']['data'][FIELD_VALUE] != self.chemical.name:
+            if self.process_data['CH1a']['data'][FIELD_VALUE] != self.feature.name:
                 message = "Name given does not match that in database. {} does not equal {}".\
                     format(self.process_data['CH1f']['data'][FIELD_VALUE],
-                           self.chemical.name)
+                           self.feature.name)
                 self.critical_error(self.process_data['CH1a']['data'], message)
 
     def get_or_create_chemical(self):
@@ -188,7 +189,7 @@ class ChadoChem(ChadoObject):
 
         exists_already = self.check_existing_already()
         if exists_already:
-            self.chemical = exists_already
+            self.feature = exists_already
             return
 
         # Check if we already have an existing entry by feature name -> dbx xref.
@@ -203,27 +204,27 @@ class ChadoChem(ChadoObject):
         database = self.session.query(Db). \
             filter(Db.name == self.chemical_information['identifier']['source']).one()
 
-        self.chemical, _ = get_or_create(self.session, Feature, organism_id=organism_id,
-                                         # name=self.process_data['CH1a']['data'][FIELD_VALUE],
-                                         name=self.chemical_information['name']['data'].lower(),
-                                         type_id=chemical_cvterm_id,
-                                         uniquename='FBch:temp_0')
+        self.feature, _ = get_or_create(self.session, Feature, organism_id=organism_id,
+                                        # name=self.process_data['CH1a']['data'][FIELD_VALUE],
+                                        name=self.chemical_information['name']['data'].lower(),
+                                        type_id=chemical_cvterm_id,
+                                        uniquename='FBch:temp_0')
 
-        log.debug("New chemical entry created: {}".format(self.chemical.name))
+        log.debug("New chemical entry created: {}".format(self.feature.name))
 
         dbx_ref, _ = get_or_create(self.session, Dbxref, db_id=database.db_id,
                                    accession=identifier_accession_num_only)
 
         log.debug("Creating new dbxref: {}".format(dbx_ref.dbxref_id))
         log.debug("Updating FBch with dbxref.dbxref_id: {}".format(dbx_ref.dbxref_id))
-        self.chemical.dbxref_id = dbx_ref.dbxref_id
+        self.feature.dbxref_id = dbx_ref.dbxref_id
 
-        feature_pub, _ = get_or_create(self.session, FeaturePub, feature_id=self.chemical.feature_id,
+        feature_pub, _ = get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id,
                                        pub_id=self.pub.pub_id)
         log.debug("Created new feature_pub: {}".format(feature_pub.feature_pub_id))
         # Add pub link to Chebi or pubchem
         pub_id = self.get_external_chemical_pub_id('CH3a')
-        feature_pub, _ = get_or_create(self.session, FeaturePub, feature_id=self.chemical.feature_id, pub_id=pub_id)
+        feature_pub, _ = get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id, pub_id=pub_id)
         log.debug("Created new feature_pub: {}".format(feature_pub.feature_pub_id))
 
         # TODO Do we ever remove feature_pubs once all synonym connections are removed?
@@ -301,7 +302,7 @@ class ChadoChem(ChadoObject):
     def delete_featureprop(self, key, bangc=True):
         prop_cv_id = self.cvterm_query(self.process_data[key]['cv'], self.process_data[key]['cvterm'])
 
-        fp, is_new = get_or_create(self.session, Featureprop, feature_id=self.chemical.feature_id,
+        fp, is_new = get_or_create(self.session, Featureprop, feature_id=self.feature.feature_id,
                                    type_id=prop_cv_id)
         if is_new:
             message = "No current {} field specified in chado so cannot bangc it".format(key)
@@ -313,7 +314,7 @@ class ChadoChem(ChadoObject):
     def change_featurepropvalue(self, key, bangc=True):
         prop_cv_id = self.cvterm_query(self.process_data['CH3b']['cv'], self.process_data['CH3b']['cvterm'])
 
-        fp, is_new = get_or_create(self.session, Featureprop, feature_id=self.chemical.feature_id,
+        fp, is_new = get_or_create(self.session, Featureprop, feature_id=self.feature.feature_id,
                                    type_id=prop_cv_id)
         if is_new:
             message = "No current value specified in chado so cannot bangc it"
@@ -324,11 +325,12 @@ class ChadoChem(ChadoObject):
         self.process_data['CH3b']['data'] = None
 
     def rename_synonym(self, key, bangc=True):
+        log.info("FEAT/CHEM rename {}".format(self.process_data[key]['data'][FIELD_VALUE]))
         if not self.has_data(key):
             message = "Bangc MUST have a value."
             self.critical_error(self.process_data[key]['data'], message)
             return
-        self.load_synonym(key)
+        self.load_synonym_chem(key)
         self.process_data[key]['data'] = None
 
     def get_external_chemical_pub_id(self, key):
@@ -336,50 +338,24 @@ class ChadoChem(ChadoObject):
         db_type = self.session.query(Db).join(Dbxref).join(Feature).\
             filter(Feature.dbxref_id == Dbxref.dbxref_id,
                    Db.db_id == Dbxref.db_id,
-                   Feature.feature_id == self.chemical.feature_id).one()
+                   Feature.feature_id == self.feature.feature_id).one()
         if db_type.name == "CHEBI":
             pub_id = self.chebi_pub_id
         elif db_type.name == "PubChem":
             pub_id = self.pubchem_pub_id
         else:
-            message = "Do not know how to look up pub for the feature {} based on db {}.".format(self.chemical.name, db_type.name)
+            message = "Do not know how to look up pub for the feature {} based on db {}.".format(self.feature.name, db_type.name)
             self.critical_error(self.process_data[key]['data'], message)
         return pub_id
 
-    def load_synonym(self, key):
+    def load_synonym_chem(self, key):
 
         # Chemicals can be listed more than once
         # But are only loaded once. We do not allow synoym changes
         # for these repeated chemicals. !c Should be used in this case
         if not self.new_chemical_entry and key not in self.bang_c:
             return
-        cv_name = self.process_data[key]['cv']
-        cvterm_name = self.process_data[key]['cvterm']
-        is_current = self.process_data[key]['is_current']
-
-        if 'pub' in self.process_data[key] and self.process_data[key]['pub'] == 'current':
-            pub_id = self.pub.pub_id
-        else:
-            # is this chebi or pubchem
-            pub_id = self.get_external_chemical_pub_id(key)
-
-        # remove the current symbol if is_current is set and yaml says remove old is_current
-        if 'remove_old' in self.process_data[key] and self.process_data[key]['remove_old']:
-            fs_remove_current_symbol(self.session, self.chemical.feature_id, cv_name, cvterm_name, pub_id)
-
-        # add the new synonym
-        if type(self.process_data[key]['data']) is list:
-            for item in self.process_data[key]['data']:
-                fs_add_by_synonym_name_and_type(self.session, self.chemical.feature_id,
-                                                item[FIELD_VALUE], cv_name, cvterm_name, pub_id,
-                                                synonym_sgml=None, is_current=is_current, is_internal=False)
-        else:
-            fs_add_by_synonym_name_and_type(self.session, self.chemical.feature_id,
-                                            self.process_data[key]['data'][FIELD_VALUE], cv_name, cvterm_name, pub_id,
-                                            synonym_sgml=None, is_current=is_current, is_internal=False)
-
-            if is_current and cvterm_name == 'symbol':
-                self.chemical.name = sgml_to_plain_text(self.process_data[key]['data'][FIELD_VALUE])
+        self.load_synonym(key)
 
     def load_featureprop(self, key):
         """
@@ -391,7 +367,7 @@ class ChadoChem(ChadoObject):
             value = self.process_data[self.process_data[key]['value']]['data'][FIELD_VALUE]
         prop_cv_id = self.cvterm_query(self.process_data[key]['cv'], self.process_data[key]['cvterm'])
 
-        fp, is_new = get_or_create(self.session, Featureprop, feature_id=self.chemical.feature_id,
+        fp, is_new = get_or_create(self.session, Featureprop, feature_id=self.feature.feature_id,
                                    type_id=prop_cv_id)
         if is_new:
             fp.value = value
@@ -431,7 +407,7 @@ class ChadoChem(ChadoObject):
         description_cv_id = self.cvterm_query(self.process_data[key]['cv'], self.process_data[key]['cvterm'])
 
         log.debug('Creating relationship between feature in CH1f and CH4a.')
-        feat_rel, _ = get_or_create(self.session, FeatureRelationship, subject_id=self.chemical.feature_id,
+        feat_rel, _ = get_or_create(self.session, FeatureRelationship, subject_id=self.feature.feature_id,
                                     object_id=related_fbch_feature_id, type_id=description_cv_id)
         prop_key = self.process_data[key]['prop']
         if self.has_data(prop_key):
@@ -453,7 +429,7 @@ class ChadoChem(ChadoObject):
 
         description_cvterm_id = self.cvterm_query('property type', 'description')
 
-        get_or_create(self.session, Featureprop, feature_id=self.chemical.feature_id,
+        get_or_create(self.session, Featureprop, feature_id=self.feature.feature_id,
                       type_id=description_cvterm_id, value=self.chemical_information['description']['data'])
 
     def add_inchikey_to_featureprop(self):
@@ -469,7 +445,7 @@ class ChadoChem(ChadoObject):
 
         description_cvterm_id = self.cvterm_query('property type', 'inchikey')
 
-        get_or_create(self.session, Featureprop, feature_id=self.chemical.feature_id,
+        get_or_create(self.session, Featureprop, feature_id=self.feature.feature_id,
                       type_id=description_cvterm_id, value=self.chemical_information['inchikey']['data'])
 
     def process_synonyms_from_external_db(self):
@@ -500,7 +476,7 @@ class ChadoChem(ChadoObject):
                                                synonym_sgml=item_lower,
                                                name=item_lower)
                 seen_it.add(item_lower)
-                fs, _ = get_or_create(self.session, FeatureSynonym, feature_id=self.chemical.feature_id,
+                fs, _ = get_or_create(self.session, FeatureSynonym, feature_id=self.feature.feature_id,
                                       pub_id=pub_id, synonym_id=new_synonym.synonym_id)
                 fs.is_current = False
 
@@ -510,7 +486,7 @@ class ChadoChem(ChadoObject):
                                        synonym_sgml=name_lower,
                                        name=name_lower)
 
-        fs, _ = get_or_create(self.session, FeatureSynonym, feature_id=self.chemical.feature_id,
+        fs, _ = get_or_create(self.session, FeatureSynonym, feature_id=self.feature.feature_id,
                               pub_id=pub_id, synonym_id=new_synonym.synonym_id)
         fs.is_current = True
 

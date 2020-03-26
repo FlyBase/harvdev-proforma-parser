@@ -9,26 +9,21 @@
 import logging
 import os
 from sqlalchemy.orm.exc import NoResultFound
-
-# from harvdev_utils.chado_functions import get_or_create
-from harvdev_utils.production import (
-    FeatureRelationship, FeatureRelationshipPub
-)
-from chado_object.chado_base import FIELD_VALUE, ChadoObject
+from chado_object.feature.chado_feature import ChadoFeatureObject, FIELD_VALUE
 from chado_object.utils.feature import (
-    feature_symbol_lookup, feature_name_lookup
+    feature_symbol_lookup
 )
-from harvdev_utils.chado_functions import get_or_create, get_cvterm
+# from harvdev_utils.chado_functions import get_or_create, get_cvterm
 from chado_object.utils.synonym import synonym_name_details
 log = logging.getLogger(__name__)
 
 
-class ChadoAllele(ChadoObject):
+class ChadoAllele(ChadoFeatureObject):
     """Process the Disease Implicated Variation (DIV) Proforma."""
 
     def __init__(self, params):
         """Initialise the chado object."""
-        log.debug('Initializing ChadoDiv object.')
+        log.debug('Initializing ChadoAllele object.')
 
         # Initiate the parent.
         super(ChadoAllele, self).__init__(params)
@@ -39,6 +34,7 @@ class ChadoAllele(ChadoObject):
 
         # yaml file defines what to do with each field. Follow the light
         self.type_dict = {'feature_relationship': self.load_feature_relationship,
+                          'featureprop': self.load_featureprop,
                           'ignore': self.ignore}
         self.proforma_start_line_number = params.get('proforma_start_line_number')
 
@@ -46,8 +42,9 @@ class ChadoAllele(ChadoObject):
         # Values queried later, placed here for reference purposes.
         ############################################################
         self.pub = None
-        self.allele = None
+        self.feature = None
         self.gene = None
+        self.type_name = 'gene'
 
         ############################################################
         # Get processing info and data to be processed.
@@ -75,7 +72,7 @@ class ChadoAllele(ChadoObject):
             return None
 
         self.get_allele()
-        if not self.allele:  # problem getting gene, lets finish
+        if not self.feature:  # problem getting gene, lets finish
             return
         # bang c first as this supersedes all things
         if self.bang_c:
@@ -87,20 +84,18 @@ class ChadoAllele(ChadoObject):
             log.debug("Processing {}".format(self.process_data[key]['data']))
             self.type_dict[self.process_data[key]['type']](key)
 
-        # timestamp = datetime.now().strftime('%c')
-        # curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short, timestamp)
-        # log.debug('Curator string assembled as:')
-        # log.debug('%s' % (curated_by_string))
-        return self.allele
+        return self.feature
 
     def get_allele(self):
         """Get initial allele and check."""
-        self.allele = None
+        self.feature = None
         if self.process_data['GA1g']['data'][FIELD_VALUE] == 'y':  # Should exist already
             organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['GA1a']['data'][FIELD_VALUE])
             try:
                 # Alleles are genes.
-                self.allele = feature_symbol_lookup(self.session, 'gene', self.process_data['GA1a']['data'][FIELD_VALUE], organism_id=organism.organism_id)
+                self.feature = feature_symbol_lookup(self.session, self.type_name,
+                                                     self.process_data['GA1a']['data'][FIELD_VALUE],
+                                                     organism_id=organism.organism_id)
             except NoResultFound:
                 message = "Unable to find Allele with symbol {}.".format(self.process_data['GA1a']['data'][FIELD_VALUE])
                 self.critical_error(self.process_data['GA1a']['data'], message)
@@ -109,27 +104,3 @@ class ChadoAllele(ChadoObject):
     def ignore(self, key):
         """Ignore."""
         pass
-
-    def load_feature_relationship(self, key):
-        """Add Feature Relationship."""
-        if not self.has_data(key):
-            return
-
-        cv_name = self.process_data[key]['cv']
-        cvterm_name = self.process_data[key]['cvterm']
-        cvterm = get_cvterm(self.session, cv_name, cvterm_name)
-        if not cvterm:
-            message = "Unable to find cvterm {} for Cv {}.".format(cvterm_name, cv_name)
-            self.critical_error(self.process_data[key]['data'], message)
-            return None
-
-        name = self.process_data[key]['data'][FIELD_VALUE]
-        obj_feat = feature_name_lookup(self.session, name, type_name='div')
-        fr, _ = get_or_create(self.session, FeatureRelationship,
-                              subject_id=self.allele.feature_id,
-                              object_id=obj_feat.feature_id,
-                              type_id=cvterm.cvterm_id)
-
-        frp, _ = get_or_create(self.session, FeatureRelationshipPub,
-                               feature_relationship_id=fr.feature_relationship_id,
-                               pub_id=self.pub.pub_id)

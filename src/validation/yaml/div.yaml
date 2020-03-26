@@ -16,6 +16,10 @@ DIV1d:
   nullable: True
   type: string
   allowed: [y]
+DIV1e:
+    required: False
+    type: string
+    exclude: 'DIV1d'
 DIV2a:
   type: [list, string]
   required: False
@@ -56,7 +60,4 @@ DIV4:
   required: false
   type: string
   nullable: True
-DIV5:
-  required: False
-  type: string
-  exclude: 'DIV1d'
+
