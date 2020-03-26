@@ -10,6 +10,7 @@ GA81a:
     type: feature_relationship
     cv: relationship type
     cvterm: has_variant
+    feat_type: div
 GA84b:
     type: featureprop
     cv: property type
