@@ -72,7 +72,7 @@ class ChadoAllele(ChadoFeatureObject):
             return None
 
         self.get_allele()
-        if not self.allele:  # problem getting gene, lets finish
+        if not self.feature:  # problem getting gene, lets finish
             return
         # bang c first as this supersedes all things
         if self.bang_c:

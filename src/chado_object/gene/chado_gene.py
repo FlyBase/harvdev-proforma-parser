@@ -111,10 +111,10 @@ class ChadoGene(ChadoFeatureObject):
                 self.critical_error(self.process_data['G1a']['data'], message)
                 return None
             organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['G1a']['data'][FIELD_VALUE])
-            self.gene, _ = get_or_create(self.session, Feature, name=plain_name,
-                                         type_id=cvterm.cvterm_id, uniquename='FBgn:temp_0', organism_id=organism.organism_id)
+            self.feature, _ = get_or_create(self.session, Feature, name=plain_name,
+                                            type_id=cvterm.cvterm_id, uniquename='FBgn:temp_0', organism_id=organism.organism_id)
             # feature pub
-            get_or_create(self.session, FeaturePub, feature_id=self.gene.feature_id, pub_id=self.pub.pub_id)
+            get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id, pub_id=self.pub.pub_id)
             return
 
         if self.has_data('G1h'):
@@ -131,7 +131,7 @@ class ChadoGene(ChadoFeatureObject):
         if self.process_data['G1g']['data'][FIELD_VALUE] == 'y':  # Should exist already
             organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['G1a']['data'][FIELD_VALUE])
             try:
-                self.gene = feature_symbol_lookup(self.session, 'gene', self.process_data['G1a']['data'][FIELD_VALUE], organism_id=organism.organism_id)
+                self.feature = feature_symbol_lookup(self.session, 'gene', self.process_data['G1a']['data'][FIELD_VALUE], organism_id=organism.organism_id)
             except NoResultFound:
                 message = "Unable to find Gene with symbol {}.".format(self.process_data['G1a']['data'][FIELD_VALUE])
                 self.critical_error(self.process_data['G1a']['data'], message)
