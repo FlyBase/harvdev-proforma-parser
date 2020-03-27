@@ -71,6 +71,7 @@ G28b:
     type: featureprop
     cv: property type
     cvterm: merge_source
+    value: G28b
 #     'G29a',
 #     'fnally_comps/fnally_noncomps/fnally_partcomps/gain_of_fn_species'
 #     ,    #feature_relationship.object_id, featureprop

@@ -27,6 +27,7 @@ DIV1e:
   type: rename
   cv: synonym type
   cvterm: symbol
+  only_one: True
   is_current: True
   remove_old: True
 DIV2a:
@@ -35,6 +36,7 @@ DIV2b:
   type: featureprop
   cv: property type
   cvterm: deliberate_omission
+  only_one: True
 DIV3:
   type: data_set
   sub_type: feature_dbxref
@@ -60,3 +62,4 @@ DIV4:
   type: featureprop
   cv: FlyBase miscellaneous CV
   cvterm: comment
+  value: DIV4
