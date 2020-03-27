@@ -9,3 +9,9 @@ GA1g:
 GA81a:
     type: string
     required: False
+GA84b:
+    type: string
+    required: False
+GA85:
+    type: string
+    required: False    

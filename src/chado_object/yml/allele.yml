@@ -15,7 +15,9 @@ GA84b:
     type: featureprop
     cv: property type
     cvterm: div_comment
+    value: GA84b
 GA85:
     type: featureprop
     cv: property type
     cvterm: deliberate_omission
+    value: GA85
