@@ -282,12 +282,18 @@ def feature_symbol_lookup(session, type_name, synonym_name, organism_id=None, cv
     feature_type = get_cvterm(session, cv_type, type_name)
     synonym_type = get_cvterm(session, cv_name, cvterm_name)
 
+    filter_spec = (Synonym.type_id == synonym_type.cvterm_id,
+                   Synonym.synonym_sgml == synonym_sgml,
+                   Feature.organism_id == organism_id,
+                   Feature.is_obsolete == 'f',
+                   Feature.type_id == feature_type.cvterm_id)
+
+    if type_name == 'gene':
+        filter_spec += (~Feature.uniquename.contains('FBog'),)
+
     feature = session.query(Feature).join(FeatureSynonym).join(Synonym).\
-        filter(Synonym.type_id == synonym_type.cvterm_id,
-               Synonym.synonym_sgml == synonym_sgml,
-               Feature.organism_id == organism_id,
-               FeatureSynonym.is_current == 't',
-               Feature.type_id == feature_type.cvterm_id).one()
+        filter(*filter_spec).one()
+
     return feature
 
 

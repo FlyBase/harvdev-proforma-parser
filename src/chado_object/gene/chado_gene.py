@@ -14,7 +14,7 @@ from chado_object.utils.feature import (
     get_feature_and_check_uname_symbol
 )
 from chado_object.utils.synonym import synonym_name_details
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from datetime import datetime
 
 import logging
@@ -132,6 +132,11 @@ class ChadoGene(ChadoFeatureObject):
             organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['G1a']['data'][FIELD_VALUE])
             try:
                 self.feature = feature_symbol_lookup(self.session, 'gene', self.process_data['G1a']['data'][FIELD_VALUE], organism_id=organism.organism_id)
+            except MultipleResultsFound:
+                message = "Multiple Genes with symbol {}.".format(self.process_data['G1a']['data'][FIELD_VALUE])
+                log.info(message)
+                self.critical_error(self.process_data['G1a']['data'], message)
+                return
             except NoResultFound:
                 message = "Unable to find Gene with symbol {}.".format(self.process_data['G1a']['data'][FIELD_VALUE])
                 self.critical_error(self.process_data['G1a']['data'], message)
