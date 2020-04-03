@@ -102,7 +102,7 @@ class ChadoFeatureObject(ChadoObject):
             for item in self.process_data[key]['data']:
                 name = item[FIELD_VALUE]
                 obj_feat = feature_name_lookup(self.session, name, type_name=feat_type)
-                log.info("LOOKUP {}: obj feat = {}".format(name, obj_feat))
+                log.debug("LOOKUP {}: obj feat = {}".format(name, obj_feat))
                 fr, _ = get_or_create(self.session, FeatureRelationship,
                                       subject_id=self.feature.feature_id,
                                       object_id=obj_feat.feature_id,
