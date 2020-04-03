@@ -286,6 +286,7 @@ def feature_symbol_lookup(session, type_name, synonym_name, organism_id=None, cv
                    Synonym.synonym_sgml == synonym_sgml,
                    Feature.organism_id == organism_id,
                    Feature.is_obsolete == 'f',
+                   FeatureSynonym.is_current == 't',
                    Feature.type_id == feature_type.cvterm_id)
 
     if type_name == 'gene':

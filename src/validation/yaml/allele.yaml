@@ -7,7 +7,7 @@ GA1g:
     required: True
     allowed: [y]
 GA81a:
-    type: string
+    type: [list, string]
     required: False
 GA84b:
     type: string

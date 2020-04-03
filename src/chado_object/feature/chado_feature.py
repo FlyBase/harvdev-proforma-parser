@@ -98,16 +98,30 @@ class ChadoFeatureObject(ChadoObject):
             self.critical_error(self.process_data[key]['data'], message)
             return None
 
-        name = self.process_data[key]['data'][FIELD_VALUE]
-        obj_feat = feature_name_lookup(self.session, name, type_name=feat_type)
-        fr, _ = get_or_create(self.session, FeatureRelationship,
-                              subject_id=self.feature.feature_id,
-                              object_id=obj_feat.feature_id,
-                              type_id=cvterm.cvterm_id)
+        if type(self.process_data[key]['data']) is list:
+            for item in self.process_data[key]['data']:
+                name = item[FIELD_VALUE]
+                obj_feat = feature_name_lookup(self.session, name, type_name=feat_type)
+                log.info("LOOKUP {}: obj feat = {}".format(name, obj_feat))
+                fr, _ = get_or_create(self.session, FeatureRelationship,
+                                      subject_id=self.feature.feature_id,
+                                      object_id=obj_feat.feature_id,
+                                      type_id=cvterm.cvterm_id)
 
-        frp, _ = get_or_create(self.session, FeatureRelationshipPub,
-                               feature_relationship_id=fr.feature_relationship_id,
-                               pub_id=self.pub.pub_id)
+                frp, _ = get_or_create(self.session, FeatureRelationshipPub,
+                                       feature_relationship_id=fr.feature_relationship_id,
+                                       pub_id=self.pub.pub_id)
+        else:
+            name = self.process_data[key]['data'][FIELD_VALUE]
+            obj_feat = feature_name_lookup(self.session, name, type_name=feat_type)
+            fr, _ = get_or_create(self.session, FeatureRelationship,
+                                  subject_id=self.feature.feature_id,
+                                  object_id=obj_feat.feature_id,
+                                  type_id=cvterm.cvterm_id)
+
+            frp, _ = get_or_create(self.session, FeatureRelationshipPub,
+                                   feature_relationship_id=fr.feature_relationship_id,
+                                   pub_id=self.pub.pub_id)
 
     def load_featureprop(self, key):
         """Store the feature prop.
