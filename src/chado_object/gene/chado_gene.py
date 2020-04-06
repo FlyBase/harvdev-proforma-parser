@@ -78,6 +78,8 @@ class ChadoGene(ChadoFeatureObject):
         self.get_gene()
         if not self.feature:  # problem getting gene, lets finish
             return None
+        # feature pub
+        get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id, pub_id=self.pub.pub_id)
         # bang c first as this supersedes all things
         if self.bang_c:
             self.bang_c_it()
@@ -113,8 +115,6 @@ class ChadoGene(ChadoFeatureObject):
             organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['G1a']['data'][FIELD_VALUE])
             self.feature, _ = get_or_create(self.session, Feature, name=plain_name,
                                             type_id=cvterm.cvterm_id, uniquename='FBgn:temp_0', organism_id=organism.organism_id)
-            # feature pub
-            get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id, pub_id=self.pub.pub_id)
             return
 
         if self.has_data('G1h'):
@@ -146,8 +146,6 @@ class ChadoGene(ChadoFeatureObject):
             self.feature, _ = get_or_create(self.session, Feature, name=plain_name,
                                             type_id=cvterm.cvterm_id, uniquename='FBgn:temp_0',
                                             organism_id=organism.organism_id)
-            # feature pub
-            get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id, pub_id=self.pub.pub_id)
             # add default symbol
             self.load_synonym('G1a')
 

@@ -11,7 +11,7 @@ from sqlalchemy.orm.exc import NoResultFound
 
 from harvdev_utils.chado_functions import get_or_create
 from harvdev_utils.production import (
-    Feature, FeatureDbxref, FeatureSynonym,
+    Feature, FeatureDbxref, FeatureSynonym, FeaturePub,
     Humanhealth, HumanhealthFeature
 )
 from chado_object.chado_base import FIELD_VALUE
@@ -145,6 +145,10 @@ class ChadoDiv(ChadoFeatureObject):
 
         if not self.feature:  # Only proceed if we have a div. Otherwise we had an error.
             return self.feature
+
+        # feature pub
+        get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id, pub_id=self.pub.pub_id)
+
         # bang c/d first as this supersedes all things
         if self.bang_c:
             self.bang_c_it()
