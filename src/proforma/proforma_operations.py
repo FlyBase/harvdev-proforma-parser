@@ -267,11 +267,13 @@ class ProformaFile(object):
         log.debug('Looking up curator based on filename initials.')
 
         try:
-            curator_fullname = self.curator_dict[curator_initials]
+            curator_fullname = self.curator_dict[curator_initials.lower().strip()]
             log.debug('Found curator %s -> %s' % (curator_initials, curator_fullname))
         except KeyError:
             log.critical('Curator not found for filename: {} using initials: {}'.format(self.filename, curator_initials))
             log.critical('Please check config file specified in the execution of this program.')
+            for key in self.curator_dict.keys():
+                log.critical("{}: {}".format(key, self.curator_dict[key]))
             log.critical('Exiting.')
             sys.exit(-1)
 

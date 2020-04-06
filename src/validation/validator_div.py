@@ -50,6 +50,5 @@ class ValidatorDiv(Validator):
         The rule's arguments are validated against this schema:
         {'type': 'string'}
         """
-        log.info("Testing EXCLUDE {} {} {}".format(field, other, value))
         if other in self.document and self.document[other] and value and len(value):
             self._error(field, 'Cannot set {} if {} is set.'.format(field, other))
