@@ -46,7 +46,6 @@ def process_entry(entry, session, filename, references):
 
     try:
         chado_object = entry.load_content(references)
-        log.info("Chado object returned is {}".format(chado_object))
         session.flush()  # For printing out SQL statements in debug mode.
     except NoResultFound:
         # Create an error object.
@@ -87,14 +86,14 @@ def process_entries(session, list_of_objects_to_load):
         entry.obtain_session(session)  # Send session to object.
         filename = entry.filename
         if filename != last_file:
-            log.info("{} DOEs not equal {}".format(filename, last_file))
+            log.debug("{} DOEs not equal {}".format(filename, last_file))
             references = {}
             last_file = filename
         class_name = entry.__class__.__name__
         # TODO Add proforma field to error tracking from Chado Object.
-        log.info('Initiating transaction for %s' % (class_name))
-        log.info('Source file: %s' % (filename))
-        log.info('Proforma object starts from line: %s' % (entry.proforma_start_line_number))
+        log.debug('Initiating transaction for %s' % (class_name))
+        log.debug('Source file: %s' % (filename))
+        log.debug('Proforma object starts from line: %s' % (entry.proforma_start_line_number))
 
         chado_object, error_occurred = process_entry(entry, session, filename, references)
         references[class_name] = chado_object

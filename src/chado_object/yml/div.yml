@@ -60,6 +60,6 @@ DIV3d:
   description:
 DIV4:
   type: featureprop
-  cv: FlyBase miscellaneous CV
+  cv: property type
   cvterm: comment
   value: DIV4
