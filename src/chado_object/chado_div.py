@@ -84,6 +84,7 @@ class ChadoDiv(ChadoFeatureObject):
             self.critical_error(self.process_data['DIV1a']['data'], message)
         if self.has_data('DIV1d'):
             self.session.delete(self.feature)
+            self.feature = None
             return None
 
     def rename(self, key):
