@@ -147,7 +147,7 @@ def feature_name_lookup(session, name, organism_id=None, type_name=None, type_id
         organism_id = get_default_organism_id(session)
 
     if type_name:
-        if type_name in ['bogus symbol', 'single balancer', 'chemical entity', 'div']:
+        if type_name in ['bogus symbol', 'single balancer', 'chemical entity', 'disease implicated variant']:
             cv_type = 'FlyBase miscellaneous CV'
         else:
             cv_type = 'SO'
@@ -201,7 +201,7 @@ def feature_synonym_lookup(session, type_name, synonym_name, organism_id=None, c
 
     # get feature type expected from type_name
     # NOTE: most are SO apart from these 3 rascals.
-    if type_name in ['bogus symbol', 'single balancer', 'chemical entity']:
+    if type_name in ['bogus symbol', 'single balancer', 'chemical entity', 'disease implicated variant']:
         cv_type = 'FlyBase miscellaneous CV'
     else:
         cv_type = 'SO'

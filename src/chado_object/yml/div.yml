@@ -12,7 +12,7 @@
 DIV1a:
   type: ignore
   cv: FlyBase miscellaneous CV
-  cvterm: div
+  cvterm: disease implicated variant
 DIV1b:
   type: synonym
   cv: synonym type

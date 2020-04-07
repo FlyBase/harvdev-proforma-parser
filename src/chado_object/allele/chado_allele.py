@@ -9,9 +9,13 @@
 import logging
 import os
 from sqlalchemy.orm.exc import NoResultFound
+from harvdev_utils.chado_functions import get_or_create
 from chado_object.feature.chado_feature import ChadoFeatureObject, FIELD_VALUE
 from chado_object.utils.feature import (
     feature_symbol_lookup
+)
+from harvdev_utils.production import (
+    FeaturePub
 )
 # from harvdev_utils.chado_functions import get_or_create, get_cvterm
 from chado_object.utils.synonym import synonym_name_details
@@ -74,6 +78,10 @@ class ChadoAllele(ChadoFeatureObject):
         self.get_allele()
         if not self.feature:  # problem getting gene, lets finish
             return
+
+        # feature pub
+        get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id, pub_id=self.pub.pub_id)
+
         # bang c first as this supersedes all things
         if self.bang_c:
             self.bang_c_it()
