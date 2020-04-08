@@ -10,11 +10,12 @@ from harvdev_utils.production import (
     Feature, Featureprop, FeaturePub,
     FeatureSynonym, Synonym
 )
-from harvdev_utils.chado_functions import get_or_create, DataError
-from harvdev_utils.chado_functions.external_lookups import ExternalLookup
 from chado_object.feature.chado_feature import ChadoFeatureObject, FIELD_VALUE
-from chado_object.utils.feature import feature_synonym_lookup, feature_name_lookup
-from chado_object.utils.organism import get_default_organism_id
+from harvdev_utils.chado_functions import (
+    get_or_create, DataError, ExternalLookup,
+    feature_synonym_lookup, feature_name_lookup,
+    get_default_organism_id
+)
 from datetime import datetime
 import os
 import logging

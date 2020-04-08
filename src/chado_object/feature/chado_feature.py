@@ -13,7 +13,7 @@ from harvdev_utils.char_conversions import sgml_to_plain_text
 from harvdev_utils.production import (
     FeatureRelationship, FeatureRelationshipPub, Featureprop, Pub
 )
-from chado_object.utils.feature import (
+from harvdev_utils.chado_functions import (
     feature_name_lookup
 )
 import logging

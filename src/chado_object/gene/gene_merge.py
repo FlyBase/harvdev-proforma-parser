@@ -7,11 +7,10 @@ from harvdev_utils.production import (
     FeatureDbxref, Featureloc, FeatureSynonym, FeatureGrpmember, FeatureHumanhealthDbxref,
     FeatureCvterm
 )
-from harvdev_utils.chado_functions import get_or_create
-from chado_object.utils.feature import (
-    feature_symbol_lookup
+from harvdev_utils.chado_functions import (
+    get_or_create, feature_symbol_lookup,
+    synonym_name_details
 )
-from chado_object.utils.synonym import synonym_name_details
 from chado_object.chado_base import FIELD_VALUE
 from sqlalchemy.orm.exc import NoResultFound
 

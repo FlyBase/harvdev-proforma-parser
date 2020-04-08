@@ -9,16 +9,14 @@
 import logging
 import os
 from sqlalchemy.orm.exc import NoResultFound
-from harvdev_utils.chado_functions import get_or_create
-from chado_object.feature.chado_feature import ChadoFeatureObject, FIELD_VALUE
-from chado_object.utils.feature import (
-    feature_symbol_lookup
+from harvdev_utils.chado_functions import (
+    get_or_create, feature_symbol_lookup
 )
+from chado_object.feature.chado_feature import ChadoFeatureObject, FIELD_VALUE
 from harvdev_utils.production import (
     FeaturePub
 )
-# from harvdev_utils.chado_functions import get_or_create, get_cvterm
-from chado_object.utils.synonym import synonym_name_details
+
 log = logging.getLogger(__name__)
 
 
@@ -98,12 +96,11 @@ class ChadoAllele(ChadoFeatureObject):
         """Get initial allele and check."""
         self.feature = None
         if self.process_data['GA1g']['data'][FIELD_VALUE] == 'y':  # Should exist already
-            organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['GA1a']['data'][FIELD_VALUE])
+            # organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['GA1a']['data'][FIELD_VALUE])
             try:
                 # Alleles are genes.
                 self.feature = feature_symbol_lookup(self.session, self.type_name,
-                                                     self.process_data['GA1a']['data'][FIELD_VALUE],
-                                                     organism_id=organism.organism_id)
+                                                     self.process_data['GA1a']['data'][FIELD_VALUE])
             except NoResultFound:
                 message = "Unable to find Allele with symbol {}.".format(self.process_data['GA1a']['data'][FIELD_VALUE])
                 self.critical_error(self.process_data['GA1a']['data'], message)
