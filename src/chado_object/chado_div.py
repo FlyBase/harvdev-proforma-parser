@@ -9,7 +9,9 @@ import os
 from datetime import datetime
 from sqlalchemy.orm.exc import NoResultFound
 
-from harvdev_utils.chado_functions import get_or_create
+from harvdev_utils.chado_functions import (
+    get_or_create, get_default_organism
+)
 from harvdev_utils.production import (
     Feature, FeatureDbxref, FeatureSynonym, FeaturePub,
     Humanhealth, HumanhealthFeature
@@ -18,7 +20,6 @@ from chado_object.chado_base import FIELD_VALUE
 from chado_object.feature.chado_feature import ChadoFeatureObject
 from chado_object.utils.dbxref import get_dbxref_by_params
 from chado_object.utils.feature_dbxref import fd_add_by_ids
-from chado_object.utils.organism import get_default_organism
 from error.error_tracking import CRITICAL_ERROR
 
 log = logging.getLogger(__name__)

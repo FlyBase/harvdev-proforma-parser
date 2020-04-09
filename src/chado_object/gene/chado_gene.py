@@ -8,12 +8,14 @@ from chado_object.feature.chado_feature import ChadoFeatureObject, FIELD_VALUE
 from harvdev_utils.production import (
     Feature, FeaturePub
 )
-from harvdev_utils.chado_functions import get_or_create, get_cvterm, DataError
-from chado_object.utils.feature import (
-    feature_symbol_lookup,
-    get_feature_and_check_uname_symbol
+from harvdev_utils.chado_functions import (
+    get_or_create, get_cvterm, DataError,
+    feature_symbol_lookup
 )
-from chado_object.utils.synonym import synonym_name_details
+from harvdev_utils.chado_functions import (
+    get_feature_and_check_uname_symbol,
+    synonym_name_details
+)
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from datetime import datetime
 
@@ -129,9 +131,9 @@ class ChadoGene(ChadoFeatureObject):
 
             return self.feature
         if self.process_data['G1g']['data'][FIELD_VALUE] == 'y':  # Should exist already
-            organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['G1a']['data'][FIELD_VALUE])
+            #  organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['G1a']['data'][FIELD_VALUE])
             try:
-                self.feature = feature_symbol_lookup(self.session, 'gene', self.process_data['G1a']['data'][FIELD_VALUE], organism_id=organism.organism_id)
+                self.feature = feature_symbol_lookup(self.session, 'gene', self.process_data['G1a']['data'][FIELD_VALUE])
             except MultipleResultsFound:
                 message = "Multiple Genes with symbol {}.".format(self.process_data['G1a']['data'][FIELD_VALUE])
                 log.info(message)
