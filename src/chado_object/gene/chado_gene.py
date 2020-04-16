@@ -108,11 +108,9 @@ class ChadoGene(ChadoFeatureObject):
         if key == 'G30':
             # check x ; y first got GA
             # NOTE still needs to be done
-            log.info("BOB: Orig data is {}".format(self.process_data[key]['data'][FIELD_VALUE]))
-            bob = self.process_data[key]['data'][FIELD_VALUE].split(' ; ')
-            log.info("BOB: Bob is {}".format(bob))
+            val_split = self.process_data[key]['data'][FIELD_VALUE].split(' ; ')
             new_tuple = (self.process_data[key]['data'][FIELD_NAME],
-                         bob[0],
+                         val_split[0],
                          self.process_data[key]['data'][LINE_NUMBER])
             # tempory fix for now
             self.process_data[key]['data'] = new_tuple
