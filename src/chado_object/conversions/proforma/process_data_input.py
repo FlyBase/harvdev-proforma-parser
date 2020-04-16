@@ -91,7 +91,7 @@ def process_data_input(proforma_object):
         'GENE': (ChadoGene),
         'ALLELE': (ChadoAllele),
         'CHEMICAL': (ChadoChem),
-        'DIV': (ChadoDiv),
+        'DISEASE': (ChadoDiv),
         'HUMAN': (ChadoHumanhealth),
         'MULTIPUBLICATION': (ChadoMultipub),
         'SPECIES': (ChadoSpecies),

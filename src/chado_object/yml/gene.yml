@@ -41,6 +41,18 @@ G2b:
 G2c: # NOT done yet but excluded so needs to exist
    type: ignore
 #     'G30',  'SO',                #feature_cvterm
+# if prop_value is False then the value is used as the
+# cvterm else it presumes the value is prop value and
+# the cvterm is given.
+# Could have gone for if cvterm is not defined etc but
+# this way is more explicit.
+
+G30:
+    type: cvtermprop
+    cv: 'SO'
+    prop_value: False
+    prop_cvterm: 'gene_class'
+    prop_cv: 'property type'
 #     'G31a', 'is_obsolete',       #feature.is_obsolete
 #     'G31b', 'dissociate_pub',    #feature_pub...
 #     'G27',  'etymology',         #feature_genotype,genotype,phendesc

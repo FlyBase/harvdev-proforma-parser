@@ -112,7 +112,7 @@ def validation_file_schema_lookup(proforma_type, fields_values):
                        "GENE": get_validate_gene_schema,
                        "ALLELE": get_validate_allele_schema,
                        "CHEMICAL": get_validate_chemical_schema,
-                       "DIV": get_validate_div_schema,
+                       "DISEASE": get_validate_div_schema,
                        "HUMAN": get_validate_humanhealth_schema,
                        "DATABASE": get_validate_db_schema,
                        "SPECIES": get_validate_species_schema}
@@ -122,7 +122,7 @@ def validation_file_schema_lookup(proforma_type, fields_values):
                        "GENE": ValidatorGene,
                        "ALLELE": ValidatorAllele,
                        "CHEMICAL": ValidatorChem,
-                       "DIV": ValidatorDiv,
+                       "DISEASE": ValidatorDiv,
                        "HUMAN": ValidatorHumanhealth,
                        "DATABASE": ValidatorDb,
                        "SPECIES": ValidatorSpecies}
