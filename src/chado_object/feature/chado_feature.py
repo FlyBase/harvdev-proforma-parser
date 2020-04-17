@@ -11,7 +11,9 @@ from chado_object.utils.feature_synonym import fs_remove_current_symbol
 from harvdev_utils.char_conversions import sgml_to_plain_text
 
 from harvdev_utils.production import (
-    FeatureRelationship, FeatureRelationshipPub, Featureprop, Pub
+    FeatureRelationship, FeatureRelationshipPub, Featureprop,
+    FeatureCvterm, FeatureCvtermprop,
+    Pub
 )
 from harvdev_utils.chado_functions import (
     feature_name_lookup
@@ -78,6 +80,51 @@ class ChadoFeatureObject(ChadoObject):
 
             if is_current and cvterm_name == 'symbol':
                 self.feature.name = sgml_to_plain_text(self.process_data[key]['data'][FIELD_VALUE])
+
+    def load_feature_cvtermprop(self, key):
+        """Add feature_cvtermprop.
+
+        If prop_value is False then the value is used as the
+        cvterm else it presumes the value is prop value and
+        the cvterm is given.
+        Could have gone for if cvterm is not defined etc but
+        this way is more explicit.
+        """
+        cv_name = self.process_data[key]['cv']
+        prop_value = None
+        if self.process_data[key]['prop_value']:
+            cvterm_name = self.process_data[key]['cvterm']
+            prop_value = self.process_data[key]['data'][FIELD_VALUE]
+        else:
+            # for new ones they are seperated by ';'  x ; y
+            # i.e.
+            cvterm_name = self.process_data[key]['data'][FIELD_VALUE]
+
+        cvterm = get_cvterm(self.session, cv_name, cvterm_name)
+        if not cvterm:
+            message = "Unable to find cvterm {} for Cv {}.".format(cvterm_name, cv_name)
+            self.critical_error(self.process_data[key]['data'], message)
+            return None
+
+        cv_name = self.process_data[key]['prop_cv']
+        cvterm_name = self.process_data[key]['prop_cvterm']
+        props_cvterm = get_cvterm(self.session, cv_name, cvterm_name)
+        if not props_cvterm:
+            message = "Unable to find cvterm {} for Cv {}.".format(cvterm_name, cv_name)
+            self.critical_error(self.process_data[key]['data'], message)
+            return None
+
+        # create feature_cvterm
+        feat_cvt, _ = get_or_create(self.session, FeatureCvterm,
+                                    feature_id=self.feature.feature_id,
+                                    cvterm_id=cvterm.cvterm_id,
+                                    pub_id=self.pub.pub_id)
+
+        # create feature_cvtermprop
+        get_or_create(self.session, FeatureCvtermprop,
+                      feature_cvterm_id=feat_cvt.feature_cvterm_id,
+                      value=prop_value,
+                      type_id=props_cvterm.cvterm_id)
 
     def load_feature_relationship(self, key):
         """Add Feature Relationship.

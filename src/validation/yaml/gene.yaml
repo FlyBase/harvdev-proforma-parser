@@ -38,3 +38,7 @@ G28b:
     type: string
     nullable: True
     required: False
+G30:
+    type: string
+    nullable: True
+    required: False

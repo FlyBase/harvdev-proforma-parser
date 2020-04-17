@@ -4,15 +4,16 @@
 :moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>, Ian Longden <ilongden@morgan.harvard.edu>
 """
 import os
-from chado_object.feature.chado_feature import ChadoFeatureObject, FIELD_VALUE
+from chado_object.chado_base import (
+    FIELD_VALUE, FIELD_NAME, LINE_NUMBER
+)
+from chado_object.feature.chado_feature import ChadoFeatureObject
 from harvdev_utils.production import (
     Feature, FeaturePub
 )
 from harvdev_utils.chado_functions import (
     get_or_create, get_cvterm, DataError,
-    feature_symbol_lookup
-)
-from harvdev_utils.chado_functions import (
+    feature_symbol_lookup,
     get_feature_and_check_uname_symbol,
     synonym_name_details
 )
@@ -42,7 +43,7 @@ class ChadoGene(ChadoFeatureObject):
         ##########################################
         self.type_dict = {'synonym': self.load_synonym,
                           'ignore': self.ignore,
-                          'cvterm': self.load_cvterm,
+                          'cvtermprop': self.load_cvtermprop,
                           'merge': self.merge,
                           'featureprop': self.load_featureprop}
 
@@ -102,9 +103,20 @@ class ChadoGene(ChadoFeatureObject):
         """Ignore, done by initial setup."""
         pass
 
-    def load_cvterm(self, key):
+    def load_cvtermprop(self, key):
         """Ignore, done by initial setup."""
-        pass
+        if key == 'G30':
+            # check x ; y first got GA
+            # NOTE still needs to be done
+            val_split = self.process_data[key]['data'][FIELD_VALUE].split(' ; ')
+            new_tuple = (self.process_data[key]['data'][FIELD_NAME],
+                         val_split[0],
+                         self.process_data[key]['data'][LINE_NUMBER])
+            # tempory fix for now
+            self.process_data[key]['data'] = new_tuple
+
+        # then process
+        self.load_feature_cvtermprop(key)
 
     def get_gene(self):
         """Get initial gene and check."""
