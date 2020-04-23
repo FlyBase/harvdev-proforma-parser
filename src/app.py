@@ -58,6 +58,10 @@ def create_postgres_session():
     USER = config['connection']['USER']
     PASSWORD = config['connection']['PASSWORD']
     SERVER = config['connection']['SERVER']
+    try:
+        PORT = config['connection']['PORT']
+    except KeyError:
+        PORT = '5432'
     if type(thread_num) is int:
         SERVER += "_{}".format(thread_num)
     DB = config['connection']['DB']
@@ -66,7 +70,7 @@ def create_postgres_session():
     log.info('Using database: {}'.format(DB))
 
     # Create our SQL Alchemy engine from our environmental variables.
-    engine_var = 'postgresql://' + USER + ":" + PASSWORD + '@' + SERVER + '/' + DB
+    engine_var = 'postgresql://' + USER + ":" + PASSWORD + '@' + SERVER + ':' + PORT + '/' + DB
     log.debug("PORT engine_var = {}: thread is {}".format(engine_var, thread_num))
     engine = create_engine(engine_var)
 
