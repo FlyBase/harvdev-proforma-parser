@@ -53,6 +53,9 @@ G1f:
   - must not be present with
 G30:
   - Must be set for new gene
+G31a:
+  - not allowed with bang c or bang d
+  - prohibits use of
 DIV1a:
   - null value not allowed
 DIV2a:

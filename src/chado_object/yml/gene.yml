@@ -54,7 +54,11 @@ G30:
     prop_cvterm: 'gene_class'
     prop_cv: 'property type'
 #     'G31a', 'is_obsolete',       #feature.is_obsolete
+G31a:
+    type: make_obsolete
 #     'G31b', 'dissociate_pub',    #feature_pub...
+G31b:
+    type: dis_pub
 #     'G27',  'etymology',         #feature_genotype,genotype,phendesc
 
 #     'G20a', 'in_title_or_abstract/significant_subject_in_review'

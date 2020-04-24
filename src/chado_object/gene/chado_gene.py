@@ -46,6 +46,8 @@ class ChadoGene(ChadoFeatureObject):
                           'ignore': self.ignore,
                           'cvtermprop': self.load_cvtermprop,
                           'merge': self.merge,
+                          'dis_pub': self.ignore,
+                          'make_obsolete': self.make_obsolete,
                           'featureprop': self.load_featureprop}
 
         self.delete_dict = {'synonym': self.delete_synonym,
@@ -66,9 +68,6 @@ class ChadoGene(ChadoFeatureObject):
         yml_file = os.path.join(os.path.dirname(__file__), '../yml/gene.yml')
         # Populated self.process_data with all possible keys.
         self.process_data = self.load_reference_yaml(yml_file, params)
-        # self.reference = params.get('reference')
-        # self.genus = "Drosophila"
-        # self.species = "melanogaster"
 
     def load_content(self, references):
         """Process the data."""
@@ -82,6 +81,7 @@ class ChadoGene(ChadoFeatureObject):
         self.get_gene()
         if not self.feature:  # problem getting gene, lets finish
             return None
+        self.extra_checks()
         # feature pub
         get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id, pub_id=self.pub.pub_id)
         # bang c first as this supersedes all things
@@ -100,9 +100,33 @@ class ChadoGene(ChadoFeatureObject):
         log.debug('%s' % (curated_by_string))
         return self.feature
 
+    def extra_checks(self):
+        """Extra checks.
+
+        Ones that ar not easy to do via the validator.
+        """
+        if self.has_data('G31a'):
+            # If G31a contains the value y,
+            # G1g must also be y and G1a must contain a symbol
+            # which is the valid symbol of a gene which is already in FlyBase.
+            # All other fields in this proforma, including the non-renaming fields,
+            # must be blank.
+            bad_fields = []
+            for valid_key in self.process_data:
+                if valid_key not in ['G1a', 'G1g', 'G31a']:
+                    bad_fields.append(valid_key)
+                log.info("BOB: {} {}".format(valid_key, self.process_data[valid_key]))
+            if bad_fields:
+                message = "G31a prohibits use of {}".format(bad_fields)
+                self.critical_error(self.process_data['G31a']['data'], message)
+
     def ignore(self, key):
         """Ignore, done by initial setup."""
         pass
+
+    def make_obsolete(self, key):
+        """Make gene obsolete."""
+        self.feature.is_obsolete = True
 
     def load_cvtermprop(self, key):
         """Ignore, done by initial setup."""

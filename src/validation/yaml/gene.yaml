@@ -43,3 +43,13 @@ G30:
     nullable: True
     required: False
     if_new_required: True
+G31a:
+    type: string
+    required: False
+    no_bangc: True
+    allowed: [y]
+G31b:
+    type: string
+    required: False
+    no_bangc: True
+    allowed: [y]
