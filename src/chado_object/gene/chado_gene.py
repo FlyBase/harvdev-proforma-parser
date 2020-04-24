@@ -111,24 +111,24 @@ class ChadoGene(ChadoFeatureObject):
             # y :- SO:{7d}
             # NOTE still needs to be done
             g30_pattern = r"""
-                ^      # start of line
-                (.*)   # anything including spaces
-                \s*    # some space
-                ;      # separator
-                \s*    # some space
-                (\w+)  # cv name i.e. SO
-                :      # separator
-                (\w+)  # accession i.e. 0000011
+                ^           # start of line
+                \s*         # possible leading spaces
+                (\S+)       # anything excluding spaces
+                \s*         # possible spaces
+                ;           # separator
+                \s*         # possible spaces
+                SO:         # dbxref DB must start be SO:
+                (\d{7})  # accession 7 digit number i.e. 0000011
             """
             fields = re.search(g30_pattern, self.process_data[key]['data'][FIELD_VALUE], re.VERBOSE)
             if not fields:
-                message = "Wrong format should be 'x ; xx:numbers'"
+                message = 'Wrong format should be "none_spaces_name ; SO:[0-9]*7"'
                 self.critical_error(self.process_data[key]['data'], message)
                 return
 
             cvterm_name = fields.group(1).strip()
-            db_name = fields.group(2)
-            db_acc = fields.group(3)
+            db_name = 'SO'
+            db_acc = fields.group(2)
             cv_name = self.process_data[key]['cv']
 
             cvterm = get_cvterm(self.session, cv_name, cvterm_name)
@@ -138,13 +138,13 @@ class ChadoGene(ChadoFeatureObject):
                 message = "Could not find dbxref for db '{}' and accession '{}'".format(db_name, db_acc)
                 self.critical_error(self.process_data[key]['data'], message)
                 return None
-            log.info("BOB:{}".format(cvterm))
-            log.info("BOB:{}".format(cvterm.dbxref))
+
             if cvterm.dbxref.dbxref_id != db_xref.dbxref_id:
                 message = "'{}' Does not match '{}', lookup gave '{}'".\
                     format(cvterm_name, cvterm.dbxref.accession, db_xref.accession)
                 self.critical_error(self.process_data[key]['data'], message)
                 return None
+
             new_tuple = (self.process_data[key]['data'][FIELD_NAME],
                          cvterm_name,
                          self.process_data[key]['data'][LINE_NUMBER])
