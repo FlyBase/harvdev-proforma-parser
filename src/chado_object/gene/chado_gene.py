@@ -4,6 +4,7 @@
 :moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>, Ian Longden <ilongden@morgan.harvard.edu>
 """
 import os
+import re
 from chado_object.chado_base import (
     FIELD_VALUE, FIELD_NAME, LINE_NUMBER
 )
@@ -13,7 +14,7 @@ from harvdev_utils.production import (
 )
 from harvdev_utils.chado_functions import (
     get_or_create, get_cvterm, DataError,
-    feature_symbol_lookup,
+    feature_symbol_lookup, get_dbxref,
     get_feature_and_check_uname_symbol,
     synonym_name_details
 )
@@ -107,12 +108,46 @@ class ChadoGene(ChadoFeatureObject):
         """Ignore, done by initial setup."""
         if key == 'G30':
             # check x ; y first got GA
+            # y :- SO:{7d}
             # NOTE still needs to be done
-            val_split = self.process_data[key]['data'][FIELD_VALUE].split(' ; ')
+            g30_pattern = r"""
+                ^           # start of line
+                \s*         # possible leading spaces
+                (\S+)       # anything excluding spaces
+                \s*         # possible spaces
+                ;           # separator
+                \s*         # possible spaces
+                SO:         # dbxref DB must start be SO:
+                (\d{7})  # accession 7 digit number i.e. 0000011
+            """
+            fields = re.search(g30_pattern, self.process_data[key]['data'][FIELD_VALUE], re.VERBOSE)
+            if not fields:
+                message = 'Wrong format should be "none_spaces_name ; SO:[0-9]*7"'
+                self.critical_error(self.process_data[key]['data'], message)
+                return
+
+            cvterm_name = fields.group(1).strip()
+            db_name = 'SO'
+            db_acc = fields.group(2)
+            cv_name = self.process_data[key]['cv']
+
+            cvterm = get_cvterm(self.session, cv_name, cvterm_name)
+            try:
+                db_xref = get_dbxref(self.session, db_name, db_acc)
+            except DataError:
+                message = "Could not find dbxref for db '{}' and accession '{}'".format(db_name, db_acc)
+                self.critical_error(self.process_data[key]['data'], message)
+                return None
+
+            if cvterm.dbxref.dbxref_id != db_xref.dbxref_id:
+                message = "'{}' Does not match '{}', lookup gave '{}'".\
+                    format(cvterm_name, cvterm.dbxref.accession, db_xref.accession)
+                self.critical_error(self.process_data[key]['data'], message)
+                return None
+
             new_tuple = (self.process_data[key]['data'][FIELD_NAME],
-                         val_split[0],
+                         cvterm_name,
                          self.process_data[key]['data'][LINE_NUMBER])
-            # tempory fix for now
             self.process_data[key]['data'] = new_tuple
 
         # then process

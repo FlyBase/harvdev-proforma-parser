@@ -42,3 +42,4 @@ G30:
     type: string
     nullable: True
     required: False
+    if_new_required: True
