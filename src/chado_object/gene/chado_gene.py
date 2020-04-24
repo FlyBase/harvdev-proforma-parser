@@ -100,6 +100,17 @@ class ChadoGene(ChadoFeatureObject):
         log.debug('%s' % (curated_by_string))
         return self.feature
 
+    def check_only_certain_fields_allowed(self, key, allowed):
+        """Check only allowed fields exist."""
+        bad_fields = []
+        for valid_key in self.process_data:
+            if valid_key not in allowed:
+                bad_fields.append(valid_key)
+            log.info("BOB: {} {}".format(valid_key, self.process_data[valid_key]))
+        if bad_fields:
+            message = "{} prohibits use of {}".format(key, bad_fields)
+            self.critical_error(self.process_data[key]['data'], message)
+
     def extra_checks(self):
         """Extra checks.
 
@@ -111,14 +122,14 @@ class ChadoGene(ChadoFeatureObject):
             # which is the valid symbol of a gene which is already in FlyBase.
             # All other fields in this proforma, including the non-renaming fields,
             # must be blank.
-            bad_fields = []
-            for valid_key in self.process_data:
-                if valid_key not in ['G1a', 'G1g', 'G31a']:
-                    bad_fields.append(valid_key)
-                log.info("BOB: {} {}".format(valid_key, self.process_data[valid_key]))
-            if bad_fields:
-                message = "G31a prohibits use of {}".format(bad_fields)
-                self.critical_error(self.process_data['G31a']['data'], message)
+            self.check_only_certain_fields_allowed('G31a', ['G1a', 'G1g', 'G31a'])
+        if self.has_data('G31b'):
+            # If G31b contains the value y, G1g must also be y and 
+            # G1a must contain a symbol which is the valid symbol 
+            # of a gene which is already in FlyBase.
+            # All other fields in this proforma, including the non-renaming fields,
+            # must be blank.
+            self.check_only_certain_fields_allowed('G31b', ['G1a', 'G1g', 'G31b'])
 
     def ignore(self, key):
         """Ignore, done by initial setup."""
