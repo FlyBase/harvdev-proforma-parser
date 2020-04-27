@@ -46,7 +46,7 @@ class ChadoGene(ChadoFeatureObject):
                           'ignore': self.ignore,
                           'cvtermprop': self.load_cvtermprop,
                           'merge': self.merge,
-                          'dis_pub': self.ignore,
+                          'dis_pub': self.dis_pub,
                           'make_obsolete': self.make_obsolete,
                           'featureprop': self.load_featureprop}
 
@@ -82,8 +82,9 @@ class ChadoGene(ChadoFeatureObject):
         if not self.feature:  # problem getting gene, lets finish
             return None
         self.extra_checks()
-        # feature pub
-        get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id, pub_id=self.pub.pub_id)
+        # feature pub if not dissociate from pub
+        if not self.has_data('G31b'):
+            get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id, pub_id=self.pub.pub_id)
         # bang c first as this supersedes all things
         if self.bang_c:
             self.bang_c_it()
@@ -106,7 +107,6 @@ class ChadoGene(ChadoFeatureObject):
         for valid_key in self.process_data:
             if valid_key not in allowed:
                 bad_fields.append(valid_key)
-            log.info("BOB: {} {}".format(valid_key, self.process_data[valid_key]))
         if bad_fields:
             message = "{} prohibits use of {}".format(key, bad_fields)
             self.critical_error(self.process_data[key]['data'], message)
@@ -124,12 +124,25 @@ class ChadoGene(ChadoFeatureObject):
             # must be blank.
             self.check_only_certain_fields_allowed('G31a', ['G1a', 'G1g', 'G31a'])
         if self.has_data('G31b'):
-            # If G31b contains the value y, G1g must also be y and 
-            # G1a must contain a symbol which is the valid symbol 
+            # If G31b contains the value y, G1g must also be y and
+            # G1a must contain a symbol which is the valid symbol
             # of a gene which is already in FlyBase.
             # All other fields in this proforma, including the non-renaming fields,
             # must be blank.
             self.check_only_certain_fields_allowed('G31b', ['G1a', 'G1g', 'G31b'])
+
+    def dis_pub(self, key):
+        """Dissociate pub from feature."""
+        feat_pub, is_new = get_or_create(self.session, FeaturePub,
+                                         feature_id=self.feature.feature_id,
+                                         pub_id=self.pub.pub_id)
+        if is_new:
+            message = "Cannot dissociate {} to {} as relationship does not exist".\
+                format(self.feature.uniquename, self.pub.uniquename)
+            self.critical_error(self.process_data[key]['data'], message)
+        else:
+            log.info("Deleting relationship between {} and {}".format(self.feature.uniquename, self.pub.uniquename))
+            self.session.delete(feat_pub)
 
     def ignore(self, key):
         """Ignore, done by initial setup."""
@@ -142,9 +155,6 @@ class ChadoGene(ChadoFeatureObject):
     def load_cvtermprop(self, key):
         """Ignore, done by initial setup."""
         if key == 'G30':
-            # check x ; y first got GA
-            # y :- SO:{7d}
-            # NOTE still needs to be done
             g30_pattern = r"""
                 ^           # start of line
                 \s*         # possible leading spaces
@@ -185,7 +195,6 @@ class ChadoGene(ChadoFeatureObject):
                          self.process_data[key]['data'][LINE_NUMBER])
             self.process_data[key]['data'] = new_tuple
 
-        # then process
         self.load_feature_cvtermprop(key)
 
     def get_gene(self):

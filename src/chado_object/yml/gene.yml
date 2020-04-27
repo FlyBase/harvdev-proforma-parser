@@ -60,7 +60,12 @@ G31a:
 G31b:
     type: dis_pub
 #     'G27',  'etymology',         #feature_genotype,genotype,phendesc
-
+G27:
+    type: featureprop
+    cv: property type
+    cvterm: etymology
+    wrapping_values: True
+    value: G27
 #     'G20a', 'in_title_or_abstract/significant_subject_in_review'
 #     ,                            #featureprop: Analysis:subject #not in chado
 #     'G20b', 'is_expression_analysed_in_wildtype', #featureprop:Analysis: WT-exp
