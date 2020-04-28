@@ -51,6 +51,8 @@ G1f:
   - is required
   - must be in G1f list when G1g is set to y
   - must not be present with
+G27:
+  - '@...@ is forbidden here'
 G30:
   - Must be set for new gene
 G31a:

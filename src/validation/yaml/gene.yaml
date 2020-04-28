@@ -34,6 +34,21 @@ G2c:
     type: string
     nullable: True
     required: False
+G15:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True
+G11:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True 
+G27:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True
 G28b:
     type: string
     nullable: True
@@ -49,15 +64,12 @@ G31a:
     nullable: True
     no_bangc: True
     allowed: [y]
+    at_forbidden: True
 G31b:
     type: string
     nullable: True
     required: False
     no_bangc: True
     allowed: [y]
-G27:
-    type: [list, string]
-    required: False
-    nullable: True
-
+    at_forbidden: True
     

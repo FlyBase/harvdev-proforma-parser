@@ -171,11 +171,11 @@ class ChadoFeatureObject(ChadoObject):
                                    pub_id=self.pub.pub_id)
 
     def load_featureproplist(self, key, prop_cv_id):
-        """Do not forgert commet.
+        """Load a feature props that are in a list.
 
         list so obviously more than value allowed.
         """
-        for item in self.process_data[self.process_data[key]['value']]['data']:
+        for item in self.process_data[key]['data']:
             fp, is_new = get_or_create(self.session, Featureprop, feature_id=self.feature.feature_id,
                                        type_id=prop_cv_id, value=item[FIELD_VALUE])
             get_or_create(self.session, FeaturepropPub, featureprop_id=fp.featureprop_id, pub_id=self.pub.pub_id)
@@ -197,7 +197,7 @@ class ChadoFeatureObject(ChadoObject):
         value = None
         prop_cv_id = self.cvterm_query(self.process_data[key]['cv'], self.process_data[key]['cvterm'])
 
-        if type(self.process_data[self.process_data[key]['value']]['data']) is list:
+        if type(self.process_data[key]['data']) is list:
             self.load_featureproplist(key, prop_cv_id)
             return
         if 'only_one' in self.process_data[key] and self.process_data[key]['only_one']:
