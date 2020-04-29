@@ -79,3 +79,26 @@ class ValidatorGene(Validator):
         for line in check_arr:
             if re.search(r"@+.*@+", line) is not None:
                 self._error(field, 'Error {} @...@ is forbidden here.'.format(line))
+
+    def _validate_at_required_in_one(self, other, field, value):
+        """Make sure we have @something@ on at least one line.
+
+        cerberus does test for ech line but we just need one toi have the @..@
+        hence not using a regex there.
+
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
+        """
+        if not value:
+            return
+        check_arr = []
+        if type(value is list):
+            check_arr = value
+        else:
+            check_arr.append(value)
+        okay = False
+        for line in check_arr:
+            if re.search(r"@+.*@+", line) is not None:
+                okay = True
+        if not okay:
+            self._error(field, 'Error {} @...@ is required on at least one line.'.format(value))

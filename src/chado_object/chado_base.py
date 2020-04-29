@@ -228,12 +228,16 @@ class ChadoObject(object):
     # NOTE: After correction or deletion
     ########################################################################################
     def bang_c_it(self):
-        """
+        """Bang C processing.
+
         Correction. Remove all existing value(s) and replace with the value(s) in this field.
         """
         log.debug("Bang C processing {}".format(self.bang_c))
         for key in self.bang_c:
-            self.delete_dict[self.process_data[key]['type']](key, bangc=True)
+            try:
+                self.delete_dict[self.process_data[key]['type']](key, bangc=True)
+            except KeyError:
+                self.critical_error(self.process_data[key]['data'], "No bangc sub to deal with this yet!!")
             delete_blank = False
 
             if type(self.process_data[key]['data']) is list:
@@ -247,7 +251,8 @@ class ChadoObject(object):
                 del self.process_data[key]
 
     def bang_d_it(self):
-        """
+        """Bang d Processing.
+
         Remove specific values indicated in the proforma field.
         """
         log.debug("Bang D processing {}".format(self.bang_d))
@@ -276,6 +281,9 @@ class ChadoObject(object):
                 self.critical_error((key, key, key), "Must specify a value with !d.")
                 return
 
-            self.delete_dict[self.process_data[key]['type']](key, bangc=False)
+            try:
+                self.delete_dict[self.process_data[key]['type']](key, bangc=False)
+            except KeyError:
+                self.critical_error(self.process_data[key]['data'], "No sub to bangc this yet!!")
 
             del self.process_data[key]

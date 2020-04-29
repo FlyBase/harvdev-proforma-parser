@@ -23,26 +23,21 @@
 #    Example G27 (see validation directory for gene.yaml)
 ########################################################
 
-# our %ti_fpr_type = (
-#     'G1a', 'symbol',      #feature_synonym
 G1a:  # Main gene symbol to be used. Processed first and seperately
     type: ignore
     cv: synonym type
     cvterm: symbol
     is_current: True
-#     'G1b', 'symbol',      #feature_synonym
 G1b:
     type: synonym
     cv: synonym type
     cvterm: symbol
     is_current: False
-#     'G1e', 'symbol',      #feature_synonym
 G1e:
     type: synonym
     cv: synonym type
     cvterm: symbol
     is_current: False
-#     'G1f', 'merge',       #merge_function
 G1f:
     type: merge
 #     'G1g', 'new',         #checking
@@ -56,7 +51,6 @@ G2a:
     cv: synonym type
     cvterm: fullname
     is_current: True
-#     'G2b', 'fullname',    #feature_synonym
 G2b:
     type: synonym
     cv: synonym type
@@ -65,40 +59,43 @@ G2b:
 #     'G2c', 'fullname',    #feature_synonym
 G2c: # NOT done yet but excluded so needs to exist
     type: ignore
-#     'G11',  'cyto_loc_comment',                #featureprop
 G11:
     type: featureprop
     cv: property type
     cvterm: cyto_loc_comment
-#     'G15',  'internal_notes',          #featureprop
+G14a:
+    type: featureprop
+    cv: property type
+    cvterm: misc
+    value: G14a
 G15:
     type: featureprop
     cv: property type
     cvterm: internal_notes
-#     'G27',  'etymology',         #feature_genotype,genotype,phendesc
 G27:
     type: featureprop
     cv: property type
     cvterm: etymology
-#    wrapping_values: True
     value: G27
-#     'G28b', 'merge_source/identity_source',             #featureprop
+#     'G28a', 'gene_relationships',                       #featureprop
+G28a:
+    type: featureprop
+    cv: property type
+    cvterm: gene_relationships
+    value: G28b
 G28b:
     type: featureprop
     cv: property type
     cvterm: merge_source
     value: G28b
-#     'G30',  'SO',                #feature_cvterm
 G30:
     type: cvtermprop
     cv: 'SO'
     prop_value: False
     prop_cvterm: 'gene_class'
     prop_cv: 'property type'
-#     'G31a', 'is_obsolete',       #feature.is_obsolete
 G31a:
     type: make_obsolete
-#     'G31b', 'dissociate_pub',    #feature_pub...
 G31b:
     type: dis_pub
 
@@ -131,8 +128,6 @@ G31b:
 
 #     'G10a', 'cyto_left_end/cyto_right_end',    #feature_relationship.object_id
 #     'G10b', 'cyto_left_end/cyto_right_end',    #feature_relationshipprop
-#     'G11',  'cyto_loc_comment',                #featureprop
-#     'G14a', 'misc',                                     #featureprop
 #     'G28a', 'gene_relationships',                       #featureprop
 
 #     'G24a', 'cellular_component',      #???feature_cvterm

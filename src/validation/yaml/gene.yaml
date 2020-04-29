@@ -9,6 +9,7 @@ G1e:
     type: string
     no_bangc: True
     nullable: True
+    dependencies: [G28b]
 G1f:
     type: [string, list]
     no_bangc: True
@@ -34,6 +35,11 @@ G2c:
     type: string
     nullable: True
     required: False
+G14a:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_required_in_one: True
 G15:
     type: [list, string]
     required: False
@@ -49,6 +55,10 @@ G27:
     required: False
     nullable: True
     at_forbidden: True
+G28a:
+    type: [list, string]
+    nullable: True
+    required: False
 G28b:
     type: string
     nullable: True

@@ -33,6 +33,12 @@ class ChadoGene(ChadoFeatureObject):
         transfer_hh_dbxrefs, transfer_cvterms
     )
 
+    from chado_object.gene.gene_chado_check import (
+        check_only_certain_fields_allowed,
+        g28a_check, g28b_check,
+        g31a_check, g31b_check
+    )
+
     def __init__(self, params):
         """Initialise the ChadoGene Object."""
         log.debug('Initializing ChadoGene object.')
@@ -52,7 +58,6 @@ class ChadoGene(ChadoFeatureObject):
 
         self.delete_dict = {'synonym': self.delete_synonym,
                             'cvterm': self.delete_cvterm}
-
         self.proforma_start_line_number = params.get('proforma_start_line_number')
 
         ###########################################################
@@ -68,6 +73,15 @@ class ChadoGene(ChadoFeatureObject):
         yml_file = os.path.join(os.path.dirname(__file__), '../yml/gene.yml')
         # Populated self.process_data with all possible keys.
         self.process_data = self.load_reference_yaml(yml_file, params)
+
+        ########################################################
+        # extra checks that cannit be done with cerberus.
+        # Create lookup up to stop a huge if then else statement
+        ########################################################
+        self.checks_for_key = {'G28a': self.g28a_check,
+                               'G28b': self.g28b_check,
+                               'G31a': self.g31a_check,
+                               'G31b': self.g31b_check}
 
     def load_content(self, references):
         """Process the data."""
@@ -93,7 +107,10 @@ class ChadoGene(ChadoFeatureObject):
 
         for key in self.process_data:
             log.debug("Processing {}".format(self.process_data[key]['data']))
-            self.type_dict[self.process_data[key]['type']](key)
+            try:
+                self.type_dict[self.process_data[key]['type']](key)
+            except KeyError:
+                self.critical_error(self.process_data[key]['data'], "No sub to deal with this yet!!")
 
         timestamp = datetime.now().strftime('%c')
         curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short, timestamp)
@@ -101,35 +118,14 @@ class ChadoGene(ChadoFeatureObject):
         log.debug('%s' % (curated_by_string))
         return self.feature
 
-    def check_only_certain_fields_allowed(self, key, allowed):
-        """Check only allowed fields exist."""
-        bad_fields = []
-        for valid_key in self.process_data:
-            if valid_key not in allowed:
-                bad_fields.append(valid_key)
-        if bad_fields:
-            message = "{} prohibits use of {}".format(key, bad_fields)
-            self.critical_error(self.process_data[key]['data'], message)
-
     def extra_checks(self):
         """Extra checks.
 
-        Ones that ar not easy to do via the validator.
+        Ones that are not easy to do via the validator.
         """
-        if self.has_data('G31a'):
-            # If G31a contains the value y,
-            # G1g must also be y and G1a must contain a symbol
-            # which is the valid symbol of a gene which is already in FlyBase.
-            # All other fields in this proforma, including the non-renaming fields,
-            # must be blank.
-            self.check_only_certain_fields_allowed('G31a', ['G1a', 'G1g', 'G31a'])
-        if self.has_data('G31b'):
-            # If G31b contains the value y, G1g must also be y and
-            # G1a must contain a symbol which is the valid symbol
-            # of a gene which is already in FlyBase.
-            # All other fields in this proforma, including the non-renaming fields,
-            # must be blank.
-            self.check_only_certain_fields_allowed('G31b', ['G1a', 'G1g', 'G31b'])
+        for key in self.process_data:
+            if key in self.checks_for_key:
+                self.checks_for_key[key](key)
 
     def dis_pub(self, key):
         """Dissociate pub from feature."""
@@ -246,6 +242,10 @@ class ChadoGene(ChadoFeatureObject):
                                             organism_id=organism.organism_id)
             # add default symbol
             self.load_synonym('G1a')
+
+    ########################################
+    # Bangc, Bangd routines.
+    ########################################
 
     def delete_synonym(self, key):
         """Ignore, done by initial setup."""
