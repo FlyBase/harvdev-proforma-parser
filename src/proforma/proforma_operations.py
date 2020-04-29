@@ -91,9 +91,12 @@ def process_proforma_file(file_location_from_list, curator_dict):
 
         critical_error_list = validate_proforma_object(individual_proforma_object)
 
-        if not critical_error_list:
-            list_of_processed_proforma_objects.append(individual_proforma_object)
-        else:
+        # Still append to list of list_of_processed_proforma_objects
+        # even if the validation fails as we want to see whole process
+        # from start to finish.
+        # Errors have been logged and will not be saved, so safe.
+        list_of_processed_proforma_objects.append(individual_proforma_object)
+        if critical_error_list:
             log.critical('Critical error found in {}.'.format(individual_proforma_object.proforma_type))
             log.critical('Starting at line {} from file {}.'
                          .format(individual_proforma_object.proforma_start_line_number,
