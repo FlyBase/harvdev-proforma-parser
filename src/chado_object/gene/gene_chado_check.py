@@ -38,6 +38,7 @@ def g28a_check(self, key):
 
     1) check that entries flanked by @@ are valid symbols of any FBid type
        (either existing already in chado or instantiated in the curation record).
+       NOTE: Still needs doing.
 
     2)  sub 'check_stamped_free_text' also checks that the line does not
         *start with* either of the following (to catch cases where SoftCV field
@@ -63,15 +64,12 @@ def g28b_check(self, key):
         then you must fill in G28b. using the 'Source for merge of:' SoftCV.
     """
     if self.has_data('G1e'):
-        log.info("BOB: Gle")
         line_segment = 'Source for identity of:'
         sup_key = 'G1e'
     elif self.has_data('G1f'):
-        log.info("BOB: G1f")
         line_segment = 'Source for merge of:'
         sup_key = 'G1f'
     else:
-        log.info("BOB: NO G1e or G1f")
         return
     if line_segment not in self.process_data[key]['data'][FIELD_VALUE]:
         message = "{} not found (required from {}) in {}".\

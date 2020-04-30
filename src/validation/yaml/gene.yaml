@@ -35,6 +35,11 @@ G2c:
     type: string
     nullable: True
     required: False
+G11:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True     
 G14a:
     type: [list, string]
     required: False
@@ -45,11 +50,6 @@ G15:
     required: False
     nullable: True
     at_forbidden: True
-G11:
-    type: [list, string]
-    required: False
-    nullable: True
-    at_forbidden: True 
 G27:
     type: [list, string]
     required: False

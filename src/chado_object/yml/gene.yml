@@ -63,6 +63,7 @@ G11:
     type: featureprop
     cv: property type
     cvterm: cyto_loc_comment
+    # is a list, so value implied
 G14a:
     type: featureprop
     cv: property type
@@ -72,17 +73,17 @@ G15:
     type: featureprop
     cv: property type
     cvterm: internal_notes
+    # is a list, so value implied
 G27:
     type: featureprop
     cv: property type
     cvterm: etymology
-    value: G27
-#     'G28a', 'gene_relationships',                       #featureprop
+    # is a list, so value implied
 G28a:
     type: featureprop
     cv: property type
     cvterm: gene_relationships
-    value: G28b
+    # is a list, so value implied
 G28b:
     type: featureprop
     cv: property type

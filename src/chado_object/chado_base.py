@@ -284,6 +284,6 @@ class ChadoObject(object):
             try:
                 self.delete_dict[self.process_data[key]['type']](key, bangc=False)
             except KeyError:
-                self.critical_error(self.process_data[key]['data'], "No sub to bangc this yet!!")
+                self.critical_error(self.process_data[key]['data'], "No sub to bangd this yet!!")
 
             del self.process_data[key]
