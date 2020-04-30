@@ -33,6 +33,12 @@ class ChadoGene(ChadoFeatureObject):
         transfer_hh_dbxrefs, transfer_cvterms
     )
 
+    from chado_object.gene.gene_chado_check import (
+        check_only_certain_fields_allowed,
+        g28a_check, g28b_check,
+        g31a_check, g31b_check
+    )
+
     def __init__(self, params):
         """Initialise the ChadoGene Object."""
         log.debug('Initializing ChadoGene object.')
@@ -46,11 +52,12 @@ class ChadoGene(ChadoFeatureObject):
                           'ignore': self.ignore,
                           'cvtermprop': self.load_cvtermprop,
                           'merge': self.merge,
+                          'dis_pub': self.dis_pub,
+                          'make_obsolete': self.make_obsolete,
                           'featureprop': self.load_featureprop}
 
         self.delete_dict = {'synonym': self.delete_synonym,
                             'cvterm': self.delete_cvterm}
-
         self.proforma_start_line_number = params.get('proforma_start_line_number')
 
         ###########################################################
@@ -66,9 +73,15 @@ class ChadoGene(ChadoFeatureObject):
         yml_file = os.path.join(os.path.dirname(__file__), '../yml/gene.yml')
         # Populated self.process_data with all possible keys.
         self.process_data = self.load_reference_yaml(yml_file, params)
-        # self.reference = params.get('reference')
-        # self.genus = "Drosophila"
-        # self.species = "melanogaster"
+
+        ########################################################
+        # extra checks that cannit be done with cerberus.
+        # Create lookup up to stop a huge if then else statement
+        ########################################################
+        self.checks_for_key = {'G28a': self.g28a_check,
+                               'G28b': self.g28b_check,
+                               'G31a': self.g31a_check,
+                               'G31b': self.g31b_check}
 
     def load_content(self, references):
         """Process the data."""
@@ -82,8 +95,10 @@ class ChadoGene(ChadoFeatureObject):
         self.get_gene()
         if not self.feature:  # problem getting gene, lets finish
             return None
-        # feature pub
-        get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id, pub_id=self.pub.pub_id)
+        self.extra_checks()
+        # feature pub if not dissociate from pub
+        if not self.has_data('G31b'):
+            get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id, pub_id=self.pub.pub_id)
         # bang c first as this supersedes all things
         if self.bang_c:
             self.bang_c_it()
@@ -92,7 +107,10 @@ class ChadoGene(ChadoFeatureObject):
 
         for key in self.process_data:
             log.debug("Processing {}".format(self.process_data[key]['data']))
-            self.type_dict[self.process_data[key]['type']](key)
+            try:
+                self.type_dict[self.process_data[key]['type']](key)
+            except KeyError:
+                self.critical_error(self.process_data[key]['data'], "No sub to deal with this yet!!")
 
         timestamp = datetime.now().strftime('%c')
         curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short, timestamp)
@@ -100,16 +118,39 @@ class ChadoGene(ChadoFeatureObject):
         log.debug('%s' % (curated_by_string))
         return self.feature
 
+    def extra_checks(self):
+        """Extra checks.
+
+        Ones that are not easy to do via the validator.
+        """
+        for key in self.process_data:
+            if key in self.checks_for_key:
+                self.checks_for_key[key](key)
+
+    def dis_pub(self, key):
+        """Dissociate pub from feature."""
+        feat_pub, is_new = get_or_create(self.session, FeaturePub,
+                                         feature_id=self.feature.feature_id,
+                                         pub_id=self.pub.pub_id)
+        if is_new:
+            message = "Cannot dissociate {} to {} as relationship does not exist".\
+                format(self.feature.uniquename, self.pub.uniquename)
+            self.critical_error(self.process_data[key]['data'], message)
+        else:
+            log.info("Deleting relationship between {} and {}".format(self.feature.uniquename, self.pub.uniquename))
+            self.session.delete(feat_pub)
+
     def ignore(self, key):
         """Ignore, done by initial setup."""
         pass
 
+    def make_obsolete(self, key):
+        """Make gene obsolete."""
+        self.feature.is_obsolete = True
+
     def load_cvtermprop(self, key):
         """Ignore, done by initial setup."""
         if key == 'G30':
-            # check x ; y first got GA
-            # y :- SO:{7d}
-            # NOTE still needs to be done
             g30_pattern = r"""
                 ^           # start of line
                 \s*         # possible leading spaces
@@ -150,7 +191,6 @@ class ChadoGene(ChadoFeatureObject):
                          self.process_data[key]['data'][LINE_NUMBER])
             self.process_data[key]['data'] = new_tuple
 
-        # then process
         self.load_feature_cvtermprop(key)
 
     def get_gene(self):
@@ -202,6 +242,10 @@ class ChadoGene(ChadoFeatureObject):
                                             organism_id=organism.organism_id)
             # add default symbol
             self.load_synonym('G1a')
+
+    ########################################
+    # Bangc, Bangd routines.
+    ########################################
 
     def delete_synonym(self, key):
         """Ignore, done by initial setup."""

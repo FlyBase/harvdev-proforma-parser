@@ -12,7 +12,7 @@ from harvdev_utils.char_conversions import sgml_to_plain_text
 
 from harvdev_utils.production import (
     FeatureRelationship, FeatureRelationshipPub, Featureprop,
-    FeatureCvterm, FeatureCvtermprop,
+    FeaturepropPub, FeatureCvterm, FeatureCvtermprop,
     Pub
 )
 from harvdev_utils.chado_functions import (
@@ -170,6 +170,16 @@ class ChadoFeatureObject(ChadoObject):
                                    feature_relationship_id=fr.feature_relationship_id,
                                    pub_id=self.pub.pub_id)
 
+    def load_featureproplist(self, key, prop_cv_id):
+        """Load a feature props that are in a list.
+
+        list so obviously more than value allowed.
+        """
+        for item in self.process_data[key]['data']:
+            fp, is_new = get_or_create(self.session, Featureprop, feature_id=self.feature.feature_id,
+                                       type_id=prop_cv_id, value=item[FIELD_VALUE])
+            get_or_create(self.session, FeaturepropPub, featureprop_id=fp.featureprop_id, pub_id=self.pub.pub_id)
+
     def load_featureprop(self, key):
         """Store the feature prop.
 
@@ -187,6 +197,9 @@ class ChadoFeatureObject(ChadoObject):
         value = None
         prop_cv_id = self.cvterm_query(self.process_data[key]['cv'], self.process_data[key]['cvterm'])
 
+        if type(self.process_data[key]['data']) is list:
+            self.load_featureproplist(key, prop_cv_id)
+            return
         if 'only_one' in self.process_data[key] and self.process_data[key]['only_one']:
             fp, is_new = get_or_create(self.session, Featureprop, feature_id=self.feature.feature_id,
                                        type_id=prop_cv_id)
@@ -194,8 +207,15 @@ class ChadoFeatureObject(ChadoObject):
             value = self.process_data[self.process_data[key]['value']]['data'][FIELD_VALUE]
             fp, is_new = get_or_create(self.session, Featureprop, feature_id=self.feature.feature_id,
                                        type_id=prop_cv_id, value=value)
+        else:
+            message = "Coding error. only_one or value must be specified if not a list."
+            self.critical_error(self.process_data[self.process_data[key]['value']]['data'], message)
+
         if is_new:
             fp.value = value
         elif fp.value:
             message = "Already has a value. Use bangc to change it"
             self.critical_error(self.process_data[self.process_data[key]['value']]['data'], message)
+
+        # create feature prop pub
+        get_or_create(self.session, FeaturepropPub, featureprop_id=fp.featureprop_id, pub_id=self.pub.pub_id)

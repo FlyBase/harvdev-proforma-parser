@@ -51,8 +51,19 @@ G1f:
   - is required
   - must be in G1f list when G1g is set to y
   - must not be present with
+G11: 
+  - is forbidden here
+G14a:
+  - is required on at least one line
+G15: 
+  - forbidden here
+G27:
+  - is forbidden here
 G30:
   - Must be set for new gene
+G31a:
+  - not allowed with bang c or bang d
+  - prohibits use of
 DIV1a:
   - null value not allowed
 DIV2a:

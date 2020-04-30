@@ -9,6 +9,7 @@ G1e:
     type: string
     no_bangc: True
     nullable: True
+    dependencies: [G28b]
 G1f:
     type: [string, list]
     no_bangc: True
@@ -34,6 +35,30 @@ G2c:
     type: string
     nullable: True
     required: False
+G11:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True     
+G14a:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_required_in_one: True
+G15:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True
+G27:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True
+G28a:
+    type: [list, string]
+    nullable: True
+    required: False
 G28b:
     type: string
     nullable: True
@@ -43,3 +68,18 @@ G30:
     nullable: True
     required: False
     if_new_required: True
+G31a:
+    type: string
+    required: False
+    nullable: True
+    no_bangc: True
+    allowed: [y]
+    at_forbidden: True
+G31b:
+    type: string
+    nullable: True
+    required: False
+    no_bangc: True
+    allowed: [y]
+    at_forbidden: True
+    

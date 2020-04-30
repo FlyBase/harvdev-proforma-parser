@@ -1,23 +1,43 @@
-# our %ti_fpr_type = (
-#     'G1a', 'symbol',      #feature_synonym
+#######################################################
+# feature_cvterm details/processing.
+#
+# if prop_value is False then the value is used as the
+# cvterm else it presumes the value is prop value and
+# the cvterm is given.
+# 
+#
+# featureprop details/processing
+#
+# You can have a feature prop with no value so we have 3 options.
+# 1) set value: XXXX      Where XXXX is the field that has the value
+#                         in many case it will be itself
+# Examples: GA84b,  #self referenceing
+#           CH3b,   # references different field
+#
+# 2) set only_one: True   Which means it is always rank 0
+#                         and can be only one.
+#    Example: DIV2b
+#
+# 3) in validation yaml type is set to [list, string]
+#    This presumes it has many values and are what is given
+#    Example G27 (see validation directory for gene.yaml)
+########################################################
+
 G1a:  # Main gene symbol to be used. Processed first and seperately
     type: ignore
     cv: synonym type
     cvterm: symbol
     is_current: True
-#     'G1b', 'symbol',      #feature_synonym
 G1b:
     type: synonym
     cv: synonym type
     cvterm: symbol
     is_current: False
-#     'G1e', 'symbol',      #feature_synonym
 G1e:
     type: synonym
     cv: synonym type
     cvterm: symbol
     is_current: False
-#     'G1f', 'merge',       #merge_function
 G1f:
     type: merge
 #     'G1g', 'new',         #checking
@@ -31,7 +51,6 @@ G2a:
     cv: synonym type
     cvterm: fullname
     is_current: True
-#     'G2b', 'fullname',    #feature_synonym
 G2b:
     type: synonym
     cv: synonym type
@@ -39,24 +58,49 @@ G2b:
     is_current: False 
 #     'G2c', 'fullname',    #feature_synonym
 G2c: # NOT done yet but excluded so needs to exist
-   type: ignore
-#     'G30',  'SO',                #feature_cvterm
-# if prop_value is False then the value is used as the
-# cvterm else it presumes the value is prop value and
-# the cvterm is given.
-# Could have gone for if cvterm is not defined etc but
-# this way is more explicit.
-
+    type: ignore
+G11:
+    type: featureprop
+    cv: property type
+    cvterm: cyto_loc_comment
+    # is a list, so value implied
+G14a:
+    type: featureprop
+    cv: property type
+    cvterm: misc
+    value: G14a
+G15:
+    type: featureprop
+    cv: property type
+    cvterm: internal_notes
+    # is a list, so value implied
+G27:
+    type: featureprop
+    cv: property type
+    cvterm: etymology
+    # is a list, so value implied
+G28a:
+    type: featureprop
+    cv: property type
+    cvterm: gene_relationships
+    # is a list, so value implied
+G28b:
+    type: featureprop
+    cv: property type
+    cvterm: merge_source
+    value: G28b
 G30:
     type: cvtermprop
     cv: 'SO'
     prop_value: False
     prop_cvterm: 'gene_class'
     prop_cv: 'property type'
-#     'G31a', 'is_obsolete',       #feature.is_obsolete
-#     'G31b', 'dissociate_pub',    #feature_pub...
-#     'G27',  'etymology',         #feature_genotype,genotype,phendesc
+G31a:
+    type: make_obsolete
+G31b:
+    type: dis_pub
 
+########### NO Longer Used!!! ##########################################
 #     'G20a', 'in_title_or_abstract/significant_subject_in_review'
 #     ,                            #featureprop: Analysis:subject #not in chado
 #     'G20b', 'is_expression_analysed_in_wildtype', #featureprop:Analysis: WT-exp
@@ -67,38 +111,32 @@ G30:
 #     'G20g', 'is_gene_model_decorated',          #featureprop: Analysis: mut-map
 #     'G20h', 'is_polymorphism_reported',    #featureprop: Analysis: polymorph
 #     'G20i', 'has_GO_curation', 
-#     'G10a', 'cyto_left_end/cyto_right_end',    #feature_relationship.object_id
-#     'G10b', 'cyto_left_end/cyto_right_end',    #feature_relationshipprop
-#     'G11',  'cyto_loc_comment',                #featureprop
 #     'G25', 'maps_to_clone/nomaps_to_clone/identified_with',    #feature_relationship
 #     'G19a', 'gene_order',                               #featureprop
 #     'G19b', 'molecular_info',                           #featureprop
 #     'G12a', 'wild_type_role',                           #featureprop
 #     'G12b', 'gene_phenotypes',                          #feature_relationship
-#     'G14a', 'misc',                                     #featureprop
 #     'G14b', 'identified_by',                            #featureprop
-#     'G28a', 'gene_relationships',                       #featureprop
-#     'G28b', 'merge_source/identity_source',             #featureprop
-G28b:
-    type: featureprop
-    cv: property type
-    cvterm: merge_source
-    value: G28b
-#     'G29a',
-#     'fnally_comps/fnally_noncomps/fnally_partcomps/gain_of_fn_species'
-#     ,    #feature_relationship.object_id, featureprop
+#     'G29a', 'fnally_comps/fnally_noncomps/fnally_partcomps/gain_of_fn_species' ,    #feature_relationship.object_id, featureprop
 #     'G29b', 'func_comp_desc',          #featureprop
-#     'G18',  'interacts_genetically',   #???Rachel.feature_relationship.object_id
 #     'G22',  'homologue',               #feature_relationship.object_id
+#     'G18',  'interacts_genetically',   #???Rachel.feature_relationship.object_id
+#     'G17t', 'rec_position_effect',     #feature_relationship.object_id
+#     'G17u', 'no_position_effect',      #feature_relationship.object_id
+#     'G17v', 'dom_position_effect',     #feature_relatinoship.object_id
+###############################################################################
+
+
+#     'G10a', 'cyto_left_end/cyto_right_end',    #feature_relationship.object_id
+#     'G10b', 'cyto_left_end/cyto_right_end',    #feature_relationshipprop
+#     'G28a', 'gene_relationships',                       #featureprop
+
 #     'G24a', 'cellular_component',      #???feature_cvterm
 #     'G24b', 'molecular_function',      #???feature_cvterm
 #     'G24c', 'biological_process',      #???feature_cvterm
 #     'G24e', 'GO_internal_notes',       #featureprop
 #     'G24g', 'GO_review_date',       #featureprop
-#     'G15',  'internal_notes',          #featureprop
-#     'G17t', 'rec_position_effect',     #feature_relationship.object_id
-#     'G17u', 'no_position_effect',      #feature_relationship.object_id
-#     'G17v', 'dom_position_effect',     #feature_relatinoship.object_id
+
 #     'G5',   'genetic_location',        #featureprop
 #     'G6',   'gen_loc_error',           #featureprop
 #     'G7a',  'recom_left_end',          #??feature_relationship.object_id

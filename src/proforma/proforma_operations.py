@@ -91,9 +91,12 @@ def process_proforma_file(file_location_from_list, curator_dict):
 
         critical_error_list = validate_proforma_object(individual_proforma_object)
 
-        if not critical_error_list:
-            list_of_processed_proforma_objects.append(individual_proforma_object)
-        else:
+        # Still append to list of list_of_processed_proforma_objects
+        # even if the validation fails as we want to see whole process
+        # from start to finish.
+        # Errors have been logged and will not be saved, so safe.
+        list_of_processed_proforma_objects.append(individual_proforma_object)
+        if critical_error_list:
             log.critical('Critical error found in {}.'.format(individual_proforma_object.proforma_type))
             log.critical('Starting at line {} from file {}.'
                          .format(individual_proforma_object.proforma_start_line_number,
@@ -106,27 +109,12 @@ def process_proforma_file(file_location_from_list, curator_dict):
 
     # TODO Check that this entry is a pub proforma. Also implement workaround for processing DATABASE proforma which
     #  don't have pubs.
-    # TODO Clean up logging to clarify that we are sending the TUPLE, not just the FBrf value.
     proforma_type, filename, proforma_start_line_number, fields_values = list_of_proforma_objects[0]\
         .get_data_for_processing()
 
     # Multipub is the exception as it does not need a pub to start with
     if 'MULTIPUBLICATION' in list_of_proforma_objects[0].proforma_type:
         return list_of_processed_proforma_objects
-
-    # log.debug('Found first reference %s.' % (list_of_proforma_objects[0].fields_values['P22'][1]))
-    # log.debug('Attaching %s from field %s, line %s to all subsequent proforma objects.' % (fields_values['P22'][1], 'P22', fields_values['P22'][2]))
-
-    # last_pub = list_of_proforma_objects[0].fields_values['P22']
-    # for individual_proforma_object in list_of_processed_proforma_objects:
-    #    log.debug("TYPE: is {}".format(individual_proforma_object.proforma_type))
-    #    if 'PUBLICATION' in individual_proforma_object.proforma_type:
-    #        last_pub = individual_proforma_object.fields_values['P22']
-    #        log.debug("Setting new pub to be {}".format(last_pub))
-    #        last_genus = 'Drosophila'
-    #        last_species = 'melanogaster'
-    #        log.debug("Resetting new genus {} and species {}".format(last_genus, last_species))
-    #    individual_proforma_object.add_reference_data(last_pub)
 
     return list_of_processed_proforma_objects
 
