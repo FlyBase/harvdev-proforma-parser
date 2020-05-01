@@ -5,6 +5,9 @@
 """
 from chado_object.chado_base import FIELD_VALUE
 
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+from harvdev_utils.chado_functions import feature_symbol_lookup
+import re
 import logging
 log = logging.getLogger(__name__)
 
@@ -38,7 +41,6 @@ def g28a_check(self, key):
 
     1) check that entries flanked by @@ are valid symbols of any FBid type
        (either existing already in chado or instantiated in the curation record).
-       NOTE: Still needs doing.
 
     2)  sub 'check_stamped_free_text' also checks that the line does not
         *start with* either of the following (to catch cases where SoftCV field
@@ -47,12 +49,27 @@ def g28a_check(self, key):
        'Source for identity of: '
        'Source for merge of: '
     """
+    if not self.has_data(key):
+        return
+    # 1)
+    pattern = '@(.+?)@'
+    for line in self.process_data[key]['data']:
+        log.info("BOB: line is {}".format(line[FIELD_VALUE]))
+        for match in re.findall(pattern, line[FIELD_VALUE]):
+            try:
+                feature_symbol_lookup(self.session, None, match)
+            except MultipleResultsFound:  # No type so we could find multiple
+                pass
+            except NoResultFound:
+                message = "Could not lookup symbol '{}'".format(match)
+                self.critical_error(line, message)
+    # 2)
     for line in self.process_data[key]['data']:
         for bad_start in ('Source for identity of: ', 'Source for merge of: '):
-            if line.startswith(bad_start):
-                message = "Comment should not start with {} for {}".\
-                    format(bad_start, line)
-                self.warning_error(self.process_data[key]['data'], message)
+            if line[FIELD_VALUE].startswith(bad_start):
+                message = "Comment should not start with '{}' for {}".\
+                    format(bad_start, line[FIELD_VALUE])
+                self.warning_error(line, message)
 
 
 def g28b_check(self, key):
