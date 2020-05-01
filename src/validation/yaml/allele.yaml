@@ -9,9 +9,12 @@ GA1g:
 GA81a:
     type: [list, string]
     required: False
+    nullable: True
 GA84b:
     type: string
     required: False
+    nullable: True
 GA85:
     type: string
-    required: False    
+    required: False
+    nullable: True    
