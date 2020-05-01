@@ -20,6 +20,7 @@ DIV1e:
     required: False
     type: string
     exclude: 'DIV1d'
+    nullable: True
 DIV2a:
   type: [list, string]
   required: False
