@@ -35,6 +35,22 @@ G2c:
     type: string
     nullable: True
     required: False
+G5:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True
+G6:
+    type: string
+    required: False
+    nullable: True
+    at_forbidden: True
+    dependencies: [G5]
+G8:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_required_in_one: True
 G11:
     type: [list, string]
     required: False
@@ -50,6 +66,19 @@ G15:
     required: False
     nullable: True
     at_forbidden: True
+G24e:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True
+G24f:
+    type: string
+    required: False
+    nullable: True
+    at_forbidden: True
+    regex: ^(\d{8}|y|n)$ # YYYYMMDD or 'y' or 'n'
+    # required:- Yes, if any/all of G24a, G24b or G24c are filled in. Otherwise, no.
+    # yeed to add dependecies tothis to those when added
 G27:
     type: [list, string]
     required: False
@@ -82,4 +111,32 @@ G31b:
     no_bangc: True
     allowed: [y]
     at_forbidden: True
-    
+G34:
+    type: [list, string]
+    nullable: True
+    required: False
+    at_forbidden: True
+    allowed: ['monoclonal','polyclonal']
+G39a:
+    type: string
+    nullable: True
+    required: False
+    at_required_in_one: True
+    dependencies: [G39b,G39c,G39d]
+G39b:
+    type: string
+    nullable: True
+    required: False
+    at_forbidden: True
+    allowed: [y,n]
+G39c:
+    type: string
+    dependencies: [G39b]
+    nullable: True
+    required: False
+    at_forbidden: True
+G39d:
+    type: [list, string]
+    nullable: True
+    required: False
+    at_forbidden: True

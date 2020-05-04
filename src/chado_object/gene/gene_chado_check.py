@@ -5,30 +5,15 @@
 """
 from chado_object.chado_base import FIELD_VALUE
 
-from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
-from harvdev_utils.chado_functions import feature_symbol_lookup
-import re
+# from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+# from harvdev_utils.chado_functions import feature_symbol_lookup
+# import re
 import logging
 log = logging.getLogger(__name__)
 
 ###########################################
 # Checks, put together to help find easier.
 ###########################################
-
-##################
-# helper functions
-##################
-
-
-def check_only_certain_fields_allowed(self, key, allowed):
-    """Check only allowed fields exist."""
-    bad_fields = []
-    for valid_key in self.process_data:
-        if valid_key not in allowed:
-            bad_fields.append(valid_key)
-    if bad_fields:
-        message = "{} prohibits use of {}".format(key, bad_fields)
-        self.critical_error(self.process_data[key]['data'], message)
 
 ##############################################################
 # Gxx checks.
@@ -52,24 +37,9 @@ def g28a_check(self, key):
     if not self.has_data(key):
         return
     # 1)
-    pattern = '@(.+?)@'
-    for line in self.process_data[key]['data']:
-        log.info("BOB: line is {}".format(line[FIELD_VALUE]))
-        for match in re.findall(pattern, line[FIELD_VALUE]):
-            try:
-                feature_symbol_lookup(self.session, None, match)
-            except MultipleResultsFound:  # No type so we could find multiple
-                pass
-            except NoResultFound:
-                message = "Could not lookup symbol '{}'".format(match)
-                self.critical_error(line, message)
+    self.check_at_symbols_exist(key)
     # 2)
-    for line in self.process_data[key]['data']:
-        for bad_start in ('Source for identity of: ', 'Source for merge of: '):
-            if line[FIELD_VALUE].startswith(bad_start):
-                message = "Comment should not start with '{}' for {}".\
-                    format(bad_start, line[FIELD_VALUE])
-                self.warning_error(line, message)
+    self.check_bad_starts(key, ['Source for identity of: ', 'Source for merge of: '])
 
 
 def g28b_check(self, key):
@@ -116,3 +86,19 @@ def g31b_check(self, key):
     must be blank.
     """
     self.check_only_certain_fields_allowed('G31b', ['G1a', 'G1g', 'G31b'])
+
+
+def g39a_check(self, key):
+    """G39a checks.
+
+    1) check that entries flanked by @@ are valid symbols of any FBid type
+       (either existing already in chado or instantiated in the curation record).
+
+    2) If G39a is filled in, G39b must be 'y', and G39c and G39d should be filled in.
+    """
+    # 1)
+    self.check_at_symbols_exist(key)
+    # 2) G39c and G39d checks done by validation
+    if self.has_data('G39b') and self.process_data['G39b']['data'][FIELD_VALUE] != 'y':
+        message = "G39a is set so 'G39b' should be set to 'y' and not {}".format(self.process_data['G39b']['data'][FIELD_VALUE])
+        self.critical_error(self.process_data['G39b']['data'], message)
