@@ -51,6 +51,12 @@ G1f:
   - is required
   - must be in G1f list when G1g is set to y
   - must not be present with
+G5:
+  - forbidden here
+G6:
+  - forbidden here
+G8:
+  - is required
 G11: 
   - is forbidden here
 G14a:

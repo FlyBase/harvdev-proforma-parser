@@ -18,12 +18,18 @@ from harvdev_utils.production import (
 from harvdev_utils.chado_functions import (
     feature_name_lookup
 )
+from datetime import datetime
 import logging
 log = logging.getLogger(__name__)
 
 
 class ChadoFeatureObject(ChadoObject):
     """ChadoFeature object."""
+
+    from chado_object.feature.feature_chado_check import (
+        check_only_certain_fields_allowed,
+        check_at_symbols_exist, check_bad_starts
+    )
 
     def __init__(self, params):
         """Initialise the ChadoFeature Object."""
@@ -212,6 +218,8 @@ class ChadoFeatureObject(ChadoObject):
             self.critical_error(self.process_data[self.process_data[key]['value']]['data'], message)
 
         if is_new:
+            if 'value' in self.process_data[key] and self.process_data[key]['value'] == 'YYYYMMDD':
+                value = datetime.today().strftime('%Y%m%d')
             fp.value = value
         elif fp.value:
             message = "Already has a value. Use bangc to change it"
