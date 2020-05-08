@@ -209,6 +209,8 @@ class ChadoFeatureObject(ChadoObject):
         if 'only_one' in self.process_data[key] and self.process_data[key]['only_one']:
             fp, is_new = get_or_create(self.session, Featureprop, feature_id=self.feature.feature_id,
                                        type_id=prop_cv_id)
+            if 'value' in self.process_data[key]:
+                value = self.process_data[self.process_data[key]['value']]['data'][FIELD_VALUE]
         elif ('value' in self.process_data[key] and self.has_data(self.process_data[key]['value'])):
             value = self.process_data[self.process_data[key]['value']]['data'][FIELD_VALUE]
             fp, is_new = get_or_create(self.session, Featureprop, feature_id=self.feature.feature_id,
