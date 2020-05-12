@@ -72,7 +72,7 @@ class ValidatorGene(Validator):
         if not value:
             return
         check_arr = []
-        if type(value is list):
+        if type(value) is list:
             check_arr = value
         else:
             check_arr.append(value)
@@ -92,7 +92,7 @@ class ValidatorGene(Validator):
         if not value:
             return
         check_arr = []
-        if type(value is list):
+        if type(value) is list:
             check_arr = value
         else:
             check_arr.append(value)
