@@ -37,6 +37,7 @@ DIV2b:
   cv: property type
   cvterm: deliberate_omission
   only_one: True
+  value: DIV2b
 DIV3:
   type: data_set
   sub_type: feature_dbxref

@@ -34,9 +34,8 @@ class ChadoGene(ChadoFeatureObject):
     )
 
     from chado_object.gene.gene_chado_check import (
-        check_only_certain_fields_allowed,
-        g28a_check, g28b_check,
-        g31a_check, g31b_check
+        g28a_check, g28b_check, g31a_check, g31b_check,
+        g39a_check
     )
 
     def __init__(self, params):
@@ -81,7 +80,8 @@ class ChadoGene(ChadoFeatureObject):
         self.checks_for_key = {'G28a': self.g28a_check,
                                'G28b': self.g28b_check,
                                'G31a': self.g31a_check,
-                               'G31b': self.g31b_check}
+                               'G31b': self.g31b_check,
+                               'G39a': self.g39a_check}
 
     def load_content(self, references):
         """Process the data."""
@@ -107,10 +107,10 @@ class ChadoGene(ChadoFeatureObject):
 
         for key in self.process_data:
             log.debug("Processing {}".format(self.process_data[key]['data']))
-            try:
-                self.type_dict[self.process_data[key]['type']](key)
-            except KeyError:
-                self.critical_error(self.process_data[key]['data'], "No sub to deal with this yet!!")
+            if 'type' not in self.process_data[key]:
+                self.critical_error(self.process_data[key]['data'],
+                                    "No sub to deal type '{}' yet!! Report to HarvDev".format(key))
+            self.type_dict[self.process_data[key]['type']](key)
 
         timestamp = datetime.now().strftime('%c')
         curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short, timestamp)
