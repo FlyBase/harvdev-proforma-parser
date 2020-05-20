@@ -18,7 +18,8 @@ DIV1b:
   cv: synonym type
   cvterm: symbol
   is_current: True
-  remove_old: False
+  only_one: True
+  remove_old: True
 DIV1c:
   type: ignore
 DIV1d:
