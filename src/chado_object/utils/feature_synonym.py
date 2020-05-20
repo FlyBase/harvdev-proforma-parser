@@ -12,7 +12,7 @@ from harvdev_utils.production import (
 from harvdev_utils.char_conversions import sgml_to_plain_text
 from harvdev_utils.char_conversions import sub_sup_to_sgml
 from harvdev_utils.char_conversions import sgml_to_unicode
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 import logging
 log = logging.getLogger(__name__)
@@ -137,5 +137,15 @@ def fs_remove_current_symbol(session, feature_id, cv_name, cvterm_name, pub_id):
                    Synonym.type_id == cvterm.cvterm_id,
                    FeatureSynonym.is_current == 't').one()
         fs.is_current = False
+    except MultipleResultsFound:
+        log.error("More than one result for feature id = {}".format(feature_id))
+        fss = session.query(FeatureSynonym).join(Synonym).\
+            filter(FeatureSynonym.feature_id == feature_id,
+                   # FeatureSynonym.pub_id == pub_id,
+                   Synonym.type_id == cvterm.cvterm_id,
+                   FeatureSynonym.is_current == 't')
+        for fs in fss:
+            log.error(fs)
+        raise MultipleResultsFound
     except NoResultFound:
         return

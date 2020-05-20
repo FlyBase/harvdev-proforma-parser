@@ -308,7 +308,7 @@ class ChadoDiv(ChadoFeatureObject):
         # make all synonyms not current
         for fs in self.session.query(FeatureSynonym).\
             filter(FeatureSynonym.feature_id == self.feature.feature_id,
-                   FeatureSynonym.pub_id == self.pub_id):
+                   FeatureSynonym.pub_id == self.pub.pub_id):
             fs.is_current = False
 
     def delete_humanhealth_feature(self, key, bangc):

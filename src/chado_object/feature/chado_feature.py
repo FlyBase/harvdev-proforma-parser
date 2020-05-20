@@ -76,9 +76,11 @@ class ChadoFeatureObject(ChadoObject):
         # add the new synonym
         if type(self.process_data[key]['data']) is list:
             for item in self.process_data[key]['data']:
-                fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
-                                                item[FIELD_VALUE], cv_name, cvterm_name, pub_id,
-                                                synonym_sgml=None, is_current=is_current, is_internal=False)
+                fs = fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
+                                                     item[FIELD_VALUE], cv_name, cvterm_name, pub_id,
+                                                     synonym_sgml=None, is_current=False, is_internal=False)
+            if fs and is_current:
+                fs.is_current = True
         else:
             fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
                                             self.process_data[key]['data'][FIELD_VALUE], cv_name, cvterm_name, pub_id,
