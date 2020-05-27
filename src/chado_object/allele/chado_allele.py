@@ -38,6 +38,9 @@ class ChadoAllele(ChadoFeatureObject):
         self.type_dict = {'feature_relationship': self.load_feature_relationship,
                           'featureprop': self.load_featureprop,
                           'ignore': self.ignore}
+        self.delete_dict = {'featureprop': self.delete_featureprop,
+                            'ignore': self.ignore}
+
         self.proforma_start_line_number = params.get('proforma_start_line_number')
 
         ###########################################################

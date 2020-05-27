@@ -231,3 +231,28 @@ class ChadoFeatureObject(ChadoObject):
 
         # create feature prop pub
         get_or_create(self.session, FeaturepropPub, featureprop_id=fp.featureprop_id, pub_id=self.pub.pub_id)
+
+    def delete_featureprop(self, key, bangc=False):
+        """Delete the feature prop and fp pubs.
+
+        If there is a value then it will have a 'value' in the yaml
+        pointing to the field that is holding the value.
+
+        yml options:
+           cv:
+           cvterm:
+
+        """
+        if not self.has_data(key):
+            return
+        prop_cv_id = self.cvterm_query(self.process_data[key]['cv'], self.process_data[key]['cvterm'])
+
+        # get featureprop pubs
+        fpps = self.session.query(FeaturepropPub).join(Featureprop).\
+            filter(FeaturepropPub.pub_id == self.pub.pub_id,
+                   Featureprop.feature_id == self.feature.feature_id,
+                   Featureprop.type_id == prop_cv_id)
+        for fpp in fpps:
+            fp = fpp.featureprop
+            self.session.delete(fp)
+            self.session.delete(fpp)
