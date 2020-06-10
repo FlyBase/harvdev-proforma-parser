@@ -51,6 +51,14 @@ G8:
     required: False
     nullable: True
     at_required_in_one: True
+G10a:
+    type: [list, string]
+    required: False
+    nullable: True
+G10b:
+    type: [list, string]
+    required: False
+    nullable: True
 G11:
     type: [list, string]
     required: False

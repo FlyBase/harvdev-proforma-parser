@@ -73,7 +73,21 @@ G8:
     type: featureprop
     cv: property type
     cvterm: gen_loc_comment
-
+#     'G10a', 'cyto_left_end/cyto_right_end',    #feature_relationship.object_id
+G10a:
+    type: bandinfo
+    cv: relationship type
+    cvterms: [cyto_left_end, cyto_right_end]
+    propvalue: (determined by in situ hybridisation)
+    band_cvterm: chromosome_band
+    band_cv: SO
+#     'G10b', 'cyto_left_end/cyto_right_end',    #feature_relationshipprop
+G10b:
+    type: bandinfo
+    cv: relationship type
+    cvterms: [cyto_left_end, cyto_right_end]
+    band_cvterm: chromosome_band
+    band_cv: SO
 G11:
     type: featureprop
     cv: property type
@@ -89,16 +103,24 @@ G15:
     cv: property type
     cvterm: internal_notes
     # is a list, so value implied
-G24e:
-    type: featureprop
-    cv: property type
-    cvterm: GO_internal_notes
-    value: G24e
-G24f:
-    type: featureprop
-    cv: property type
-    cvterm: GO_review_date
-    only_one: True
+
+# G24a:
+#     type: cvtermprop
+#     cv: cellular_component
+#     prop_value: False
+#     prop_cvterm: 'gene_class'
+#     prop_cv: 'property type'
+
+# G24e:
+#     type: featureprop
+#     cv: property type
+#     cvterm: GO_internal_notes
+#     value: G24e
+# G24f:
+#     type: featureprop
+#     cv: property type
+#     cvterm: GO_review_date
+#     only_one: True
 G27:
     type: featureprop
     cv: property type
@@ -162,6 +184,11 @@ G39d:
 #     'G20g', 'is_gene_model_decorated',          #featureprop: Analysis: mut-map
 #     'G20h', 'is_polymorphism_reported',    #featureprop: Analysis: polymorph
 #     'G20i', 'has_GO_curation', 
+#     'G24a', 'cellular_component',      #???feature_cvterm
+#     'G24b', 'molecular_function',      #???feature_cvterm
+#     'G24c', 'biological_process',      #???feature_cvterm
+#     'G24e'
+#     'G24f'
 #     'G25', 'maps_to_clone/nomaps_to_clone/identified_with',    #feature_relationship
 #     'G19a', 'gene_order',                               #featureprop
 #     'G19b', 'molecular_info',                           #featureprop
@@ -177,12 +204,6 @@ G39d:
 #     'G17v', 'dom_position_effect',     #feature_relatinoship.object_id
 ###############################################################################
 
-
-#     'G10a', 'cyto_left_end/cyto_right_end',    #feature_relationship.object_id
-#     'G10b', 'cyto_left_end/cyto_right_end',    #feature_relationshipprop
-#     'G24a', 'cellular_component',      #???feature_cvterm
-#     'G24b', 'molecular_function',      #???feature_cvterm
-#     'G24c', 'biological_process',      #???feature_cvterm
 
 #     'G7a',  'recom_left_end',          #??feature_relationship.object_id
 #     'G7b',  'recom_right_end',         #??feature_relationship.object_id

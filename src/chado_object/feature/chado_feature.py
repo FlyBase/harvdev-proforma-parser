@@ -89,6 +89,18 @@ class ChadoFeatureObject(ChadoObject):
             if is_current and cvterm_name == 'symbol':
                 self.feature.name = sgml_to_plain_text(self.process_data[key]['data'][FIELD_VALUE])
 
+    def load_feature_cvterm(self, key):
+        """Add feature_cvterm."""
+        cvterm = get_cvterm(self.session,
+                            self.process_data[key]['cv'],
+                            self.process_data[key]['cvterm'])
+        # create feature_cvterm
+        feat_cvt, _ = get_or_create(self.session, FeatureCvterm,
+                                    feature_id=self.feature.feature_id,
+                                    cvterm_id=cvterm.cvterm_id,
+                                    pub_id=self.pub.pub_id)
+        return feat_cvt
+
     def load_feature_cvtermprop(self, key):
         """Add feature_cvtermprop.
 

@@ -10,7 +10,7 @@ from chado_object.chado_base import (
 )
 from chado_object.feature.chado_feature import ChadoFeatureObject
 from harvdev_utils.production import (
-    Feature, FeaturePub
+    Feature, FeaturePub, FeatureRelationship, FeatureRelationshipprop
 )
 from harvdev_utils.chado_functions import (
     get_or_create, get_cvterm, DataError,
@@ -51,6 +51,7 @@ class ChadoGene(ChadoFeatureObject):
                           'ignore': self.ignore,
                           'cvtermprop': self.load_cvtermprop,
                           'merge': self.merge,
+                          'bandinfo': self.load_bandinfo,
                           'dis_pub': self.dis_pub,
                           'make_obsolete': self.make_obsolete,
                           'featureprop': self.load_featureprop}
@@ -147,6 +148,71 @@ class ChadoGene(ChadoFeatureObject):
     def make_obsolete(self, key):
         """Make gene obsolete."""
         self.feature.is_obsolete = True
+
+    def load_bandinfo(self, key):
+        """Load the band info."""
+        # If format is xyz--abc then xyy is the start and abc is the end band.
+        # If not above format then whole thing is the start and end band.
+        if not self.has_data(key):
+            return
+        g10_pattern = r'(.+)--(.+)'
+        prop_cvterm = None
+        if 'propvalue' in self.process_data[key] and self.process_data[key]['propvalue']:
+            prop_cvterm = get_cvterm(self.session, self.process_data[key]['band_cv'], self.process_data[key]['band_cvterm'])
+
+        for item in self.process_data[key]['data']:  # list of values here.
+            band_range = re.search(g10_pattern, item[FIELD_VALUE])
+            bands = []
+            if not band_range:
+                band = self.get_band(key, item[FIELD_VALUE])
+                if not band:
+                    return
+                bands.append(band)  # left
+                bands.append(band)  # right
+            else:
+                band = self.get_band(key, band_range.group(1))
+                if not band:
+                    return
+                bands.append(band)
+                band = self.get_band(key, band_range.group(2))
+                if not band:
+                    return
+                bands.append(band)
+
+            for idx, cvterm_name in enumerate(self.process_data[key]['cvterms']):
+                cvterm = get_cvterm(self.session, self.process_data[key]['cv'], cvterm_name)
+                if not cvterm:
+                    message = "Unable to find cvterm {} for Cv '{}'.".format(self.process_data[key]['cv'], cvterm_name)
+                    self.critical_error(self.process_data[key]['data'], message)
+                    return None
+                # so create feature relationship
+                fr, new = get_or_create(self.session, FeatureRelationship,
+                                        subject_id=self.feature.feature_id,
+                                        object_id=bands[idx].feature_id,
+                                        type_id=cvterm.cvterm_id)
+                if prop_cvterm:  # if we have a propcvterm we need to create a fr prop.
+                    get_or_create(self.session, FeatureRelationshipprop,
+                                  feature_relationship_id=fr.feature_relationship_id,
+                                  type_id=prop_cvterm.cvterm_id,
+                                  value=self.process_data[key]['propvalue'])
+
+    def get_band(self, key, name):
+        """Look up the band from the name."""
+        cvterm = get_cvterm(self.session, self.process_data[key]['band_cv'], self.process_data[key]['band_cvterm'])
+        if not cvterm:
+            message = "Unable to find cvterm {} for Cv '{}'.".format(self.process_data[key]['band_cv'],
+                                                                     self.process_data[key]['band_cvterm'])
+            self.critical_error(self.process_data[key]['data'], message)
+            return None
+
+        band_name = "band-{}".format(name)
+        band, new = get_or_create(self.session, Feature, name=band_name,
+                                  type_id=cvterm.cvterm_id, organism_id=self.feature.organism_id)
+        if new:
+            message = "Could not find band with name '{}'".format(band_name)
+            self.critical_error(self.process_data[key]['data'], message)
+            return None
+        return band
 
     def load_cvtermprop(self, key):
         """Ignore, done by initial setup."""
