@@ -111,16 +111,16 @@ G15:
 #     prop_cvterm: 'gene_class'
 #     prop_cv: 'property type'
 
-# G24e:
-#     type: featureprop
-#     cv: property type
-#     cvterm: GO_internal_notes
-#     value: G24e
-# G24f:
-#     type: featureprop
-#     cv: property type
-#     cvterm: GO_review_date
-#     only_one: True
+G24e:
+    type: featureprop
+    cv: property type
+    cvterm: GO_internal_notes
+    value: G24e
+G24f:
+    type: featureprop
+    cv: property type
+    cvterm: GO_review_date
+    only_one: True
 G27:
     type: featureprop
     cv: property type
@@ -184,11 +184,6 @@ G39d:
 #     'G20g', 'is_gene_model_decorated',          #featureprop: Analysis: mut-map
 #     'G20h', 'is_polymorphism_reported',    #featureprop: Analysis: polymorph
 #     'G20i', 'has_GO_curation', 
-#     'G24a', 'cellular_component',      #???feature_cvterm
-#     'G24b', 'molecular_function',      #???feature_cvterm
-#     'G24c', 'biological_process',      #???feature_cvterm
-#     'G24e'
-#     'G24f'
 #     'G25', 'maps_to_clone/nomaps_to_clone/identified_with',    #feature_relationship
 #     'G19a', 'gene_order',                               #featureprop
 #     'G19b', 'molecular_info',                           #featureprop
@@ -207,6 +202,11 @@ G39d:
 
 #     'G7a',  'recom_left_end',          #??feature_relationship.object_id
 #     'G7b',  'recom_right_end',         #??feature_relationship.object_id
+#     'G24a', 'cellular_component',      #???feature_cvterm
+#     'G24b', 'molecular_function',      #???feature_cvterm
+#     'G24c', 'biological_process',      #???feature_cvterm
+#     'G24e'
+#     'G24f'
 #     'G26',  'foreign_seq_data',
 #     'G33',  'feature_dbxref',          #feature_dbxref
 #     'G35',  'feature_dbxref',          #feature_dbxref
