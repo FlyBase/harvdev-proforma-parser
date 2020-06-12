@@ -107,12 +107,12 @@ def process_GO_line(session, line, cv_name):
         return go_dict
 
     for key in fpi.keys():
-        log.info('GOTERM: {}: {} {}'.format(key, fpi[key], fields.group(fpi[key])))
+        log.debug('GOTERM: {}: {} {}'.format(key, fpi[key], fields.group(fpi[key])))
 
     # if quali check that it is DB:quali
     if fields.group(fpi['quali']):
         dbname, term = fields.group(fpi['quali']).strip().split(':')
-        log.info("GOTERM: '{}' '{}'".format(dbname, term))
+        log.debug("GOTERM: '{}' '{}'".format(dbname, term))
         # check term is allowed
         if term not in quali:
             go_dict['error'].append("{} Not one of the allowed values {}". format(term, quali))
