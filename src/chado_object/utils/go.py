@@ -10,6 +10,11 @@ from harvdev_utils.chado_functions import (
     feature_name_lookup, get_cvterm, get_feature_by_uniquename
 )
 from sqlalchemy.orm.exc import NoResultFound
+from harvdev_utils.production import Db
+from harvdev_utils.chado_functions import get_or_create
+
+import logging
+log = logging.getLogger(__name__)
 
 code_to_string = {
     'IMP': 'inferred from mutant phenotype',
@@ -35,6 +40,8 @@ code_to_string = {
     'IRD': 'inferred from rapid divergence'
     }
 
+quali = ['colocalizes_with', 'contributes_to', 'NOT']
+
 
 def process_GO_line(session, line, cv_name):
     """From string generate and validate GO.
@@ -43,12 +50,15 @@ def process_GO_line(session, line, cv_name):
     1) nucleolus ; GO:0002001 | IDA
     2) something ; GO:0002002 | IGI with FLYBASE:symbol-35; FB:FBgn0000035 any bull here
     3) mRNA binding ; GO:0001001 | IDA
+    4) UniProtKB:colocalizes_with mRNA binding ; GO:0001001 | IDA
 
     should return dict with the following in it.
         {
          'gocvterm': <cvterm object>,
          'error': [], # can be many errors so check for empty array for no error)
-         'value': expanded abbr + 'string'  # None if code lookup fails
+         'value': expanded abbr + 'string',  # None if code lookup fails
+         'provenance': string,
+         'prov_term': <cvterm obj>
         }
 
     Lots of stuff to check here
@@ -60,11 +70,15 @@ def process_GO_line(session, line, cv_name):
     """
     go_dict = {'gocvterm': None,
                'error': [],
-               'value': None}
+               'value': None,
+               'provenance': 'FlyBase',
+               'prov_term': None}
 
     full_pattern = r"""
                 ^           # start of line
                 \s*         # possible leading spaces
+                (\S*:\S*)*  # possible UniProtKB:quali
+                \s*         # possible spaces
                 (.+)        # anything including spaces
                 \s*         # possible spaces
                 ;           # semi colon
@@ -78,27 +92,54 @@ def process_GO_line(session, line, cv_name):
                 \s*         # possible spaces
                 (.*)        # evidence comment possibly with checks
             """
+    # USE dict as full_pattern could change often
+    # so try to make code easier with indexs that can be changed easily and not missed
+    fpi = {
+        'quali': 1,
+        'go_name': 2,
+        'go_code': 3,
+        'evi_code': 4,
+        'comment':  5}
+
     fields = re.search(full_pattern, line, re.VERBOSE)
     if not fields:
         go_dict['error'].append("Failed to match format xxxxxx ; GO:ddddddd | XX[X]")
         return go_dict
 
+    for key in fpi.keys():
+        log.info('GOTERM: {}: {} {}'.format(key, fpi[key], fields.group(fpi[key])))
+
+    # if quali check that it is DB:quali
+    if fields.group(fpi['quali']):
+        dbname, term = fields.group(fpi['quali']).strip().split(':')
+        log.info("GOTERM: '{}' '{}'".format(dbname, term))
+        # check term is allowed
+        if term not in quali:
+            go_dict['error'].append("{} Not one of the allowed values [{}]". format(term, quali))
+        else:
+            go_dict['prov_term'] = get_cvterm(session, 'FlyBase miscellaneous CV', term)
+        # check DB is valid
+        db, new = get_or_create(session, Db, name=dbname)
+        if new:
+            go_dict['error'].append("{} Not a valid database".format(db))
+        go_dict['provenance'] = dbname
+
     # get cvterm using the cvterm name
-    cvterm_name = fields.group(1).strip()
+    cvterm_name = fields.group(fpi['go_name']).strip()
     go_dict['gocvterm'] = cvterm = get_cvterm(session, cv_name, cvterm_name)
 
     # check the cvterm dbxref to make sure the gocode matches the accession
-    gocode = str(fields.group(2)).strip()
+    gocode = str(fields.group(fpi['go_code'])).strip()
     if gocode != cvterm.dbxref.accession:
         go_dict['error'].append("{} matches {} but lookup gives {} instead?".format(cvterm_name, gocode, cvterm.dbxref.accession))
 
-    abbr = fields.group(3).strip()
+    abbr = fields.group(fpi['evi_code']).strip()
     try:
         start_comment = code_to_string[abbr]
     except KeyError:
         go_dict['error'].append("{} Not one of the list valid codes".format(abbr))
 
-    end_comment = fields.group(4).strip()
+    end_comment = fields.group(fpi['comment']).strip()
     go_dict['value'] = start_comment
     if end_comment:
         go_dict['value'] += ' ' + end_comment

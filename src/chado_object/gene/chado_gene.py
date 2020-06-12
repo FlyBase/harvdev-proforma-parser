@@ -155,7 +155,7 @@ class ChadoGene(ChadoFeatureObject):
         if not self.has_data(key):
             return
         values = {'date': datetime.today().strftime('%Y%m%d'),
-                  'provenance': 'FlyBase',
+                  'provenance': None,
                   'evidence_code': None}
         for item in self.process_data[key]['data']:
             go_dict = process_GO_line(self.session, item[FIELD_VALUE], self.process_data[key]['cv'])
@@ -169,6 +169,7 @@ class ChadoGene(ChadoFeatureObject):
                                            pub_id=self.pub.pub_id)
 
             values['evidence_code'] = go_dict['value']
+            values['provenance'] = go_dict['provenance']
             for idx, cvname in enumerate(self.process_data[key]['prop_cvs']):
                 prop_cvterm_name = self.process_data[key]['prop_cvterms'][idx]
                 propcvterm = get_cvterm(self.session, cvname, prop_cvterm_name)
@@ -177,6 +178,11 @@ class ChadoGene(ChadoFeatureObject):
                               feature_cvterm_id=feat_cvterm.feature_cvterm_id,
                               type_id=propcvterm.cvterm_id,
                               value=values[prop_cvterm_name])
+            if 'prov_term' in go_dict and go_dict['prov_term']:  # Extra prop for cvterm from quali stuff
+                get_or_create(self.session, FeatureCvtermprop,
+                              feature_cvterm_id=feat_cvterm.feature_cvterm_id,
+                              type_id=go_dict['prov_term'].cvterm_id,
+                              value=None)
 
     def load_bandinfo(self, key):
         """Load the band info."""
