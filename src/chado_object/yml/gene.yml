@@ -104,12 +104,23 @@ G15:
     cvterm: internal_notes
     # is a list, so value implied
 
-# G24a:
-#     type: cvtermprop
-#     cv: cellular_component
-#     prop_value: False
-#     prop_cvterm: 'gene_class'
-#     prop_cv: 'property type'
+# Could have hard coded the prop cv and cvterms but listing them
+# here for better lookups.
+G24a:
+    type: GOcvtermprop
+    cv: cellular_component
+    prop_cvs: ['feature_cvtermprop type', 'FlyBase miscellaneous CV', 'FlyBase miscellaneous CV']
+    prop_cvterms: ['date', 'provenance', 'evidence_code']
+G24b:
+    type: GOcvtermprop
+    cv: molecular_function
+    prop_cvs: ['feature_cvtermprop type', 'FlyBase miscellaneous CV', 'FlyBase miscellaneous CV']
+    prop_cvterms: ['date', 'provenance', 'evidence_code']
+G24c:
+    type: GOcvtermprop
+    cv: biological_process
+    prop_cvs: ['feature_cvtermprop type', 'FlyBase miscellaneous CV', 'FlyBase miscellaneous CV']
+    prop_cvterms: ['date', 'provenance', 'evidence_code']
 
 G24e:
     type: featureprop
@@ -205,8 +216,6 @@ G39d:
 #     'G24a', 'cellular_component',      #???feature_cvterm
 #     'G24b', 'molecular_function',      #???feature_cvterm
 #     'G24c', 'biological_process',      #???feature_cvterm
-#     'G24e'
-#     'G24f'
 #     'G26',  'foreign_seq_data',
 #     'G33',  'feature_dbxref',          #feature_dbxref
 #     'G35',  'feature_dbxref',          #feature_dbxref

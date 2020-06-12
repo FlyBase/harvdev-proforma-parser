@@ -3,25 +3,25 @@
 
 :moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>, Ian Longden <ilongden@morgan.harvard.edu>
 """
+import logging
 import os
 import re
-from chado_object.chado_base import (
-    FIELD_VALUE, FIELD_NAME, LINE_NUMBER
-)
-from chado_object.feature.chado_feature import ChadoFeatureObject
-from harvdev_utils.production import (
-    Feature, FeaturePub, FeatureRelationship, FeatureRelationshipprop
-)
-from harvdev_utils.chado_functions import (
-    get_or_create, get_cvterm, DataError,
-    feature_symbol_lookup, get_dbxref,
-    get_feature_and_check_uname_symbol,
-    synonym_name_details
-)
-from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from datetime import datetime
 
-import logging
+from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
+
+from chado_object.chado_base import FIELD_NAME, FIELD_VALUE, LINE_NUMBER
+from chado_object.feature.chado_feature import ChadoFeatureObject
+from chado_object.utils.go import process_GO_line
+from harvdev_utils.chado_functions import (DataError, feature_symbol_lookup,
+                                           get_cvterm, get_dbxref,
+                                           get_feature_and_check_uname_symbol,
+                                           get_or_create, synonym_name_details)
+from harvdev_utils.production import (Feature, FeatureCvterm,
+                                      FeatureCvtermprop, FeaturePub,
+                                      FeatureRelationship,
+                                      FeatureRelationshipprop)
+
 log = logging.getLogger(__name__)
 
 
@@ -50,6 +50,7 @@ class ChadoGene(ChadoFeatureObject):
         self.type_dict = {'synonym': self.load_synonym,
                           'ignore': self.ignore,
                           'cvtermprop': self.load_cvtermprop,
+                          'GOcvtermprop': self.load_gocvtermprop,
                           'merge': self.merge,
                           'bandinfo': self.load_bandinfo,
                           'dis_pub': self.dis_pub,
@@ -148,6 +149,34 @@ class ChadoGene(ChadoFeatureObject):
     def make_obsolete(self, key):
         """Make gene obsolete."""
         self.feature.is_obsolete = True
+
+    def load_gocvtermprop(self, key):
+        """Load the cvterm props for GO lines."""
+        if not self.has_data(key):
+            return
+        values = {'date': datetime.today().strftime('%Y%m%d'),
+                  'provenance': 'FlyBase',
+                  'evidence_code': None}
+        for item in self.process_data[key]['data']:
+            go_dict = process_GO_line(self.session, item[FIELD_VALUE], self.process_data[key]['cv'])
+            if go_dict['error']:
+                for error in go_dict['error']:
+                    self.critical_error(item, error)
+                continue
+            feat_cvterm, _ = get_or_create(self.session, FeatureCvterm,
+                                           feature_id=self.feature.feature_id,
+                                           cvterm_id=go_dict['gocvterm'].cvterm_id,
+                                           pub_id=self.pub.pub_id)
+
+            values['evidence_code'] = go_dict['value']
+            for idx, cvname in enumerate(self.process_data[key]['prop_cvs']):
+                prop_cvterm_name = self.process_data[key]['prop_cvterms'][idx]
+                propcvterm = get_cvterm(self.session, cvname, prop_cvterm_name)
+
+                get_or_create(self.session, FeatureCvtermprop,
+                              feature_cvterm_id=feat_cvterm.feature_cvterm_id,
+                              type_id=propcvterm.cvterm_id,
+                              value=values[prop_cvterm_name])
 
     def load_bandinfo(self, key):
         """Load the band info."""
