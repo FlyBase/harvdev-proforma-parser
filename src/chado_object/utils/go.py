@@ -115,7 +115,7 @@ def process_GO_line(session, line, cv_name):
         log.info("GOTERM: '{}' '{}'".format(dbname, term))
         # check term is allowed
         if term not in quali:
-            go_dict['error'].append("{} Not one of the allowed values [{}]". format(term, quali))
+            go_dict['error'].append("{} Not one of the allowed values {}". format(term, quali))
         else:
             go_dict['prov_term'] = get_cvterm(session, 'FlyBase miscellaneous CV', term)
         # check DB is valid
@@ -127,7 +127,6 @@ def process_GO_line(session, line, cv_name):
     # get cvterm using the cvterm name
     cvterm_name = fields.group(fpi['go_name']).strip()
     go_dict['gocvterm'] = cvterm = get_cvterm(session, cv_name, cvterm_name)
-
     # check the cvterm dbxref to make sure the gocode matches the accession
     gocode = str(fields.group(fpi['go_code'])).strip()
     if gocode != cvterm.dbxref.accession:
@@ -137,12 +136,13 @@ def process_GO_line(session, line, cv_name):
     try:
         start_comment = code_to_string[abbr]
     except KeyError:
-        go_dict['error'].append("{} Not one of the list valid codes".format(abbr))
+        go_dict['error'].append("{} Not one of the list valid codes {}.".format(abbr, code_to_string.keys()))
+        start_comment = 'Not valid code'
 
-    end_comment = fields.group(fpi['comment']).strip()
+    end_comment = fields.group(fpi['comment'])
     go_dict['value'] = start_comment
     if end_comment:
-        go_dict['value'] += ' ' + end_comment
+        go_dict['value'] += ' ' + end_comment.strip()
     if not end_comment:  # can be an empty string some times no additional comments are given
         return go_dict
 
