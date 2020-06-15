@@ -55,7 +55,8 @@ class ChadoGene(ChadoFeatureObject):
                           'bandinfo': self.load_bandinfo,
                           'dis_pub': self.dis_pub,
                           'make_obsolete': self.make_obsolete,
-                          'featureprop': self.load_featureprop}
+                          'featureprop': self.load_featureprop,
+                          'featurerelationship': self.load_feat_rel}
 
         self.delete_dict = {'synonym': self.delete_synonym,
                             'cvterm': self.delete_cvterm}
@@ -119,6 +120,33 @@ class ChadoGene(ChadoFeatureObject):
         log.debug('Curator string assembled as:')
         log.debug('%s' % (curated_by_string))
         return self.feature
+
+    def load_feat_rel(self, key):
+        """Load feature relationship."""
+        if not self.has_data(key):
+            return
+        # list of values at present
+        for item in self.process_data[key]['data']:
+            # look up item, it must one of the types defined by the yml
+            feature = None
+            for type_name in self.process_data[key]['allowed_types']:
+                try:
+                    feature = feature_symbol_lookup(self.session, type_name, item[FIELD_VALUE])
+                except NoResultFound:
+                    pass
+            if not feature:
+                message = "{} Not found for one of the following type {}".format(item[FIELD_VALUE], self.process_data[key]['allowed_types'])
+                self.critical_error(item, message)
+                continue
+
+            # get feature relationship cvterm
+            cvterm = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data[key]['cvterm'])
+
+            # create feature relationship
+            get_or_create(self.session, FeatureRelationship,
+                          subject_id=self.feature.feature_id,
+                          object_id=feature.feature_id,
+                          type_id=cvterm.cvterm_id)
 
     def extra_checks(self):
         """Extra checks.

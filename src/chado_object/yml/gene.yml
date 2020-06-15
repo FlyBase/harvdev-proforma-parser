@@ -69,11 +69,20 @@ G6:
     cv: property type
     cvterm: gen_loc_error
     value: G6
+G7a:
+    type: featurerelationship
+    cv: relationship type
+    cvterm: recom_left_end
+    allowed_types: ['gene', 'transposable_element_insertion_site']
+G7b:
+    type: featurerelationship
+    cv: relationship type
+    cvterm: recom_right_end
+    allowed_types: ['gene', 'transposable_element_insertion_site']
 G8:
     type: featureprop
     cv: property type
     cvterm: gen_loc_comment
-#     'G10a', 'cyto_left_end/cyto_right_end',    #feature_relationship.object_id
 G10a:
     type: bandinfo
     cv: relationship type
@@ -81,7 +90,6 @@ G10a:
     propvalue: (determined by in situ hybridisation)
     band_cvterm: chromosome_band
     band_cv: SO
-#     'G10b', 'cyto_left_end/cyto_right_end',    #feature_relationshipprop
 G10b:
     type: bandinfo
     cv: relationship type
@@ -213,11 +221,6 @@ G39d:
 ###############################################################################
 
 
-#     'G7a',  'recom_left_end',          #??feature_relationship.object_id
-#     'G7b',  'recom_right_end',         #??feature_relationship.object_id
-#     'G24a', 'cellular_component',      #???feature_cvterm
-#     'G24b', 'molecular_function',      #???feature_cvterm
-#     'G24c', 'biological_process',      #???feature_cvterm
 #     'G26',  'foreign_seq_data',
 #     'G33',  'feature_dbxref',          #feature_dbxref
 #     'G35',  'feature_dbxref',          #feature_dbxref

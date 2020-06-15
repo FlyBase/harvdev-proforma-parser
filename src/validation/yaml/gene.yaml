@@ -46,6 +46,16 @@ G6:
     nullable: True
     at_forbidden: True
     dependencies: [G5]
+G7a:
+    type: [string, list]
+    required: False
+    nullable: True
+    at_forbidden: True
+G7b:
+    type: [string, list]
+    required: False
+    nullable: True
+    at_forbidden: True
 G8:
     type: [list, string]
     required: False
