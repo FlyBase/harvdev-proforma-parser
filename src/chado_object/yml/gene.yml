@@ -111,17 +111,19 @@ G24a:
     cv: cellular_component
     prop_cvs: ['feature_cvtermprop type', 'FlyBase miscellaneous CV', 'FlyBase miscellaneous CV']
     prop_cvterms: ['date', 'provenance', 'evidence_code']
+    qualifiers: ['colocalizes_with', 'NOT']
 G24b:
     type: GOcvtermprop
     cv: molecular_function
     prop_cvs: ['feature_cvtermprop type', 'FlyBase miscellaneous CV', 'FlyBase miscellaneous CV']
     prop_cvterms: ['date', 'provenance', 'evidence_code']
+    qualifiers: ['contributes_to', 'NOT']
 G24c:
     type: GOcvtermprop
     cv: biological_process
     prop_cvs: ['feature_cvtermprop type', 'FlyBase miscellaneous CV', 'FlyBase miscellaneous CV']
     prop_cvterms: ['date', 'provenance', 'evidence_code']
-
+    qualifiers: ['NOT']
 G24e:
     type: featureprop
     cv: property type

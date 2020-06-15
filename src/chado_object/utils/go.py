@@ -39,11 +39,13 @@ code_to_string = {
     'IKR': 'inferred from key residues',
     'IRD': 'inferred from rapid divergence'
     }
+# get from yml now.
+# quali = ['colocalizes_with', 'contributes_to', 'NOT']
+# if($1 eq 'UniProtKB' or $1 eq 'FlyBase' or $1 eq 'BHF-UCL' or $1 eq 'GOC' or $1 eq 'HGNC' or $1 eq 'IntAct' or $1
+# eq 'InterPro' or $1 eq 'MGI' or $1 eq 'PINC' or $1 eq 'Reactome' or $1 eq 'RefGenome' ){
 
-quali = ['colocalizes_with', 'contributes_to', 'NOT']
 
-
-def process_GO_line(session, line, cv_name):
+def process_GO_line(session, line, cv_name, allowed_qualifiers):
     """From string generate and validate GO.
 
     Examples:-
@@ -111,18 +113,7 @@ def process_GO_line(session, line, cv_name):
 
     # if quali check that it is DB:quali
     if fields.group(fpi['quali']):
-        dbname, term = fields.group(fpi['quali']).strip().split(':')
-        log.debug("GOTERM: '{}' '{}'".format(dbname, term))
-        # check term is allowed
-        if term not in quali:
-            go_dict['error'].append("{} Not one of the allowed values {}". format(term, quali))
-        else:
-            go_dict['prov_term'] = get_cvterm(session, 'FlyBase miscellaneous CV', term)
-        # check DB is valid
-        db, new = get_or_create(session, Db, name=dbname)
-        if new:
-            go_dict['error'].append("{} Not a valid database".format(db))
-        go_dict['provenance'] = dbname
+        update_quali(session, go_dict, fields, fpi, allowed_qualifiers)
 
     # get cvterm using the cvterm name
     cvterm_name = fields.group(fpi['go_name']).strip()
@@ -169,3 +160,19 @@ def check_for_valid_fbs(session, end_comment):
         except (NoResultFound, AttributeError):
             problem += 'Could not find FlyBase uniquename "{}"'.format(fields.group(1))
     return problem
+
+
+def update_quali(session, go_dict, fields, fpi, allowed_qualifiers):
+    """Update the go_dict with any qualifiers found."""
+    dbname, term = fields.group(fpi['quali']).strip().split(':')
+    log.debug("GOTERM: '{}' '{}'".format(dbname, term))
+    # check term is allowed
+    if term not in allowed_qualifiers:
+        go_dict['error'].append("{} Not one of the allowed values {}". format(term, allowed_qualifiers))
+    else:
+        go_dict['prov_term'] = get_cvterm(session, 'FlyBase miscellaneous CV', term)
+    # check DB is valid
+    db, new = get_or_create(session, Db, name=dbname)
+    if new:
+        go_dict['error'].append("{} Not a valid database".format(db))
+    go_dict['provenance'] = dbname

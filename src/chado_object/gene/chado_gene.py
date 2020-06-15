@@ -157,8 +157,9 @@ class ChadoGene(ChadoFeatureObject):
         values = {'date': datetime.today().strftime('%Y%m%d'),
                   'provenance': None,
                   'evidence_code': None}
+        allowed_qualifiers = self.process_data[key]['qualifiers']
         for item in self.process_data[key]['data']:
-            go_dict = process_GO_line(self.session, item[FIELD_VALUE], self.process_data[key]['cv'])
+            go_dict = process_GO_line(self.session, item[FIELD_VALUE], self.process_data[key]['cv'], allowed_qualifiers)
             if go_dict['error']:
                 for error in go_dict['error']:
                     self.critical_error(item, error)
@@ -190,30 +191,12 @@ class ChadoGene(ChadoFeatureObject):
         # If not above format then whole thing is the start and end band.
         if not self.has_data(key):
             return
-        g10_pattern = r'(.+)--(.+)'
         prop_cvterm = None
         if 'propvalue' in self.process_data[key] and self.process_data[key]['propvalue']:
             prop_cvterm = get_cvterm(self.session, self.process_data[key]['band_cv'], self.process_data[key]['band_cvterm'])
 
         for item in self.process_data[key]['data']:  # list of values here.
-            band_range = re.search(g10_pattern, item[FIELD_VALUE])
-            bands = []
-            if not band_range:
-                band = self.get_band(key, item[FIELD_VALUE])
-                if not band:
-                    return
-                bands.append(band)  # left
-                bands.append(band)  # right
-            else:
-                band = self.get_band(key, band_range.group(1))
-                if not band:
-                    return
-                bands.append(band)
-                band = self.get_band(key, band_range.group(2))
-                if not band:
-                    return
-                bands.append(band)
-
+            bands = self.get_bands(key, item)
             for idx, cvterm_name in enumerate(self.process_data[key]['cvterms']):
                 cvterm = get_cvterm(self.session, self.process_data[key]['cv'], cvterm_name)
                 if not cvterm:
@@ -230,6 +213,28 @@ class ChadoGene(ChadoFeatureObject):
                                   feature_relationship_id=fr.feature_relationship_id,
                                   type_id=prop_cvterm.cvterm_id,
                                   value=self.process_data[key]['propvalue'])
+
+    def get_bands(self, key, item):
+        """Get bands form fields."""
+        bands = []
+        g10_pattern = r'(.+)--(.+)'
+        band_range = re.search(g10_pattern, item[FIELD_VALUE])
+        if not band_range:
+            band = self.get_band(key, item[FIELD_VALUE])
+            if not band:
+                return None
+            bands.append(band)  # left
+            bands.append(band)  # right
+        else:
+            band = self.get_band(key, band_range.group(1))
+            if not band:
+                return None
+            bands.append(band)
+            band = self.get_band(key, band_range.group(2))
+            if not band:
+                return None
+            bands.append(band)
+        return bands
 
     def get_band(self, key, name):
         """Look up the band from the name."""

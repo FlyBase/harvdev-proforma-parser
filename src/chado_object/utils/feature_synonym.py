@@ -72,7 +72,7 @@ def fs_add_by_synonym_name_and_type(session, feature_id, synonym_name, cv_name, 
 
     Raises:
         CodingError: cv/cvterm lookup fails. unable to create synonym.
-   """
+    """
     #
     # Add a feature_synonym given a feature_id and an synonym_name and type_name.
     # It is envisioned we will always have a feature_id as this is the start point of all proforma,
