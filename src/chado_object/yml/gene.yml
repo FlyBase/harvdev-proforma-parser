@@ -142,6 +142,12 @@ G24f:
     cv: property type
     cvterm: GO_review_date
     only_one: True
+G26:
+    type: g26_prop
+    cv: property type
+    cvterm: foreign_seq_data
+    value: G26
+    allowed_dbs: ['HGNC', 'SGD', 'MGI', 'GB', 'GB_protein', 'UniProt/Swiss-Prot', 'UniProt/TrEMBL']
 G27:
     type: featureprop
     cv: property type
@@ -167,12 +173,13 @@ G31a:
     type: make_obsolete
 G31b:
     type: dis_pub
-#     'G34',  'reported_antibod_gen' ,   #featureprop
 G34:
     type: featureprop
     cv: property type
     cvterm: reported_antibod_gen
     value: G34
+G35:
+    type: ignore  # dealt with by G26,  G35 just a check for now
 G39a:
     type: featureprop
     cv: property type
@@ -194,6 +201,13 @@ G39d:
     cv: property type
     cvterm: gene_summary_internal_notes
     value: G39d
+G40:
+    type: cvtermprop
+    cv: 'FlyBase miscellaneous CV'
+    prop_value: False
+    prop_cvterm: 'common_tool_uses'
+    prop_cv: 'feature_cvtermprop type'
+
 ########### NO Longer Used!!! ##########################################
 #     'G20a', 'in_title_or_abstract/significant_subject_in_review'
 #     ,                            #featureprop: Analysis:subject #not in chado
@@ -221,11 +235,8 @@ G39d:
 ###############################################################################
 
 
-#     'G26',  'foreign_seq_data',
 #     'G33',  'feature_dbxref',          #feature_dbxref
-#     'G35',  'feature_dbxref',          #feature_dbxref
 #     'G91',  'library_feature',  #library_feature
 #     'G91a', 'library_featureprop',  #library_featureprop
 #     'G37',  'grpmember_feature', # feature_grpmember (grpmember.grp_id grpmember.type_id cv=grpmember type, cvterm=grpmember_feature feature_grpmember.feature_id G1a) plus organism_grpmember (grpmember.grp_id grpmember.type_id cv=grpmember type, cvterm=grpmember_organism organism_grpmember.organism_id G1a -- only 1 per grp??)
-#     'G40',   'FlyBase miscellaneous CV', #feature_cvterm Encoded experimental tools (CV) feature_cvtermprop type common_tool_uses
 #     'G38',  'member_gene_of',  # feature_relationship.object Valid Gene symbol TO7c single

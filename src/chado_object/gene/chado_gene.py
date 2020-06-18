@@ -18,7 +18,7 @@ from harvdev_utils.chado_functions import (DataError, feature_symbol_lookup,
                                            get_feature_and_check_uname_symbol,
                                            get_or_create, synonym_name_details)
 from harvdev_utils.production import (Feature, FeatureCvterm,
-                                      FeatureCvtermprop, FeaturePub,
+                                      FeatureCvtermprop, FeatureDbxref, FeaturePub,
                                       FeatureRelationship,
                                       FeatureRelationshipprop)
 
@@ -34,7 +34,8 @@ class ChadoGene(ChadoFeatureObject):
     )
 
     from chado_object.gene.gene_chado_check import (
-        g28a_check, g28b_check, g31a_check, g31b_check,
+        g26_format_error, g26_species_check, g26_gene_symbol_check, g26_dbxref_check,
+        g26_check, g28a_check, g28b_check, g31a_check, g31b_check,
         g39a_check
     )
 
@@ -50,6 +51,7 @@ class ChadoGene(ChadoFeatureObject):
         self.type_dict = {'synonym': self.load_synonym,
                           'ignore': self.ignore,
                           'cvtermprop': self.load_cvtermprop,
+                          'g26_prop': self.load_prop_g26,
                           'GOcvtermprop': self.load_gocvtermprop,
                           'merge': self.merge,
                           'bandinfo': self.load_bandinfo,
@@ -67,7 +69,7 @@ class ChadoGene(ChadoFeatureObject):
         ############################################################
         self.pub = None
         self.type_name = 'gene'
-
+        self.g26_dbxref = None
         ############################################################
         # Get processing info and data to be processed.
         # Please see the yml/publication.yml file for more details
@@ -80,7 +82,8 @@ class ChadoGene(ChadoFeatureObject):
         # extra checks that cannit be done with cerberus.
         # Create lookup up to stop a huge if then else statement
         ########################################################
-        self.checks_for_key = {'G28a': self.g28a_check,
+        self.checks_for_key = {'G26': self.g26_check,
+                               'G28a': self.g28a_check,
                                'G28b': self.g28b_check,
                                'G31a': self.g31a_check,
                                'G31b': self.g31b_check,
@@ -282,6 +285,14 @@ class ChadoGene(ChadoFeatureObject):
             return None
         return band
 
+    def load_prop_g26(self, key):
+        """G26 special."""
+        self.load_featureprop(key)
+        if self.g26_dbxref:
+            get_or_create(self.session, FeatureDbxref,
+                          dbxref_id=self.g26_dbxref.dbxref_id,
+                          feature_id=self.feature.feature_id)
+
     def load_cvtermprop(self, key):
         """Ignore, done by initial setup."""
         if key == 'G30':
@@ -324,7 +335,6 @@ class ChadoGene(ChadoFeatureObject):
                          cvterm_name,
                          self.process_data[key]['data'][LINE_NUMBER])
             self.process_data[key]['data'] = new_tuple
-
         self.load_feature_cvtermprop(key)
 
     def get_gene(self):

@@ -110,41 +110,47 @@ class ChadoFeatureObject(ChadoObject):
         Could have gone for if cvterm is not defined etc but
         this way is more explicit.
         """
-        cv_name = self.process_data[key]['cv']
-        prop_value = None
-        if self.process_data[key]['prop_value']:
-            cvterm_name = self.process_data[key]['cvterm']
-            prop_value = self.process_data[key]['data'][FIELD_VALUE]
+        if type(self.process_data[key]['data']) is list:
+            items = self.process_data[key]['data']
         else:
-            # for new ones they are seperated by ';'  x ; y
-            # i.e.
-            cvterm_name = self.process_data[key]['data'][FIELD_VALUE]
+            items = [self.process_data[key]['data']]
 
-        cvterm = get_cvterm(self.session, cv_name, cvterm_name)
-        if not cvterm:
-            message = "Unable to find cvterm {} for Cv {}.".format(cvterm_name, cv_name)
-            self.critical_error(self.process_data[key]['data'], message)
-            return None
+        cv_name = self.process_data[key]['cv']
+        for item in items:
+            prop_value = None
+            if self.process_data[key]['prop_value']:
+                cvterm_name = self.process_data[key]['cvterm']
+                prop_value = item[FIELD_VALUE]
+            else:
+                # for new ones they are seperated by ';'  x ; y
+                # i.e.
+                cvterm_name = item[FIELD_VALUE]
 
-        cv_name = self.process_data[key]['prop_cv']
-        cvterm_name = self.process_data[key]['prop_cvterm']
-        props_cvterm = get_cvterm(self.session, cv_name, cvterm_name)
-        if not props_cvterm:
-            message = "Unable to find cvterm {} for Cv {}.".format(cvterm_name, cv_name)
-            self.critical_error(self.process_data[key]['data'], message)
-            return None
+            cvterm = get_cvterm(self.session, cv_name, cvterm_name)
+            if not cvterm:
+                message = "Unable to find cvterm {} for Cv {}.".format(cvterm_name, cv_name)
+                self.critical_error(item, message)
+                return None
 
-        # create feature_cvterm
-        feat_cvt, _ = get_or_create(self.session, FeatureCvterm,
-                                    feature_id=self.feature.feature_id,
-                                    cvterm_id=cvterm.cvterm_id,
-                                    pub_id=self.pub.pub_id)
+            cv_name = self.process_data[key]['prop_cv']
+            cvterm_name = self.process_data[key]['prop_cvterm']
+            props_cvterm = get_cvterm(self.session, cv_name, cvterm_name)
+            if not props_cvterm:
+                message = "Unable to find cvterm {} for Cv {}.".format(cvterm_name, cv_name)
+                self.critical_error(item, message)
+                return None
 
-        # create feature_cvtermprop
-        get_or_create(self.session, FeatureCvtermprop,
-                      feature_cvterm_id=feat_cvt.feature_cvterm_id,
-                      value=prop_value,
-                      type_id=props_cvterm.cvterm_id)
+            # create feature_cvterm
+            feat_cvt, _ = get_or_create(self.session, FeatureCvterm,
+                                        feature_id=self.feature.feature_id,
+                                        cvterm_id=cvterm.cvterm_id,
+                                        pub_id=self.pub.pub_id)
+
+            # create feature_cvtermprop
+            get_or_create(self.session, FeatureCvtermprop,
+                          feature_cvterm_id=feat_cvt.feature_cvterm_id,
+                          value=prop_value,
+                          type_id=props_cvterm.cvterm_id)
 
     def load_feature_relationship(self, key):
         """Add Feature Relationship.
