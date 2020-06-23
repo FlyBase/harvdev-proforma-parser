@@ -3,25 +3,25 @@
 
 :moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>, Ian Longden <ilongden@morgan.harvard.edu>
 """
+import logging
 import os
 import re
-from chado_object.chado_base import (
-    FIELD_VALUE, FIELD_NAME, LINE_NUMBER
-)
-from chado_object.feature.chado_feature import ChadoFeatureObject
-from harvdev_utils.production import (
-    Feature, FeaturePub
-)
-from harvdev_utils.chado_functions import (
-    get_or_create, get_cvterm, DataError,
-    feature_symbol_lookup, get_dbxref,
-    get_feature_and_check_uname_symbol,
-    synonym_name_details
-)
-from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from datetime import datetime
 
-import logging
+from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
+
+from chado_object.chado_base import FIELD_NAME, FIELD_VALUE, LINE_NUMBER
+from chado_object.feature.chado_feature import ChadoFeatureObject
+from chado_object.utils.go import process_GO_line
+from harvdev_utils.chado_functions import (DataError, feature_symbol_lookup,
+                                           get_cvterm, get_dbxref,
+                                           get_feature_and_check_uname_symbol,
+                                           get_or_create, synonym_name_details)
+from harvdev_utils.production import (Feature, FeatureCvterm,
+                                      FeatureCvtermprop, FeatureDbxref, FeaturePub,
+                                      FeatureRelationship,
+                                      FeatureRelationshipprop)
+
 log = logging.getLogger(__name__)
 
 
@@ -34,7 +34,8 @@ class ChadoGene(ChadoFeatureObject):
     )
 
     from chado_object.gene.gene_chado_check import (
-        g28a_check, g28b_check, g31a_check, g31b_check,
+        g26_format_error, g26_species_check, g26_gene_symbol_check, g26_dbxref_check,
+        g26_check, g28a_check, g28b_check, g31a_check, g31b_check,
         g39a_check
     )
 
@@ -50,10 +51,14 @@ class ChadoGene(ChadoFeatureObject):
         self.type_dict = {'synonym': self.load_synonym,
                           'ignore': self.ignore,
                           'cvtermprop': self.load_cvtermprop,
+                          'g26_prop': self.load_prop_g26,
+                          'GOcvtermprop': self.load_gocvtermprop,
                           'merge': self.merge,
+                          'bandinfo': self.load_bandinfo,
                           'dis_pub': self.dis_pub,
                           'make_obsolete': self.make_obsolete,
-                          'featureprop': self.load_featureprop}
+                          'featureprop': self.load_featureprop,
+                          'featurerelationship': self.load_feat_rel}
 
         self.delete_dict = {'synonym': self.delete_synonym,
                             'cvterm': self.delete_cvterm}
@@ -64,7 +69,7 @@ class ChadoGene(ChadoFeatureObject):
         ############################################################
         self.pub = None
         self.type_name = 'gene'
-
+        self.g26_dbxref = None
         ############################################################
         # Get processing info and data to be processed.
         # Please see the yml/publication.yml file for more details
@@ -77,7 +82,8 @@ class ChadoGene(ChadoFeatureObject):
         # extra checks that cannit be done with cerberus.
         # Create lookup up to stop a huge if then else statement
         ########################################################
-        self.checks_for_key = {'G28a': self.g28a_check,
+        self.checks_for_key = {'G26': self.g26_check,
+                               'G28a': self.g28a_check,
                                'G28b': self.g28b_check,
                                'G31a': self.g31a_check,
                                'G31b': self.g31b_check,
@@ -118,6 +124,33 @@ class ChadoGene(ChadoFeatureObject):
         log.debug('%s' % (curated_by_string))
         return self.feature
 
+    def load_feat_rel(self, key):
+        """Load feature relationship."""
+        if not self.has_data(key):
+            return
+        # list of values at present
+        for item in self.process_data[key]['data']:
+            # look up item, it must one of the types defined by the yml
+            feature = None
+            for type_name in self.process_data[key]['allowed_types']:
+                try:
+                    feature = feature_symbol_lookup(self.session, type_name, item[FIELD_VALUE])
+                except NoResultFound:
+                    pass
+            if not feature:
+                message = "{} Not found for one of the following type {}".format(item[FIELD_VALUE], self.process_data[key]['allowed_types'])
+                self.critical_error(item, message)
+                continue
+
+            # get feature relationship cvterm
+            cvterm = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data[key]['cvterm'])
+
+            # create feature relationship
+            get_or_create(self.session, FeatureRelationship,
+                          subject_id=self.feature.feature_id,
+                          object_id=feature.feature_id,
+                          type_id=cvterm.cvterm_id)
+
     def extra_checks(self):
         """Extra checks.
 
@@ -147,6 +180,118 @@ class ChadoGene(ChadoFeatureObject):
     def make_obsolete(self, key):
         """Make gene obsolete."""
         self.feature.is_obsolete = True
+
+    def load_gocvtermprop(self, key):
+        """Load the cvterm props for GO lines."""
+        if not self.has_data(key):
+            return
+        values = {'date': datetime.today().strftime('%Y%m%d'),
+                  'provenance': None,
+                  'evidence_code': None}
+        allowed_qualifiers = self.process_data[key]['qualifiers']
+        for item in self.process_data[key]['data']:
+            go_dict = process_GO_line(self.session, item[FIELD_VALUE], self.process_data[key]['cv'], allowed_qualifiers)
+            if go_dict['error']:
+                for error in go_dict['error']:
+                    self.critical_error(item, error)
+                continue
+            feat_cvterm, _ = get_or_create(self.session, FeatureCvterm,
+                                           feature_id=self.feature.feature_id,
+                                           cvterm_id=go_dict['gocvterm'].cvterm_id,
+                                           pub_id=self.pub.pub_id)
+
+            values['evidence_code'] = go_dict['value']
+            values['provenance'] = go_dict['provenance']
+            for idx, cvname in enumerate(self.process_data[key]['prop_cvs']):
+                prop_cvterm_name = self.process_data[key]['prop_cvterms'][idx]
+                propcvterm = get_cvterm(self.session, cvname, prop_cvterm_name)
+
+                get_or_create(self.session, FeatureCvtermprop,
+                              feature_cvterm_id=feat_cvterm.feature_cvterm_id,
+                              type_id=propcvterm.cvterm_id,
+                              value=values[prop_cvterm_name])
+            if 'prov_term' in go_dict and go_dict['prov_term']:  # Extra prop for cvterm from quali stuff
+                get_or_create(self.session, FeatureCvtermprop,
+                              feature_cvterm_id=feat_cvterm.feature_cvterm_id,
+                              type_id=go_dict['prov_term'].cvterm_id,
+                              value=None)
+
+    def load_bandinfo(self, key):
+        """Load the band info."""
+        # If format is xyz--abc then xyy is the start and abc is the end band.
+        # If not above format then whole thing is the start and end band.
+        if not self.has_data(key):
+            return
+        prop_cvterm = None
+        if 'propvalue' in self.process_data[key] and self.process_data[key]['propvalue']:
+            prop_cvterm = get_cvterm(self.session, self.process_data[key]['band_cv'], self.process_data[key]['band_cvterm'])
+
+        for item in self.process_data[key]['data']:  # list of values here.
+            bands = self.get_bands(key, item)
+            for idx, cvterm_name in enumerate(self.process_data[key]['cvterms']):
+                cvterm = get_cvterm(self.session, self.process_data[key]['cv'], cvterm_name)
+                if not cvterm:
+                    message = "Unable to find cvterm {} for Cv '{}'.".format(self.process_data[key]['cv'], cvterm_name)
+                    self.critical_error(self.process_data[key]['data'], message)
+                    return None
+                # so create feature relationship
+                fr, new = get_or_create(self.session, FeatureRelationship,
+                                        subject_id=self.feature.feature_id,
+                                        object_id=bands[idx].feature_id,
+                                        type_id=cvterm.cvterm_id)
+                if prop_cvterm:  # if we have a propcvterm we need to create a fr prop.
+                    get_or_create(self.session, FeatureRelationshipprop,
+                                  feature_relationship_id=fr.feature_relationship_id,
+                                  type_id=prop_cvterm.cvterm_id,
+                                  value=self.process_data[key]['propvalue'])
+
+    def get_bands(self, key, item):
+        """Get bands form fields."""
+        bands = []
+        g10_pattern = r'(.+)--(.+)'
+        band_range = re.search(g10_pattern, item[FIELD_VALUE])
+        if not band_range:
+            band = self.get_band(key, item[FIELD_VALUE])
+            if not band:
+                return None
+            bands.append(band)  # left
+            bands.append(band)  # right
+        else:
+            band = self.get_band(key, band_range.group(1))
+            if not band:
+                return None
+            bands.append(band)
+            band = self.get_band(key, band_range.group(2))
+            if not band:
+                return None
+            bands.append(band)
+        return bands
+
+    def get_band(self, key, name):
+        """Look up the band from the name."""
+        cvterm = get_cvterm(self.session, self.process_data[key]['band_cv'], self.process_data[key]['band_cvterm'])
+        if not cvterm:
+            message = "Unable to find cvterm {} for Cv '{}'.".format(self.process_data[key]['band_cv'],
+                                                                     self.process_data[key]['band_cvterm'])
+            self.critical_error(self.process_data[key]['data'], message)
+            return None
+
+        band_name = "band-{}".format(name)
+        band, new = get_or_create(self.session, Feature, name=band_name,
+                                  type_id=cvterm.cvterm_id, organism_id=self.feature.organism_id)
+        if new:
+            message = "Could not find band with name '{}'".format(band_name)
+            self.critical_error(self.process_data[key]['data'], message)
+            return None
+        return band
+
+    def load_prop_g26(self, key):
+        """G26 special."""
+        self.load_featureprop(key)
+        if self.g26_dbxref:
+            get_or_create(self.session, FeatureDbxref,
+                          dbxref_id=self.g26_dbxref.dbxref_id,
+                          feature_id=self.feature.feature_id)
 
     def load_cvtermprop(self, key):
         """Ignore, done by initial setup."""
@@ -190,7 +335,6 @@ class ChadoGene(ChadoFeatureObject):
                          cvterm_name,
                          self.process_data[key]['data'][LINE_NUMBER])
             self.process_data[key]['data'] = new_tuple
-
         self.load_feature_cvtermprop(key)
 
     def get_gene(self):
