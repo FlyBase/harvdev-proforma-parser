@@ -7,10 +7,8 @@ import re
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
 from harvdev_utils.chado_functions import (
-    feature_symbol_lookup, get_organism
-    # , get_or_create
+    feature_symbol_lookup, get_organism, CodingError
 )
-# from harvdev_utils.production import Dbxref
 from chado_object.utils.dbxref import get_dbxref_by_params
 from chado_object.chado_base import FIELD_VALUE
 
@@ -43,7 +41,12 @@ def g26_species_check(self, key, species_bit):
 
     if species[0] != 'species' or species[1] != '==':
         # look up species
-        organism = get_organism(self.session, species[2], species[3])
+        try:
+            organism = get_organism(self.session, species[2], species[3])
+        except (NoResultFound, CodingError):
+            message = "Failed to lookup organism genus = {}: species = {}".\
+                format(species[2], species[3])
+            return None
         if organism.organism_id != self.feature.organism_id:  # Should be the same organism.
             message = "Organisms differ {}={} != {}={}".\
                 format(organism.genus, organism.species,
@@ -108,7 +111,11 @@ def g26_dbxref_check(self, key, db_bit, organism):
 
     params = {'dbname': db_data[1].strip(), 'accession': db_data[2].strip()}
 
-    self.g26_dbxref, _ = get_dbxref_by_params(self.session, params=params)
+    try:
+        self.g26_dbxref, _ = get_dbxref_by_params(self.session, params=params)
+    except NoResultFound:
+        message = "DB {} does not exist.".format(params['dbname'])
+        self.critical_error(self.process_data[key]['data'], message)
 
     #################################################
     # if G35 is set then check that wrt dbxref above.
@@ -121,13 +128,13 @@ def g26_dbxref_check(self, key, db_bit, organism):
         else:
             if (db_data_check[1].strip() != db_data[1].strip() or db_data_check[2].strip() != db_data[2].strip()):
                 message = "G26 and G35 DB:Accession do not match. {}:{} != {}:{}".\
-                    format(db_data[1].strip(), db_data[1].strip(),
-                           db_data_check[2].strip(), db_data_check[2].strip())
+                    format(db_data[1].strip(), db_data[2].strip(),
+                           db_data_check[1].strip(), db_data_check[2].strip())
                 self.critical_error(self.process_data['G35']['data'], message)
 
     if organism and organism.abbreviation in org_to_db:
         if org_to_db[organism.abbreviation] != params['dbname']:
-            message = "Organism {} can only have dnxref to {} NOT {} as stated".\
+            message = "Organism {} can only have dbxref to {} NOT {} as stated".\
                 format(organism.abbreviation, org_to_db[organism.abbreviation], params['dbname'])
     elif organism:
         if db_data[0].strip() not in self.process_data[key]['allowed_dbs']:

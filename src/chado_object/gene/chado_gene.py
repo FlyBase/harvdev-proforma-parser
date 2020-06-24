@@ -13,7 +13,7 @@ from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from chado_object.chado_base import FIELD_NAME, FIELD_VALUE, LINE_NUMBER
 from chado_object.feature.chado_feature import ChadoFeatureObject
 from chado_object.utils.go import process_GO_line
-from harvdev_utils.chado_functions import (DataError, feature_symbol_lookup,
+from harvdev_utils.chado_functions import (DataError, CodingError, feature_symbol_lookup,
                                            get_cvterm, get_dbxref,
                                            get_feature_and_check_uname_symbol,
                                            get_or_create, synonym_name_details)
@@ -327,7 +327,7 @@ class ChadoGene(ChadoFeatureObject):
 
             if cvterm.dbxref.dbxref_id != db_xref.dbxref_id:
                 message = "'{}' Does not match '{}', lookup gave '{}'".\
-                    format(cvterm_name, cvterm.dbxref.accession, db_xref.accession)
+                    format(cvterm_name, db_xref.accession, cvterm.dbxref.accession)
                 self.critical_error(self.process_data[key]['data'], message)
                 return None
 
@@ -335,7 +335,11 @@ class ChadoGene(ChadoFeatureObject):
                          cvterm_name,
                          self.process_data[key]['data'][LINE_NUMBER])
             self.process_data[key]['data'] = new_tuple
-        self.load_feature_cvtermprop(key)
+        try:
+            self.load_feature_cvtermprop(key)
+        except CodingError as e:
+            log.info("BOB: {} {}".format(type(self.process_data[key]['data']), self.process_data[key]['data']))
+            self.critical_error(self.process_data[key]['data'][0], e.error)
 
     def get_gene(self):
         """Get initial gene and check."""
