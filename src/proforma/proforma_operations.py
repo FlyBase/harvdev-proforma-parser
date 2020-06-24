@@ -512,6 +512,7 @@ class Proforma(object):
                 "Proforma error around line: {}".format(line_number),
                 error_message,
                 "{}: {}".format(field, error_message),
+                value,
                 CRITICAL_ERROR)
 
     def add_bang(self, field, value, type_of_bang, line_number):

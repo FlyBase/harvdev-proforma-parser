@@ -129,8 +129,8 @@ class ChadoObject(object):
                       "Proforma entry starting on line: {}".format(self.proforma_start_line_number),
                       "Proforma error around line: {}".format(tuple[LINE_NUMBER]),
                       'Validation Error.',
-                      "Field value: {}".format(tuple[FIELD_VALUE]),
                       "{}: {}".format(tuple[FIELD_NAME], error_message),
+                      "Field value: {}".format(tuple[FIELD_VALUE]),
                       level)
 
     def critical_error(self, tuple, error_message):
