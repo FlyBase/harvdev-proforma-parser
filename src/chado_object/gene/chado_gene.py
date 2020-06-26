@@ -338,7 +338,6 @@ class ChadoGene(ChadoFeatureObject):
         try:
             self.load_feature_cvtermprop(key)
         except CodingError as e:
-            log.info("BOB: {} {}".format(type(self.process_data[key]['data']), self.process_data[key]['data']))
             self.critical_error(self.process_data[key]['data'][0], e.error)
 
     def get_gene(self):
