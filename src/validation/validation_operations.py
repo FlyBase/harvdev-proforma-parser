@@ -265,15 +265,15 @@ def check_and_raise_errors(filename, proforma_start_line, line_number, error_fie
         for critical_error_entry in critical_errors[error_field]:
             if critical_error_entry in error_data:
                 log.debug('Found critical error: \'{}\' in Cerberus error value: \'{}\''.format(critical_error_entry, error_value))
-                ErrorTracking(filename, proforma_start_line, line_number, 'Validation unsuccessful', error_data,
+                ErrorTracking(filename, proforma_start_line, line_number, 'Validation unsuccessful', error_data, error_value,
                               CRITICAL_ERROR)
                 log.critical(error_data)
                 return True
         # If we don't have the critical error in our dictionary, raise a warning instead.
-        ErrorTracking(filename, proforma_start_line, line_number, 'Validation unsuccessful', error_data, WARNING_ERROR)
+        ErrorTracking(filename, proforma_start_line, line_number, 'Validation unsuccessful', error_data, error_value, WARNING_ERROR)
         log.warning(error_data)
         return False
     else:
-        ErrorTracking(filename, proforma_start_line, line_number, 'Validation unsuccessful', error_data, WARNING_ERROR)
+        ErrorTracking(filename, proforma_start_line, line_number, 'Validation unsuccessful', error_data, error_value, WARNING_ERROR)
         log.warning(error_data)
         return False

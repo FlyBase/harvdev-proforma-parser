@@ -50,17 +50,17 @@ def process_entry(entry, session, filename, references):
     except NoResultFound:
         # Create an error object.
         ErrorTracking(filename, None, None, 'Unexpected internal parser error. Please contact Harvdev. \n{} '
-                                            'Last query below:'.format(traceback.format_exc()), last_query, CRITICAL_ERROR)
+                                            'Last query below:'.format(traceback.format_exc()), last_query, None, CRITICAL_ERROR)
         error_occurred = True
     except MultipleResultsFound:
         # Create an error object.
         ErrorTracking(filename, None, None, 'Unexpected internal parser error. Please contact Harvdev. \n{} '
-                                            'Last query below:'.format(traceback.format_exc()), last_query, CRITICAL_ERROR)
+                                            'Last query below:'.format(traceback.format_exc()), last_query, None, CRITICAL_ERROR)
         error_occurred = True
     except Exception:
         # Create an error object.
         ErrorTracking(filename, None, None, 'Unexpected internal parser error. Please contact Harvdev. \n{} '
-                                            'Last query below:'.format(traceback.format_exc()), last_query, CRITICAL_ERROR)
+                                            'Last query below:'.format(traceback.format_exc()), last_query, None, CRITICAL_ERROR)
         error_occurred = True
     return chado_object, error_occurred
 

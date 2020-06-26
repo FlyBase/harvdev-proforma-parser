@@ -17,11 +17,12 @@ class ErrorTracking(object):
 
     instances = []  # Class variable for tracking instances of this class.
 
-    def __init__(self, filename, proforma_start_line, proforma_line, error_message, error_data, level=WARNING_ERROR):
+    def __init__(self, filename, proforma_start_line, proforma_line, error_message, error_data, values, level=WARNING_ERROR):
         self.filename = filename
         self.error_message = error_message
         self.error_data = error_data
         self.proforma_start_line = None
+        self.values = values
         self.error_level = level
         # This bit of code saves the filename which called the error tracking object.
         # We can use it to tailor the error message based on where it was called.
@@ -64,4 +65,5 @@ class ErrorTracking(object):
         log_message(self.proforma_line)
         log_message(self.error_message)
         log_message(self.error_data)
+        log_message(self.values)
         log_message('')  # Blank line
