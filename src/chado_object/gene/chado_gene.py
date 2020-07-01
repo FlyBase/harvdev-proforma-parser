@@ -20,7 +20,10 @@ from harvdev_utils.chado_functions import (DataError, CodingError, feature_symbo
 from harvdev_utils.production import (Feature, FeatureCvterm,
                                       FeatureCvtermprop, FeatureDbxref, FeaturePub,
                                       FeatureRelationship,
-                                      FeatureRelationshipprop)
+                                      FeatureRelationshipprop,
+                                      FeatureGrpmember,
+                                      Grp, Grpmember,
+                                      Library, LibraryFeature, LibraryFeatureprop)
 
 log = logging.getLogger(__name__)
 
@@ -57,6 +60,9 @@ class ChadoGene(ChadoFeatureObject):
                           'bandinfo': self.load_bandinfo,
                           'dis_pub': self.dis_pub,
                           'make_obsolete': self.make_obsolete,
+                          'libraryfeatureprop': self.load_lfp,
+                          'grpmember': self.load_grpmember,
+                          'grpfeaturerelationship': self.load_gfr,
                           'featureprop': self.load_featureprop,
                           'featurerelationship': self.load_feat_rel}
 
@@ -123,6 +129,95 @@ class ChadoGene(ChadoFeatureObject):
         log.debug('Curator string assembled as:')
         log.debug('%s' % (curated_by_string))
         return self.feature
+
+    def load_grpmember(self, key):
+        """Load grp member."""
+        if not self.has_data(key):
+            return
+        grp_cvt = get_cvterm(self.session, self.process_data[key]['grp_cv'], self.process_data[key]['grp_cvterm'])
+        try:
+            grp = self.session.query(Grp).\
+                filter(Grp.name == self.process_data[key]['data'][FIELD_VALUE],
+                       Grp.type_id == grp_cvt.cvterm_id).one()
+        except NoResultFound:
+            message = "grp '{}' of type {} not found in the database".format(self.process_data[key]['data'][FIELD_VALUE])
+            self.critical_error(self.process_data[key]['data'], message)
+            return
+
+        gm_cvterm = get_cvterm(self.session, self.process_data[key]['gm_cv'], self.process_data[key]['gm_cvterm'])
+        grpmem, _ = get_or_create(self.session, Grpmember,
+                                  type_id=gm_cvterm.cvterm_id,
+                                  grp_id=grp.grp_id)
+
+        get_or_create(self.session, FeatureGrpmember,
+                      feature_id=self.feature.feature_id,
+                      grpmember_id=grpmem.grpmember_id)
+
+    def load_gfr(self, key):
+        """Load grp feature relationship."""
+        if not self.has_data(key):
+            return
+        try:
+            feature = feature_symbol_lookup(self.session, 'gene', self.process_data[key]['data'][FIELD_VALUE])
+        except NoResultFound:
+            message = "Unable to find gene symbol '{}' in the db.".format(self.process_data[key]['data'][FIELD_VALUE])
+            self.critical_error(self.process_data[key]['data'], message)
+            return
+        if 'generic_types' in self.process_data[key]:
+            found = False
+            fcs = self.session.query(FeatureCvterm).filter(FeatureCvterm.feature_id == feature.feature_id)
+            for cvt in fcs:
+                if cvt.cvterm.name in self.process_data[key]['generic_types']:
+                    found = True
+            if not found:
+                message = "Not of a generic gene type. Only {} are allowed".format(self.process_data[key]['generic_types'])
+                self.critical_error(self.process_data[key]['data'], message)
+                return
+        cvterm = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data[key]['cvterm'])
+
+        # create feature relationship
+        get_or_create(self.session, FeatureRelationship,
+                      subject_id=self.feature.feature_id,
+                      object_id=feature.feature_id,
+                      type_id=cvterm.cvterm_id)
+
+    def load_lfp(self, key):
+        """Load LibraryFeatureprop."""
+        if (not self.has_data('G91')) and (not self.has_data('G91a')):
+            return
+
+        # belts and braces check. Should be caught by validation but...
+        if not self.has_data('G91') or not self.has_data('G91a'):
+            message = "G91 cannot exist with out G91a and vice versa"
+            self.critical_error(self.process_data[key]['data'], message)
+            return
+
+        # Look up library given in GA91
+        # May need to do a library synonym lookup at some point.
+        try:
+            library = self.session.query(Library).\
+                filter(Library.name == self.process_data['G91']['data'][FIELD_VALUE],
+                       Library.organism_id == self.feature.organism_id).one()
+        except NoResultFound:
+            message = "No Library exists with the name {}".format(self.process_data['G91']['data'][FIELD_VALUE])
+            self.critical_error(self.process_data[key]['data'], message)
+            return
+
+        # create LibraryFeature
+        lib_feat, _ = get_or_create(self.session, LibraryFeature,
+                                    feature_id=self.feature.feature_id,
+                                    library_id=library.library_id)
+        # get cvterm for LibraryFeatureprop
+        try:
+            cvterm = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data['G91a']['data'][FIELD_VALUE])
+        except CodingError:
+            message = "Could not find cv '{}' cvterm '{}'".format(self.process_data[key]['cv'], self.process_data['G91a']['data'][FIELD_VALUE])
+            self.critical_error(self.process_data[key]['data'], message)
+            return
+
+        get_or_create(self.session, LibraryFeatureprop,
+                      library_feature_id=lib_feat.library_feature_id,
+                      type_id=cvterm.cvterm_id)
 
     def load_feat_rel(self, key):
         """Load feature relationship."""
@@ -335,6 +430,7 @@ class ChadoGene(ChadoFeatureObject):
                          cvterm_name,
                          self.process_data[key]['data'][LINE_NUMBER])
             self.process_data[key]['data'] = new_tuple
+
         try:
             self.load_feature_cvtermprop(key)
         except CodingError as e:

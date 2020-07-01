@@ -167,6 +167,16 @@ G39a:
     required: False
     at_required_in_one: True
     dependencies: [G39b,G39c,G39d]
+G37:
+    type: string
+    nullable: True
+    required: False
+    at_forbidden: True
+G38:
+    type: string
+    nullable: True
+    required: False
+    at_forbidden: True
 G39b:
     type: string
     nullable: True
@@ -189,3 +199,17 @@ G40:
     nullable: True
     required: False
     at_forbidden: True
+G91:
+    type: string
+    nullable: True
+    required: False
+    at_forbidden: True
+    dependencies: [G91a]
+    no_bangc: True
+G91a:
+    type: string
+    nullable: True
+    required: False
+    at_forbidden: True
+    no_bangc: True
+    allowed: ['member_of_reagent_collection', 'experimental_result']

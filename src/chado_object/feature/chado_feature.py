@@ -11,7 +11,7 @@ from chado_object.utils.feature_synonym import fs_remove_current_symbol
 from harvdev_utils.char_conversions import sgml_to_plain_text
 
 from harvdev_utils.production import (
-    FeatureRelationship, FeatureRelationshipPub, Featureprop,
+    Cvtermprop, FeatureRelationship, FeatureRelationshipPub, Featureprop,
     FeaturepropPub, FeatureCvterm, FeatureCvtermprop,
     Pub
 )
@@ -19,6 +19,7 @@ from harvdev_utils.chado_functions import (
     feature_name_lookup
 )
 from datetime import datetime
+from sqlalchemy.orm.exc import NoResultFound
 import logging
 log = logging.getLogger(__name__)
 
@@ -116,6 +117,7 @@ class ChadoFeatureObject(ChadoObject):
             items = [self.process_data[key]['data']]
 
         cv_name = self.process_data[key]['cv']
+
         for item in items:
             prop_value = None
             if self.process_data[key]['prop_value']:
@@ -139,6 +141,16 @@ class ChadoFeatureObject(ChadoObject):
                 message = "Unable to find cvterm {} for Cv {}.".format(cvterm_name, cv_name)
                 self.critical_error(item, message)
                 return None
+
+            if 'cvterm_namespace' in self.process_data[key]:
+                try:
+                    self.session.query(Cvtermprop).\
+                        filter(Cvtermprop.cvterm_id == cvterm.cvterm_id,
+                               Cvtermprop.value == self.process_data[key]['cvterm_namespace']).one()
+                except NoResultFound:
+                    message = "Cvterm '{}' Not in the required namespace of '{}'".\
+                        format(cvterm.name, self.process_data[key]['cvterm_namespace'])
+                    self.critical_error(item, message)
 
             # create feature_cvterm
             feat_cvt, _ = get_or_create(self.session, FeatureCvterm,
@@ -222,7 +234,6 @@ class ChadoFeatureObject(ChadoObject):
             return
         value = None
         prop_cv_id = self.cvterm_query(self.process_data[key]['cv'], self.process_data[key]['cvterm'])
-
         if type(self.process_data[key]['data']) is list:
             self.load_featureproplist(key, prop_cv_id)
             return
