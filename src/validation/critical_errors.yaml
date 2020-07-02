@@ -70,6 +70,8 @@ G30:
 G31a:
   - not allowed with bang c or bang d
   - prohibits use of
+G91a:
+  - unallowed value
 DIV1a:
   - null value not allowed
 DIV2a:

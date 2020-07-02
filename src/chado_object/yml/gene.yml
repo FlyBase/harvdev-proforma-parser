@@ -180,6 +180,17 @@ G34:
     value: G34
 G35:
     type: ignore  # dealt with by G26,  G35 just a check for now
+G37:
+    type: grpmember
+    grp_cv: SO
+    grp_cvterm: gene_group
+    gm_cv: grpmember type
+    gm_cvterm: grpmember_feature
+G38:
+    type: grpfeaturerelationship
+    generic_types: ['gene_group', 'gene_array']
+    cv: relationship type
+    cvterm: member_gene_of
 G39a:
     type: featureprop
     cv: property type
@@ -204,9 +215,15 @@ G39d:
 G40:
     type: cvtermprop
     cv: 'FlyBase miscellaneous CV'
+    cvterm_namespace: experimental_tool_descriptor
     prop_value: False
     prop_cvterm: 'common_tool_uses'
     prop_cv: 'feature_cvtermprop type'
+G91:
+    type: ignore  # Dealt with by G91a (has to have a prop)
+G91a:
+    type: libraryfeatureprop
+    cv: library_featureprop type
 
 ########### NO Longer Used!!! ##########################################
 #     'G20a', 'in_title_or_abstract/significant_subject_in_review'
@@ -234,9 +251,6 @@ G40:
 #     'G17v', 'dom_position_effect',     #feature_relatinoship.object_id
 ###############################################################################
 
-
+# Ignoring G33 for now, not sure if needed
 #     'G33',  'feature_dbxref',          #feature_dbxref
-#     'G91',  'library_feature',  #library_feature
-#     'G91a', 'library_featureprop',  #library_featureprop
-#     'G37',  'grpmember_feature', # feature_grpmember (grpmember.grp_id grpmember.type_id cv=grpmember type, cvterm=grpmember_feature feature_grpmember.feature_id G1a) plus organism_grpmember (grpmember.grp_id grpmember.type_id cv=grpmember type, cvterm=grpmember_organism organism_grpmember.organism_id G1a -- only 1 per grp??)
-#     'G38',  'member_gene_of',  # feature_relationship.object Valid Gene symbol TO7c single
+
