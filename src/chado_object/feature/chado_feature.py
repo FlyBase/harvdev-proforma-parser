@@ -176,7 +176,9 @@ class ChadoFeatureObject(ChadoObject):
 
         cv_name = self.process_data[key]['cv']
         cvterm_name = self.process_data[key]['cvterm']
-        feat_type = self.process_data[key]['feat_type']
+        feat_type = None
+        if 'feat_type' in self.process_data[key]:
+            feat_type = self.process_data[key]['feat_type']
         cvterm = get_cvterm(self.session, cv_name, cvterm_name)
         if not cvterm:
             message = "Unable to find cvterm {} for Cv {}.".format(cvterm_name, cv_name)
@@ -272,7 +274,8 @@ class ChadoFeatureObject(ChadoObject):
            cvterm:
 
         """
-        if not self.has_data(key):
+        if not bangc:
+            self.delete_specific_fp(key)
             return
         prop_cv_id = self.cvterm_query(self.process_data[key]['cv'], self.process_data[key]['cvterm'])
 
@@ -284,4 +287,100 @@ class ChadoFeatureObject(ChadoObject):
         for fpp in fpps:
             fp = fpp.featureprop
             self.session.delete(fp)
-            self.session.delete(fpp)
+            # self.session.delete(fpp)
+
+    def delete_specific_fp(self, key, bangc=False):
+        """Delete specific featureprop."""
+        prop_cv_id = self.cvterm_query(self.process_data[key]['cv'], self.process_data[key]['cvterm'])
+
+        # can be list or single item so make it always a list.
+        if type(self.process_data[key]['data']) is list:
+            items = self.process_data[key]['data']
+        else:
+            items = [self.process_data[key]['data']]
+
+        for item in items:
+            # get featureprop pubs and delete them
+            value = item[FIELD_VALUE]
+            fpps = self.session.query(FeaturepropPub).join(Featureprop).\
+                filter(FeaturepropPub.pub_id == self.pub.pub_id,
+                       Featureprop.feature_id == self.feature.feature_id,
+                       Featureprop.type_id == prop_cv_id,
+                       Featureprop.value == value)
+            count = 0
+            for fpp in fpps:
+                fp = fpp.featureprop
+                self.session.delete(fp)
+                self.session.delete(fpp)
+                count += 1
+            if not count:
+                message = "Bangd failed no feature prop pub with value {}".format(value)
+                self.critical_error(item, message)
+
+    def delete_feature_cvtermprop(self, key, bangc=False):
+        """Add feature_cvtermprop.
+
+        If prop_value is False then the value is used as the
+        cvterm else it presumes the value is prop value and
+        the cvterm is given.
+        Could have gone for if cvterm is not defined etc but
+        this way is more explicit.
+        """
+        if type(self.process_data[key]['data']) is list:
+            items = self.process_data[key]['data']
+        else:
+            items = [self.process_data[key]['data']]
+        if not bangc:
+            self.delete_specific_fcp(key, items)
+            return
+
+        # Use cvtermprop to get those to delete.
+        cvterm = get_cvterm(self.session, self.process_data[key]['prop_cv'], self.process_data[key]['prop_cvterm'])
+
+        if not cvterm:
+            message = "Unable to find cvterm {} for Cv {}.".format(self.process_data[key]['prop_cv'], self.process_data[key]['prop_cvterm'])
+            self.critical_error(items[0], message)
+            return None
+
+        fcps = self.session.query(FeatureCvtermprop).join(FeatureCvterm).\
+            filter(FeatureCvtermprop.type_id == cvterm.cvterm_id,
+                   FeatureCvterm.feature_id == self.feature.feature_id,
+                   FeatureCvterm.pub_id == self.pub.pub_id)
+        count = 0
+        # NOTE: NEED TO test old proforma to see what happens exactly.
+        for fcp in fcps:
+            fc = fcp.feature_cvterm
+            self.session.delete(fc)
+            count += 1
+        if not count:
+            message = "Bangc failed no feature cvterm props for this pub"
+            self.critical_error(items[0], message)
+
+    def delete_feature_relationship(self, key, bangc=False):
+        """Delete the feature relationship."""
+        if type(self.process_data[key]['data']) is list:
+            items = self.process_data[key]['data']
+        else:
+            items = [self.process_data[key]['data']]
+        if not bangc:
+            self.delete_specific_fr(key, items)
+            return
+        cv_name = self.process_data[key]['cv']
+        cvterm_name = self.process_data[key]['cvterm']
+        cvterm = get_cvterm(self.session, cv_name, cvterm_name)
+        if not cvterm:
+            message = "Unable to find cvterm {} for Cv {}.".format(cvterm_name, cv_name)
+            self.critical_error(self.process_data[key]['data'], message)
+            return None
+
+        fcps = self.session.query(FeatureRelationshipPub).join(FeatureRelationship).\
+            filter(FeatureRelationship.subject_id == self.feature.feature_id,
+                   FeatureRelationshipPub.pub_id == self.pub.pub_id,
+                   FeatureRelationship.type_id == cvterm.cvterm_id)
+        count = 0
+        for fcp in fcps:
+            count += 1
+            self.session.delete(fcp.feature_relationship)
+        if not count:
+            message = "Bangc failed no feature relationships for this pub and cvterm"
+            self.critical_error(items[0], message)

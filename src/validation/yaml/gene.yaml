@@ -132,7 +132,7 @@ G28b:
     nullable: True
     required: False
 G30:
-    type: string
+    type: [list, string]
     nullable: True
     required: False
     if_new_required: True
@@ -161,12 +161,6 @@ G35:
     nullable: True
     required: False
     at_forbidden: True
-G39a:
-    type: string
-    nullable: True
-    required: False
-    at_required_in_one: True
-    dependencies: [G39b,G39c,G39d]
 G37:
     type: string
     nullable: True
@@ -177,6 +171,12 @@ G38:
     nullable: True
     required: False
     at_forbidden: True
+G39a:
+    type: string
+    nullable: True
+    required: False
+    at_required_in_one: True
+    dependencies: [G39b,G39c,G39d]
 G39b:
     type: string
     nullable: True
