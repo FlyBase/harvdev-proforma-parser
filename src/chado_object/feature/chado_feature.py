@@ -116,6 +116,14 @@ class ChadoFeatureObject(ChadoObject):
         else:
             items = [self.process_data[key]['data']]
 
+        cv_name = self.process_data[key]['prop_cv']
+        cvterm_name = self.process_data[key]['prop_cvterm']
+        props_cvterm = get_cvterm(self.session, cv_name, cvterm_name)
+        if not props_cvterm:
+            message = "Unable to find cvterm {} for Cv {}.".format(cvterm_name, cv_name)
+            self.critical_error(items[0], message)
+            return None
+
         cv_name = self.process_data[key]['cv']
 
         for item in items:
@@ -130,14 +138,6 @@ class ChadoFeatureObject(ChadoObject):
 
             cvterm = get_cvterm(self.session, cv_name, cvterm_name)
             if not cvterm:
-                message = "Unable to find cvterm {} for Cv {}.".format(cvterm_name, cv_name)
-                self.critical_error(item, message)
-                return None
-
-            cv_name = self.process_data[key]['prop_cv']
-            cvterm_name = self.process_data[key]['prop_cvterm']
-            props_cvterm = get_cvterm(self.session, cv_name, cvterm_name)
-            if not props_cvterm:
                 message = "Unable to find cvterm {} for Cv {}.".format(cvterm_name, cv_name)
                 self.critical_error(item, message)
                 return None
@@ -173,6 +173,10 @@ class ChadoFeatureObject(ChadoObject):
         """
         if not self.has_data(key):
             return
+        if type(self.process_data[key]['data']) is list:
+            items = self.process_data[key]['data']
+        else:
+            items = [self.process_data[key]['data']]
 
         cv_name = self.process_data[key]['cv']
         cvterm_name = self.process_data[key]['cvterm']
@@ -185,22 +189,10 @@ class ChadoFeatureObject(ChadoObject):
             self.critical_error(self.process_data[key]['data'], message)
             return None
 
-        if type(self.process_data[key]['data']) is list:
-            for item in self.process_data[key]['data']:
-                name = item[FIELD_VALUE]
-                obj_feat = feature_name_lookup(self.session, name, type_name=feat_type)
-                log.debug("LOOKUP {}: obj feat = {}".format(name, obj_feat))
-                fr, _ = get_or_create(self.session, FeatureRelationship,
-                                      subject_id=self.feature.feature_id,
-                                      object_id=obj_feat.feature_id,
-                                      type_id=cvterm.cvterm_id)
-
-                frp, _ = get_or_create(self.session, FeatureRelationshipPub,
-                                       feature_relationship_id=fr.feature_relationship_id,
-                                       pub_id=self.pub.pub_id)
-        else:
-            name = self.process_data[key]['data'][FIELD_VALUE]
+        for item in items:
+            name = item[FIELD_VALUE]
             obj_feat = feature_name_lookup(self.session, name, type_name=feat_type)
+            log.debug("LOOKUP {}: obj feat = {}".format(name, obj_feat))
             fr, _ = get_or_create(self.session, FeatureRelationship,
                                   subject_id=self.feature.feature_id,
                                   object_id=obj_feat.feature_id,
@@ -316,9 +308,45 @@ class ChadoFeatureObject(ChadoObject):
             if not count:
                 message = "Bangd failed no feature prop pub with value {}".format(value)
                 self.critical_error(item, message)
+        self.process_data[key]['data'] = None
+
+    def delete_specific_fcp(self, key):
+        """Delete feature cvterm based ob feature and cvterm prop."""
+        if key == 'G30':
+            if not self.alter_check_g30(key):
+                return
+        if type(self.process_data[key]['data']) is list:
+            items = self.process_data[key]['data']
+        else:
+            items = [self.process_data[key]['data']]
+        # Use cvtermprop to get those to delete.
+        pcvterm = get_cvterm(self.session, self.process_data[key]['prop_cv'], self.process_data[key]['prop_cvterm'])
+
+        if not pcvterm:
+            message = "Unable to find cvterm {} for Cv {}.".format(self.process_data[key]['prop_cv'], self.process_data[key]['prop_cvterm'])
+            self.critical_error(items[0], message)
+            return
+
+        for item in items:
+            try:
+                cvterm = get_cvterm(self.session, self.process_data[key]['cv'], item[FIELD_VALUE])
+                if not cvterm:
+                    message = "Unable to find cvterm {} for Cv {}.".format(self.process_data[key]['prop_cv'], self.process_data[key]['prop_cvterm'])
+                    self.critical_error(items[0], message)
+                    return
+                fcp = self.session.query(FeatureCvtermprop).join(FeatureCvterm).\
+                    filter(FeatureCvtermprop.type_id == pcvterm.cvterm_id,
+                           FeatureCvterm.feature_id == self.feature.feature_id,
+                           FeatureCvterm.pub_id == self.pub.pub_id,
+                           FeatureCvterm.cvterm_id == cvterm.cvterm_id).one()
+            except NoResultFound:
+                self.critical_error(item, "Unable to find value '{}'.".format(item[FIELD_VALUE]))
+                continue
+            self.session.delete(fcp.feature_cvterm)
+        self.process_data[key]['data'] = None
 
     def delete_feature_cvtermprop(self, key, bangc=False):
-        """Add feature_cvtermprop.
+        """Delete all feature_cvtermprop for a specific prop.
 
         If prop_value is False then the value is used as the
         cvterm else it presumes the value is prop value and
@@ -326,12 +354,9 @@ class ChadoFeatureObject(ChadoObject):
         Could have gone for if cvterm is not defined etc but
         this way is more explicit.
         """
-        if type(self.process_data[key]['data']) is list:
-            items = self.process_data[key]['data']
-        else:
-            items = [self.process_data[key]['data']]
+
         if not bangc:
-            self.delete_specific_fcp(key, items)
+            self.delete_specific_fcp(key)
             return
 
         # Use cvtermprop to get those to delete.
@@ -339,7 +364,7 @@ class ChadoFeatureObject(ChadoObject):
 
         if not cvterm:
             message = "Unable to find cvterm {} for Cv {}.".format(self.process_data[key]['prop_cv'], self.process_data[key]['prop_cvterm'])
-            self.critical_error(items[0], message)
+            self.critical_error(self.process_data[key]['data'][0], message)
             return None
 
         fcps = self.session.query(FeatureCvtermprop).join(FeatureCvterm).\
@@ -354,7 +379,37 @@ class ChadoFeatureObject(ChadoObject):
             count += 1
         if not count:
             message = "Bangc failed no feature cvterm props for this pub"
-            self.critical_error(items[0], message)
+            self.critical_error(self.process_data[key]['data'][0], message)
+
+    def delete_specific_fr(self, key, items):
+        """Delete specific feature relationships."""
+        cv_name = self.process_data[key]['cv']
+        cvterm_name = self.process_data[key]['cvterm']
+        feat_type = None
+        if 'feat_type' in self.process_data[key]:
+            feat_type = self.process_data[key]['feat_type']
+        cvterm = get_cvterm(self.session, cv_name, cvterm_name)
+        if not cvterm:
+            message = "Unable to find cvterm {} for Cv {}.".format(cvterm_name, cv_name)
+            self.critical_error(self.process_data[key]['data'], message)
+            return None
+        log.debug("LOOKUP {}: cvterm".format(cvterm))
+        for item in items:
+            name = item[FIELD_VALUE]
+            obj_feat = feature_name_lookup(self.session, name, type_name=feat_type)
+            log.debug("LOOKUP {}: obj feat = {}".format(name, obj_feat))
+            try:
+                log.debug("LOOKUP si {}, oi {}, pi {}, ti {}".format(self.feature.feature_id, obj_feat.feature_id, self.pub.pub_id, cvterm.cvterm_id))
+                frp = self.session.query(FeatureRelationshipPub).join(FeatureRelationship).\
+                    filter(FeatureRelationship.subject_id == self.feature.feature_id,
+                           FeatureRelationship.object_id == obj_feat.feature_id,
+                           FeatureRelationshipPub.pub_id == self.pub.pub_id,
+                           FeatureRelationship.type_id == cvterm.cvterm_id).one()
+                self.session.delete(frp.feature_relationship)
+            except NoResultFound:
+                message = "No relationship found. So cannot delete it"
+                self.critical_error(item, message)
+        self.process_data[key]['data'] = None
 
     def delete_feature_relationship(self, key, bangc=False):
         """Delete the feature relationship."""
@@ -372,7 +427,7 @@ class ChadoFeatureObject(ChadoObject):
             message = "Unable to find cvterm {} for Cv {}.".format(cvterm_name, cv_name)
             self.critical_error(self.process_data[key]['data'], message)
             return None
-
+        log.debug("LOOKUP: deleting FR for all {} in pub {} cvterm {}".format(self.feature, self.pub.uniquename, cvterm))
         fcps = self.session.query(FeatureRelationshipPub).join(FeatureRelationship).\
             filter(FeatureRelationship.subject_id == self.feature.feature_id,
                    FeatureRelationshipPub.pub_id == self.pub.pub_id,
@@ -380,6 +435,7 @@ class ChadoFeatureObject(ChadoObject):
         count = 0
         for fcp in fcps:
             count += 1
+            log.debug("LOOKUP: deleting feat rel {}".format(fcp.feature_reltionship))
             self.session.delete(fcp.feature_relationship)
         if not count:
             message = "Bangc failed no feature relationships for this pub and cvterm"

@@ -369,7 +369,7 @@ class ChadoGene(ChadoFeatureObject):
                           feature_id=self.feature.feature_id)
 
     def alter_check_g30(self, key):
-        """ Special processing for g10 to get into correct format.
+        """G10 Special processing to correct format.
 
         Return True if successful, False if fails.
         """
@@ -528,9 +528,11 @@ class ChadoGene(ChadoFeatureObject):
                     self.session.query(FeatureRelationshipprop).\
                         filter(FeatureRelationshipprop.feature_relationship_id == fr.feature_relationship_id).one()
                     if has_prop:
+                        log.debug("LOOKUP: deleting fr {}".format(fr))
                         self.session.delete(fr)
                 except NoResultFound:
                     if not has_prop:
+                        log.debug("LOOKUP: deleting fr {}".format(fr))
                         self.session.delete(fr)
 
     def bangd_bandinfo(self, key, has_prop):
@@ -543,24 +545,19 @@ class ChadoGene(ChadoFeatureObject):
                     message = "Unable to find cvterm {} for Cv '{}'.".format(self.process_data[key]['cv'], cvterm_name)
                     self.critical_error(self.process_data[key]['data'], message)
                     return None
-                # so get the feature relationship to delete it.
-                fr, new = get_or_create(self.session, FeatureRelationship,
-                                        subject_id=self.feature.feature_id,
-                                        object_id=bands[idx].feature_id,
-                                        type_id=cvterm.cvterm_id)
-                if new:
+                frps = self.session.query(FeatureRelationshipPub).join(FeatureRelationship).\
+                    filter(FeatureRelationship.subject_id == self.feature.feature_id,
+                           FeatureRelationship.object_id == bands[idx].feature_id,
+                           FeatureRelationship.type_id == cvterm.cvterm_id,
+                           FeatureRelationshipPub.pub_id == self.pub.pub_id)
+                count = 0
+                for frp in frps:
+                    count += 1
+                    log.debug("LOOKUP band deltion: deleting fr {}".format(frp.feature_relationship))
+                    self.session.delete(frp.feature_relationship)
+
+                if not count:
                     message = "Cannot bangd as it does not exist"
                     self.critical_error(item, message)
                     continue
-
-                try:
-                    self.session.query(FeatureRelationshipprop).\
-                        filter(FeatureRelationshipprop.feature_relationship_id == fr.feature_relationship_id).one()
-                    if has_prop:
-                        self.session.delete(fr)
-                except NoResultFound:
-                    if not has_prop:
-                        self.session.delete(fr)
-
-    def bangd_cvtermprop(self, key):
-        pass
+        self.process_data[key]['data'] = None
