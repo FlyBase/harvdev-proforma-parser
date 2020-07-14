@@ -435,7 +435,7 @@ class ChadoFeatureObject(ChadoObject):
         count = 0
         for fcp in fcps:
             count += 1
-            log.debug("LOOKUP: deleting feat rel {}".format(fcp.feature_reltionship))
+            log.debug("LOOKUP: deleting feat rel {}".format(fcp.feature_relationship))
             self.session.delete(fcp.feature_relationship)
         if not count:
             message = "Bangc failed no feature relationships for this pub and cvterm"
