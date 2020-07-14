@@ -19,7 +19,7 @@ from harvdev_utils.chado_functions import (DataError, CodingError, feature_symbo
                                            get_or_create, synonym_name_details)
 from harvdev_utils.production import (Feature, FeatureCvterm,
                                       FeatureCvtermprop, FeatureDbxref, FeaturePub,
-                                      FeatureRelationship,
+                                      FeatureRelationship, FeatureRelationshipPub,
                                       FeatureRelationshipprop,
                                       FeatureGrpmember,
                                       Grp, Grpmember,
@@ -64,10 +64,13 @@ class ChadoGene(ChadoFeatureObject):
                           'grpmember': self.load_grpmember,
                           'grpfeaturerelationship': self.load_gfr,
                           'featureprop': self.load_featureprop,
-                          'featurerelationship': self.load_feat_rel}
+                          'featurerelationship': self.load_feature_relationship}
 
         self.delete_dict = {'synonym': self.delete_synonym,
-                            'cvterm': self.delete_cvterm}
+                            'cvtermprop': self.delete_feature_cvtermprop,
+                            'featureprop': self.delete_featureprop,
+                            'featurerelationship': self.delete_feature_relationship,
+                            'bandinfo': self.delete_bandinfo}
         self.proforma_start_line_number = params.get('proforma_start_line_number')
 
         ###########################################################
@@ -219,33 +222,6 @@ class ChadoGene(ChadoFeatureObject):
                       library_feature_id=lib_feat.library_feature_id,
                       type_id=cvterm.cvterm_id)
 
-    def load_feat_rel(self, key):
-        """Load feature relationship."""
-        if not self.has_data(key):
-            return
-        # list of values at present
-        for item in self.process_data[key]['data']:
-            # look up item, it must one of the types defined by the yml
-            feature = None
-            for type_name in self.process_data[key]['allowed_types']:
-                try:
-                    feature = feature_symbol_lookup(self.session, type_name, item[FIELD_VALUE])
-                except NoResultFound:
-                    pass
-            if not feature:
-                message = "{} Not found for one of the following type {}".format(item[FIELD_VALUE], self.process_data[key]['allowed_types'])
-                self.critical_error(item, message)
-                continue
-
-            # get feature relationship cvterm
-            cvterm = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data[key]['cvterm'])
-
-            # create feature relationship
-            get_or_create(self.session, FeatureRelationship,
-                          subject_id=self.feature.feature_id,
-                          object_id=feature.feature_id,
-                          type_id=cvterm.cvterm_id)
-
     def extra_checks(self):
         """Extra checks.
 
@@ -339,6 +315,10 @@ class ChadoGene(ChadoFeatureObject):
                                   feature_relationship_id=fr.feature_relationship_id,
                                   type_id=prop_cvterm.cvterm_id,
                                   value=self.process_data[key]['propvalue'])
+                # create feature relationship pub
+                get_or_create(self.session, FeatureRelationshipPub,
+                              feature_relationship_id=fr.feature_relationship_id,
+                              pub_id=self.pub.pub_id)
 
     def get_bands(self, key, item):
         """Get bands form fields."""
@@ -388,10 +368,18 @@ class ChadoGene(ChadoFeatureObject):
                           dbxref_id=self.g26_dbxref.dbxref_id,
                           feature_id=self.feature.feature_id)
 
-    def load_cvtermprop(self, key):
-        """Ignore, done by initial setup."""
-        if key == 'G30':
-            g30_pattern = r"""
+    def alter_check_g30(self, key):
+        """G10 Special processing to correct format.
+
+        Return True if successful, False if fails.
+        """
+        okay = True
+        if not self.has_data(key):
+            message = "Cannot bangc G30 with no values"
+            self.critical_error(self.process_data[key]['data'], message)
+            return False
+
+        g30_pattern = r"""
                 ^           # start of line
                 \s*         # possible leading spaces
                 (\S+)       # anything excluding spaces
@@ -400,12 +388,14 @@ class ChadoGene(ChadoFeatureObject):
                 \s*         # possible spaces
                 SO:         # dbxref DB must start be SO:
                 (\d{7})  # accession 7 digit number i.e. 0000011
-            """
-            fields = re.search(g30_pattern, self.process_data[key]['data'][FIELD_VALUE], re.VERBOSE)
+        """
+        new_tuple_array = []
+        for item in self.process_data[key]['data']:
+            fields = re.search(g30_pattern, item[FIELD_VALUE], re.VERBOSE)
             if not fields:
                 message = 'Wrong format should be "none_spaces_name ; SO:[0-9]*7"'
-                self.critical_error(self.process_data[key]['data'], message)
-                return
+                self.critical_error(item, message)
+                continue
 
             cvterm_name = fields.group(1).strip()
             db_name = 'SO'
@@ -417,20 +407,30 @@ class ChadoGene(ChadoFeatureObject):
                 db_xref = get_dbxref(self.session, db_name, db_acc)
             except DataError:
                 message = "Could not find dbxref for db '{}' and accession '{}'".format(db_name, db_acc)
-                self.critical_error(self.process_data[key]['data'], message)
-                return None
+                self.critical_error(item, message)
+                okay = False
+                continue
 
             if cvterm.dbxref.dbxref_id != db_xref.dbxref_id:
                 message = "'{}' Does not match '{}', lookup gave '{}'".\
                     format(cvterm_name, db_xref.accession, cvterm.dbxref.accession)
-                self.critical_error(self.process_data[key]['data'], message)
-                return None
+                self.critical_error(item, message)
+                okay = False
+                continue
 
-            new_tuple = (self.process_data[key]['data'][FIELD_NAME],
+            new_tuple = (item[FIELD_NAME],
                          cvterm_name,
-                         self.process_data[key]['data'][LINE_NUMBER])
-            self.process_data[key]['data'] = new_tuple
+                         item[LINE_NUMBER])
+            new_tuple_array.append(new_tuple)
+        if okay:
+            self.process_data[key]['data'] = new_tuple_array
+        return okay
 
+    def load_cvtermprop(self, key):
+        """Ignore, done by initial setup."""
+        if key == 'G30':
+            if not self.alter_check_g30(key):
+                return
         try:
             self.load_feature_cvtermprop(key)
         except CodingError as e:
@@ -497,3 +497,67 @@ class ChadoGene(ChadoFeatureObject):
     def delete_cvterm(self, key):
         """Ignore, done by initial setup."""
         pass
+
+    def delete_bandinfo(self, key, bangc=False):
+        """Delete the band info.
+
+        The only difference between 10a and 10b is that 10a has a prop.
+        So if a prop is defined we only want to delete those and if not
+        only delete those that do NOT have a prop.
+
+        Deleting the feature relationship cascade deletes the featyrerelationshipprop if
+        there is one.
+        """
+        has_prop = False
+        if 'propvalue' in self.process_data[key] and self.process_data[key]['propvalue']:
+            has_prop = True
+        if not bangc:
+            self.bangd_bandinfo(key, has_prop)
+            return
+        for idx, cvterm_name in enumerate(self.process_data[key]['cvterms']):
+            cvterm = get_cvterm(self.session, self.process_data[key]['cv'], cvterm_name)
+            if not cvterm:
+                message = "Unable to find cvterm {} for Cv '{}'.".format(self.process_data[key]['cv'], cvterm_name)
+                self.critical_error(self.process_data[key]['data'], message)
+                return None
+            frs = self.session.query(FeatureRelationship).\
+                filter(FeatureRelationship.subject_id == self.feature.feature_id,
+                       FeatureRelationship.type_id == cvterm.cvterm_id)
+            for fr in frs:
+                try:
+                    self.session.query(FeatureRelationshipprop).\
+                        filter(FeatureRelationshipprop.feature_relationship_id == fr.feature_relationship_id).one()
+                    if has_prop:
+                        log.debug("LOOKUP: deleting fr {}".format(fr))
+                        self.session.delete(fr)
+                except NoResultFound:
+                    if not has_prop:
+                        log.debug("LOOKUP: deleting fr {}".format(fr))
+                        self.session.delete(fr)
+
+    def bangd_bandinfo(self, key, has_prop):
+        """Delete the specific band info."""
+        for item in self.process_data[key]['data']:  # list of values here.
+            bands = self.get_bands(key, item)
+            for idx, cvterm_name in enumerate(self.process_data[key]['cvterms']):
+                cvterm = get_cvterm(self.session, self.process_data[key]['cv'], cvterm_name)
+                if not cvterm:
+                    message = "Unable to find cvterm {} for Cv '{}'.".format(self.process_data[key]['cv'], cvterm_name)
+                    self.critical_error(self.process_data[key]['data'], message)
+                    return None
+                frps = self.session.query(FeatureRelationshipPub).join(FeatureRelationship).\
+                    filter(FeatureRelationship.subject_id == self.feature.feature_id,
+                           FeatureRelationship.object_id == bands[idx].feature_id,
+                           FeatureRelationship.type_id == cvterm.cvterm_id,
+                           FeatureRelationshipPub.pub_id == self.pub.pub_id)
+                count = 0
+                for frp in frps:
+                    count += 1
+                    log.debug("LOOKUP band deltion: deleting fr {}".format(frp.feature_relationship))
+                    self.session.delete(frp.feature_relationship)
+
+                if not count:
+                    message = "Cannot bangd as it does not exist"
+                    self.critical_error(item, message)
+                    continue
+        self.process_data[key]['data'] = None
