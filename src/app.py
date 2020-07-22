@@ -25,13 +25,16 @@ from transaction.transaction_operations import process_chado_objects_for_transac
 from error.error_tracking import ErrorTracking, WARNING_ERROR
 
 parser = argparse.ArgumentParser(description='Parse proforma files and load them into Chado.')
+group = parser.add_mutually_exclusive_group(required=True)
+group.add_argument('-d', '--directory', help='Specify the directory of proformae to be loaded.')
+group.add_argument('-f', '--file', help='Specify the absolute filepath of an individual proforma file to be loaded.')
+
 parser.add_argument('-v', '--verbose', help='Enable verbose mode.', action='store_true')
 parser.add_argument('-c', '--config', help='Specify the location of the configuration file.', required=True)
-parser.add_argument('-d', '--directory', help='Specify the directory of proformae to be loaded.', required=True)
 parser.add_argument('-m', '--multithread', help='Specify the thread number if threaded.', required=False)
 parser.add_argument('-l', '--load_type', help='Specify whether the load is \'test\' or \'production\'', required=True,
                     choices=['test', 'production'])
-parser.add_argument('-f', '--file', help='Specify the absolute filepath of an individual proforma file to be loaded.', required=False)
+
 args = parser.parse_args()
 
 if args.verbose:
