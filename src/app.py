@@ -31,6 +31,7 @@ parser.add_argument('-d', '--directory', help='Specify the directory of proforma
 parser.add_argument('-m', '--multithread', help='Specify the thread number if threaded.', required=False)
 parser.add_argument('-l', '--load_type', help='Specify whether the load is \'test\' or \'production\'', required=True,
                     choices=['test', 'production'])
+parser.add_argument('-f', '--file', help='Specify the absolute filepath of an individual proforma file to be loaded.', required=False)
 args = parser.parse_args()
 
 if args.verbose:
@@ -217,6 +218,9 @@ def main(session, list_of_proformae):
 if __name__ == '__main__':
     session = create_postgres_session()
 
-    list_of_proformae = obtain_list_of_proformae()
+    if args.file is None:
+        list_of_proformae = obtain_list_of_proformae()
+    else:
+        list_of_proformae = args.file
 
     main(session, list_of_proformae)
