@@ -53,6 +53,7 @@ if args.multithread:
 log = logging.getLogger(__name__)
 
 # Import secure config variables.
+# This needs to be set as an absolute path.
 config = configparser.ConfigParser()
 config.read(args.config)
 
@@ -224,6 +225,7 @@ if __name__ == '__main__':
     if args.file is None:
         list_of_proformae = obtain_list_of_proformae()
     else:
-        list_of_proformae = args.file
+        log.info('Processing single file: {}'.format(args.file))
+        list_of_proformae = [args.file]
 
     main(session, list_of_proformae)
