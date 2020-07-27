@@ -62,4 +62,4 @@ class ValidatorDb(Validator):
         {'type': 'boolean'}
         """
         if check and not value:
-            self._error(field, '!c MUST have a value to be replaced with'.format(field))
+            self._error(field, '!c MUST have a value to be replaced with')

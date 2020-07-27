@@ -89,7 +89,7 @@ def process_featureprop(self, params):
     hhfp, _ = get_or_create(self.session, HumanhealthFeatureprop,
                             humanhealth_feature_id=hh_feature.humanhealth_feature_id,
                             type_id=cvterm.cvterm_id)
-    log.debug("Created hh_feat_prop hh_feat_id is {}".format(hhfp, hh_feature.humanhealth_feature_id))
+    log.debug("Created hh_feat_prop hh_feat_id is {}".format(hh_feature.humanhealth_feature_id))
 
     if 'propval' in params:
         hhfp.value = params['propval']
