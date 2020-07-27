@@ -31,6 +31,10 @@ group.add_argument('-f', '--file', help='Specify the absolute filepath of an ind
 
 parser.add_argument('-v', '--verbose', help='Enable verbose mode.', action='store_true')
 parser.add_argument('-c', '--config', help='Specify the location of the configuration file.', required=True)
+parser.add_argument('-i', '--ip', help='Manually specify a server IP to override the configuration file.',
+                    required=False)
+parser.add_argument('-p', '--port', help='Manually specify a server port to override the configuration file.',
+                    required=False)
 parser.add_argument('-m', '--multithread', help='Specify the thread number if threaded.', required=False)
 parser.add_argument('-l', '--load_type', help='Specify whether the load is \'test\' or \'production\'', required=True,
                     choices=['test', 'production'])
@@ -45,6 +49,7 @@ if args.verbose:
     # logging.getLogger('sqlalchemy.dialects.postgresql').setLevel(logging.INFO)
 else:
     logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(levelname)s -- %(message)s')
+
 
 thread_num = None
 if args.multithread:
@@ -62,11 +67,17 @@ def create_postgres_session():
     """Create the db connection/session."""
     USER = config['connection']['USER']
     PASSWORD = config['connection']['PASSWORD']
-    SERVER = config['connection']['SERVER']
-    try:
-        PORT = config['connection']['PORT']
-    except KeyError:
-        PORT = '5432'
+    if args.ip:
+        SERVER = args.ip
+    else:
+        SERVER = config['connection']['SERVER']
+    if args.port:
+        PORT = args.port
+    else:
+        try:
+            PORT = config['connection']['PORT']
+        except KeyError:
+            PORT = '5432'
     if type(thread_num) is int:
         SERVER += "_{}".format(thread_num)
     DB = config['connection']['DB']
