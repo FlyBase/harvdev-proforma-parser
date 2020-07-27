@@ -34,6 +34,7 @@ def process_entry(entry, session, filename, references):
     chado_object = None
 
     engine = session.get_bind()
+
     @event.listens_for(engine, "before_cursor_execute")
     def comment_sql_calls(conn, cursor, statement, parameters,
                           context, executemany):
