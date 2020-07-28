@@ -28,4 +28,4 @@ script:
     - docker build -t proforma_parser:latest .
     - cd ../../test_scripts
     - docker build -t gocd_testing_run:latest --file Dockerfile .
-    - docker run -v /var/run/docker.sock:/var/run/docker.sock -v proforma_vol:/usr/src/app/data -e 'PROCESSES=4' -e 'DEBUG=False' --name gocd_testing_run --rm -t gocd_testing_run:latest
+    - docker run -v /var/run/docker.sock:/var/run/docker.sock -v proforma_vol:/usr/src/app/data -e 'PROCESSES=8' -e 'DEBUG=False' --name gocd_testing_run --rm -t gocd_testing_run:latest
