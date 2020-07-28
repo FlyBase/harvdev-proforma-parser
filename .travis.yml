@@ -1,7 +1,3 @@
-sudo: required
-
-dist: bionic
-
 git:
     clone: false
 
@@ -11,30 +7,10 @@ python:
 
 cache: pip
 
-env:
-  global:
-    - CACHE_IMAGE_PARSER=proforma_parser
-    - CACHE_IMAGE_GOCD=gocd_testing_run
-    - DOCKER_BUILDKIT: 1
-    - SETUP_REPOSITORY=docker.pkg.github.com/harvdev-gocd/harvdev-proforma-setup/
-    - PARSER_REPOSITORY=docker.pkg.github.com/harvdev-gocd/harvdev-proforma-parser/
-
 before_install:
-  - set -e
-  - echo '{"experimental":true}' | sudo tee /etc/docker/daemon.json
-  - export DOCKER_CLI_EXPERIMENTAL=enabled
-  - sudo rm -rf /var/lib/apt/lists/*
-  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-  - sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) edge"
-  - sudo apt-get update
-  - sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
-  - docker version
   - docker pull busybox
   - docker pull flybase/proformatestdb
   - docker pull flybase/harvdev-docker
-  
-before_script:
-  - docker login https://docker.pkg.github.com -u $REGISTRY_USER -p $REGISTRY_PASS
 
 script:
     # We find our current branch harvdev-proforma-parser using the two lines below.
@@ -47,14 +23,9 @@ script:
     - docker rm helper
     - ./build_test_travis_python.sh
     - cd build_dir/harvdev-proforma-parser
-    - docker build --cache-from $PARSER_REPOSITORY/$CACHE_IMAGE_PARSER:flake8 -t $CACHE_IMAGE_PARSER:flake8 --build-arg BUILDKIT_INLINE_CACHE=1 -f Dockerfile.flake8 .
-    - docker run $CACHE_IMAGE_PARSER:flake8 || travis_terminate 1;
-    - docker build --cache-from $PARSER_REPOSITORY/$CACHE_IMAGE_PARSER:latest -t $CACHE_IMAGE_PARSER:latest --build-arg BUILDKIT_INLINE_CACHE=1 .
+    - docker build -t proforma_parser:flake8 -f Dockerfile.flake8 .
+    - docker run proforma_parser:flake8 || travis_terminate 1;
+    - docker build -t proforma_parser:latest .
     - cd ../../test_scripts
-    - docker build --cache-from $SETUP_REPOSITORY/$CACHE_IMAGE_GOCD:latest -t $CACHE_IMAGE_GOCD:latest --file Dockerfile .
-    - docker run -v /var/run/docker.sock:/var/run/docker.sock -v proforma_vol:/usr/src/app/data -e 'PROCESSES=4' -e 'DEBUG=False' --name gocd_testing_run --rm -t $CACHE_IMAGE_GOCD:latest
-
-after_success:
-  - docker push $SETUP_REPOSITORY/$CACHE_IMAGE_GOCD:latest
-  - docker push $PARSER_REPOSITORY/$CACHE_IMAGE_PARSER:latest
-  - docker push $PARSER_REPOSITORY/$CACHE_IMAGE_PARSER:flake8
+    - docker build gocd_testing_run:latest -t gocd_testing_run:latest --file Dockerfile .
+    - docker run -v /var/run/docker.sock:/var/run/docker.sock -v proforma_vol:/usr/src/app/data -e 'PROCESSES=4' -e 'DEBUG=False' --name gocd_testing_run --rm -t gocd_testing_run:latest
