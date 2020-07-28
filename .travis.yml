@@ -13,12 +13,17 @@ cache: pip
 
 env:
   global:
-    - DOCKER_REPO=flybase/  
+    - CACHE_IMAGE_PARSER=flybase/proforma_parser
+    - CACHE_IMAGE_GOCD=flybase/gocd_testing
+    - DOCKER_BUILDKIT: 1
 
 before_install:
   - docker pull busybox
   - docker pull flybase/proformatestdb
   - docker pull flybase/harvdev-docker
+  
+before_script:
+  - docker login https://docker.pkg.github.com -u $REGISTRY_USER -p $REGISTRY_PASS
 
 script:
     # We find our current branch harvdev-proforma-parser using the two lines below.
@@ -31,9 +36,14 @@ script:
     - docker rm helper
     - ./build_test_travis_python.sh
     - cd build_dir/harvdev-proforma-parser
-    - docker build -t flake8 -f Dockerfile.flake8 .
+    - docker build --cache-from $CACHE_IMAGE_PARSER:flake8 -t $CACHE_IMAGE_PARSER:flake8 --build-arg BUILDKIT_INLINE_CACHE=1 -f Dockerfile.flake8 .
     - docker run flake8 || travis_terminate 1;
-    - docker build -t proforma_parser .
+    - docker build --cache-from $CACHE_IMAGE_PARSER:latest -t $CACHE_IMAGE_PARSER:latest --build-arg BUILDKIT_INLINE_CACHE=1 .
     - cd ../../test_scripts
-    - docker build --tag gocd_testing --file Dockerfile .
+    - docker build --cache-from $CACHE_IMAGE_GOCD:latest -t $CACHE_IMAGE_GOCD:latest --file Dockerfile .
     - docker run -v /var/run/docker.sock:/var/run/docker.sock -v proforma_vol:/usr/src/app/data -e 'PROCESSES=4' -e 'DEBUG=False' --name gocd_testing_run --rm -t gocd_testing
+
+after_success:
+  - docker push $CACHE_IMAGE_GOCD:latest
+  - docker push $CACHE_IMAGE_PARSER:latest
+  - docker push $CACHE_IMAGE_PARSER:flake8
