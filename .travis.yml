@@ -1,3 +1,5 @@
+sudo: required
+
 git:
     clone: false
 
@@ -8,6 +10,10 @@ python:
 services: docker
 
 cache: pip
+
+env:
+  global:
+    - DOCKER_REPO=flybase/  
 
 before_install:
   - docker pull busybox
@@ -30,4 +36,4 @@ script:
     - docker build -t proforma_parser .
     - cd ../../test_scripts
     - docker build --tag gocd_testing --file Dockerfile .
-    - docker run -v /var/run/docker.sock:/var/run/docker.sock -v proforma_vol:/usr/src/app/data -e 'PROCESSES=8' -e 'DEBUG=False' --name gocd_testing_run --rm -t gocd_testing
+    - docker run -v /var/run/docker.sock:/var/run/docker.sock -v proforma_vol:/usr/src/app/data -e 'PROCESSES=4' -e 'DEBUG=False' --name gocd_testing_run --rm -t gocd_testing
