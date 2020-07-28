@@ -28,6 +28,6 @@ script:
     - docker build -t flake8 -f Dockerfile.flake8 .
     - docker run flake8 || travis_terminate 1;
     - docker build -t proforma_parser .
-    - cd ../../
+    - cd ../../test_scripts
     - docker build --tag gocd_testing --file Dockerfile .
     - docker run -v /var/run/docker.sock:/var/run/docker.sock -v proforma_vol:/usr/src/app/data -e 'PROCESSES=12' -e 'DEBUG=False' --name gocd_testing_run --rm -t gocd_testing
