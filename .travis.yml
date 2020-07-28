@@ -16,6 +16,8 @@ env:
     - CACHE_IMAGE_PARSER=flybase/proforma_parser
     - CACHE_IMAGE_GOCD=flybase/gocd_testing_run
     - DOCKER_BUILDKIT: 1
+    - SETUP_REPOSITORY=docker.pkg.github.com/harvdev-gocd/harvdev-proforma-setup/
+    - PARSER_REPOSITORY=docker.pkg.github.com/harvdev-gocd/harvdev-proforma-parser/
 
 before_install:
   - set -e
@@ -45,14 +47,14 @@ script:
     - docker rm helper
     - ./build_test_travis_python.sh
     - cd build_dir/harvdev-proforma-parser
-    - docker build --cache-from $CACHE_IMAGE_PARSER:flake8 -t $CACHE_IMAGE_PARSER:flake8 --build-arg BUILDKIT_INLINE_CACHE=1 -f Dockerfile.flake8 .
+    - docker build --cache-from $PARSER_REPOSITORY/$CACHE_IMAGE_PARSER:flake8 $CACHE_IMAGE_PARSER:flake8 -t $CACHE_IMAGE_PARSER:flake8 --build-arg BUILDKIT_INLINE_CACHE=1 -f Dockerfile.flake8 .
     - docker run $CACHE_IMAGE_PARSER:flake8 || travis_terminate 1;
-    - docker build --cache-from $CACHE_IMAGE_PARSER:latest -t $CACHE_IMAGE_PARSER:latest --build-arg BUILDKIT_INLINE_CACHE=1 .
+    - docker build --cache-from $PARSER_REPOSITORY/$CACHE_IMAGE_PARSER:latest -t $CACHE_IMAGE_PARSER:latest --build-arg BUILDKIT_INLINE_CACHE=1 .
     - cd ../../test_scripts
-    - docker build --cache-from $CACHE_IMAGE_GOCD:latest -t $CACHE_IMAGE_GOCD:latest --file Dockerfile .
-    - docker run -v /var/run/docker.sock:/var/run/docker.sock -v proforma_vol:/usr/src/app/data -e 'PROCESSES=4' -e 'DEBUG=False' --name gocd_testing_run --rm -t CACHE_IMAGE_GOCD:latest
+    - docker build --cache-from $SETUP_REPOSITORY/$CACHE_IMAGE_GOCD:latest -t $CACHE_IMAGE_GOCD:latest --file Dockerfile .
+    - docker run -v /var/run/docker.sock:/var/run/docker.sock -v proforma_vol:/usr/src/app/data -e 'PROCESSES=4' -e 'DEBUG=False' --name gocd_testing_run --rm -t $CACHE_IMAGE_GOCD:latest
 
 after_success:
-  - docker push $CACHE_IMAGE_GOCD:latest
-  - docker push $CACHE_IMAGE_PARSER:latest
-  - docker push $CACHE_IMAGE_PARSER:flake8
+  - docker push $SETUP_REPOSITORY/$CACHE_IMAGE_GOCD:latest
+  - docker push $PARSER_REPOSITORY/$CACHE_IMAGE_PARSER:latest
+  - docker push $PARSER_REPOSITORY/$CACHE_IMAGE_PARSER:flake8
