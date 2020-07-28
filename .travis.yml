@@ -23,6 +23,7 @@ script:
     - docker run -v proforma_vol:/data --name helper busybox true
     - docker cp test_scripts/test_files helper:/data
     - docker rm helper
+    - ./build_test_travis_python.sh
     - cd build_dir/harvdev-proforma-parser
     - docker build -t flake8 -f Dockerfile.flake8 .
     - docker run flake8 || travis_terminate 1;
