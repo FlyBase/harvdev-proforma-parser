@@ -5,7 +5,14 @@ language: python
 python:
     - "3.6"
 
+services: docker
+
 cache: pip
+
+before_install:
+  - docker pull busybox
+  - docker pull flybase/proformatestdb
+  - docker pull flybase/harvdev-docker
 
 script:
     # We find our current branch harvdev-proforma-parser using the two lines below.
@@ -13,9 +20,13 @@ script:
     - echo "TRAVIS_BRANCH=$TRAVIS_BRANCH, PR=$PR, BRANCH=$BRANCH"
     - git clone git@github.com:FlyBase/harvdev-proforma-setup.git
     - cd harvdev-proforma-setup
-    - ./build_test_travis_python.sh
-    - pip install flake8==3.7.9
-    - flake8 build_dir/harvdev-proforma-parser || travis_terminate 1;
-    - pip install -r requirements.txt
-    - python ./test_scripts/run_tests.py -p
-    - cat test_errors.log || true
+    - docker run -v proforma_vol:/data --name helper busybox true
+    - docker cp test_scripts/test_files helper:/data
+    - docker rm helper
+    - cd build_dir/harvdev-proforma-parser
+    - docker build -t flake8 -f Dockerfile.flake8 .
+    - docker run flake8 || travis_terminate 1;
+    - docker build -t proforma_parser .
+    - cd ../../
+    - docker build --tag gocd_testing --file Dockerfile .
+    - docker run -v /var/run/docker.sock:/var/run/docker.sock -v proforma_vol:/usr/src/app/data -e 'PROCESSES=12' -e 'DEBUG=False' --name gocd_testing_run --rm -t gocd_testing
