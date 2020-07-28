@@ -47,7 +47,7 @@ script:
     - docker rm helper
     - ./build_test_travis_python.sh
     - cd build_dir/harvdev-proforma-parser
-    - docker build --cache-from $PARSER_REPOSITORY/$CACHE_IMAGE_PARSER:flake8 $CACHE_IMAGE_PARSER:flake8 -t $CACHE_IMAGE_PARSER:flake8 --build-arg BUILDKIT_INLINE_CACHE=1 -f Dockerfile.flake8 .
+    - docker build --cache-from $PARSER_REPOSITORY/$CACHE_IMAGE_PARSER:flake8 -t $CACHE_IMAGE_PARSER:flake8 --build-arg BUILDKIT_INLINE_CACHE=1 -f Dockerfile.flake8 .
     - docker run $CACHE_IMAGE_PARSER:flake8 || travis_terminate 1;
     - docker build --cache-from $PARSER_REPOSITORY/$CACHE_IMAGE_PARSER:latest -t $CACHE_IMAGE_PARSER:latest --build-arg BUILDKIT_INLINE_CACHE=1 .
     - cd ../../test_scripts
