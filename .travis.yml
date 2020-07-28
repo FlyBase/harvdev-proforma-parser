@@ -13,8 +13,8 @@ cache: pip
 
 env:
   global:
-    - CACHE_IMAGE_PARSER=flybase/proforma_parser
-    - CACHE_IMAGE_GOCD=flybase/gocd_testing_run
+    - CACHE_IMAGE_PARSER=proforma_parser
+    - CACHE_IMAGE_GOCD=gocd_testing_run
     - DOCKER_BUILDKIT: 1
     - SETUP_REPOSITORY=docker.pkg.github.com/harvdev-gocd/harvdev-proforma-setup/
     - PARSER_REPOSITORY=docker.pkg.github.com/harvdev-gocd/harvdev-proforma-parser/
