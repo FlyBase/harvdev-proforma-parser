@@ -33,6 +33,8 @@ parser.add_argument('-v', '--verbose', help='Enable verbose mode.', action='stor
 parser.add_argument('-c', '--config', help='Specify the location of the configuration file.', required=True)
 parser.add_argument('-i', '--ip', help='Manually specify a server IP to override the configuration file.',
                     required=False)
+parser.add_argument('-db', '--database', help='Manually specify a database to override the configuration file.',
+                    required=False)
 parser.add_argument('-p', '--port', help='Manually specify a server port to override the configuration file.',
                     required=False)
 parser.add_argument('-m', '--multithread', help='Specify the thread number if threaded.', required=False)
@@ -80,7 +82,10 @@ def create_postgres_session():
             PORT = '5432'
     if type(thread_num) is int:
         SERVER += "_{}".format(thread_num)
-    DB = config['connection']['DB']
+    if args.database:
+        DB = args.database
+    else:
+        DB = config['connection']['DB']
 
     log.info('Using server: {}'.format(SERVER))
     log.info('Using database: {}'.format(DB))
