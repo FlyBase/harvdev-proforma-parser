@@ -7,15 +7,43 @@ python:
 
 cache: pip
 
+before_install:
+  # Pull down our images from Dockerhub.
+  - docker pull busybox  # A very small image used for copying files to our volume.
+  - docker pull flybase/proformatestdb
+  - docker pull flybase/harvdev-docker
+
 script:
     # We find our current branch harvdev-proforma-parser using the two lines below.
     - export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
     - echo "TRAVIS_BRANCH=$TRAVIS_BRANCH, PR=$PR, BRANCH=$BRANCH"
+    
+    # Clone in our proforma setup repository.
     - git clone git@github.com:FlyBase/harvdev-proforma-setup.git
     - cd harvdev-proforma-setup
+    
+    # Run the busybox countainer and mount the volume proforma_vol to the folder /data within busybox.
+    - docker run -v proforma_vol:/data --name helper busybox true
+    - docker cp test_scripts/test_files helper:/data  # Copy our test data into the volume.
+    - docker rm helper  # Remove the busybox container, it's no longer needed.
+    
+    # Setup directories for testing.
     - ./build_test_travis_python.sh
-    - pip install flake8==3.7.9
-    - flake8 build_dir/harvdev-proforma-parser || travis_terminate 1;
-    - pip install -r requirements.txt
-    - python ./test_scripts/run_tests.py -p
-    - cat test_errors.log || true
+    - cd build_dir/harvdev-proforma-parser
+    
+    # Build the flake8 version of our proforma parser. 
+    # Run flake8 and terminate Travis if it fails.
+    - docker build -t proforma_parser:flake8 --file Dockerfile.flake8 .
+    - docker run proforma_parser:flake8 || travis_terminate 1;
+    
+    # Build the test version of the proforma parser.
+    - docker build -t proforma_parser:latest .
+    - cd ../../test_scripts
+    
+    # Build the gocd_testing_run container that controls the testing process.
+    # This container spawns off copies of proforma_parser & proformatestdb.
+    # Each pair of proforma_parser & proformatestdb runs a single test.
+    - docker build -t gocd_testing_run:latest --file Dockerfile .
+    
+    # Run our tests via gocd_testing_run.
+    - docker run -v /var/run/docker.sock:/var/run/docker.sock -v proforma_vol:/usr/src/app/data -e 'PROCESSES=8' -e 'DEBUG=False' --name gocd_testing_run --rm -t gocd_testing_run:latest

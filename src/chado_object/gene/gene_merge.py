@@ -96,7 +96,7 @@ def get_merge_genes(self, key):
     if self.session.query(Featureloc).filter(Featureloc.feature_id == self.feature.feature_id).one_or_none():
         featlock_count += 1
     if featlock_count > 1:
-        message = "More than one Gene has featureloc which is not allowed in merges".format(self.process_data[key]['data'][0])
+        message = "More than one Gene has featureloc which is not allowed in merges."
         self.critical_error(merge_gene_symbol_tuple, message)
     if self.process_data['G1g']['data'][FIELD_VALUE] == 'y' and not found:
         message = "G1a {} must be in G1f list when G1g is set to y".format(self.process_data['G1a']['data'][FIELD_VALUE])

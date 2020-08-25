@@ -143,7 +143,8 @@ class ChadoGene(ChadoFeatureObject):
                 filter(Grp.name == self.process_data[key]['data'][FIELD_VALUE],
                        Grp.type_id == grp_cvt.cvterm_id).one()
         except NoResultFound:
-            message = "grp '{}' of type {} not found in the database".format(self.process_data[key]['data'][FIELD_VALUE])
+            message = "grp '{}' of type {} not found in the database"\
+                .format(self.process_data[key]['data'][FIELD_VALUE], grp_cvt)
             self.critical_error(self.process_data[key]['data'], message)
             return
 

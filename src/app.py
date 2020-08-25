@@ -25,12 +25,22 @@ from transaction.transaction_operations import process_chado_objects_for_transac
 from error.error_tracking import ErrorTracking, WARNING_ERROR
 
 parser = argparse.ArgumentParser(description='Parse proforma files and load them into Chado.')
+group = parser.add_mutually_exclusive_group(required=True)
+group.add_argument('-d', '--directory', help='Specify the directory of proformae to be loaded.')
+group.add_argument('-f', '--file', help='Specify the absolute filepath of an individual proforma file to be loaded.')
+
 parser.add_argument('-v', '--verbose', help='Enable verbose mode.', action='store_true')
 parser.add_argument('-c', '--config', help='Specify the location of the configuration file.', required=True)
-parser.add_argument('-d', '--directory', help='Specify the directory of proformae to be loaded.', required=True)
+parser.add_argument('-i', '--ip', help='Manually specify a server IP to override the configuration file.',
+                    required=False)
+parser.add_argument('-db', '--database', help='Manually specify a database to override the configuration file.',
+                    required=False)
+parser.add_argument('-p', '--port', help='Manually specify a server port to override the configuration file.',
+                    required=False)
 parser.add_argument('-m', '--multithread', help='Specify the thread number if threaded.', required=False)
 parser.add_argument('-l', '--load_type', help='Specify whether the load is \'test\' or \'production\'', required=True,
                     choices=['test', 'production'])
+
 args = parser.parse_args()
 
 if args.verbose:
@@ -42,6 +52,7 @@ if args.verbose:
 else:
     logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(levelname)s -- %(message)s')
 
+
 thread_num = None
 if args.multithread:
     thread_num = int(args.multithread)
@@ -49,6 +60,7 @@ if args.multithread:
 log = logging.getLogger(__name__)
 
 # Import secure config variables.
+# This needs to be set as an absolute path.
 config = configparser.ConfigParser()
 config.read(args.config)
 
@@ -57,14 +69,23 @@ def create_postgres_session():
     """Create the db connection/session."""
     USER = config['connection']['USER']
     PASSWORD = config['connection']['PASSWORD']
-    SERVER = config['connection']['SERVER']
-    try:
-        PORT = config['connection']['PORT']
-    except KeyError:
-        PORT = '5432'
+    if args.ip:
+        SERVER = args.ip
+    else:
+        SERVER = config['connection']['SERVER']
+    if args.port:
+        PORT = args.port
+    else:
+        try:
+            PORT = config['connection']['PORT']
+        except KeyError:
+            PORT = '5432'
     if type(thread_num) is int:
         SERVER += "_{}".format(thread_num)
-    DB = config['connection']['DB']
+    if args.database:
+        DB = args.database
+    else:
+        DB = config['connection']['DB']
 
     log.info('Using server: {}'.format(SERVER))
     log.info('Using database: {}'.format(DB))
@@ -217,6 +238,10 @@ def main(session, list_of_proformae):
 if __name__ == '__main__':
     session = create_postgres_session()
 
-    list_of_proformae = obtain_list_of_proformae()
+    if args.file is None:
+        list_of_proformae = obtain_list_of_proformae()
+    else:
+        log.info('Processing single file: {}'.format(args.file))
+        list_of_proformae = [args.file]
 
     main(session, list_of_proformae)
