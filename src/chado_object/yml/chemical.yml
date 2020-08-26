@@ -36,13 +36,20 @@ CH3b:
   value: CH3c
 CH3c: # Processed by CH3b if new
   type: value
-CH4a:
-  type: feature_relationship
-  cv: relationship type
-  cvterm: derived_from
-  prop: CH4b
-CH4b: # processed by CH4a
+CH3d: # main chebi ref. Done on creation.
   type: ignore
-  # feature_relationshipprop
-  cv: property type
-  cvterm: comment
+# CH4a:
+#   type: feature_relationship
+#   cv: relationship type
+#   cvterm: derived_from
+#   prop: CH4b
+# CH4b: # processed by CH4a
+#   type: ignore
+#   # feature_relationshipprop
+#   cv: property type
+#   cvterm: comment
+CH5a:
+    type: featureprop
+    cv: property type
+    cvterm: comment
+    value: CH5a
