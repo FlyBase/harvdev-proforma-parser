@@ -466,19 +466,22 @@ class ChadoChem(ChadoFeatureObject):
         if chemical['synonyms']:
             log.debug("Adding non current synonyms {}".format(chemical['synonyms']))
             for item in chemical['synonyms']:
-                item = item[:255]  # Max 255 chars
-                sgml = sgml_to_unicode(sub_sup_to_sgml(item))
-                if item in seen_it:
-                    log.debug("Ignoring {} as already seen".format(item))
-                    continue
-                log.debug("Adding synonym {}".format(item))
-                new_synonym, _ = get_or_create(self.session, Synonym, type_id=symbol_cv_id,
-                                               synonym_sgml=sgml,
-                                               name=item)
-                seen_it.add(item)
-                fs, _ = get_or_create(self.session, FeatureSynonym, feature_id=self.feature.feature_id,
-                                      pub_id=pub_id, synonym_id=new_synonym.synonym_id)
-                fs.is_current = False
+                for lowercase in [True, False]:
+                    name = item[:255]  # Max 255 chars
+                    if lowercase:
+                        name = name.lower()
+                    sgml = sgml_to_unicode(sub_sup_to_sgml(name))
+                    if name in seen_it:
+                        log.debug("Ignoring {} as already seen".format(name))
+                        continue
+                    log.debug("Adding synonym {}".format(name))
+                    new_synonym, _ = get_or_create(self.session, Synonym, type_id=symbol_cv_id,
+                                                   synonym_sgml=sgml,
+                                                   name=name)
+                    seen_it.add(name)
+                    fs, _ = get_or_create(self.session, FeatureSynonym, feature_id=self.feature.feature_id,
+                                          pub_id=pub_id, synonym_id=new_synonym.synonym_id)
+                    fs.is_current = False
 
         log.debug("Adding new synonym entry for {}.".format(chemical['identifier']))
 
