@@ -16,6 +16,10 @@ from harvdev_utils.chado_functions import (
     feature_synonym_lookup, feature_name_lookup,
     get_default_organism_id
 )
+from harvdev_utils.char_conversions import (
+    sub_sup_to_sgml, sgml_to_unicode, sgml_to_plain_text
+)
+
 from datetime import datetime
 import os
 import logging
@@ -160,7 +164,7 @@ class ChadoChem(ChadoFeatureObject):
         """Get pub id for Chemical."""
         return self.chemical_information['PubID']
 
-    def alt_comparison(self):
+    def alt_comparison(self):  # noqa
         """Compare with Alternative Chemical ID."""
         if not self.has_data('CH3d'):
             return
@@ -212,7 +216,7 @@ class ChadoChem(ChadoFeatureObject):
         Add feature dbxref ? Done
         Add feature Synonym ? Done
         """
-        if not self.has_data('CH3d'):
+        if not self.has_data('CH3d') or not self.alt_chemical_information['PubID']:
             return
         # Add pub link to Chebi or pubchem depending on type
         feature_pub, _ = get_or_create(
@@ -221,19 +225,22 @@ class ChadoChem(ChadoFeatureObject):
             pub_id=self.alt_chemical_information['PubID'])
         log.debug("Created new feature_pub for alt chem db: {}".format(feature_pub.feature_pub_id))
 
-        # Add feature dbxref
-        dbxref, _ = get_or_create(self.session, Dbxref, db_id=self.alt_chemical_information['DBObject'].db_id,
-                                  accession=self.alt_chemical_information['accession'])
+        self.add_dbxref(self.alt_chemical_information)
 
+        # Add synonym including Pubchem/CHEBI bit
+        self.alt_chemical_information['synonyms'].append(self.alt_chemical_information['identifier'])
+        self.process_synonyms_from_external_db(self.alt_chemical_information, alt=True)
+
+    def add_dbxref(self, chemical):
+        """Add dbxref."""
+        dbxref, _ = get_or_create(self.session, Dbxref,
+                                  db_id=chemical['DBObject'].db_id,
+                                  accession=chemical['accession'])
+
+        log.debug("Updating FBch with dbxref.dbxref_id: {}".format(dbxref.dbxref_id))
         f_dbx, _ = get_or_create(self.session, FeatureDbxref,
                                  feature_id=self.feature.feature_id,
                                  dbxref_id=dbxref.dbxref_id)
-
-        # Add synonym including Pubchem/CHEBI bit
-        symbol_cv_id = self.cvterm_query('synonym type', 'symbol')
-        new_synonym, _ = get_or_create(self.session, Synonym, type_id=symbol_cv_id,
-                                       synonym_sgml=self.alt_chemical_information['identifier'],
-                                       name=self.alt_chemical_information['identifier'])
 
     def get_or_create_chemical(self):
         """Validate the identifier in an external database.
@@ -255,7 +262,12 @@ class ChadoChem(ChadoFeatureObject):
             return
 
         # So we have a new chemical, lets get the data for this.
-        identifier_found = self.validate_fetch_identifier_at_external_db('CH3a', self.chemical_information)
+        try:
+            identifier_found = self.validate_fetch_identifier_at_external_db('CH3a', self.chemical_information)
+        except Exception as e:
+            message = "Lookup failed and generated the error {}.".format(e)
+            self.critical_error(self.process_data['CH3a']['data'], message)
+            return
 
         if not identifier_found:
             return
@@ -276,20 +288,19 @@ class ChadoChem(ChadoFeatureObject):
         # Look up organism id.
         organism_id = get_default_organism_id(self.session)
 
+        if self.has_data('CH1a'):
+            name = sgml_to_plain_text(self.process_data['CH1a']['data'][FIELD_VALUE])
+        else:
+            name = self.chemical_information['name']
+
         self.feature, _ = get_or_create(self.session, Feature, organism_id=organism_id,
-                                        name=self.chemical_information['name'].lower(),
+                                        name=name,
                                         type_id=chemical_cvterm_id,
                                         uniquename='FBch:temp_0')
 
         log.debug("New chemical entry created: {}".format(self.feature.name))
 
-        dbx_ref, _ = get_or_create(self.session, Dbxref,
-                                   db_id=self.chemical_information['DBObject'].db_id,
-                                   accession=self.chemical_information['accession'])
-
-        log.debug("Creating new dbxref: {}".format(dbx_ref.dbxref_id))
-        log.debug("Updating FBch with dbxref.dbxref_id: {}".format(dbx_ref.dbxref_id))
-        self.feature.dbxref_id = dbx_ref.dbxref_id
+        self.add_dbxref(self.chemical_information)
 
         feature_pub, _ = get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id,
                                        pub_id=self.pub.pub_id)
@@ -302,11 +313,8 @@ class ChadoChem(ChadoFeatureObject):
 
         self.add_alternative_info()
 
-        # TODO Do we ever remove feature_pubs once all synonym connections are removed?
-        # TODO Probably not because other objects can create feature_pub relationships?
-
         # Add the identifier as a synonym and other synonyms
-        self.process_synonyms_from_external_db()
+        self.process_synonyms_from_external_db(self.chemical_information)
 
         # Add the description as a featureprop.
         self.add_description_to_featureprop()
@@ -336,7 +344,7 @@ class ChadoChem(ChadoFeatureObject):
         # check name from lookup
         #
         entry_already_exists = None
-        entry_already_exists = self.chemical_feature_lookup(organism_id, 'CH3a', self.chemical_information['name'].lower(), current=True)
+        entry_already_exists = self.chemical_feature_lookup(organism_id, 'CH3a', self.chemical_information['name'], current=True)
         if entry_already_exists:
             self.new_chemical_entry = False
             self.warning_error(self.process_data['CH3a']['data'],
@@ -361,7 +369,7 @@ class ChadoChem(ChadoFeatureObject):
         #
         # Check for any symbol synonym can be not current and if found Just give a warning
         #
-        entry_already_exists = self.chemical_feature_lookup(organism_id, 'CH3a', self.chemical_information['name'].lower(), current=False)
+        entry_already_exists = self.chemical_feature_lookup(organism_id, 'CH3a', self.chemical_information['name'], current=False)
         if entry_already_exists:
             self.new_chemical_entry = False
             return entry_already_exists
@@ -444,44 +452,51 @@ class ChadoChem(ChadoFeatureObject):
         get_or_create(self.session, Featureprop, feature_id=self.feature.feature_id,
                       type_id=description_cvterm_id, value=self.chemical_information['inchikey'])
 
-    def process_synonyms_from_external_db(self):
+    def process_synonyms_from_external_db(self, chemical, alt=False):
         """
         Add the synonyms obtained from the external db for the chemical.
 
         :return:
         """
-        # insert into feature_synonym(is_internal, pub_id, synonym_id, is_current, feature_id) values('FALSE', 221699, 6555779, 'FALSE', 3107733)
-
-        log.debug('Looking up synonym type cv and symbol cv term.')
         symbol_cv_id = self.cvterm_query('synonym type', 'symbol')
 
-        if self.chemical_information['source'] == "CHEBI":
-            pub_id = self.chebi_pub_id
-        else:
-            pub_id = self.pubchem_pub_id
+        pub_id = chemical['PubID']
 
         seen_it = set()
-        if self.chemical_information['synonyms']:
-            log.debug("Adding non current synonyms {}".format(self.chemical_information['synonyms']))
-            for item in self.chemical_information['synonyms']:
-                item_lower = item.lower()[:255]  # Max 255 chars
-                if item_lower in seen_it:
-                    log.debug("Ignoring {} as already seen".format(item_lower))
-                    continue
-                log.debug("Adding synonym {}".format(item_lower))
-                new_synonym, _ = get_or_create(self.session, Synonym, type_id=symbol_cv_id,
-                                               synonym_sgml=item_lower,
-                                               name=item_lower)
-                seen_it.add(item_lower)
-                fs, _ = get_or_create(self.session, FeatureSynonym, feature_id=self.feature.feature_id,
-                                      pub_id=pub_id, synonym_id=new_synonym.synonym_id)
-                fs.is_current = False
+        if chemical['synonyms']:
+            log.debug("Adding non current synonyms {}".format(chemical['synonyms']))
+            for item in chemical['synonyms']:
+                for lowercase in [True, False]:
+                    name = item[:255]  # Max 255 chars
+                    if lowercase:
+                        name = name.lower()
+                    sgml = sgml_to_unicode(sub_sup_to_sgml(name))
+                    if name in seen_it:
+                        log.debug("Ignoring {} as already seen".format(name))
+                        continue
+                    log.debug("Adding synonym {}".format(name))
+                    new_synonym, _ = get_or_create(self.session, Synonym, type_id=symbol_cv_id,
+                                                   synonym_sgml=sgml,
+                                                   name=name)
+                    seen_it.add(name)
+                    fs, _ = get_or_create(self.session, FeatureSynonym, feature_id=self.feature.feature_id,
+                                          pub_id=pub_id, synonym_id=new_synonym.synonym_id)
+                    fs.is_current = False
 
-        log.debug("Adding new synonym entry for {}.".format(self.chemical_information['identifier']))
-        name_lower = self.chemical_information['name'].lower()[:255]
+        log.debug("Adding new synonym entry for {}.".format(chemical['identifier']))
+
+        if alt:  # If alternative then already done.
+            return
+        if self.has_data('CH1a'):
+            name = sgml_to_plain_text(self.process_data['CH1a']['data'][FIELD_VALUE])
+            sgml = sgml_to_unicode(sub_sup_to_sgml(self.process_data['CH1a']['data'][FIELD_VALUE]))
+        else:
+            name = chemical['name'][:255]  # removes .lower()
+            sgml = sgml_to_unicode(sub_sup_to_sgml(name))
+
         new_synonym, _ = get_or_create(self.session, Synonym, type_id=symbol_cv_id,
-                                       synonym_sgml=name_lower,
-                                       name=name_lower)
+                                       synonym_sgml=sgml,
+                                       name=name)
 
         fs, _ = get_or_create(self.session, FeatureSynonym, feature_id=self.feature.feature_id,
                               pub_id=pub_id, synonym_id=new_synonym.synonym_id)
@@ -506,8 +521,9 @@ class ChadoChem(ChadoFeatureObject):
         """Lookup the chemical feature."""
         log.debug("chemical feature lookup for {} and current = {}".format(name, current))
         entry = None
+        name = sgml_to_plain_text(name)
         if current:
-            entry = feature_name_lookup(self.session, name.lower(),
+            entry = feature_name_lookup(self.session, name,
                                         organism_id=organism_id, type_name='chemical entity')
         else:
             try:
@@ -554,9 +570,11 @@ class ChadoChem(ChadoFeatureObject):
         ChEBI does not provide this service.
         """
         identifier_unprocessed = self.process_data[process_key]['data'][FIELD_VALUE]
-
+        identifier_unprocessed = sgml_to_unicode(sub_sup_to_sgml(identifier_unprocessed))
         chemical['identifier'], chemical['name'] = self.split_identifier_and_name(identifier_unprocessed, process_key)
-        if not chemical['name']:
+        if not chemical['name'] or not chemical['name'].strip():
+            message = "Wrong format should be 'DBNAME:number ; text'"
+            self.critical_error(self.process_data[process_key]['data'], message)
             return False
         log.debug('Found identifier: {} and identifier_name: {}'.format(chemical['identifier'], chemical['name']))
 
@@ -606,11 +624,11 @@ class ChadoChem(ChadoFeatureObject):
         # Check whether the name intended to be used in FlyBase matches
         # the name returned from the database.
         if self.has_data('CH1a'):
-            if chebi.name.lower() != self.process_data['CH1a']['data'][FIELD_VALUE].lower():
+            plain_text = sgml_to_plain_text(self.process_data['CH1a']['data'][FIELD_VALUE])
+            if chebi.name.lower() != plain_text.lower():
                 self.warning_error(self.process_data['CH1a']['data'],
                                    'ChEBI name does not match name specified for FlyBase: {} -> {}'
-                                   .format(chebi.name,
-                                           self.process_data['CH1a']['data'][FIELD_VALUE]))
+                                   .format(chebi.name, plain_text))
             else:
                 log.debug('Queried name \'{}\' matches name used in proforma \'{}\''.format(chebi.name, self.process_data['CH1a']['data'][FIELD_VALUE]))
 
@@ -618,11 +636,9 @@ class ChadoChem(ChadoFeatureObject):
         # the name returned from the database.
         if chemical['name']:
             if chebi.name.lower() != chemical['name'].lower():
-                self.critical_error(self.process_data[process_key]['data'],
-                                    'ChEBI name does not match name specified in identifier field: {} -> {}'
-                                    .format(chebi.name,
-                                            chemical['name']))
-                return False
+                message = 'ChEBI name does not match name specified in identifier field: {} -> {}'.\
+                    format(chebi.name, chemical['name'])
+                self.warning_error(self.process_data[process_key]['data'], message)
 
         chemical['name'] = chebi.name
         chemical['inchikey'] = chebi.inchikey
@@ -660,16 +676,25 @@ class ChadoChem(ChadoFeatureObject):
         pubchem = ExternalLookup.lookup_by_id('pubchem', chemical['accession'], synonyms=True)
         if pubchem.error:
             log.error(pubchem.error)
+            self.critical_error(self.process_data[process_key]['data'], "AHHHHHHH {}".format(pubchem.error))
             return False
 
         if self.has_data('CH1a'):
-            if pubchem.name.lower() != self.process_data['CH1a']['data'][FIELD_VALUE].lower():
+            plain_text = sgml_to_plain_text(self.process_data['CH1a']['data'][FIELD_VALUE])
+            if pubchem.name.lower() != plain_text.lower():
                 self.warning_error(self.process_data['CH1a']['data'],
                                    'PubChem name does not match name specified for FlyBase: {} -> {}'
-                                   .format(pubchem.name,
-                                           self.process_data['CH1a']['data'][FIELD_VALUE]))
+                                   .format(pubchem.name, plain_text))
             else:
-                log.debug('Queried name \'{}\' matches name used in proforma \'{}\''.format(pubchem.name, self.process_data['CH1a']['data'][FIELD_VALUE]))
+                log.debug('Queried name \'{}\' matches name used in proforma \'{}\''.format(pubchem.name, plain_text))
+
+        # Check whether the identifier_name supplied by the curator matches
+        # the name returned from the database.
+        if chemical['name']:
+            if pubchem.name.lower() != chemical['name'].lower():
+                message = 'PubChem name does not match name specified in identifier field: {} -> {}'.\
+                    format(pubchem.name, chemical['name'])
+                self.warning_error(self.process_data[process_key]['data'], message)
 
         chemical['name'] = pubchem.name
         chemical['inchikey'] = pubchem.inchikey
@@ -687,9 +712,13 @@ class ChadoChem(ChadoFeatureObject):
         identifier_name = None
         if ';' in identifier_unprocessed:
             log.debug('Semicolon found, splitting identifier: {}'.format(identifier_unprocessed))
-            identifier_split_list = identifier_unprocessed.split('; ')
-            identifier = identifier_split_list.pop(0).strip()
-            identifier_name = identifier_split_list.pop(0).strip()
+            identifier_split_list = identifier_unprocessed.split(';')
+            try:
+                identifier = identifier_split_list.pop(0).strip()
+                identifier_name = identifier_split_list.pop(0).strip()
+            except IndexError:
+                self.critical_error(self.process_data[process_key]['data'],
+                                    "Error splitting identifier and name using semicolon. {}".format(identifier_unprocessed))
             if identifier_split_list:  # If the list is not empty by this point, raise an error.
                 self.critical_error(self.process_data[process_key]['data'],
                                     "Error splitting identifier and name using semicolon. {}".format(identifier_unprocessed))
