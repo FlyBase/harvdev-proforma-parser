@@ -211,6 +211,7 @@ HH15:
   at_required: True
   type: string
   regex: ^(.* \w{3} \d{4} by FlyBase; FBrf0222196])$
+  wrapping_values: True
 #    'HH16a', 'devel_model' ,  #humanhealth_pubprop.type =  cv (humanhealth_pubprop type) all categories
 #    'HH16b', 'refine_model' ,  #humanhealth_pubprop.type =  cv (humanhealth_pubprop type) all categories
 #    'HH16c', 'mech_disease_mut' ,  #humanhealth_pubprop.type =  cv (humanhealth_pubprop type) all categories
