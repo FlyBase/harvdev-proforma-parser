@@ -679,7 +679,9 @@ class ChadoChem(ChadoFeatureObject):
 
         if pubchem.error:
             log.error(pubchem.error)
-            self.critical_error(self.process_data[process_key]['data'], "AHHHHHHH {}".format(pubchem.error))
+            message = "Error looking up {} for {}. Error is {}".\
+                format(chemical['source'], chemical['accession'], pubchem.error)
+            self.critical_error(self.process_data[process_key]['data'], message)
             return False
 
         if self.has_data('CH1a'):
