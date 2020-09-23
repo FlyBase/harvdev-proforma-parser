@@ -583,7 +583,8 @@ class ChadoChem(ChadoFeatureObject):
         log.debug("DB is '{}'".format(chemical['source']))
         database_dispatch_dictionary = {
             'CHEBI': self.check_chebi_for_identifier,
-            'PubChem': self.check_pubchem_for_identifier
+            'PubChem': self.check_pubchem_for_identifier,
+            'PubChem_SID': self.check_pubchem_for_identifier
         }
 
         # Obtain our identifier, name, definition, and InChIKey from ChEBI / PubChem.
@@ -602,7 +603,8 @@ class ChadoChem(ChadoFeatureObject):
         if chemical['source'] != 'PubChem':
             # Set the identifier name to the result queried from ChEBI.
             self.add_description_from_pubchem(chemical)
-
+        elif chemical['source'] == 'PubChem_SID':
+            chemical['source'] == 'PubChem'
         return True
 
     def check_chebi_for_identifier(self, chemical, process_key):
@@ -673,14 +675,18 @@ class ChadoChem(ChadoFeatureObject):
         NOTE: Pub chem has a rediculous number of synonyms BUT they are ranked
               so just take the top 10.
         """
-        pubchem = ExternalLookup.lookup_by_id('pubchem', chemical['accession'], synonyms=True)
+        pubchem = ExternalLookup.lookup_by_id(chemical['source'].lower(), chemical['accession'], synonyms=True)
+
         if pubchem.error:
             log.error(pubchem.error)
-            self.critical_error(self.process_data[process_key]['data'], "AHHHHHHH {}".format(pubchem.error))
+            message = "Error looking up {} for {}. Error is {}".\
+                format(chemical['source'], chemical['accession'], pubchem.error)
+            self.critical_error(self.process_data[process_key]['data'], message)
             return False
 
         if self.has_data('CH1a'):
             plain_text = sgml_to_plain_text(self.process_data['CH1a']['data'][FIELD_VALUE])
+            pubchem.name = str(pubchem.name)
             if pubchem.name.lower() != plain_text.lower():
                 self.warning_error(self.process_data['CH1a']['data'],
                                    'PubChem name does not match name specified for FlyBase: {} -> {}'
@@ -695,7 +701,8 @@ class ChadoChem(ChadoFeatureObject):
                 message = 'PubChem name does not match name specified in identifier field: {} -> {}'.\
                     format(pubchem.name, chemical['name'])
                 self.warning_error(self.process_data[process_key]['data'], message)
-
+        if chemical['source'] == 'PubChem_SID':
+            chemical['source'] = 'PubChem'
         chemical['name'] = pubchem.name
         chemical['inchikey'] = pubchem.inchikey
         chemical['description'] = pubchem.description
