@@ -11,15 +11,16 @@ from chado_object.utils.feature_synonym import fs_remove_current_symbol
 from harvdev_utils.char_conversions import sgml_to_plain_text
 
 from harvdev_utils.production import (
-    Cvtermprop, FeatureRelationship, FeatureRelationshipPub, Featureprop,
-    FeaturepropPub, FeatureCvterm, FeatureCvtermprop,
-    Pub
+    Cvtermprop, Feature, FeatureRelationship, FeatureRelationshipPub, Featureprop,
+    FeaturepropPub, FeatureCvterm, FeatureCvtermprop, FeatureSynonym,
+    Pub, Synonym
 )
 from harvdev_utils.chado_functions import (
-    feature_name_lookup
+    DataError, feature_name_lookup, synonym_name_details, feature_symbol_lookup,
+    get_feature_and_check_uname_symbol
 )
 from datetime import datetime
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 import logging
 log = logging.getLogger(__name__)
 
@@ -39,6 +40,86 @@ class ChadoFeatureObject(ChadoObject):
         # Initiate the parent.
         super(ChadoFeatureObject, self).__init__(params)
         self.feature = None
+        self.unattrib_pub = None
+
+    def get_unattrib_pub(self):
+        """Get the unattributed pub."""
+        if not self.unattrib_pub:
+            self.unattrib_pub, _ = get_or_create(self.session, Pub, uniquename='unattributed')
+        return self.unattrib_pub
+
+    def _get_feature(self, so_name, symbol_key, unique_bit):
+        """Get the feature."""
+        cvterm = get_cvterm(self.session, 'SO', so_name)
+        if not cvterm:
+            message = "Unable to find cvterm '{}' for Cv 'SO'.".format(so_name)
+            self.critical_error(self.process_data[symbol_key]['data'], message)
+            return None
+        organism, plain_name, sgml = synonym_name_details(self.session, self.process_data[symbol_key]['data'][FIELD_VALUE])
+        self.feature, _ = get_or_create(self.session, Feature, name=plain_name,
+                                        type_id=cvterm.cvterm_id, uniquename='FB{}:temp_0'.format(unique_bit),
+                                        organism_id=organism.organism_id)
+
+    def load_feature(self, feature_type='gene'):
+        """Get feature.
+
+        form feature type get to the key i.e. 'G' for gene, 'GA' for allele, 'A' for aberation.
+        So many proforma use similar keys but just differ in the start bit.
+        i.e. G1b, GA1b, A1b.
+
+        So for now lets have a general routine for processing the loading of the feature.
+        NOTE: this will only work for those that have the same end filed key bits matching
+        If we get too many that do not work this way then we may have to pass each key separately.
+        """
+        CODE = 0
+        UNIQUE = 1
+        SO = 2
+        supported_features = {'gene': ['G', 'gn', 'gene'],
+                              'allele': ['GA', 'al', 'gene'],  # new SO will be allele
+                              'aberration': ['A', 'ti', 'transposon']}
+
+        if feature_type not in supported_features:
+            message = "Unsupported feature type '{}' used in load_feature call. Coding error.".format(feature_type)
+            self.critical_error(self.process_data['{}1a'.format(feature_type)]['data'], message)
+
+        symbol_key = '{}1a'.format(supported_features[feature_type][CODE])
+        merge_key = '{}1f'.format(supported_features[feature_type][CODE])
+        id_key = '{}1h'.format(supported_features[feature_type][CODE])
+        current_key = '{}1g'.format(supported_features[feature_type][CODE])
+
+        if self.has_data(merge_key):  # if feature merge we want to create a new feature even if one exist already
+            self._get_feature(supported_features[feature_type][SO], symbol_key, supported_features[feature_type][UNIQUE])
+            return
+
+        if self.has_data(id_key):
+            self.feature = None
+            try:
+                self.feature = get_feature_and_check_uname_symbol(self.session,
+                                                                  self.process_data[id_key]['data'][FIELD_VALUE],
+                                                                  self.process_data[symbol_key]['data'][FIELD_VALUE],
+                                                                  type_name=supported_features[feature_type][SO])
+            except DataError as e:
+                self.critical_error(self.process_data[id_key]['data'], e.error)
+
+            return self.feature
+
+        if self.process_data[current_key]['data'][FIELD_VALUE] == 'y':  # Should exist already
+            #  organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['G1a']['data'][FIELD_VALUE])
+            try:
+                self.feature = feature_symbol_lookup(self.session, feature_type, self.process_data[symbol_key]['data'][FIELD_VALUE])
+            except MultipleResultsFound:
+                message = "Multiple Genes with symbol {}.".format(self.process_data[symbol_key]['data'][FIELD_VALUE])
+                log.info(message)
+                self.critical_error(self.process_data[symbol_key]['data'], message)
+                return
+            except NoResultFound:
+                message = "Unable to find Gene with symbol {}.".format(self.process_data[symbol_key]['data'][FIELD_VALUE])
+                self.critical_error(self.process_data[symbol_key]['data'], message)
+                return
+        else:
+            self._get_feature(supported_features[feature_type][SO], symbol_key, supported_features[feature_type][UNIQUE])
+            # add default symbol
+            self.load_synonym(symbol_key)
 
     def get_pub_id_for_synonym(self, key):
         """Get pub_id for a synonym."""
@@ -54,7 +135,7 @@ class ChadoFeatureObject(ChadoObject):
             return pub_id
         return self.pub.pub_id
 
-    def load_synonym(self, key):
+    def load_synonym(self, key, unattrib=True):
         """Load Synonym.
 
         yml options:
@@ -69,6 +150,11 @@ class ChadoFeatureObject(ChadoObject):
         cvterm_name = self.process_data[key]['cvterm']
         is_current = self.process_data[key]['is_current']
         pub_id = self.get_pub_id_for_synonym(key)
+        pubs = [pub_id]
+        if unattrib:
+            unattrib_pub_id = self.get_unattrib_pub().pub_id
+            if pub_id != unattrib_pub_id:
+                pubs.append(unattrib_pub_id)
 
         # remove the current symbol if is_current is set and yaml says remove old is_current
         if 'remove_old' in self.process_data[key] and self.process_data[key]['remove_old']:
@@ -77,15 +163,17 @@ class ChadoFeatureObject(ChadoObject):
         # add the new synonym
         if type(self.process_data[key]['data']) is list:
             for item in self.process_data[key]['data']:
-                fs = fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
-                                                     item[FIELD_VALUE], cv_name, cvterm_name, pub_id,
-                                                     synonym_sgml=None, is_current=False, is_internal=False)
+                for pub_id in pubs:
+                    fs = fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
+                                                         item[FIELD_VALUE], cv_name, cvterm_name, pub_id,
+                                                         synonym_sgml=None, is_current=False, is_internal=False)
             if fs and is_current:
                 fs.is_current = True
         else:
-            fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
-                                            self.process_data[key]['data'][FIELD_VALUE], cv_name, cvterm_name, pub_id,
-                                            synonym_sgml=None, is_current=is_current, is_internal=False)
+            for pub_id in pubs:
+                fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
+                                                self.process_data[key]['data'][FIELD_VALUE], cv_name, cvterm_name, pub_id,
+                                                synonym_sgml=None, is_current=is_current, is_internal=False)
 
             if is_current and cvterm_name == 'symbol':
                 self.feature.name = sgml_to_plain_text(self.process_data[key]['data'][FIELD_VALUE])
@@ -354,7 +442,6 @@ class ChadoFeatureObject(ChadoObject):
         Could have gone for if cvterm is not defined etc but
         this way is more explicit.
         """
-
         if not bangc:
             self.delete_specific_fcp(key)
             return
@@ -440,3 +527,45 @@ class ChadoFeatureObject(ChadoObject):
         if not count:
             message = "Bangc failed no feature relationships for this pub and cvterm"
             self.critical_error(items[0], message)
+
+    def delete_synonym(self, key, bangc=False):
+        """Delete synonym.
+
+        Well actually set is_current to false for this entry.
+        """
+        if type(self.process_data[key]['data']) is not list:
+            data_list = []
+            data_list.append(self.process_data[key]['data'])
+        else:
+            data_list = self.process_data[key]['data']
+
+        if bangc:
+            # hh_syn has only one cvterm related to it so no need to specify.
+            self.session.query(FeatureSynonym).\
+                filter(FeatureSynonym.pub_id == self.pub.pub_id,
+                       FeatureSynonym.is_current == False,  # noqa: E712
+                       FeatureSynonym.pub_id == self.pub.pub_id,
+                       FeatureSynonym.feature_id == self.feature.feature_id).delete()
+        else:
+            for data in data_list:
+                synonyms = self.session.query(Synonym).\
+                    filter(Synonym.name == data[FIELD_VALUE])
+                syn_count = 0
+                f_syn_count = 0
+                for syn in synonyms:
+                    syn_count += 1
+                    f_syns = self.session.query(FeatureSynonym).\
+                        filter(FeatureSynonym.humanhealth_id == self.feature.feature_id,
+                               FeatureSynonym.synonym_id == syn.synonym_id,
+                               FeatureSynonym.is_current == False,  # noqa: E712
+                               FeatureSynonym.pub_id == self.pub.pub_id)
+                    for f_syn in f_syns:
+                        f_syn_count += 1
+                        self.session.delete(f_syn)
+
+                if not syn_count:
+                    self.critical_error(data, 'Synonym {} Does not exist.'.format(data[FIELD_VALUE]))
+                    continue
+                elif not f_syn_count:
+                    self.critical_error(data, 'Synonym {} Does not exist for this Feature that is not current.'.format(data[FIELD_VALUE]))
+                    continue
