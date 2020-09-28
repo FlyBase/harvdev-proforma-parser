@@ -76,7 +76,8 @@ class ChadoObject(object):
         # This has to be a second loop so we don't modify the first loop while it's running.
         for key in keys_to_remove:
             # log.debug("Removing unused key {} from the process_data dictionary".format(key))
-            process_data.pop(key)
+            if key != 'GENE':
+                process_data.pop(key)
 
         return process_data
 

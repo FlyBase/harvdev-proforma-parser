@@ -106,7 +106,7 @@ class ChadoFeatureObject(ChadoObject):
         if self.process_data[current_key]['data'][FIELD_VALUE] == 'y':  # Should exist already
             #  organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['G1a']['data'][FIELD_VALUE])
             try:
-                self.feature = feature_symbol_lookup(self.session, feature_type, self.process_data[symbol_key]['data'][FIELD_VALUE])
+                self.feature = feature_symbol_lookup(self.session, supported_features[feature_type][SO], self.process_data[symbol_key]['data'][FIELD_VALUE])
             except MultipleResultsFound:
                 message = "Multiple Genes with symbol {}.".format(self.process_data[symbol_key]['data'][FIELD_VALUE])
                 log.info(message)
@@ -289,6 +289,12 @@ class ChadoFeatureObject(ChadoObject):
             frp, _ = get_or_create(self.session, FeatureRelationshipPub,
                                    feature_relationship_id=fr.feature_relationship_id,
                                    pub_id=self.pub.pub_id)
+
+            if 'add_unattributed_paper' in self.process_data[key] and self.process_data[key]['add_unattributed_paper']:
+                unattrib_pub_id = self.get_unattrib_pub().pub_id
+                frp, _ = get_or_create(self.session, FeatureRelationshipPub,
+                                       feature_relationship_id=fr.feature_relationship_id,
+                                       pub_id=unattrib_pub_id)
 
     def load_featureproplist(self, key, prop_cv_id):
         """Load a feature props that are in a list.

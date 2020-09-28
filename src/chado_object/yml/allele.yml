@@ -1,3 +1,8 @@
+GENE: # jusy a placer to store details of relationship to gene
+    type: ignore
+    cv: relationship type
+    cvterm: alleleof
+    add_unattributed_paper: True
 GA1a:  # Main gene symbol to be used. Processed first and seperately
     type: ignore
     cv: synonym type

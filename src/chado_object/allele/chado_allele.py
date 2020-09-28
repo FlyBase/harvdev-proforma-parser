@@ -84,6 +84,12 @@ class ChadoAllele(ChadoFeatureObject):
         # feature pub
         get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id, pub_id=self.pub.pub_id)
 
+        # feature relationship to gene
+
+        self.process_data['GENE']['data'] = []
+        self.process_data['GENE']['data'].append(('GENE', self.gene.name, 0, False))
+        self.load_feature_relationship('GENE')  # We have a special key in the yml file called 'GENE'
+        self.process_data['GENE']['data'] = []
         # bang c first as this supersedes all things
         if self.bang_c:
             self.bang_c_it()
