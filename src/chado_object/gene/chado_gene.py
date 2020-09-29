@@ -8,15 +8,13 @@ import os
 import re
 from datetime import datetime
 
-from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
+from sqlalchemy.orm.exc import NoResultFound
 
 from chado_object.chado_base import FIELD_NAME, FIELD_VALUE, LINE_NUMBER
 from chado_object.feature.chado_feature import ChadoFeatureObject
 from chado_object.utils.go import process_GO_line
 from harvdev_utils.chado_functions import (DataError, CodingError, feature_symbol_lookup,
-                                           get_cvterm, get_dbxref,
-                                           get_feature_and_check_uname_symbol,
-                                           get_or_create, synonym_name_details)
+                                           get_cvterm, get_dbxref, get_or_create)
 from harvdev_utils.production import (Feature, FeatureCvterm,
                                       FeatureCvtermprop, FeatureDbxref, FeaturePub,
                                       FeatureRelationship, FeatureRelationshipPub,
@@ -302,6 +300,7 @@ class ChadoGene(ChadoFeatureObject):
             bands = self.get_bands(key, item)
             for idx, cvterm_name in enumerate(self.process_data[key]['cvterms']):
                 cvterm = get_cvterm(self.session, self.process_data[key]['cv'], cvterm_name)
+
                 if not cvterm:
                     message = "Unable to find cvterm {} for Cv '{}'.".format(self.process_data[key]['cv'], cvterm_name)
                     self.critical_error(self.process_data[key]['data'], message)
@@ -314,7 +313,7 @@ class ChadoGene(ChadoFeatureObject):
                 if prop_cvterm:  # if we have a propcvterm we need to create a fr prop.
                     get_or_create(self.session, FeatureRelationshipprop,
                                   feature_relationship_id=fr.feature_relationship_id,
-                                  type_id=prop_cvterm.cvterm_id,
+                                  type_id=cvterm.cvterm_id,
                                   value=self.process_data[key]['propvalue'])
                 # create feature relationship pub
                 get_or_create(self.session, FeatureRelationshipPub,
@@ -439,53 +438,7 @@ class ChadoGene(ChadoFeatureObject):
 
     def get_gene(self):
         """Get initial gene and check."""
-        if self.has_data('G1f'):  # if gene merge we want to create a new gene even if one exist already
-            cvterm = get_cvterm(self.session, 'SO', 'gene')
-            if not cvterm:
-                message = "Unable to find cvterm 'gene' for Cv 'SO'."
-                self.critical_error(self.process_data['G1a']['data'], message)
-                return None
-            organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['G1a']['data'][FIELD_VALUE])
-            self.feature, _ = get_or_create(self.session, Feature, name=plain_name,
-                                            type_id=cvterm.cvterm_id, uniquename='FBgn:temp_0', organism_id=organism.organism_id)
-            return
-
-        if self.has_data('G1h'):
-            self.feature = None
-            try:
-                self.feature = get_feature_and_check_uname_symbol(self.session,
-                                                                  self.process_data['G1h']['data'][FIELD_VALUE],
-                                                                  self.process_data['G1a']['data'][FIELD_VALUE],
-                                                                  type_name='gene')
-            except DataError as e:
-                self.critical_error(self.process_data['G1h']['data'], e.error)
-
-            return self.feature
-        if self.process_data['G1g']['data'][FIELD_VALUE] == 'y':  # Should exist already
-            #  organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['G1a']['data'][FIELD_VALUE])
-            try:
-                self.feature = feature_symbol_lookup(self.session, 'gene', self.process_data['G1a']['data'][FIELD_VALUE])
-            except MultipleResultsFound:
-                message = "Multiple Genes with symbol {}.".format(self.process_data['G1a']['data'][FIELD_VALUE])
-                log.info(message)
-                self.critical_error(self.process_data['G1a']['data'], message)
-                return
-            except NoResultFound:
-                message = "Unable to find Gene with symbol {}.".format(self.process_data['G1a']['data'][FIELD_VALUE])
-                self.critical_error(self.process_data['G1a']['data'], message)
-                return
-        else:
-            cvterm = get_cvterm(self.session, 'SO', 'gene')
-            if not cvterm:
-                message = "Unable to find cvterm 'gene' for Cv 'SO'."
-                self.critical_error(self.process_data['G1a']['data'], message)
-                return None
-            organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['G1a']['data'][FIELD_VALUE])
-            self.feature, _ = get_or_create(self.session, Feature, name=plain_name,
-                                            type_id=cvterm.cvterm_id, uniquename='FBgn:temp_0',
-                                            organism_id=organism.organism_id)
-            # add default symbol
-            self.load_synonym('G1a')
+        self.load_feature(feature_type='gene')
 
     ########################################
     # Bangc, Bangd routines.

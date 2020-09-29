@@ -1,23 +1,131 @@
+GENE: # jusy a placer to store details of relationship to gene
+    type: ignore
+    cv: relationship type
+    cvterm: alleleof
+    add_unattributed_paper: True
 GA1a:  # Main gene symbol to be used. Processed first and seperately
     type: ignore
     cv: synonym type
     cvterm: symbol
     is_current: True
+# 'GA1b',  'symbol',
+GA1b:
+    type: synonym
+    cv: synonym type
+    cvterm: symbol
+    is_current: False
 #     'G1g', 'new',         #checking
 GA1g:
     type: ignore # Done as part of initialisation with GA1a
+# 'GA2a',  'fullname',
+GA2a:
+    type: synonym
+    cv: synonym type
+    cvterm: fullname
+    is_current: True
+# 'GA2b',  'fullname',
+GA2b:
+    type: synonym
+    cv: synonym type
+    cvterm: fullname
+    is_current: False
+# 'GA81a', 'primary_disease-implication_change', # featureprop:- cv = 'property type', cvterm = 'primary_disease-implication_change'
 GA81a:
     type: feature_relationship
     cv: relationship type
     cvterm: has_variant
     feat_type: disease implicated variant
+# 'GA84b', 'allele_report_comment', # featureprop:- cv = 'property type', cvterm = 'allele_report_comment'
 GA84b:
     type: featureprop
     cv: property type
     cvterm: div_comment
     value: GA84b
+# No GA85 in old parser, this is new.
 GA85:
     type: featureprop
     cv: property type
     cvterm: deliberate_omission
     value: GA85
+
+    # 'GA1b',  'symbol',
+    # 'GA1e',  'symbol',
+    # 'GA1f',  'merge',
+    # 'GA2a',  'fullname',
+    # 'GA2b',  'fullname',
+    # 'GA2c',  'fullname',
+    # 'GA31',  'etymology',                       #feaureprop
+    # 'GA32a', 'is_obsolete',
+    # 'GA32b', 'dissociate',
+    # 'GA3',   'FlyBase miscellaneous CV',        #feature_cvterm
+    # 'GA4',   'FlyBase miscellaneous CV',        #feature_cvterm
+    # 'GA56',  'phenstatement',                   #phenstatement
+    # 'GA17',  'phenstatement',                   #phenstatement
+    # 'GA7a',  'single_mutant_pheno',             #phendesc
+    # 'GA28a', 'phenotype_comparison',
+    # 'GA28b', 'phenotype_comparison',
+    # 'GA28c', 'genetic_interaction_pheno',
+    # 'GA29a', 'phenotype_comparison',
+    # 'GA29b', 'phenotype_comparison',
+    # 'GA29c', 'xeno_interaction_pheno',
+    # 'GA21',  'phenotype_comparison',
+    # 'GA22',  'interallele_comp',
+    # 'GA10a', 'associated_with',                 #feature_relationship.object_id
+    # 'GA10b', 'location_comment',
+    # 'GA10c', 'associated_with',
+    # 'GA10d', 'insertion_into_natTE',
+    # 'GA10e', 'associated_with',
+    # 'GA10f', 'first_base_of_unique_in_natTE',
+    # 'GA10g',
+    # 'associated_with/cyto_change_comment',      #feature_relationship.subject_id
+    # 'GA8',   'FlyBase miscellaneous CV',        #feature_cvterm
+    # 'GA19',  'FlyBase miscellaneous CV',        #feature_cvterm
+    # 'GA15',  'discoverer',
+    # 'GA11',  'progenitor',                      #feature_relationship.object_id
+    # 'GA23a', 'origin_type',
+    # 'GA23b', 'origin_comment',
+    # 'GA12a', 'nucleotide_sub/aminoacid_rep',
+    # 'GA12b', 'molecular_info',
+    # 'GA30',  'included_in',                     #feature_relationship.subject_id
+    # 'GA13',  'misc',
+    # 'GA20',  'availability',
+    # 'GA14',  'internal_notes',
+    # 'GA90a', 'partof',                          #feature_relationship.subject_id
+    # 'GA90b', 'featureloc',
+    # 'GA90c', 'reported_genomic_loc',            #cv = GenBank feature qualifier
+    # 'GA90d', 'na_change',                       #cv = GenBank feature qualifier
+    # 'GA90e', 'reported_na_change',              #cv = GenBank feature qualifier
+    # 'GA90f', 'reported_pr_change',              #cv = GenBank feature qualifier
+    # 'GA90g', 'pr_change',                       #cv = GenBank feature qualifier
+    # 'GA90h', 'linked_to',                       #cv = GenBank feature qualifier
+    # 'GA90j', 'comment',                         #cv = GenBank feature qualifier
+    # 'GA90k', 'type',                            #cv = SO
+    # 'GA91',  'library_feature',                 #library_feature
+    # 'GA91a', 'library_featureprop',             #library_featureprop
+    # 'GA34a', 'disease_ontology',                # feature_cvterm
+    # 'GA34b', 'hdm_comments',
+    # 'GA34c', 'hdm_internal_notes',
+    # 'GA30a', 'tagged_with',                     #feature_relationship.object_id
+    # 'GA30b', 'carries_tool',                    # feature_relationship.object_id
+    # 'GA30c', 'encodes_tool',                    #feature_relationship.object_id
+    # 'GA30e', 'has_reg_region',                  #feature_relationship.object_id
+    # 'GA30f',
+    # 'propagate_transgenic_uses',    #cv property type -- featureprop n/blank
+    # 'GA30d', 'FlyBase miscellaneous CV'
+    # ,    #feature_cvterm -- feature_cvtermprop type tool_uses
+    # 'GA35', 'FlyBase miscellaneous CV'
+    # ,    #feature_cvterm -- feature_cvtermprop type transgenic_product_class
+    # 'GA36', 'disease_associated',    #cv property type -- featureprop y/blank
+    # 'GA80a', 'fly_disease-implication_change', # feature_relationshipprop:- cv = 'feature_relationshipprop type', cvterm = 'fly_disease-implication_change'
+    # 'GA80b', 'representative_isoform', # feature_relationship:- (cv = 'relationship type', cvterm = 'representative_isoform')
+    # 'GA80c', 'other_disease-implication_change', # featureprop:- cv = 'property type', cvterm = 'other_disease-implication_change'
+    # 'GA80d', 'data_link', # feature_dbxref (db = hgnc)
+    # 'GA81b', 'additional_disease-implication_change', # featureprop:- cv = 'property type', cvterm = 'additional_disease-implication_change'
+    # 'GA82', 'human_disease_relevant', # humanhealth_feature +
+    #                                   # humanhealth_featureprop:- (cv = 'humanhealth_featureprop type', cvterm = 'human_disease_relevant')
+    # 'GA83a', 'data_link', # feature_dbxref (db = 'GA83b', accession = ' GA83a')
+    # 'GA83b', 'data_link', # db to be used in GA83a
+    # 'GA83c', 'description', # dbxref.description
+    # 'GA83d', 'action',    # remove the above GA83's
+    # 'GA84a', 'HDM_comment', # featureprop:- cv = 'property type', cvterm = 'HDM_comment'
+

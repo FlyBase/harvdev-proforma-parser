@@ -426,7 +426,7 @@ class ChadoChem(ChadoFeatureObject):
         """
         if not self.new_chemical_entry and key not in self.bang_c:
             return
-        self.load_synonym(key)
+        self.load_synonym(key, unattrib=False)
 
     def add_description_to_featureprop(self):
         """Associate the description from PubChem to a feature via featureprop."""

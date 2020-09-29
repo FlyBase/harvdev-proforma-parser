@@ -8,11 +8,10 @@
 
 import logging
 import os
-from sqlalchemy.orm.exc import NoResultFound
 from harvdev_utils.chado_functions import (
-    get_or_create, feature_symbol_lookup
+    get_or_create
 )
-from chado_object.feature.chado_feature import ChadoFeatureObject, FIELD_VALUE
+from chado_object.feature.chado_feature import ChadoFeatureObject
 from harvdev_utils.production import (
     FeaturePub
 )
@@ -37,8 +36,10 @@ class ChadoAllele(ChadoFeatureObject):
         # yaml file defines what to do with each field. Follow the light
         self.type_dict = {'feature_relationship': self.load_feature_relationship,
                           'featureprop': self.load_featureprop,
+                          'synonym': self.load_synonym,
                           'ignore': self.ignore}
         self.delete_dict = {'featureprop': self.delete_featureprop,
+                            'synonym': self.delete_synonym,
                             'ignore': self.ignore}
 
         self.proforma_start_line_number = params.get('proforma_start_line_number')
@@ -83,6 +84,12 @@ class ChadoAllele(ChadoFeatureObject):
         # feature pub
         get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id, pub_id=self.pub.pub_id)
 
+        # feature relationship to gene
+        self.process_data['GENE']['data'] = []
+        self.process_data['GENE']['data'].append(('GENE', self.gene.name, 0, False))
+        self.load_feature_relationship('GENE')  # We have a special key in the yml file called 'GENE'
+        self.process_data['GENE']['data'] = []
+
         # bang c first as this supersedes all things
         if self.bang_c:
             self.bang_c_it()
@@ -97,17 +104,8 @@ class ChadoAllele(ChadoFeatureObject):
 
     def get_allele(self):
         """Get initial allele and check."""
-        self.feature = None
-        if self.process_data['GA1g']['data'][FIELD_VALUE] == 'y':  # Should exist already
-            # organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['GA1a']['data'][FIELD_VALUE])
-            try:
-                # Alleles are genes.
-                self.feature = feature_symbol_lookup(self.session, self.type_name,
-                                                     self.process_data['GA1a']['data'][FIELD_VALUE])
-            except NoResultFound:
-                message = "Unable to find Allele with symbol {}.".format(self.process_data['GA1a']['data'][FIELD_VALUE])
-                self.critical_error(self.process_data['GA1a']['data'], message)
-                return
+        # NOTE: new 'SO' will be 'allele' when it come in
+        self.load_feature(feature_type='allele')
 
     def ignore(self, key):
         """Ignore."""
