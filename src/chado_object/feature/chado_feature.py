@@ -63,12 +63,12 @@ class ChadoFeatureObject(ChadoObject):
     def load_feature(self, feature_type='gene'):
         """Get feature.
 
-        form feature type get to the key i.e. 'G' for gene, 'GA' for allele, 'A' for aberation.
+        from feature type get to the key i.e. 'G' for gene, 'GA' for allele, 'A' for aberation.
         So many proforma use similar keys but just differ in the start bit.
         i.e. G1b, GA1b, A1b.
 
         So for now lets have a general routine for processing the loading of the feature.
-        NOTE: this will only work for those that have the same end filed key bits matching
+        NOTE: this will only work for those that have the same end field key bits matching
         If we get too many that do not work this way then we may have to pass each key separately.
         """
         CODE = 0

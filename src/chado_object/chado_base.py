@@ -77,7 +77,7 @@ class ChadoObject(object):
         # This has to be a second loop so we don't modify the first loop while it's running.
         for key in keys_to_remove:
             # log.debug("Removing unused key {} from the process_data dictionary".format(key))
-            if key in SPECIAL_FIELDS:
+            if key not in SPECIAL_FIELDS:
                 process_data.pop(key)
 
         return process_data
@@ -116,6 +116,7 @@ class ChadoObject(object):
         Checks whether a key exists and contains a FIELD_VALUE that isn't None.
         """
         if key in self.process_data:
+            log.debug("key is {}".format(key))
             log.debug('Checking whether we have data (not-None) in {}'.format(self.process_data[key]))
             if self.process_data[key]['data'] is not None:
                 if type(self.process_data[key]['data']) is list:
