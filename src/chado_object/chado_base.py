@@ -159,7 +159,7 @@ class ChadoObject(object):
         return cvterm.cvterm_id
 
     def pub_from_fbrf(self, fbrf_tuple):
-        """Get oub fron fbrf.
+        """Get pub fron fbrf.
 
         Return pub object for a given fbrf.
         Return None if it does not exist.
