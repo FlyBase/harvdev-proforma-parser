@@ -21,6 +21,7 @@ FIELD_NAME = 0
 FIELD_VALUE = 1
 LINE_NUMBER = 2
 SET_BANG = 3  # For 'set' data we hold the wether it is a bangc, bangd or None.
+SPECIAL_FIELDS = ['GENE']  # Do not delete if no data for these, as we need the meta data.
 
 
 class ChadoObject(object):
@@ -76,7 +77,7 @@ class ChadoObject(object):
         # This has to be a second loop so we don't modify the first loop while it's running.
         for key in keys_to_remove:
             # log.debug("Removing unused key {} from the process_data dictionary".format(key))
-            if key != 'GENE':
+            if key in SPECIAL_FIELDS:
                 process_data.pop(key)
 
         return process_data
@@ -126,6 +127,7 @@ class ChadoObject(object):
         return False
 
     def error_track(self, tuple, error_message, level):
+        """Teach error message."""
         ErrorTracking(self.filename,
                       "Proforma entry starting on line: {}".format(self.proforma_start_line_number),
                       "Proforma error around line: {}".format(tuple[LINE_NUMBER]),
@@ -135,9 +137,11 @@ class ChadoObject(object):
                       level)
 
     def critical_error(self, tuple, error_message):
+        """Add critical errror."""
         self.error_track(tuple, error_message, CRITICAL_ERROR)
 
     def warning_error(self, tuple, error_message):
+        """Add warning message."""
         self.error_track(tuple, error_message, WARNING_ERROR)
 
     def cvterm_query(self, cv, cvterm):
@@ -155,7 +159,8 @@ class ChadoObject(object):
         return cvterm.cvterm_id
 
     def pub_from_fbrf(self, fbrf_tuple):
-        """
+        """Get oub fron fbrf.
+
         Return pub object for a given fbrf.
         Return None if it does not exist.
         """
@@ -167,6 +172,7 @@ class ChadoObject(object):
         return pub
 
     def feature_from_feature_name(self, feature_name):
+        """Get feature fron feature name."""
         log.debug('Querying for feature uniquename from feature id \'%s\'.' % feature_name)
 
         feature = self.session.query(Feature).\
@@ -176,6 +182,7 @@ class ChadoObject(object):
         return feature
 
     def synonym_id_from_synonym_symbol(self, synonym_name_tuple, synonym_type_id):
+        """Get synonym_id from symbol name."""
         log.debug('Querying for synonym \'%s\'.' % synonym_name_tuple[FIELD_VALUE])
 
         results = self.session.query(Synonym.synonym_id, Synonym.name, Synonym.type_id).\
@@ -186,16 +193,17 @@ class ChadoObject(object):
         return results[0]
 
     def get_or_create_dbxref(self, params):
-        #
-        # Safely get or create dbxref using lookups if required.
-        # Requirement is set in the self.process_data[key]['external_lookup']
-        # and is obtained from the yml files.
-        #
-        # params needed :-
-        # dbname:      db name for dbxref
-        # accession:   accession for dbxref
-        # tuple:       one related tuple to help give better errors
-        #
+        """Get or create a dbxref.
+
+        Safely get or create dbxref using lookups if required.
+        Requirement is set in the self.process_data[key]['external_lookup']
+        and is obtained from the yml files.
+
+        params needed :-
+        dbname:      db name for dbxref
+        accession:   accession for dbxref
+        tuple:       one related tuple to help give better errors
+        """
         db = self.session.query(Db).filter(Db.name == params['dbname']).one_or_none()
         if not db:
             error_message = "{} Not found in db table".format(params['dbname'])

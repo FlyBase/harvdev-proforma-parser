@@ -108,12 +108,12 @@ class ChadoFeatureObject(ChadoObject):
             try:
                 self.feature = feature_symbol_lookup(self.session, supported_features[feature_type][SO], self.process_data[symbol_key]['data'][FIELD_VALUE])
             except MultipleResultsFound:
-                message = "Multiple Genes with symbol {}.".format(self.process_data[symbol_key]['data'][FIELD_VALUE])
+                message = "Multiple {}'s with symbol {}.".format(feature_type, self.process_data[symbol_key]['data'][FIELD_VALUE])
                 log.info(message)
                 self.critical_error(self.process_data[symbol_key]['data'], message)
                 return
             except NoResultFound:
-                message = "Unable to find Gene with symbol {}.".format(self.process_data[symbol_key]['data'][FIELD_VALUE])
+                message = "Unable to find {} with symbol {}.".format(feature_type, self.process_data[symbol_key]['data'][FIELD_VALUE])
                 self.critical_error(self.process_data[symbol_key]['data'], message)
                 return
         else:
