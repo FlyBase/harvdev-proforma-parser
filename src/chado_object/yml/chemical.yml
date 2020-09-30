@@ -38,6 +38,11 @@ CH3c: # Processed by CH3b if new
   type: value
 CH3d: # main chebi ref. Done on creation.
   type: ignore
+CH3f:
+  type: featureprop
+  cv: property type
+  cvterm: inexact_match
+  value: CH3f 
 # CH4a:
 #   type: feature_relationship
 #   cv: relationship type
