@@ -637,7 +637,8 @@ class ChadoChem(ChadoFeatureObject):
         # Check whether the identifier_name supplied by the curator matches
         # the name returned from the database.
         if chemical['name']:
-            if chebi.name.lower() != chemical['name'].lower():
+            plain_text = sgml_to_plain_text(chemical['name'])
+            if chebi.name.lower() != plain_text.lower():
                 message = 'ChEBI name does not match name specified in identifier field: {} -> {}'.\
                     format(chebi.name, chemical['name'])
                 self.warning_error(self.process_data[process_key]['data'], message)
@@ -688,19 +689,18 @@ class ChadoChem(ChadoFeatureObject):
             plain_text = sgml_to_plain_text(self.process_data['CH1a']['data'][FIELD_VALUE])
             pubchem.name = str(pubchem.name)
             if pubchem.name.lower() != plain_text.lower():
-                self.warning_error(self.process_data['CH1a']['data'],
-                                   'PubChem name does not match name specified for FlyBase: {} -> {}'
-                                   .format(pubchem.name, plain_text))
+                log.debug('PubChem name does not match name specified for FlyBase: {} -> {}'.format(pubchem.name, plain_text))
             else:
                 log.debug('Queried name \'{}\' matches name used in proforma \'{}\''.format(pubchem.name, plain_text))
 
         # Check whether the identifier_name supplied by the curator matches
         # the name returned from the database.
         if chemical['name']:
-            if pubchem.name.lower() != chemical['name'].lower():
+            plain_text = sgml_to_plain_text(self.process_data['CH1a']['data'][FIELD_VALUE])
+            if pubchem.name.lower() != plain_text.lower():
                 message = 'PubChem name does not match name specified in identifier field: {} -> {}'.\
                     format(pubchem.name, chemical['name'])
-                self.warning_error(self.process_data[process_key]['data'], message)
+                log.debug(message)
         if chemical['source'] == 'PubChem_SID':
             chemical['source'] = 'PubChem'
         chemical['name'] = pubchem.name
