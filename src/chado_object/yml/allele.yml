@@ -43,7 +43,7 @@ GA34a:  # SEE G24b very similar
     prop_cvterms: provenance
     qualifiers: ['model of', 'ameliorates', 'exacerbates', 'DOES NOT model', 'DOES NOT ameliorate', 'DOES NOT exacerbate']
     allowed_symbols: ['allele']
-    allowed:_codes: ['CEC, 'CEA' ,'modeled']
+    allowed:_codes: ['CEC', 'CEA' ,'modeled']
 GA81a:
     type: feature_relationship
     cv: relationship type
