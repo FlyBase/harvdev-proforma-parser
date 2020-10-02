@@ -18,6 +18,11 @@ GA1g:
     type: string
     required: True
     allowed: [y,n]
+GA4:
+    type: string
+    required: False
+    nullable: True
+    at_forbidden: True
 GA81a:
     type: [list, string]
     required: False
