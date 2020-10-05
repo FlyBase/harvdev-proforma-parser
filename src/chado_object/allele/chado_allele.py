@@ -11,11 +11,16 @@ import os
 from harvdev_utils.chado_functions import (
     get_or_create
 )
+from chado_object.utils.go import process_DO_line
 from chado_object.feature.chado_feature import ChadoFeatureObject
 from harvdev_utils.production import (
-    FeaturePub
+    FeaturePub, FeatureCvterm, FeatureCvtermprop
 )
-
+from harvdev_utils.chado_functions import (
+    get_cvterm
+)
+from chado_object.chado_base import FIELD_VALUE
+from sqlalchemy.orm.exc import NoResultFound
 log = logging.getLogger(__name__)
 
 
@@ -34,7 +39,9 @@ class ChadoAllele(ChadoFeatureObject):
         self.new = False
 
         # yaml file defines what to do with each field. Follow the light
-        self.type_dict = {'feature_relationship': self.load_feature_relationship,
+        self.type_dict = {'cvterm': self.load_feature_cvterm,
+                          'DOcvtermprop': self.load_do,
+                          'feature_relationship': self.load_feature_relationship,
                           'featureprop': self.load_featureprop,
                           'synonym': self.load_synonym,
                           'ignore': self.ignore}
@@ -110,3 +117,43 @@ class ChadoAllele(ChadoFeatureObject):
     def ignore(self, key):
         """Ignore."""
         pass
+
+    def add_cvtermprops(self, key, do_dict):
+        """Add props."""
+        # create feature_cvterm
+        feat_cvt, _ = get_or_create(self.session, FeatureCvterm,
+                                    feature_id=self.feature.feature_id,
+                                    cvterm_id=do_dict['docvterm'].cvterm_id,
+                                    pub_id=self.pub.pub_id)
+
+        for prop_key in self.process_data[key]['prop_cvterms']:
+            try:
+                cvtermprop = get_cvterm(self.session, self.process_data[key]['prop_cv'], prop_key)
+            except NoResultFound:
+                message = "Unable to find cvterm {} for Cv {}.".format(prop_key, self.process_data[key]['cv'])
+                self.critical_error((1, 2, 3), message)
+                return None
+
+            # create feature_cvtermprop
+            get_or_create(self.session, FeatureCvtermprop,
+                          feature_cvterm_id=feat_cvt.feature_cvterm_id,
+                          value=do_dict[prop_key],
+                          type_id=cvtermprop.cvterm_id)
+
+    def load_do(self, key):
+        """Load DO."""
+        do_dict = {}
+        for item in self.process_data[key]['data']:
+            do_dict = process_DO_line(
+                self.session,
+                item[FIELD_VALUE],
+                self.process_data[key]['cv'],
+                self.process_data[key]['allowed_qualifiers'],
+                self.process_data[key]['allowed_symbols'],
+                self.process_data[key]['allowed_codes'])
+            log.debug("BOB: {}".format(do_dict))
+            if do_dict['error']:
+                for err in do_dict['error']:
+                    self.critical_error(item, err)
+                continue
+            self.add_cvtermprops(key, do_dict)

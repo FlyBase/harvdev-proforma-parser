@@ -23,6 +23,11 @@ GA4:
     required: False
     nullable: True
     at_forbidden: True
+GA8:
+    type: string
+    required: False
+    nullable: True
+    at_forbidden: True
 GA34a: 
     type: [list, string]
     required: False

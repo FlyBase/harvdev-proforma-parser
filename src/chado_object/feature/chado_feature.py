@@ -16,7 +16,7 @@ from harvdev_utils.production import (
     Pub, Synonym
 )
 from harvdev_utils.chado_functions import (
-    DataError, feature_name_lookup, synonym_name_details, feature_symbol_lookup,
+    DataError, CodingError, feature_name_lookup, synonym_name_details, feature_symbol_lookup,
     get_feature_and_check_uname_symbol
 )
 from datetime import datetime
@@ -179,16 +179,37 @@ class ChadoFeatureObject(ChadoObject):
                 self.feature.name = sgml_to_plain_text(self.process_data[key]['data'][FIELD_VALUE])
 
     def load_feature_cvterm(self, key):
-        """Add feature_cvterm."""
-        cvterm = get_cvterm(self.session,
-                            self.process_data[key]['cv'],
-                            self.process_data[key]['cvterm'])
-        # create feature_cvterm
-        feat_cvt, _ = get_or_create(self.session, FeatureCvterm,
-                                    feature_id=self.feature.feature_id,
-                                    cvterm_id=cvterm.cvterm_id,
-                                    pub_id=self.pub.pub_id)
-        return feat_cvt
+        """Add feature cvterm."""
+        if type(self.process_data[key]['data']) is list:
+            items = self.process_data[key]['data']
+        else:
+            items = [self.process_data[key]['data']]
+
+        cv_name = self.process_data[key]['cv']
+        for item in items:
+            cvterm_name = item[FIELD_VALUE]
+            try:
+                cvterm = get_cvterm(self.session, cv_name, cvterm_name)
+            except CodingError:
+                message = "Unable to find cvterm {} for Cv {}.".format(cvterm_name, cv_name)
+                self.critical_error(item, message)
+                return None
+
+            if 'cvterm_namespace' in self.process_data[key]:
+                try:
+                    self.session.query(Cvtermprop).\
+                        filter(Cvtermprop.cvterm_id == cvterm.cvterm_id,
+                               Cvtermprop.value == self.process_data[key]['cvterm_namespace']).one()
+                except NoResultFound:
+                    message = "Cvterm '{}' Not in the required namespace of '{}'".\
+                        format(cvterm.name, self.process_data[key]['cvterm_namespace'])
+                    self.critical_error(item, message)
+
+            # create feature_cvterm
+            feat_cvt, _ = get_or_create(self.session, FeatureCvterm,
+                                        feature_id=self.feature.feature_id,
+                                        cvterm_id=cvterm.cvterm_id,
+                                        pub_id=self.pub.pub_id)
 
     def load_feature_cvtermprop(self, key):
         """Add feature_cvtermprop.

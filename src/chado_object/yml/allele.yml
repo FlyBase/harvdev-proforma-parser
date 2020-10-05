@@ -35,15 +35,18 @@ GA4:
     cv: FlyBase miscellaneous CV
 
 # 'GA8',   'FlyBase miscellaneous CV',        #feature_cvterm
+GA8:
+    type: cvterm
+    cv: FlyBase miscellaneous CV
 # 'GA34a', 'disease_ontology',                # feature_cvterm
 GA34a:  # SEE G24b very similar
     type: DOcvtermprop
     cv: disease_ontology
     prop_cv: FlyBase miscellaneous CV
-    prop_cvterms: provenance
-    qualifiers: ['model of', 'ameliorates', 'exacerbates', 'DOES NOT model', 'DOES NOT ameliorate', 'DOES NOT exacerbate']
-    allowed_symbols: ['allele']
-    allowed:_codes: ['CEC', 'CEA' ,'modeled']
+    prop_cvterms: ['provenance', 'qualifier', 'evidence_code']
+    allowed_qualifiers: ['model of', 'ameliorates', 'exacerbates', 'DOES NOT model', 'DOES NOT ameliorate', 'DOES NOT exacerbate']
+    allowed_symbols: ['gene']
+    allowed_codes: ['CEC', 'CEA' ,'modeled']
 GA81a:
     type: feature_relationship
     cv: relationship type
@@ -138,6 +141,6 @@ GA85:
     # 'GA83d', 'action',    # remove the above GA83's
     # 'GA84a', 'HDM_comment', # featureprop:- cv = 'property type', cvterm = 'HDM_comment'
 
- #### NIOT in svn
+ #### NOT in svn
  # 'GA3',   'FlyBase miscellaneous CV',        #feature_cvterm
 # 'GA19',  'FlyBase miscellaneous CV',        #feature_cvterm
