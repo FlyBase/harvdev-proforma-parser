@@ -151,7 +151,7 @@ class ChadoAllele(ChadoFeatureObject):
                 self.process_data[key]['allowed_qualifiers'],
                 self.process_data[key]['allowed_symbols'],
                 self.process_data[key]['allowed_codes'])
-            log.debug("BOB: {}".format(do_dict))
+
             if do_dict['error']:
                 for err in do_dict['error']:
                     self.critical_error(item, err)

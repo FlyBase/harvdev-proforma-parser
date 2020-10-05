@@ -50,7 +50,6 @@ def process_doid(session, doid, do_dict, allowed_qualifiers, cv_name):
     for qualifier in allowed_qualifiers:
         if doid.startswith(qualifier):
             do_dict['qualifier'] = qualifier
-            log.debug("BOB: quali = {}".format(qualifier))
             doid = doid.replace(qualifier, '', 1)
 
     # Awaiting feed back on wether qualifiers are optionl or not
