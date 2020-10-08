@@ -252,7 +252,7 @@ class ChadoFeatureObject(ChadoObject):
                           value=prop_value,
                           type_id=props_cvterm.cvterm_id)
 
-    def load_feature_relationship(self, key):
+    def load_feature_relationship(self, key, special=False):
         """Add Feature Relationship.
 
         yml options:
@@ -279,8 +279,10 @@ class ChadoFeatureObject(ChadoObject):
 
         for item in items:
             name = item[FIELD_VALUE]
-            obj_feat = feature_name_lookup(self.session, name, type_name=feat_type)
-            log.debug("LOOKUP {}: obj feat = {}".format(name, obj_feat))
+            if not special:
+                obj_feat = feature_name_lookup(self.session, name, type_name=feat_type)
+            else:
+                obj_feat = special
             fr, _ = get_or_create(self.session, FeatureRelationship,
                                   subject_id=self.feature.feature_id,
                                   object_id=obj_feat.feature_id,
