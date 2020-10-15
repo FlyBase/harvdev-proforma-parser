@@ -99,6 +99,7 @@ class ChadoFeatureObject(ChadoObject):
                                                                   self.process_data[id_key]['data'][FIELD_VALUE],
                                                                   self.process_data[symbol_key]['data'][FIELD_VALUE],
                                                                   type_name=supported_features[feature_type][SO])
+                self.feature.new = False
             except DataError as e:
                 self.critical_error(self.process_data[id_key]['data'], e.error)
 
@@ -108,6 +109,7 @@ class ChadoFeatureObject(ChadoObject):
             #  organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['G1a']['data'][FIELD_VALUE])
             try:
                 self.feature = feature_symbol_lookup(self.session, supported_features[feature_type][SO], self.process_data[symbol_key]['data'][FIELD_VALUE])
+                self.feature.new = False
             except MultipleResultsFound:
                 message = "Multiple {}'s with symbol {}.".format(feature_type, self.process_data[symbol_key]['data'][FIELD_VALUE])
                 log.info(message)
