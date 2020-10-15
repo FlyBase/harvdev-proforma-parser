@@ -229,8 +229,13 @@ def g28b_check(self, key):
 
 
 def g30_check(self, key):
-    """G30 must be present if new."""
+    """G30 must be present if new if not rename."""
+    if self.process_data['G1g']['data'][FIELD_VALUE] == 'y':
+        return
     if self.feature.new and not self.has_data(key):
+        for rename in ['G1f', 'G2c', 'G1e']:
+            if rename in self.process_data and len(self.process_data[rename]):
+                return
         self.critical_error((key, None, 0), 'Error G30 Must be set for new gene.')
 
 
