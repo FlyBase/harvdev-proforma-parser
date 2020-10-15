@@ -52,3 +52,14 @@ class ValidatorAllele(Validator):
         for line in check_arr:
             if re.search(r"@+.*@+", line) is not None:
                 self._error(field, 'Error {} @...@ is forbidden here.'.format(line))
+
+    def _validate_at_required(self, required, field, value):
+        """
+        Throw error if it is required and not there.
+
+        The docstring statement below provides a schema to validate the 'plain_text' argument.
+
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
+        """
+        pass

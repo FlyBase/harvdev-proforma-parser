@@ -2,6 +2,7 @@ DIV1a:
   required: True
   type: string
   no_bangc: True
+  nullable: False
 DIV1b:
   required: False
   type: [list, string]

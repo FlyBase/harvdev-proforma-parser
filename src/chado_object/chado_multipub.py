@@ -85,7 +85,8 @@ class ChadoMultipub(ChadoPub):
                     self.critical_error(tuples, 'Pub {} does not exist in the database.'.format(multi_name))
 
     def get_pub(self):
-        """
+        """Get pub.
+
         get pub or create pub if new.
         returns None or the pub to be used.
         """
@@ -125,6 +126,22 @@ class ChadoMultipub(ChadoPub):
         """Process the data."""
         if self.process_data['MP1']['data'][FIELD_VALUE] == "new":
             self.newpub = True
+            for key in ['MP15', 'MP2b', 'MP17']:
+                if key not in self.process_data:
+                    self.critical_error((key, None, 0), 'Error {} Must be set for new pubs.'.format(key))
+            if 'MP2b' not in self.process_data:
+                self.critical_error(('MP2b', None, 0), 'Error MP2b Must be set for new pubs.')
+            if 'MP17' in self.process_data and self.process_data['MP17']['data'][FIELD_VALUE] == 'book':
+                if 'MP11' not in self.process_data:
+                    self.critical_error(('MP11', None, 0), 'Error MP11 is not set so cannot set but MP1 is new and MP17 is book, so is required.')
+
+            # elif 'MP17' in self.process_data:
+            #     self.critical_error(('MP17', None, 0), 'Error cannot set MP17 if not a new book')
+            # else:
+            #     self.critical_error(('MP17', None, 0), 'Error MP17 Must be set for new pubs.')
+
+        if not self.has_data('MP17'):
+            return None
 
         self.pub = self.get_pub()
 

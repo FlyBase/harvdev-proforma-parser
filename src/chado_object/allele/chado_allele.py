@@ -92,10 +92,9 @@ class ChadoAllele(ChadoFeatureObject):
         get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id, pub_id=self.pub.pub_id)
 
         # feature relationship to gene
-        self.process_data['GENE']['data'] = []
-        self.process_data['GENE']['data'].append(('GENE', self.gene.name, 0, False))
-        self.load_feature_relationship('GENE')  # We have a special key in the yml file called 'GENE'
-        self.process_data['GENE']['data'] = []
+        self.process_data['GENE']['data'] = [('GENE', self.gene.name, 0, False)]
+        self.load_feature_relationship('GENE', special=self.gene)  # We have a special key in the yml file called 'GENE'
+        del self.process_data['GENE']
 
         # bang c first as this supersedes all things
         if self.bang_c:
@@ -104,7 +103,7 @@ class ChadoAllele(ChadoFeatureObject):
             self.bang_d_it()
 
         for key in self.process_data:
-            log.debug("Processing {}".format(self.process_data[key]['data']))
+            log.debug("Processing {}".format(self.process_data[key]))
             self.type_dict[self.process_data[key]['type']](key)
 
         return self.feature

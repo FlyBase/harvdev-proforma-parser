@@ -468,7 +468,7 @@ class Proforma(object):
                 log.debug('Adding field %s : value %s from line %s to the Proforma object as a new list.' % (field, value, line_number))
                 self.fields_values[field] = []
                 self.fields_values[field].append((field, value, line_number))
-            else:
+            elif value is not None or self.has_bang(field):
                 self.fields_values[field] = (field, value, line_number)
                 log.debug('Adding field %s : value %s from line %s to the Proforma object.' % (field, value, line_number))
 
@@ -514,6 +514,12 @@ class Proforma(object):
                 "{}: {}".format(field, error_message),
                 value,
                 CRITICAL_ERROR)
+
+    def has_bang(self, field):
+        """Return true is filed has bag c or d."""
+        if field in self.bang_c or field in self.bang_d:
+            return True
+        return False
 
     def add_bang(self, field, value, type_of_bang, line_number):
         """Set the bang_c or bang_d property of the object if found on a proforma line.

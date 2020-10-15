@@ -75,6 +75,8 @@ class ChadoSpecies(ChadoObject):
         if self.new_species:
             # Add the pub
             get_or_create(self.session, OrganismPub, organism_id=self.species.organism_id, pub_id=self.pub.pub_id)
+        if not self.has_data('SP1g'):
+            return None
         if self.new_species and self.process_data['SP1g']['data'][FIELD_VALUE] == 'y':
             message = "SP1g (is SP1a+SP1b already in FlyBase?) set to y but species NOT found."
             self.critical_error(self.process_data['SP1g']['data'], message)

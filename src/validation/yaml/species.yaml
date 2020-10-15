@@ -6,10 +6,12 @@ SP1a:
 SP1b:
     required: True
     type: string
+    nullable: False
 SP1g:
     required: True
     allowed: [n,y]
     no_bangc: True
+    nullable: False
 SP2:
     type: string
     if_new_required: True

@@ -23,15 +23,66 @@ GA4:
     required: False
     nullable: True
     at_forbidden: True
+GA7a:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_required: True
 GA8:
     type: string
     required: False
     nullable: True
     at_forbidden: True
+GA17:
+    type: [list,string]
+    required: False
+    nullable: True
+    no_bangc: True
+    at_forbidden: True
+GA28a: #', 'phenotype_comparison',
+    type: [list, string]
+    required: False
+    nullable: True
+    no_bangc: True
+    at_forbidden: True
+GA28b: #', 'phenotype_comparison',
+    type: [list, string]
+    required: False
+    nullable: True
+    no_bangc: True
+    at_forbidden: True
+GA28c: #', 'genetic_interaction_pheno',
+    type: [list, string]
+    required: False
+    nullable: True
+    at_required: True
+GA29a: #', 'phenotype_comparison',
+    type: [list, string]
+    required: False
+    nullable: True
+    no_bangc: True
+    at_forbidden: True
+GA29b: #', 'phenotype_comparison',
+    type: [list, string]
+    required: False
+    nullable: True
+    no_bangc: True
+    at_forbidden: True
+GA29c: #', 'xeno_interaction_pheno',
+    type: [list, string]
+    required: False
+    nullable: True
+    at_required: True   
 GA34a: 
     type: [list, string]
     required: False
     nullable: True
+GA56:
+    type: [list,string]
+    required: False
+    nullable: True
+    no_bangc: True
+    at_forbidden: True
 GA81a:
     type: [list, string]
     required: False

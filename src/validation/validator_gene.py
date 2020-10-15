@@ -43,10 +43,11 @@ class ValidatorGene(Validator):
         {'type': 'boolean'}
         """
         if self.document['G1g'] == 'n':
-            if value and len(value):
+            if (value and len(value)) or len(self.document['G2c']):
                 return
             else:
                 self._error(field, 'Error {} Must be set for new gene.'.format(field))
+                self._error(field, 'BOB: Error {} nit set and G1g is n.'.format(field))
 
     def _validate_wrapping_values(self, field, dict1, comp_fields):
         """Allow wrapping of values.

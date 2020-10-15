@@ -41,6 +41,7 @@ class ChadoFeatureObject(ChadoObject):
         super(ChadoFeatureObject, self).__init__(params)
         self.feature = None
         self.unattrib_pub = None
+        self.new = None
 
     def get_unattrib_pub(self):
         """Get the unattributed pub."""
@@ -56,9 +57,13 @@ class ChadoFeatureObject(ChadoObject):
             self.critical_error(self.process_data[symbol_key]['data'], message)
             return None
         organism, plain_name, sgml = synonym_name_details(self.session, self.process_data[symbol_key]['data'][FIELD_VALUE])
-        self.feature, _ = get_or_create(self.session, Feature, name=plain_name,
-                                        type_id=cvterm.cvterm_id, uniquename='FB{}:temp_0'.format(unique_bit),
-                                        organism_id=organism.organism_id)
+        self.feature, is_new = get_or_create(self.session, Feature, name=plain_name,
+                                             type_id=cvterm.cvterm_id, uniquename='FB{}:temp_0'.format(unique_bit),
+                                             organism_id=organism.organism_id)
+        if is_new:
+            self.feature.new = True
+        else:
+            self.feature.new = False
 
     def load_feature(self, feature_type='gene'):
         """Get feature.
@@ -273,7 +278,7 @@ class ChadoFeatureObject(ChadoObject):
                           value=prop_value,
                           type_id=props_cvterm.cvterm_id)
 
-    def load_feature_relationship(self, key):
+    def load_feature_relationship(self, key, special=None):
         """Add Feature Relationship.
 
         yml options:
@@ -300,7 +305,10 @@ class ChadoFeatureObject(ChadoObject):
 
         for item in items:
             name = item[FIELD_VALUE]
-            obj_feat = feature_name_lookup(self.session, name, type_name=feat_type)
+            if not special:
+                obj_feat = feature_name_lookup(self.session, name, type_name=feat_type)
+            else:
+                obj_feat = feature_name_lookup(self.session, name, type_name=feat_type)
             log.debug("LOOKUP {}: obj feat = {}".format(name, obj_feat))
             fr, _ = get_or_create(self.session, FeatureRelationship,
                                   subject_id=self.feature.feature_id,

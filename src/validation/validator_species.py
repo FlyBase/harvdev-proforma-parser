@@ -37,6 +37,8 @@ class ValidatorSpecies(Validator):
         {'type': 'boolean'}
         """
         log.debug("if_new_required test: {} {}".format(field, value))
+        if 'SP1g' not in self.document:
+            return
         if self.document['SP1g'] == 'n':
             if value and len(value):
                 return

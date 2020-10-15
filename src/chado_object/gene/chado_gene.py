@@ -36,7 +36,7 @@ class ChadoGene(ChadoFeatureObject):
 
     from chado_object.gene.gene_chado_check import (
         g26_format_error, g26_species_check, g26_gene_symbol_check, g26_dbxref_check,
-        g26_check, g28a_check, g28b_check, g31a_check, g31b_check,
+        g26_check, g28a_check, g28b_check, g30_check, g31a_check, g31b_check,
         g39a_check
     )
 
@@ -89,9 +89,10 @@ class ChadoGene(ChadoFeatureObject):
         # extra checks that cannit be done with cerberus.
         # Create lookup up to stop a huge if then else statement
         ########################################################
-        self.checks_for_key = {'G26': self.g26_check,
+        self.checks_for_key = {'G26':  self.g26_check,
                                'G28a': self.g28a_check,
                                'G28b': self.g28b_check,
+                               'G30':  self.g30_check,
                                'G31a': self.g31a_check,
                                'G31b': self.g31b_check,
                                'G39a': self.g39a_check}
@@ -229,6 +230,7 @@ class ChadoGene(ChadoFeatureObject):
         for key in self.process_data:
             if key in self.checks_for_key:
                 self.checks_for_key[key](key)
+        self.g30_check('G30')
 
     def dis_pub(self, key):
         """Dissociate pub from feature."""

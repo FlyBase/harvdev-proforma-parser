@@ -127,6 +127,7 @@ P38:
   required: False
   deposited_file: True
   type: [string, list]
+  nullable: False
   #regex: Too complex lets do it in its own function
 P39:
   required: False
@@ -160,8 +161,10 @@ P43:
   type: list
   allowed: [disease, disease::Done, diseaseF, diseaseF::DONE, diseaseHP, diseaseHP::DONE, dm_gen, dm_gen::DONE,
             dm_other, dm_other::DONE, noDOcur]
+  nullable: True
 P44:
   type: string
+  nullable: True
 P45:
   required: False
   nullable: True
