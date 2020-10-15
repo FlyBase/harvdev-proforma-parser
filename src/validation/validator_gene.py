@@ -42,11 +42,15 @@ class ValidatorGene(Validator):
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
-        if self.document['G1g'] == 'n':
-            if value and len(value):
-                return
-            else:
-                self._error(field, 'Error {} Must be set for new gene.'.format(field))
+        if self.document['G1g'] == 'y':
+            return
+        if 'G2c' in self.document and len(self.document['G2c']) != 0:
+            return
+
+        if value and len(value):
+            return
+        else:
+            self._error(field, 'Error {} Must be set for new gene.'.format(field))
 
     def _validate_wrapping_values(self, field, dict1, comp_fields):
         """Allow wrapping of values.

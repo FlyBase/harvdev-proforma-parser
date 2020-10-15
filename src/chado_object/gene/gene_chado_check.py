@@ -228,6 +228,12 @@ def g28b_check(self, key):
         self.critical_error(self.process_data[key]['data'], message)
 
 
+def g30_check(self, key):
+    """G30 must be present if new."""
+    if self.feature.new and not self.has_data(key):
+        self.critical_error((key, None, 0), 'Error G30 Must be set for new gene.')
+
+
 def g31a_check(self, key):
     """G31a checks.
 

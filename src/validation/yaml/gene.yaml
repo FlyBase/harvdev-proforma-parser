@@ -15,6 +15,7 @@ G1f:
     no_bangc: True
     dependencies: [G28b, G2a]
     excludes: [G1e, G2c]
+    nullable: True
 G1g:
     type: string
     required: True

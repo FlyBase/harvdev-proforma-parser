@@ -160,8 +160,10 @@ P43:
   type: list
   allowed: [disease, disease::Done, diseaseF, diseaseF::DONE, diseaseHP, diseaseHP::DONE, dm_gen, dm_gen::DONE,
             dm_other, dm_other::DONE, noDOcur]
+  nullable: True
 P44:
   type: string
+  nullable: True
 P45:
   required: False
   nullable: True

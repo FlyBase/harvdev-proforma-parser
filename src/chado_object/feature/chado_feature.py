@@ -56,9 +56,10 @@ class ChadoFeatureObject(ChadoObject):
             self.critical_error(self.process_data[symbol_key]['data'], message)
             return None
         organism, plain_name, sgml = synonym_name_details(self.session, self.process_data[symbol_key]['data'][FIELD_VALUE])
-        self.feature, _ = get_or_create(self.session, Feature, name=plain_name,
-                                        type_id=cvterm.cvterm_id, uniquename='FB{}:temp_0'.format(unique_bit),
-                                        organism_id=organism.organism_id)
+        self.feature, new = get_or_create(self.session, Feature, name=plain_name,
+                                          type_id=cvterm.cvterm_id, uniquename='FB{}:temp_0'.format(unique_bit),
+                                          organism_id=organism.organism_id)
+        self.feature.new = new
 
     def load_feature(self, feature_type='gene'):
         """Get feature.
@@ -279,8 +280,7 @@ class ChadoFeatureObject(ChadoObject):
 
         for item in items:
             name = item[FIELD_VALUE]
-            obj_feat = feature_name_lookup(self.session, name, type_name=feat_type)
-            log.debug("LOOKUP {}: obj feat = {}".format(name, obj_feat))
+            obj_feat = feature_symbol_lookup(self.session, feat_type, name)
             fr, _ = get_or_create(self.session, FeatureRelationship,
                                   subject_id=self.feature.feature_id,
                                   object_id=obj_feat.feature_id,
