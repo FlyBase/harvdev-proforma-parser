@@ -347,9 +347,7 @@ class ChadoChem(ChadoFeatureObject):
         entry_already_exists = self.chemical_feature_lookup(organism_id, 'CH3a', self.chemical_information['name'], current=True)
         if entry_already_exists:
             self.new_chemical_entry = False
-            self.warning_error(self.process_data['CH3a']['data'],
-                               'An entry already exists in the database with this name: {}'
-                               .format(entry_already_exists.name))
+            log.debug('An entry already exists in the database with this name: {}'.format(entry_already_exists.name))
             return entry_already_exists
 
         #
@@ -361,9 +359,7 @@ class ChadoChem(ChadoFeatureObject):
         # If we already have an entry and we already know it is new then we have a problem.
         if entry_already_exists:
             self.new_chemical_entry = False
-            self.warning_error(self.process_data['CH1a']['data'],
-                               'An entry already exists in the database with this name: {}'
-                               .format(entry_already_exists.name))
+            log.debug('An entry already exists in the database with this name: {}'.format(entry_already_exists.name))
             return entry_already_exists
 
         #
@@ -535,7 +531,7 @@ class ChadoChem(ChadoFeatureObject):
             if features:
                 log.debug("features = {}".format(features))
                 message = "Synonym found for this already: Therefore not reloading Chemical Entity but using existing one {}.".format(features[0].name)
-                self.warning_error(self.process_data[key_name]['data'], message)
+                log.debug(message)
                 return features[0]
         return entry
 
@@ -619,18 +615,14 @@ class ChadoChem(ChadoFeatureObject):
             return False
 
         if not chebi.inchikey:
-            self.warning_error(self.process_data[process_key]['data'],
-                               'No InChIKey found for entry: {}'
-                               .format(chemical['identifier']))
+            log.debug('No InChIKey found for entry: {}'.format(chemical['identifier']))
 
         # Check whether the name intended to be used in FlyBase matches
         # the name returned from the database.
         if self.has_data('CH1a'):
             plain_text = sgml_to_plain_text(self.process_data['CH1a']['data'][FIELD_VALUE])
             if chebi.name.lower() != plain_text.lower():
-                self.warning_error(self.process_data['CH1a']['data'],
-                                   'ChEBI name does not match name specified for FlyBase: {} -> {}'
-                                   .format(chebi.name, plain_text))
+                log.debug('ChEBI name does not match name specified for FlyBase: {} -> {}'.format(chebi.name, plain_text))
             else:
                 log.debug('Queried name \'{}\' matches name used in proforma \'{}\''.format(chebi.name, self.process_data['CH1a']['data'][FIELD_VALUE]))
 
@@ -641,7 +633,7 @@ class ChadoChem(ChadoFeatureObject):
             if chebi.name.lower() != plain_text.lower():
                 message = 'ChEBI name does not match name specified in identifier field: {} -> {}'.\
                     format(chebi.name, chemical['name'])
-                self.warning_error(self.process_data[process_key]['data'], message)
+                log.debug(message)
 
         chemical['name'] = chebi.name
         chemical['inchikey'] = chebi.inchikey

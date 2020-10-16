@@ -36,7 +36,7 @@ class ChadoGene(ChadoFeatureObject):
 
     from chado_object.gene.gene_chado_check import (
         g26_format_error, g26_species_check, g26_gene_symbol_check, g26_dbxref_check,
-        g26_check, g28a_check, g28b_check, g31a_check, g31b_check,
+        g26_check, g28a_check, g28b_check, g30_check, g31a_check, g31b_check,
         g39a_check
     )
 
@@ -229,6 +229,7 @@ class ChadoGene(ChadoFeatureObject):
         for key in self.process_data:
             if key in self.checks_for_key:
                 self.checks_for_key[key](key)
+        self.g30_check('G30')
 
     def dis_pub(self, key):
         """Dissociate pub from feature."""
