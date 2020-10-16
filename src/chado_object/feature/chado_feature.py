@@ -285,7 +285,7 @@ class ChadoFeatureObject(ChadoObject):
             try:
                 obj_feat = feature_symbol_lookup(self.session, feat_type, name)
             except NoResultFound:
-                self.critical_error((key, None, 0), "No Result found for {}".format(name))
+                self.critical_error((key, None, 0), "No Result found for {} {}".format(feat_type, name))
                 return
             fr, _ = get_or_create(self.session, FeatureRelationship,
                                   subject_id=self.feature.feature_id,
