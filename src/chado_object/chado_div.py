@@ -85,6 +85,7 @@ class ChadoDiv(ChadoFeatureObject):
             self.critical_error(self.process_data['DIV1a']['data'], message)
         if self.new:
             self.load_synonym('DIV1a')
+
         if self.has_data('DIV1d'):
             self.session.delete(self.feature)
             self.feature = None
