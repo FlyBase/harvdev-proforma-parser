@@ -93,7 +93,7 @@ class ChadoAllele(ChadoFeatureObject):
 
         # feature relationship to gene
         self.process_data['GENE']['data'] = [('GENE', self.gene.name, 0, False)]
-        self.load_feature_relationship('GENE', special=self.gene)  # We have a special key in the yml file called 'GENE'
+        self.load_feature_relationship('GENE')  # We have a special key in the yml file called 'GENE'
         del self.process_data['GENE']
 
         # bang c first as this supersedes all things

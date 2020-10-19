@@ -280,7 +280,7 @@ class ChadoFeatureObject(ChadoObject):
                           value=prop_value,
                           type_id=props_cvterm.cvterm_id)
 
-    def load_feature_relationship(self, key, special=None):
+    def load_feature_relationship(self, key):
         """Add Feature Relationship.
 
         yml options:
