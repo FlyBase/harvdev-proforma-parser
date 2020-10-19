@@ -101,13 +101,14 @@ class ChadoMultipub(ChadoPub):
             # Check MP2a is defined. If not then validation will already have raised an error
             # So just return
 
-            if not self.has_data('MP2'):
+            if not self.has_data('MP2a'):
                 return pub
 
             # check MP2a is equal to miniref. Must exist from validation.
-            if pub.miniref != self.process_data['MP2a']['data'][FIELD_VALUE]:
-                message = "{} does not match abbreviation of {}".format(self.process_data['MP2a']['data'][FIELD_VALUE], pub.miniref)
-                self.critical_error(self.process_data['MP2a']['data'], message)
+            if 'MP2a' not in self.bang_c:
+                if pub.miniref != self.process_data['MP2a']['data'][FIELD_VALUE]:
+                    message = "{} does not match abbreviation of {}".format(self.process_data['MP2a']['data'][FIELD_VALUE], pub.miniref)
+                    self.critical_error(self.process_data['MP2a']['data'], message)
             return pub
 
         cvterm = get_cvterm(self.session, self.process_data['MP17']['cvname'], self.process_data['MP17']['data'][FIELD_VALUE])
@@ -140,8 +141,8 @@ class ChadoMultipub(ChadoPub):
             # else:
             #     self.critical_error(('MP17', None, 0), 'Error MP17 Must be set for new pubs.')
 
-        if not self.has_data('MP17'):
-            return None
+            if not self.has_data('MP17'):
+                return None
 
         self.pub = self.get_pub()
 
