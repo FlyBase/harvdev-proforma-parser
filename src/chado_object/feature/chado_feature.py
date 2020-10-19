@@ -103,6 +103,7 @@ class ChadoFeatureObject(ChadoObject):
                                                                   self.process_data[id_key]['data'][FIELD_VALUE],
                                                                   self.process_data[symbol_key]['data'][FIELD_VALUE],
                                                                   type_name=supported_features[feature_type][SO])
+                self.feature.new = False
             except DataError as e:
                 self.critical_error(self.process_data[id_key]['data'], e.error)
 
@@ -112,6 +113,7 @@ class ChadoFeatureObject(ChadoObject):
             #  organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['G1a']['data'][FIELD_VALUE])
             try:
                 self.feature = feature_symbol_lookup(self.session, supported_features[feature_type][SO], self.process_data[symbol_key]['data'][FIELD_VALUE])
+                self.feature.new = False
             except MultipleResultsFound:
                 message = "Multiple {}'s with symbol {}.".format(feature_type, self.process_data[symbol_key]['data'][FIELD_VALUE])
                 log.info(message)
@@ -305,11 +307,11 @@ class ChadoFeatureObject(ChadoObject):
 
         for item in items:
             name = item[FIELD_VALUE]
-            if not special:
-                obj_feat = feature_name_lookup(self.session, name, type_name=feat_type)
-            else:
-                obj_feat = feature_name_lookup(self.session, name, type_name=feat_type)
-            log.debug("LOOKUP {}: obj feat = {}".format(name, obj_feat))
+            try:
+                obj_feat = feature_symbol_lookup(self.session, feat_type, name)
+            except NoResultFound:
+                self.critical_error((key, None, 0), "No Result found for {} {}".format(feat_type, name))
+                return
             fr, _ = get_or_create(self.session, FeatureRelationship,
                                   subject_id=self.feature.feature_id,
                                   object_id=obj_feat.feature_id,

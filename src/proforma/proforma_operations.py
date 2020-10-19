@@ -371,6 +371,7 @@ class Proforma(object):
     set_of_fields_that_should_be_lists = set()
     set_of_fields_with_wrapping_values = set()
     set_fields_to_key = {}
+    excludes = set()
 
     location = os.getcwd() + '/src/validation/yaml'
     for filename in os.listdir(location):  # noqa: C901
@@ -387,6 +388,9 @@ class Proforma(object):
                     if 'set' in yaml_to_process[field_name]:
                         set_fields_to_key[field_name] = yaml_to_process[field_name]['set']
                         log.debug("Adding {} with value {} for sets".format(field_name, yaml_to_process[field_name]['set']))
+                    if 'excludes' in yaml_to_process[field_name]:
+                        for item in yaml_to_process[field_name]['excludes']:
+                            excludes.add(item)
                     if type(field_type) is list:
                         if 'list' in field_type:
                             set_of_fields_that_should_be_lists.add(field_name)
@@ -468,7 +472,7 @@ class Proforma(object):
                 log.debug('Adding field %s : value %s from line %s to the Proforma object as a new list.' % (field, value, line_number))
                 self.fields_values[field] = []
                 self.fields_values[field].append((field, value, line_number))
-            elif value is not None or self.has_bang(field):
+            elif field not in Proforma.excludes or value:
                 self.fields_values[field] = (field, value, line_number)
                 log.debug('Adding field %s : value %s from line %s to the Proforma object.' % (field, value, line_number))
 

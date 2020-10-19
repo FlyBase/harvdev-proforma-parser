@@ -8,6 +8,7 @@ DRIVERS:
     allowed: ['Scer\GAL4', 'Scer\GAL80', 'Tn10\tetR',  'Ecol\lexA', 
               'Ncra\QF', 'Ncra\QS', 'Scer\FLP1', 'P1\cre',
               'Hsim\VP16', 'Hsap\RELA', 'Spyo\Cas9', 'Dcr-2']
+    feat_type: gene
 GA1a:  # Main gene symbol to be used. Processed first and seperately
     type: ignore
     cv: synonym type
