@@ -11,15 +11,18 @@
 #########################################################################################
 DIV1a:
   type: ignore
-  cv: FlyBase miscellaneous CV
-  cvterm: disease implicated variant
+  feat_cv: FlyBase miscellaneous CV
+  feat_cvterm: disease implicated variant
+  cv: synonym type
+  cvterm: symbol
+  is_current: True
 DIV1b:
   type: synonym
   cv: synonym type
   cvterm: symbol
   is_current: True
-  only_one: True
-  remove_old: True
+  only_one: False
+  remove_old: False
 DIV1c:
   type: ignore
 DIV1d:

@@ -74,7 +74,7 @@ class ChadoDiv(ChadoFeatureObject):
         div_name = self.process_data['DIV1a']['data'][FIELD_VALUE]
         if self.process_data['DIV1c']['data'][FIELD_VALUE] == "n":
             self.new = True
-        cvterm = self.cvterm_query(self.process_data['DIV1a']['cv'], self.process_data['DIV1a']['cvterm'])
+        cvterm = self.cvterm_query(self.process_data['DIV1a']['feat_cv'], self.process_data['DIV1a']['feat_cvterm'])
         organism = get_default_organism(self.session)
         self.feature, is_new = get_or_create(self.session, Feature, organism_id=organism.organism_id, uniquename=div_name, name=div_name, type_id=cvterm)
         if self.new != is_new:
@@ -83,6 +83,8 @@ class ChadoDiv(ChadoFeatureObject):
             else:
                 message = "{} does not exist but DIV1d specifys it should.".format(div_name)
             self.critical_error(self.process_data['DIV1a']['data'], message)
+        if self.new:
+            self.load_synonym('DIV1a')
         if self.has_data('DIV1d'):
             self.session.delete(self.feature)
             self.feature = None
