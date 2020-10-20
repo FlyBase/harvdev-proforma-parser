@@ -229,5 +229,5 @@ HH15:
 HH20:
   required: False
   type: [string, list]
-  at_required: False
-  nullable: True  
+  at_forbidden: True
+  nullable: True

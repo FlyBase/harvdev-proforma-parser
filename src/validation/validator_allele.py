@@ -62,4 +62,9 @@ class ValidatorAllele(Validator):
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
-        pass
+        if not value:
+            return
+        if re.search(r"@+.*@+", value) is not None:
+            return
+        self._error(field, 'Error {} @...@ is required.'.format(value))
+

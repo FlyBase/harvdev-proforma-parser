@@ -7,7 +7,7 @@ HH1b:
 HH1e:
   required: False
   type: [list, string]
-  at_required: False
+  at_forbidden: True
 HH1f:
   required: True
   type: string
@@ -227,5 +227,5 @@ HH15:
 HH20:
   required: False
   type: [string, list]
-  at_required: False
+  at_forbidden: True
   nullable: True 
