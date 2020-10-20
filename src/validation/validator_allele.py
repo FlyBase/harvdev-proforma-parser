@@ -67,4 +67,3 @@ class ValidatorAllele(Validator):
         if re.search(r"@+.*@+", value) is not None:
             return
         self._error(field, 'Error {} @...@ is required.'.format(value))
-
