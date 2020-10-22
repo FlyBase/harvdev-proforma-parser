@@ -46,13 +46,27 @@ code_to_string = {
 
 
 def process_doid(session, doid, do_dict, allowed_qualifiers, cv_name):
-    """Process doid line."""
+    """Process doid line.
+
+    doid: string, doid bit of value i.e.
+                  'DOES NOT model doid desc 1 ; DOID:00001'
+                  'model of doid desc 2 ; DOID:00002'
+    do_dict: dictionary to store results in should return something liek:
+        {
+         'docvterm': <cvterm object>, # for the doid term
+         'error': [], # can be many errors so check for empty array for no error)
+         'qualifier': one of the allowed qualifiers.
+         'provenance': 'FLYBASE'
+        }
+    allowed_qualifiers: [], list of allowed qualifier name
+                            obtained from the yml file (See GA34a as an example)
+    cv_name: string, cv name to be used.
+    """
     for qualifier in allowed_qualifiers:
         if doid.startswith(qualifier):
             do_dict['qualifier'] = qualifier
             doid = doid.replace(qualifier, '', 1)
 
-    # Awaiting feed back on wether qualifiers are optionl or not
     if 'qualifier' not in do_dict:
         do_dict['error'].append("No qualifier defined")
 
@@ -152,6 +166,8 @@ def process_DO_line(session, line, cv_name, allowed_qualifiers, allowed_symbols,
          'evidence_code':   # with symbols expanded to i.e. for 1
                              # CEA with FLYBASE:symbol-15; FB:FBgn0001500
         }
+
+    cv_name: cv name
     """
     do_dict = {'error': [],
                'provenance': 'FlyBase',

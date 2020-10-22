@@ -29,7 +29,7 @@ GA7a:
     nullable: True
     at_required: True
 GA8:
-    type: string
+    type: [list, string]
     required: False
     nullable: True
     at_forbidden: True

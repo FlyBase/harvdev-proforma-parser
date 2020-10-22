@@ -101,5 +101,5 @@ class ValidatorHumanhealth(Validator):
         for line in check_arr:
             if not line or len(line) == 0:
                 continue
-            if re.search(r"@+.*@+", line) is not None:
+            if re.search(r"@+.*@+", line):
                 self._error(field, 'Error {} @...@ is forbidden here.'.format(line))
