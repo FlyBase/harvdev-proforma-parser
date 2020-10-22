@@ -3,6 +3,11 @@ GENE: # jusy a placer to store details of relationship to gene
     cv: relationship type
     cvterm: alleleof
     add_unattributed_paper: True
+DRIVERS: 
+    type: ignore
+    allowed: ['Scer\GAL4', 'Scer\GAL80', 'Tn10\tetR',  'Ecol\lexA', 
+              'Ncra\QF', 'Ncra\QS', 'Scer\FLP1', 'P1\cre',
+              'Hsim\VP16', 'Hsap\RELA', 'Spyo\Cas9', 'Dcr-2']
     feat_type: gene
 GA1a:  # Main gene symbol to be used. Processed first and seperately
     type: ignore
@@ -30,7 +35,45 @@ GA2b:
     cv: synonym type
     cvterm: fullname
     is_current: False
-# 'GA81a', 'primary_disease-implication_change', # featureprop:- cv = 'property type', cvterm = 'primary_disease-implication_change'
+# 'GA4',   'FlyBase miscellaneous CV',        #feature_cvterm
+GA4:
+    type: cvterm
+    cv: FlyBase miscellaneous CV
+# 'GA7a',  'single_mutant_pheno',             #phendesc
+GA7a:
+    type: cvterm
+# 'GA8',   'FlyBase miscellaneous CV',        #feature_cvterm
+GA8:
+    type: cvterm
+    cv: FlyBase miscellaneous CV
+# 'GA17',  'phenstatement',                   #phenstatement
+GA17:
+    type: pheno_cvterm
+# 'GA28a', 'phenotype_comparison',
+# 'GA28b', 'phenotype_comparison',
+# 'GA28c', 'genetic_interaction_pheno',
+# 'GA29a', 'phenotype_comparison',
+# 'GA29b', 'phenotype_comparison',
+# 'GA29c', 'xeno_interaction_pheno',
+
+# 'GA34a', 'disease_ontology',                # feature_cvterm
+GA34a:  # SEE G24b very similar
+    type: DOcvtermprop
+    cv: disease_ontology
+    prop_cv: FlyBase miscellaneous CV
+    prop_cvterms: ['provenance', 'qualifier', 'evidence_code']
+    allowed_qualifiers: ['model of', 'ameliorates', 'exacerbates', 'DOES NOT model', 'DOES NOT ameliorate', 'DOES NOT exacerbate']
+    allowed_symbols: ['gene']
+    allowed_codes: ['CEC', 'CEA' ,'modeled']
+# 'GA56',  'phenstatement',                   #phenstatement
+GA56:
+    type: pheno_cvterm
+    class: phenotypic_class
+    qual_pheno_class: ['FBdv:default', 'FBcv:genotype_to_phenotype_relation', 'FBcv:environmental_qualifier',
+                  'FBcv:sex_qualifier', 'FBcv:clone_qualifier', 'FBcv:dominance_qualifier',
+                  'FBcv:intensity_qualifier', 'misc_pheno_class_qualifier']
+    qual_pheno_manifest: ['FBdv:default', 'FBcv:genotype_to_phenotype_relation', 'FBcv:environmental_qualifier',
+                     'FBcv:sex_qualifier', 'FBcv:clone_qualifier', 'FBcv:spatial_qualifier', 'FBcv:structural_qualifier', 'FBcv:temporal_qualifier']
 GA81a:
     type: feature_relationship
     cv: relationship type
@@ -49,27 +92,17 @@ GA85:
     cvterm: deliberate_omission
     value: GA85
 
-    # 'GA1b',  'symbol',
     # 'GA1e',  'symbol',
     # 'GA1f',  'merge',
-    # 'GA2a',  'fullname',
-    # 'GA2b',  'fullname',
     # 'GA2c',  'fullname',
     # 'GA31',  'etymology',                       #feaureprop
     # 'GA32a', 'is_obsolete',
     # 'GA32b', 'dissociate',
-    # 'GA3',   'FlyBase miscellaneous CV',        #feature_cvterm
-    # 'GA4',   'FlyBase miscellaneous CV',        #feature_cvterm
-    # 'GA56',  'phenstatement',                   #phenstatement
-    # 'GA17',  'phenstatement',                   #phenstatement
-    # 'GA7a',  'single_mutant_pheno',             #phendesc
-    # 'GA28a', 'phenotype_comparison',
-    # 'GA28b', 'phenotype_comparison',
-    # 'GA28c', 'genetic_interaction_pheno',
-    # 'GA29a', 'phenotype_comparison',
-    # 'GA29b', 'phenotype_comparison',
-    # 'GA29c', 'xeno_interaction_pheno',
+
+
     # 'GA21',  'phenotype_comparison',
+
+
     # 'GA22',  'interallele_comp',
     # 'GA10a', 'associated_with',                 #feature_relationship.object_id
     # 'GA10b', 'location_comment',
@@ -79,8 +112,6 @@ GA85:
     # 'GA10f', 'first_base_of_unique_in_natTE',
     # 'GA10g',
     # 'associated_with/cyto_change_comment',      #feature_relationship.subject_id
-    # 'GA8',   'FlyBase miscellaneous CV',        #feature_cvterm
-    # 'GA19',  'FlyBase miscellaneous CV',        #feature_cvterm
     # 'GA15',  'discoverer',
     # 'GA11',  'progenitor',                      #feature_relationship.object_id
     # 'GA23a', 'origin_type',
@@ -103,7 +134,6 @@ GA85:
     # 'GA90k', 'type',                            #cv = SO
     # 'GA91',  'library_feature',                 #library_feature
     # 'GA91a', 'library_featureprop',             #library_featureprop
-    # 'GA34a', 'disease_ontology',                # feature_cvterm
     # 'GA34b', 'hdm_comments',
     # 'GA34c', 'hdm_internal_notes',
     # 'GA30a', 'tagged_with',                     #feature_relationship.object_id
@@ -121,6 +151,7 @@ GA85:
     # 'GA80b', 'representative_isoform', # feature_relationship:- (cv = 'relationship type', cvterm = 'representative_isoform')
     # 'GA80c', 'other_disease-implication_change', # featureprop:- cv = 'property type', cvterm = 'other_disease-implication_change'
     # 'GA80d', 'data_link', # feature_dbxref (db = hgnc)
+    # 'GA81a', 'primary_disease-implication_change', # featureprop:- cv = 'property type', cvterm = 'primary_disease-implication_change'
     # 'GA81b', 'additional_disease-implication_change', # featureprop:- cv = 'property type', cvterm = 'additional_disease-implication_change'
     # 'GA82', 'human_disease_relevant', # humanhealth_feature +
     #                                   # humanhealth_featureprop:- (cv = 'humanhealth_featureprop type', cvterm = 'human_disease_relevant')
@@ -129,4 +160,33 @@ GA85:
     # 'GA83c', 'description', # dbxref.description
     # 'GA83d', 'action',    # remove the above GA83's
     # 'GA84a', 'HDM_comment', # featureprop:- cv = 'property type', cvterm = 'HDM_comment'
+
+ #### NOT in svn
+ # 'GA3',   'FlyBase miscellaneous CV',        #feature_cvterm
+# 'GA19',  'FlyBase miscellaneous CV',        #feature_cvterm
+
+############
+# obsoleted.
+############
+# File containing list of obsolete ALLELE PROFORMA fields
+# Field code designations listed in this file should NOT be re-used for new proforma fields
+#! GA1c. Database allele symbol to replace               *i :
+#    ! GA3.  Rank [CV]                                       *k :
+#    ! GA7.  Phenotype  [free text]                          :
+#    ! GA7b. Alleles or genotypes used                      NSC :
+#    ! GA9a. Is the allele in FlyBase already (with any name)? NSC :
+#    ! GA9b. Other synonym(s) for allele symbol    :
+#    ! GA9c. Other synonym(s) for allele name                :
+#    ! GA10. Associated aberration or mulspcon    :
+#    ! GA12. Molecular modifications relative to wildtype  :
+#    ! GA15.  Discoverer                                    *w :
+#    ! GA16. Exon designations (for use in GAT14)            :
+#    ! GA18. Genes to which nucleotide identity is reported  *j :
+#    ! GA19.  Assay mode [CV]                               *k :
+#    ! GA23. Notes on origin [SoftCV]                        *R :
+#    ! GA24. Gain of function data -- structured [SoftCV]    *k :
+#    ! GA25. Gain of function data -- free text              *k :
+#    ! GA26. Name in paper for GA10                          :
+#    ! GA27. Orientation of insert rel. to chromosome [+-?]  :
+#    ! GA30.  Tagged with                                       *s :
 

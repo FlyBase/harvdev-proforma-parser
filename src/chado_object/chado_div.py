@@ -71,9 +71,13 @@ class ChadoDiv(ChadoFeatureObject):
 
     def get_div(self):
         """Get the DIV."""
+        if not self.has_data('DIV1a'):
+            return None
         div_name = self.process_data['DIV1a']['data'][FIELD_VALUE]
         if self.process_data['DIV1c']['data'][FIELD_VALUE] == "n":
             self.new = True
+        else:
+            self.new = False
         cvterm = self.cvterm_query(self.process_data['DIV1a']['feat_cv'], self.process_data['DIV1a']['feat_cvterm'])
         organism = get_default_organism(self.session)
         self.feature, is_new = get_or_create(self.session, Feature, organism_id=organism.organism_id, uniquename=div_name, name=div_name, type_id=cvterm)

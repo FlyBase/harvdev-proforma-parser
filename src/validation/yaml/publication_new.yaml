@@ -137,6 +137,7 @@ P38:
   required: False
   deposited_file: True
   type: [string, list]
+  nullable: True
   #regex: Too complex lets do it in its own function
 P39:
   required: False

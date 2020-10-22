@@ -89,9 +89,10 @@ class ChadoGene(ChadoFeatureObject):
         # extra checks that cannit be done with cerberus.
         # Create lookup up to stop a huge if then else statement
         ########################################################
-        self.checks_for_key = {'G26': self.g26_check,
+        self.checks_for_key = {'G26':  self.g26_check,
                                'G28a': self.g28a_check,
                                'G28b': self.g28b_check,
+                               'G30':  self.g30_check,
                                'G31a': self.g31a_check,
                                'G31b': self.g31b_check,
                                'G39a': self.g39a_check}

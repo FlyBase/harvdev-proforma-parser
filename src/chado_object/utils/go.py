@@ -1,4 +1,4 @@
-"""GO, general routines.
+"""GO and DO general routines.
 
 .. module:: GO
    :synopsis: Lookup and general dbxref functions.
@@ -7,9 +7,9 @@
 """
 import re
 from harvdev_utils.chado_functions import (
-    feature_name_lookup, get_cvterm, get_feature_by_uniquename
+    CodingError, feature_name_lookup, get_cvterm, get_feature_by_uniquename, feature_symbol_lookup
 )
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from harvdev_utils.production import Db
 from harvdev_utils.chado_functions import get_or_create
 
@@ -43,6 +43,144 @@ code_to_string = {
 # quali = ['colocalizes_with', 'contributes_to', 'NOT']
 # if($1 eq 'UniProtKB' or $1 eq 'FlyBase' or $1 eq 'BHF-UCL' or $1 eq 'GOC' or $1 eq 'HGNC' or $1 eq 'IntAct' or $1
 # eq 'InterPro' or $1 eq 'MGI' or $1 eq 'PINC' or $1 eq 'Reactome' or $1 eq 'RefGenome' ){
+
+
+def process_doid(session, doid, do_dict, allowed_qualifiers, cv_name):
+    """Process doid line.
+
+    doid: string, doid bit of value i.e.
+                  'DOES NOT model doid desc 1 ; DOID:00001'
+                  'model of doid desc 2 ; DOID:00002'
+    do_dict: dictionary to store results in should return something liek:
+        {
+         'docvterm': <cvterm object>, # for the doid term
+         'error': [], # can be many errors so check for empty array for no error)
+         'qualifier': one of the allowed qualifiers.
+         'provenance': 'FLYBASE'
+        }
+    allowed_qualifiers: [], list of allowed qualifier name
+                            obtained from the yml file (See GA34a as an example)
+    cv_name: string, cv name to be used.
+    """
+    for qualifier in allowed_qualifiers:
+        if doid.startswith(qualifier):
+            do_dict['qualifier'] = qualifier
+            doid = doid.replace(qualifier, '', 1)
+
+    if 'qualifier' not in do_dict:
+        do_dict['error'].append("No qualifier defined")
+
+    # split doid into code and description
+    fpi = {
+        'do_name': 1,
+        'do_code': 2,
+    }
+    full_pattern = r"""
+        ^           # start of line
+        \s*         # possible leading spaces
+        (.*)        # description can have spaces
+        \s*         # possible spaces
+        ;           # semi colon
+        \s*         # possible spaces
+        DOID:       # DOID: prefix
+        (\d+)       # accession 7 digit number i.e. 0000011
+        \s*         # possible spaces
+    """
+    fields = re.search(full_pattern, doid, re.VERBOSE)
+    if not fields:
+        do_dict['error'].append("Failed to match DO format 'xxxxxx xxx ; DOID:d+'")
+        return
+
+    for key in fpi.keys():
+        log.debug('DOTERM: {}: {} {}'.format(key, fpi[key], fields.group(fpi[key])))
+
+    # get cvterm using the cvterm name
+    cvterm_name = fields.group(fpi['do_name']).strip()
+    try:
+        do_dict['docvterm'] = get_cvterm(session, cv_name, cvterm_name)
+    except CodingError:
+        do_dict['error'].append('Could not find cv {} cvterm {}'.format(cv_name, cvterm_name))
+        return
+    # check the cvterm dbxref to make sure the gocode matches the accession
+    docode = str(fields.group(fpi['do_code'])).strip()
+    if docode != do_dict['docvterm'].dbxref.accession:
+        do_dict['error'].append("{} matches {} but lookup gives {} instead?".format(cvterm_name, docode, do_dict['docvterm'].dbxref.accession))
+
+
+def process_evidence(session, do_dict, evidence, allowed_codes):
+    """Process the evidence bit."""
+    bits = evidence.split()
+    do_dict['evidence_code'] = bits.pop(0)  # first element should be the code
+    if do_dict['evidence_code'] not in allowed_codes:
+        message = "{} Not an allowed evidence code must be one of {}".format(do_dict['evidence_code'], allowed_codes)
+        do_dict['error'].append(message)
+        return
+    if not bits:
+        return
+    code_quali = bits.pop(0)  # first element after evidence code
+    if not (code_quali == 'with' or code_quali == 'by'):
+        do_dict['error'].append("Only with/by allowed after evidence code, {} is listed here".format(code_quali))
+
+    symbols = []
+    pattern = '@([^@]+)@'
+    for item in bits:
+        fields = re.search(pattern, item)
+        if not fields:
+            do_dict['error'].append("Only @symbol@ allowed but here we have {}".format(item))
+            continue
+        else:
+            symbol_name = fields.group(1)
+            try:
+                feature = feature_symbol_lookup(session, 'gene', symbol_name)
+            except NoResultFound:
+                do_dict['error'].append("Unable to lookup symbol {}".format(symbol_name))
+                continue
+            except MultipleResultsFound:
+                do_dict['error'].append("Non unique lookup for symbol {}".format(symbol_name))
+                continue
+            symbol_string = "FLYBASE:{}; FB:{}".format(symbol_name, feature.uniquename)
+            symbols.append(symbol_string)
+
+    do_dict['evidence_code'] = "{} {} {}".format(do_dict['evidence_code'], code_quali, ', '.join(symbols))
+
+
+def process_DO_line(session, line, cv_name, allowed_qualifiers, allowed_symbols, allowed_codes):
+    """From string generate and validate DO.
+
+    Examples:-
+    1) Parkinson's disease ; DOID:14330 | CEA with @symbol-15@
+    2) model of hereditary spastic paraplegia 31 ; DOID:0110782 | CEA
+    3) ameliorates neuronal ceroid lipofuscinosis 4B ; DOID:0110720 | modeled by @symbol-16@
+
+    GA34a: examples
+    allowed_qualifiers: ['model of', 'ameliorates', 'exacerbates', 'DOES NOT model', 'DOES NOT ameliorate', 'DOES NOT exacerbate']
+    allowed_symbols: ['allele']
+    allowed:_codes: ['CEC, 'CEA' ,'modeled']
+
+    return dict of:-
+        {
+         'docvterm': <cvterm object>,
+         'error': [], # can be many errors so check for empty array for no error)
+         'qualifier': one of the allowed qualifiers.
+         'provenance': 'FLYBASE'
+         'evidence_code':   # with symbols expanded to i.e. for 1
+                             # CEA with FLYBASE:symbol-15; FB:FBgn0001500
+        }
+
+    cv_name: cv name
+    """
+    do_dict = {'error': [],
+               'provenance': 'FlyBase',
+               'docvterm': None}
+    # split into DOID and evidence
+    doid, evidence = line.split('|')
+    if not evidence:
+        message = "Could not split line by | into doid and evidence"
+        do_dict['error'].append(message)
+        return do_dict
+    process_doid(session, doid, do_dict, allowed_qualifiers, cv_name)
+    process_evidence(session, do_dict, evidence, allowed_codes)
+    return do_dict
 
 
 def process_GO_line(session, line, cv_name, allowed_qualifiers):

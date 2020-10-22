@@ -519,6 +519,12 @@ class Proforma(object):
                 value,
                 CRITICAL_ERROR)
 
+    def has_bang(self, field):
+        """Return true is filed has bag c or d."""
+        if field in self.bang_c or field in self.bang_d:
+            return True
+        return False
+
     def add_bang(self, field, value, type_of_bang, line_number):
         """Set the bang_c or bang_d property of the object if found on a proforma line.
 

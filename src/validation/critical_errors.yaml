@@ -35,10 +35,13 @@ MP17:
 SP1a:
   - value does not match regex
   - null value not allowed
+  - required field
 SP1b:
   - null value not allowed
+  - required field
 SP1g:
   - null value not allowed
+  - required field
 SP4:
   - value does not match regex
 DB3:
@@ -74,6 +77,7 @@ G91a:
   - unallowed value
 DIV1a:
   - null value not allowed
+  - required field
 DIV2a:
   - Cannot set DIV2a if DIV2b is set.
 DIV2b:

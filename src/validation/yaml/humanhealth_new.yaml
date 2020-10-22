@@ -128,37 +128,44 @@ HH7b:
   nullable: True
 HH7c:
   required: False
+  nullable: True
   at_required: True
   type: [string, list]
   set: HH7
 HH7d:
   required: False
+  nullable: True
   type: [string, list]
   set: HH7
 HH7e:
   required: False
+  nullable: True
   type: string
   no_bangc: True
   set: HH7
 HH7f:
   required: False
+  nullable: True
   type: string
   no_bangc: True
   allowed: [y, Y]
   set: HH7
 HH8a:
   required: False
+  nullable: True
   type: string
   no_bangc: True
   set: HH8
 HH8c:
   required: False
+  nullable: True
   at_required: True
   type: [string, list]
   dependencies: [HH8a]
   set: HH8
 HH8d:
   required: False
+  nullable: True
   type: string
   dependencies: [HH8a]
   no_bangc: True
@@ -185,23 +192,27 @@ HH8e:
   
 HH14a:
   required: false
+  nullable: True
   type: string
   no_bangc: True
   set: HH14
 HH14b:
   required: False
+  nullable: True
   type: string
   no_bangc: True 
   dependencies: [HH14a]
   set: HH14
 HH14c:
   required: False
+  nullable: True
   type: string
   dependencies: [HH14a, HH14b]
   at_required: True
   set: HH14
 HH14d:
   required: False
+  nullable: True
   type: string
   no_bangc: True
   dependencies: [HH14a, HH14b]
@@ -209,10 +220,10 @@ HH14d:
   set: HH14
 HH15:
   required: false
+  nullable: True
   at_required: True
   type: string
   regex: ^(.* \w{3} \d{4} by FlyBase; FBrf0222196])$
-  nullable: True
   wrapping_values: True
 #    'HH16a', 'devel_model' ,  #humanhealth_pubprop.type =  cv (humanhealth_pubprop type) all categories
 #    'HH16b', 'refine_model' ,  #humanhealth_pubprop.type =  cv (humanhealth_pubprop type) all categories
@@ -229,5 +240,5 @@ HH15:
 HH20:
   required: False
   type: [string, list]
-  at_required: False
-  nullable: True  
+  at_forbidden: True
+  nullable: True

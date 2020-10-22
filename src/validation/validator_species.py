@@ -18,16 +18,16 @@ class ValidatorSpecies(Validator):
         self.record_type = kwargs['record_type']
         super(ValidatorSpecies, self).__init__(*args, **kwargs)
 
-    def _validate_no_bangc(self, no_bangc, field, value):
+    def _validate_no_bang(self, no_bangc, field, value):
         """
-        Throw error if bangc is set. NOT allowed here.
+        Throw error if bangc or bangd is set. NOT allowed here.
 
         The docstring statement below provides a schema to validate the 'plain_text' argument.
 
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
-        if field in self.bang_c:
+        if field in self.bang_c or field in self.bang_d:
             self._error(field, '{} not allowed with bang c or bang d'.format(field))
 
     def _validate_if_new_required(self, other, field, value):
@@ -37,6 +37,8 @@ class ValidatorSpecies(Validator):
         {'type': 'boolean'}
         """
         log.debug("if_new_required test: {} {}".format(field, value))
+        if 'SP1g' not in self.document:
+            return
         if self.document['SP1g'] == 'n':
             if value and len(value):
                 return

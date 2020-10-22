@@ -4,6 +4,7 @@ from cerberus import Validator
 
 # logging imports
 import logging
+import re
 log = logging.getLogger(__name__)
 
 
@@ -55,7 +56,20 @@ class ValidatorHumanhealth(Validator):
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
-        pass
+        check_arr = []
+        if type(value) is list:
+            check_arr = value
+        else:
+            check_arr.append(value)
+        okay = True
+        for line in check_arr:
+            if not line or len(line) == 0:
+                continue
+            log.debug("BOB: field is {}, value is {}".format(field, value))
+            if re.search(r"@+.*@+", line) is None:
+                okay = False
+        if not okay:
+            self._error(field, 'Error {} @...@ is required.'.format(value))
 
     def _validate_wrapping_values(self, field, dict1, comp_fields):
         """
@@ -67,3 +81,25 @@ class ValidatorHumanhealth(Validator):
         {'type': 'boolean'}
         """
         pass
+
+    def _validate_at_forbidden(self, other, field, value):
+        """Make sure we do not have @something@.
+
+        Not sure how to negate a regex easily in cerberus, so
+        doing here where we have more control and can testfor negatice results.
+
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
+        """
+        if not value:
+            return
+        check_arr = []
+        if type(value) is list:
+            check_arr = value
+        else:
+            check_arr.append(value)
+        for line in check_arr:
+            if not line or len(line) == 0:
+                continue
+            if re.search(r"@+.*@+", line):
+                self._error(field, 'Error {} @...@ is forbidden here.'.format(line))

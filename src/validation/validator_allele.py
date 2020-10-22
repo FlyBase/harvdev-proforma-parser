@@ -1,6 +1,7 @@
 # Cerberus and yaml
 # Additional tools for validation
 from cerberus import Validator
+import re
 
 import logging
 log = logging.getLogger(__name__)
@@ -31,3 +32,38 @@ class ValidatorAllele(Validator):
         """
         if field in self.bang_c:
             self._error(field, '{} not allowed with bang c or bang d'.format(field))
+
+    def _validate_at_forbidden(self, other, field, value):
+        """Make sure we do not have @something@.
+
+        Not sure how to negate a regex easily in cerberus, so
+        doing here where we have more control and can testfor negatice results.
+
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
+        """
+        if not value:
+            return
+        check_arr = []
+        if type(value) is list:
+            check_arr = value
+        else:
+            check_arr.append(value)
+        for line in check_arr:
+            if re.search(r"@+.*@+", line) is not None:
+                self._error(field, 'Error {} @...@ is forbidden here.'.format(line))
+
+    def _validate_at_required(self, required, field, value):
+        """
+        Throw error if it is required and not there.
+
+        The docstring statement below provides a schema to validate the 'plain_text' argument.
+
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
+        """
+        if not value:
+            return
+        if re.search(r"@+.*@+", value) is not None:
+            return
+        self._error(field, 'Error {} @...@ is required.'.format(value))

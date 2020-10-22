@@ -2,29 +2,30 @@ SP1a:
     required: True
     type: string
     regex: ^([A-Z]+.*)$
-    no_bangc: True
+    no_bang: True
 SP1b:
     required: True
     type: string
+    nullable: False
 SP1g:
     required: True
     allowed: [n,y]
-    no_bangc: True
+    no_bang: True
     nullable: False
 SP2:
     type: string
     if_new_required: True
     nullable: True
-    no_bangc: True
+    no_bang: True
 SP3a:
     type: string
     nullable: True
-    no_bangc: True
+    no_bang: True
     required: False
 SP3b:
     required: False
     allowed: [y]
-    no_bangc: True
+    no_bang: True
     nullable: True 
 SP4:
     required: False
