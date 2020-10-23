@@ -174,8 +174,8 @@ class ChadoFeatureObject(ChadoObject):
                     fs = fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
                                                          item[FIELD_VALUE], cv_name, cvterm_name, pub_id,
                                                          synonym_sgml=None, is_current=False, is_internal=False)
-            if fs and is_current:
-                fs.is_current = True
+                if fs and is_current:
+                    fs.is_current = True
         else:
             for pub_id in pubs:
                 fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
@@ -311,7 +311,11 @@ class ChadoFeatureObject(ChadoObject):
                 obj_feat = feature_symbol_lookup(self.session, feat_type, name)
             except MultipleResultsFound:
                 message = "Multiple results found for type: '{}' name: '{}'".format(feat_type, name)
+                features = feature_symbol_lookup(self.session, feat_type, name, check_unique=False)
+                for feature in features:
+                    message += "\n\tfound: {}".format(feature)
                 self.critical_error(item, message)
+                return
             except NoResultFound:
                 self.critical_error(item, "No Result found for {} {}".format(feat_type, name))
                 return

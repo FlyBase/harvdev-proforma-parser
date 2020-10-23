@@ -20,7 +20,7 @@ DIV1b:
   type: synonym
   cv: synonym type
   cvterm: symbol
-  is_current: True
+  is_current: False
   only_one: False
   remove_old: False
 DIV1c:
