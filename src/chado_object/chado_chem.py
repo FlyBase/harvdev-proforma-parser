@@ -466,11 +466,12 @@ class ChadoChem(ChadoFeatureObject):
                     name = item[:255]  # Max 255 chars
                     if lowercase:
                         name = name.lower()
-                    sgml = sgml_to_unicode(sub_sup_to_sgml(name))
+                    sgml = sgml_to_unicode(sub_sup_to_sgml(name))[:255]  # MAx 255 chars
                     if name in seen_it:
                         log.debug("Ignoring {} as already seen".format(name))
                         continue
                     log.debug("Adding synonym {}".format(name))
+
                     new_synonym, _ = get_or_create(self.session, Synonym, type_id=symbol_cv_id,
                                                    synonym_sgml=sgml,
                                                    name=name)
