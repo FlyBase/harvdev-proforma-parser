@@ -187,25 +187,15 @@ class ChadoPub(ChadoObject):
                                                             Cvterm.name == 'published_in',
                                                             Cvterm.is_obsolete == 0).one()
 
-        try:
-            pr = self.session.query(PubRelationship).\
-                join(Pub, Pub.pub_id == PubRelationship.object_id).\
-                join(Cvterm).filter(PubRelationship.subject_id == self.pub.pub_id,
-                                    PubRelationship.type_id == cvterm.cvterm_id).one_or_none()
-        except MultipleResultsFound:
-            message = ""
-            for item in self.session.query(PubRelationship).\
-                join(Pub, Pub.pub_id == PubRelationship.object_id).\
-                join(Cvterm).filter(PubRelationship.subject_id == self.pub.pub_id,
-                                    PubRelationship.type_id == cvterm.cvterm_id).all():
-                message += "\n\t{}".format(item)
-            self.critical_error(self.process_data['P22']['data'], "Multiple records found for parent pub. {}".format(message))
-            return None
-        if not pr:
-            return None
-        return self.session.query(Pub).filter(Pub.pub_id == pr.object_id).one()
+        parents = []
+        for pr in self.session.query(PubRelationship).\
+            join(Pub, Pub.pub_id == PubRelationship.object_id).\
+            join(Cvterm).filter(PubRelationship.subject_id == self.pub.pub_id,
+                                PubRelationship.type_id == cvterm.cvterm_id).all():
+            parents.append(self.session.query(Pub).filter(Pub.pub_id == pr.object_id).one())
+        return parents
 
-    def check_multipub(self, old_parent, tuple):
+    def check_multipub(self, old_parents, tuple):
         """Check pub in P2 is the same is the parent.
 
         Get P2 pub via the  miniref.
@@ -227,11 +217,17 @@ class ChadoPub(ChadoObject):
         """
         p2_pub = self.session.query(Pub).filter(Pub.miniref == tuple[FIELD_VALUE]).one()
 
-        if not self.newpub and old_parent:
-            if old_parent.pub_id != p2_pub.pub_id:
-                old_name = old_parent.miniref
-                if not old_name:
-                    old_name = old_parent.uniquename
+        if not self.newpub and old_parents:
+            found = False
+            old_name = ""
+            for old_parent in old_parents:
+                if p2_pub.pub_id == old_parent.pub_id:
+                    found = True
+                if old_parent.miniref:
+                    old_name += old_parent.miniref
+                else:
+                    old_name += old_parent.uniquename
+            if not found:
                 message = 'P22 has a different parent "{}" than the one listed "{}" "{}"\n'.format(old_name, p2_pub.miniref, p2_pub.uniquename)
                 message += 'Not allowed to change P2 if it already has one. without !c'
                 self.critical_error(self.process_data['P22']['data'], message)
@@ -291,7 +287,7 @@ class ChadoPub(ChadoObject):
             self.critical_error(P46_data, 'P46 does not have the format */*.')
             return
 
-        expected_dir = self.parent_pub.miniref
+        expected_dir = self.parent_pub[0].miniref
         expected_dir.replace(". ", "_")
         if expected_dir != fields.group(1):
             message = "'{}' does not equal to what is expected, given its parent.".format(fields.group(1))
@@ -402,8 +398,7 @@ class ChadoPub(ChadoObject):
                     self.add_relationship(self.pub, pub, self.process_data[key]['cvterm'])
         else:  # P2 can only change with !c or has no parent pub
             log.debug("not list {}".format(key))
-            parent_pub = self.get_parent_pub()
-            if self.has_bang_type(key, 'c') or not parent_pub:
+            if self.has_bang_type(key, 'c') or not self.parent_pub:
                 fbrf = self.process_data[key]['data']
                 pub = self.get_related_pub(fbrf, uniquename=False)
                 if not pub:
