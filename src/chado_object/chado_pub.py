@@ -13,7 +13,6 @@ from harvdev_utils.production import (
 )
 from harvdev_utils.chado_functions import get_or_create
 from harvdev_utils.char_conversions.sub_sup_to_sgml import sub_sup_to_sgml
-from sqlalchemy.orm.exc import MultipleResultsFound
 import logging
 from datetime import datetime
 
