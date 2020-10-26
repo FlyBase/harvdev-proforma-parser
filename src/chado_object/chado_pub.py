@@ -13,7 +13,7 @@ from harvdev_utils.production import (
 )
 from harvdev_utils.chado_functions import get_or_create
 from harvdev_utils.char_conversions.sub_sup_to_sgml import sub_sup_to_sgml
-
+from sqlalchemy.orm.exc import MultipleResultsFound
 import logging
 from datetime import datetime
 
@@ -187,10 +187,20 @@ class ChadoPub(ChadoObject):
                                                             Cvterm.name == 'published_in',
                                                             Cvterm.is_obsolete == 0).one()
 
-        pr = self.session.query(PubRelationship).\
-            join(Pub, Pub.pub_id == PubRelationship.object_id).\
-            join(Cvterm).filter(PubRelationship.subject_id == self.pub.pub_id,
-                                PubRelationship.type_id == cvterm.cvterm_id).one_or_none()
+        try:
+            pr = self.session.query(PubRelationship).\
+                join(Pub, Pub.pub_id == PubRelationship.object_id).\
+                join(Cvterm).filter(PubRelationship.subject_id == self.pub.pub_id,
+                                    PubRelationship.type_id == cvterm.cvterm_id).one_or_none()
+        except MultipleResultsFound:
+            message = ""
+            for item in self.session.query(PubRelationship).\
+                join(Pub, Pub.pub_id == PubRelationship.object_id).\
+                join(Cvterm).filter(PubRelationship.subject_id == self.pub.pub_id,
+                                    PubRelationship.type_id == cvterm.cvterm_id).all():
+                message += "\n\t{}".format(item)
+            self.critical_error(self.process_data['P22']['data'], "Multiple records found for parent pub. {}".format(message))
+            return None
         if not pr:
             return None
         return self.session.query(Pub).filter(Pub.pub_id == pr.object_id).one()
