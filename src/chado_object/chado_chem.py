@@ -466,7 +466,7 @@ class ChadoChem(ChadoFeatureObject):
                     name = item[:255]  # Max 255 chars
                     if lowercase:
                         name = name.lower()
-                    sgml = sgml_to_unicode(sub_sup_to_sgml(name))[:255]  # MAx 255 chars
+                    sgml = sgml_to_unicode(name)[:255]  # MAx 255 chars
                     if name in seen_it:
                         log.debug("Ignoring {} as already seen".format(name))
                         continue

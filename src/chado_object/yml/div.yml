@@ -16,6 +16,7 @@ DIV1a:
   cv: synonym type
   cvterm: symbol
   is_current: True
+  subscript: False
 DIV1b:
   type: synonym
   cv: synonym type
@@ -23,6 +24,7 @@ DIV1b:
   is_current: False
   only_one: False
   remove_old: False
+  subscript: False
 DIV1c:
   type: ignore
 DIV1d:
@@ -34,6 +36,7 @@ DIV1e:
   only_one: True
   is_current: True
   remove_old: True
+  subscript: False
 DIV2a:
   type: humanhealth_feature
 DIV2b:

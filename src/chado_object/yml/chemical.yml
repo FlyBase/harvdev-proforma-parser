@@ -20,13 +20,15 @@ CH1a:
   cvterm: fullname
   is_current: True
   remove_old: True
-  propname: 
+  propname:
+  subscript: False
 CH1b:
   type: synonym
   cv: synonym type
   cvterm: fullname
   is_current: False
   pub: current
+  subscript: False
 CH3a: # main chebi ref. Done on creation.
   type: ignore
 CH3b:
