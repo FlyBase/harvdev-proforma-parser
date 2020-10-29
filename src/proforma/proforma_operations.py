@@ -458,9 +458,18 @@ class Proforma(object):
                     self.fields_values[field].append((field, value, line_number))  # Otherwise, if it is a list already, just append the value.
                     log.debug('Appending field %s : value %s from line %s to the existing list for this field.' % (field, value, line_number))
                 else:
-                    log.critical('Attempted to add an additional value: {} to field: {} from line: {}'.format(value, field, line_number))
-                    log.critical('Unfortunately, this field is not current specified to support multiple values.')
-                    log.critical('Please contact Harvdev if you believe this is a mistake.')
+                    message = 'Attempted to add an additional value: {} to field: {} from line: {}'.format(value, field, line_number)
+                    message += '\nCRITICAL -- Unfortunately, this field is not current specified to support multiple values.'
+                    message += '\nCRITICAL --Please contact Harvdev if you believe this is a mistake.'
+                    ErrorTracking(
+                        self.file_metadata['filename'],
+                        "Proforma entry starting on line: {}".format(line_number),
+                        "Proforma error around line: {}".format(line_number),
+                        message,
+                        "{}:".format(field),
+                        value,
+                        CRITICAL_ERROR)
+
                     # log.critical('Exiting.')
                     # sys.exit(-1)
         else:  # If the key doesn't exist, add it.

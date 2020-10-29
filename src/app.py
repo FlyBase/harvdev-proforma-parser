@@ -197,6 +197,13 @@ def process_errors(load_type):
             sys.exit(-1)
         elif warning_count:
             log.warning('Ignoring warnings for now!')
+            if load_type == 'test':
+                log.info('All files successfully tested against production Chado.')
+                log.info('')
+            elif load_type == 'production':
+                log.info('All files successfully loaded into Chado.')
+                log.info('bingo ....you success !....')
+                log.info('')
     else:
         log.info('0 critical error(s) were found.')
         log.info('0 warning error(s) were found.')
