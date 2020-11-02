@@ -12,7 +12,7 @@ from harvdev_utils.chado_functions import (
     synonym_name_details
 )
 from chado_object.chado_base import FIELD_VALUE
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 import logging
 log = logging.getLogger(__name__)
@@ -27,14 +27,16 @@ def transfer_dbxrefs(self, gene):
     Else we want to copy the dbxref.
     """
     # copy feature's dbxref to dbxref table
-    get_or_create(self.session, FeatureDbxref, dbxref_id=gene.dbxref_id, feature_id=self.feature.feature_id, is_current=False)
+    featdbx, _ = get_or_create(self.session, FeatureDbxref, dbxref_id=gene.dbxref_id, feature_id=self.feature.feature_id)
+    featdbx.is_current = False
 
     for featdbx in self.session.query(FeatureDbxref).filter(FeatureDbxref.feature_id == gene.feature_id):
-        get_or_create(self.session, FeatureDbxref, dbxref_id=featdbx.dbxref.dbxref_id, feature_id=self.feature.feature_id)
+        fd, _ = get_or_create(self.session, FeatureDbxref, dbxref_id=featdbx.dbxref.dbxref_id, feature_id=self.feature.feature_id)
+        fd.is_current = True
 
 
 def transfer_synonyms(self, gene):
-    """Transfer feature synonyms and make is_current False."""
+    """Create new feature synonyms and make is_current True."""
     for feat_syn in self.session.query(FeatureSynonym).filter(FeatureSynonym.feature_id == gene.feature_id):
         fs, _ = get_or_create(self.session, FeatureSynonym, synonym_id=feat_syn.synonym_id, feature_id=self.feature.feature_id,
                               pub_id=feat_syn.pub_id)
@@ -87,6 +89,20 @@ def get_merge_genes(self, key):
             message = "Unable to find Gene with symbol {}.".format(merge_gene_symbol)
             self.critical_error(merge_gene_symbol_tuple, message)
             continue
+        except MultipleResultsFound:
+            message = "Multiple results found for type: '{}' name: '{}'".format('gene', merge_gene_symbol)
+            features = feature_symbol_lookup(self.session, 'gene', merge_gene_symbol,
+                                             organism_id=organism.organism_id, check_unique=False)
+            count = -1
+            for feature in features:
+                if 'temp' in feature.uniquename:  # For merging we have new teml gene and the original with possibly the same synonym
+                    count += 1
+                    message += "\n\tfound: {}".format(feature)
+                else:
+                    genes.append(feature)
+                    gene = feature
+            if count:
+                self.critical_error(merge_gene_symbol_tuple, message)
         if self.feature.name == gene.name:
             found = True
         # Not allowed to merge genes with featureloc
@@ -113,12 +129,12 @@ def merge(self, key):
     for gene in genes:
         log.debug("Gene to be merged is {}".format(gene))
         gene.is_obsolete = True
+        # Transfer synonyms
+        self.transfer_synonyms(gene)
         # Transfer cvterms
         self.transfer_cvterms(gene)
         # Transfer dbxrefs
         self.transfer_dbxrefs(gene)
-        # Transfer synonyms
-        self.transfer_synonyms(gene)
         # Transfer grpmembers
         self.transfer_grpmembers(gene)
         # humanhealth_dbxrefs
