@@ -8,8 +8,7 @@ from harvdev_utils.chado_functions import get_or_create, get_cvterm
 from chado_object.utils.feature_synonym import fs_add_by_synonym_name_and_type
 
 from chado_object.utils.feature_synonym import fs_remove_current_symbol
-from harvdev_utils.char_conversions import sgml_to_plain_text
-
+from harvdev_utils.char_conversions import sgml_to_plain_text, sgml_to_unicode
 from harvdev_utils.production import (
     Cvtermprop, Feature, FeatureRelationship, FeatureRelationshipPub, Featureprop,
     FeaturepropPub, FeatureCvterm, FeatureCvtermprop, FeatureSynonym,
@@ -19,6 +18,7 @@ from harvdev_utils.chado_functions import (
     DataError, CodingError, feature_name_lookup, synonym_name_details, feature_symbol_lookup,
     get_feature_and_check_uname_symbol
 )
+
 from datetime import datetime
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 import logging
@@ -174,17 +174,23 @@ class ChadoFeatureObject(ChadoObject):
         # add the new synonym
         if type(self.process_data[key]['data']) is list:
             for item in self.process_data[key]['data']:
+                synonym_sgml = None
+                if 'subscript' in self.process_data[key] and not self.process_data[key]['subscript']:
+                    synonym_sgml = sgml_to_unicode(item[FIELD_VALUE])
                 for pub_id in pubs:
                     fs = fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
                                                          item[FIELD_VALUE], cv_name, cvterm_name, pub_id,
-                                                         synonym_sgml=None, is_current=False, is_internal=False)
+                                                         synonym_sgml=synonym_sgml, is_current=False, is_internal=False)
                 if fs and is_current:
                     fs.is_current = True
         else:
+            synonym_sgml = None
+            if 'subscript' in self.process_data[key] and not self.process_data[key]['subscript']:
+                synonym_sgml = sgml_to_unicode(self.process_data[key]['data'][FIELD_VALUE])
             for pub_id in pubs:
                 fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
                                                 self.process_data[key]['data'][FIELD_VALUE], cv_name, cvterm_name, pub_id,
-                                                synonym_sgml=None, is_current=is_current, is_internal=False)
+                                                synonym_sgml=synonym_sgml, is_current=is_current, is_internal=False)
 
             if is_current and cvterm_name == 'symbol':
                 self.feature.name = sgml_to_plain_text(self.process_data[key]['data'][FIELD_VALUE])
