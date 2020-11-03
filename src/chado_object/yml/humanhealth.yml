@@ -31,12 +31,17 @@
 HH1b: 
   type: ignore
   description: Disease name used (or to be used)  in FlyBase.
+  cv: synonym type
+  cvterm: fullname
+  is_current: True
+  add_unattributed_paper: True
 HH1e:
   type: synonym
   type_value: False
   cv: synonym type
   cvterm: symbol
   description: Additional synonyms
+  is_current: False
 HH1f:
   ignore: True
   type: ignore

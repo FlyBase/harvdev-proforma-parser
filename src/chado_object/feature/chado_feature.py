@@ -94,6 +94,9 @@ class ChadoFeatureObject(ChadoObject):
 
         if self.has_data(merge_key):  # if feature merge we want to create a new feature even if one exist already
             self._get_feature(supported_features[feature_type][SO], symbol_key, supported_features[feature_type][UNIQUE])
+            self.load_synonym(symbol_key, cvterm_name='fullname')
+            self.load_synonym(symbol_key)
+            # self.load_synonym(merge_key)
             return
 
         if self.has_data(id_key):
@@ -142,7 +145,7 @@ class ChadoFeatureObject(ChadoObject):
             return pub_id
         return self.pub.pub_id
 
-    def load_synonym(self, key, unattrib=True):
+    def load_synonym(self, key, unattrib=True, cvterm_name=None):
         """Load Synonym.
 
         yml options:
@@ -154,7 +157,8 @@ class ChadoFeatureObject(ChadoObject):
           If is_current set to True and cvterm is symbol thensgml to plaintext is done.
         """
         cv_name = self.process_data[key]['cv']
-        cvterm_name = self.process_data[key]['cvterm']
+        if not cvterm_name:
+            cvterm_name = self.process_data[key]['cvterm']
         is_current = self.process_data[key]['is_current']
         pub_id = self.get_pub_id_for_synonym(key)
         pubs = [pub_id]
