@@ -10,7 +10,7 @@ from harvdev_utils.production import (
     Humanhealth, HumanhealthPub, Humanhealthprop, HumanhealthpropPub,
     HumanhealthRelationship, HumanhealthSynonym, HumanhealthFeature,
     HumanhealthCvterm, HumanhealthCvtermprop, HumanhealthDbxref,
-    Organism, Cvterm, Cv, Synonym, Db, Dbxref
+    Organism, Cvterm, Cv, Synonym, Db, Dbxref, Pub
 )
 from harvdev_utils.chado_functions import get_or_create
 from error.error_tracking import CRITICAL_ERROR
@@ -142,6 +142,9 @@ class ChadoHumanhealth(ChadoObject):
             # db has correct FBhh0000000x in it but here still has 'FBhh:temp_0'. ???
             # presume triggers start after hh is returned. Maybe worth getting form db again
             log.debug("New humanhealth created with fbhh {} id={}.".format(hh.uniquename, hh.humanhealth_id))
+            self.humanhealth = hh
+            self.load_synonym('HH1b', cvterm_name='symbol')  # add symbol
+            self.load_synonym('HH1b')                       # add fullname
         else:
             not_obsolete = False
             hh = self.session.query(Humanhealth).\
@@ -368,11 +371,13 @@ class ChadoHumanhealth(ChadoObject):
                           pub_id=self.pub.pub_id)
         return
 
-    def load_synonym(self, key):
+    def load_synonym(self, key, cvterm_name=None):
         """Load the synonyms."""
+        if not cvterm_name:
+            cvterm_name = self.process_data[key]['cvterm']
         cvterm = self.session.query(Cvterm).join(Cv).\
             filter(Cv.name == self.process_data[key]['cv'],
-                   Cvterm.name == self.process_data[key]['cvterm']).\
+                   Cvterm.name == cvterm_name).\
             one_or_none()
 
         if type(self.process_data[key]['data']) is not list:
@@ -383,18 +388,25 @@ class ChadoHumanhealth(ChadoObject):
 
         if not cvterm:  # after datalist set up as we need to pass a tuple
             self.critical_error(data_list[0],
-                                'Cvterm missing "{}" for cv "{}".'.format(self.process_data[key]['cvterm'],
-                                                                          self.process_data[key]['cv']))
+                                'Cvterm missing "{}" for cv "{}".'.format(cvterm_name, self.process_data[key]['cv']))
             return
 
         for data in data_list:
             new_syn, _ = get_or_create(self.session, Synonym, name=data[FIELD_VALUE],
                                        synonym_sgml=data[FIELD_VALUE], type_id=cvterm.cvterm_id)
-            get_or_create(self.session, HumanhealthSynonym,
-                          humanhealth_id=self.humanhealth.humanhealth_id,
-                          synonym_id=new_syn.synonym_id,
-                          pub_id=self.pub.pub_id)
+            hs, _ = get_or_create(self.session, HumanhealthSynonym,
+                                  humanhealth_id=self.humanhealth.humanhealth_id,
+                                  synonym_id=new_syn.synonym_id,
+                                  is_current=self.process_data[key]['is_current'],
+                                  pub_id=self.pub.pub_id)
 
+            if 'add_unattributed_paper' in self.process_data[key] and self.process_data[key]['add_unattributed_paper']:
+                pub, _ = get_or_create(self.session, Pub, uniquename='unattributed')
+                get_or_create(self.session, HumanhealthSynonym,
+                              humanhealth_id=self.humanhealth.humanhealth_id,
+                              synonym_id=new_syn.synonym_id,
+                              is_current=self.process_data[key]['is_current'],
+                              pub_id=pub.pub_id)
 ########################
 # Deletion routines
 ########################
