@@ -80,7 +80,7 @@ class ChadoFeatureObject(ChadoObject):
         UNIQUE = 1
         SO = 2
         supported_features = {'gene': ['G', 'gn', 'gene'],
-                              'allele': ['GA', 'al', 'gene'],  # new SO will be allele
+                              'allele': ['GA', 'al', 'allele'],
                               'aberration': ['A', 'ti', 'transposon']}
 
         if feature_type not in supported_features:

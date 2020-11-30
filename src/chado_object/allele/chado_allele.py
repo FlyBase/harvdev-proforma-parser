@@ -57,7 +57,7 @@ class ChadoAllele(ChadoFeatureObject):
         self.pub = None
         self.feature = None
         self.gene = None
-        self.type_name = 'gene'
+        self.type_name = 'allele'
 
         ############################################################
         # Get processing info and data to be processed.
