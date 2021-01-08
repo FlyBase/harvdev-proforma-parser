@@ -309,6 +309,10 @@ class ChadoFeatureObject(ChadoObject):
         feat_type = None
         if 'feat_type' in self.process_data[key]:
             feat_type = self.process_data[key]['feat_type']
+        subscript = True
+        if 'subscript' in self.process_data[key]:
+            if not self.process_data[key]['subscript']:
+                subscript = False
         cvterm = get_cvterm(self.session, cv_name, cvterm_name)
         if not cvterm:
             message = "Unable to find cvterm {} for Cv {}.".format(cvterm_name, cv_name)
@@ -318,10 +322,10 @@ class ChadoFeatureObject(ChadoObject):
         for item in items:
             name = item[FIELD_VALUE]
             try:
-                obj_feat = feature_symbol_lookup(self.session, feat_type, name)
+                obj_feat = feature_symbol_lookup(self.session, feat_type, name, convert=subscript)
             except MultipleResultsFound:
                 message = "Multiple results found for type: '{}' name: '{}'".format(feat_type, name)
-                features = feature_symbol_lookup(self.session, feat_type, name, check_unique=False)
+                features = feature_symbol_lookup(self.session, feat_type, name, check_unique=False, convert=subscript)
                 for feature in features:
                     message += "\n\tfound: {}".format(feature)
                 self.critical_error(item, message)

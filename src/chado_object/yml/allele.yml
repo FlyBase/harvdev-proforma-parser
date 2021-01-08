@@ -79,6 +79,7 @@ GA81a:
     cv: relationship type
     cvterm: has_variant
     feat_type: disease implicated variant
+    subscript: False
 # 'GA84b', 'allele_report_comment', # featureprop:- cv = 'property type', cvterm = 'allele_report_comment'
 GA84b:
     type: featureprop
