@@ -255,6 +255,7 @@ class ChadoGene(ChadoFeatureObject):
 
     def load_gocvtermprop(self, key):
         """Load the cvterm props for GO lines."""
+
         if not self.has_data(key):
             return
         values = {'date': datetime.today().strftime('%Y%m%d'),
@@ -270,7 +271,8 @@ class ChadoGene(ChadoFeatureObject):
             feat_cvterm, _ = get_or_create(self.session, FeatureCvterm,
                                            feature_id=self.feature.feature_id,
                                            cvterm_id=go_dict['gocvterm'].cvterm_id,
-                                           pub_id=self.pub.pub_id)
+                                           pub_id=self.pub.pub_id,
+                                           is_not=go_dict['is_not'])
 
             values['evidence_code'] = go_dict['value']
             values['provenance'] = go_dict['provenance']
