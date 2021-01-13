@@ -191,6 +191,7 @@ def process_GO_line(session, line, cv_name, allowed_qualifiers):
     2) something ; GO:0002002 | IGI with FLYBASE:symbol-35; FB:FBgn0000035 any bull here
     3) mRNA binding ; GO:0001001 | IDA
     4) UniProtKB:colocalizes_with mRNA binding ; GO:0001001 | IDA
+    5) NOT involved_in triglyceride homeostasis ; GO:0070328 | IMP
 
     should return dict with the following in it.
         {
@@ -198,7 +199,8 @@ def process_GO_line(session, line, cv_name, allowed_qualifiers):
          'error': [], # can be many errors so check for empty array for no error)
          'value': expanded abbr + 'string',  # None if code lookup fails
          'provenance': string,
-         'prov_term': <cvterm obj>
+         'prov_term': <cvterm obj>,
+         'is_not': True/False
         }
 
     Lots of stuff to check here
@@ -207,16 +209,20 @@ def process_GO_line(session, line, cv_name, allowed_qualifiers):
     3) if FLYBASE:xxxxxx, xxxxxx must be a valid feature symbol.
     4) if FB:xxxxxx, xxxxxx must be a valid feature uniquename.
     5) ? (with|?) ......... must be there for some codes.
+    6) check for NOT
     """
     go_dict = {'gocvterm': None,
                'error': [],
                'value': None,
                'provenance': 'FlyBase',
-               'prov_term': None}
+               'prov_term': None,
+               'is_not': False}
 
     full_pattern = r"""
                 ^           # start of line
                 \s*         # possible leading spaces
+                (NOT)*      # possible NOT
+                \s*         # possible spaces
                 (\S*:\S*)*  # possible UniProtKB:quali
                 \s*         # possible spaces
                 (.+)        # anything including spaces
@@ -235,11 +241,12 @@ def process_GO_line(session, line, cv_name, allowed_qualifiers):
     # USE dict as full_pattern could change often
     # so try to make code easier with indexs that can be changed easily and not missed
     fpi = {
-        'quali': 1,
-        'go_name': 2,
-        'go_code': 3,
-        'evi_code': 4,
-        'comment':  5}
+        'is_not': 1,
+        'quali': 2,
+        'go_name': 3,
+        'go_code': 4,
+        'evi_code': 5,
+        'comment':  6}
 
     fields = re.search(full_pattern, line, re.VERBOSE)
     if not fields:
@@ -248,6 +255,9 @@ def process_GO_line(session, line, cv_name, allowed_qualifiers):
 
     for key in fpi.keys():
         log.debug('GOTERM: {}: {} {}'.format(key, fpi[key], fields.group(fpi[key])))
+
+    if fields.group(fpi['is_not']):
+        go_dict['is_not'] = True
 
     # if quali check that it is DB:quali
     if fields.group(fpi['quali']):
