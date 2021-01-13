@@ -191,7 +191,7 @@ def process_GO_line(session, line, cv_name, allowed_qualifiers):
     2) something ; GO:0002002 | IGI with FLYBASE:symbol-35; FB:FBgn0000035 any bull here
     3) mRNA binding ; GO:0001001 | IDA
     4) UniProtKB:colocalizes_with mRNA binding ; GO:0001001 | IDA
-    4) NOT involved_in triglyceride homeostasis ; GO:0070328 | IMP
+    5) NOT involved_in triglyceride homeostasis ; GO:0070328 | IMP
 
     should return dict with the following in it.
         {
