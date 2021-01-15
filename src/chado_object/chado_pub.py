@@ -96,6 +96,8 @@ class ChadoPub(ChadoObject):
 
         """
         p1_data = self.process_data['P1']['data']
+        if not p1_data[FIELD_VALUE]:
+            return
         if p1_data[FIELD_VALUE] in ('journal', 'compendium'):
             self.critical_error(p1_data, 'Not allowed to have the value "journal" or "compendium"')
 

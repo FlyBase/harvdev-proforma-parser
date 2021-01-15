@@ -3,6 +3,7 @@ P1:
   P22_unattributed_no_value: True
   required: False
   forbidden: ['journal', 'compendium']
+  nullable: True  
 P2:
   required: False
   nullable: True
@@ -19,6 +20,7 @@ P10:
   type: string
   required: False
   regex: ^(\d+)(\.+\d+\.+\d+)?$
+  nullable: True
 P11a:
   pages_format: True
   type: string
@@ -48,6 +50,7 @@ P12:
 P13:
   required: False
   type: string
+  nullable: True
   allowed: [Afrikaans, Arabic, Belarussian, Bulgarian, Catalan, Chinese, Czech, Czech and English, Danish, Dutch,
             English, English and Dutch, English and Estonian, English and French, English and Hebrew, English and Japanese,
             English and Russian, English and Spanish, Estonian, Farsi, Finnish, Flemish, French, French and English,
@@ -59,6 +62,7 @@ P13:
             Spanish, English and Portuguese, Swedish, Turkish, Ukrainian, Ukrainian and English]
 P14:
   required: False
+  nullable: True
   type: string
   allowed: [Afrikaans, Arabic, Belarussian, Bulgarian, Catalan, Chinese, Czech, Czech and English, Danish, Dutch,
             English, English and Dutch, English and Estonian, English and French, English and Hebrew, English and Japanese,
@@ -72,9 +76,11 @@ P14:
 P16:
   required: False
   type: string
+  nullable: True
 P18:
   required: False
   type: string
+  nullable: True
 P19:
   type: [string, list]
   nullable: True
@@ -89,6 +95,7 @@ P23:
   required: False
   nullable: True
   type: string
+  wrapping_values: True
 P26:
   required: False
   regex: ^(\d+)$
@@ -96,6 +103,7 @@ P26:
 P28:
   required: False
   regex: ^(PMC\d+)$
+  nullable: True
 P29:
   required: False
   regex: ^(\d{10}|\d{13})$
@@ -123,6 +131,7 @@ P34:
   required: False
   type: string
   wrapping_values: True
+  nullable: True
 P38:
   required: False
   deposited_file: True
@@ -172,3 +181,4 @@ P45:
 P46:
   required: False
   type: string
+  nullable: True
