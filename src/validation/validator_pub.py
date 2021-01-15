@@ -43,6 +43,8 @@ class ValidatorPub(Validator):
         {'type': 'string'}
         """
 
+        if not self.document[field]:
+            return
         allowed = field_keys.split()
         allowed.append(field)  # itself allowed
         bad_fields = []
