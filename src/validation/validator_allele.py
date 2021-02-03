@@ -67,3 +67,26 @@ class ValidatorAllele(Validator):
         if re.search(r"@+.*@+", value) is not None:
             return
         self._error(field, 'Error {} @...@ is required.'.format(value))
+
+    def _validate_sequence_format(self, required, field, value):
+        """
+        Throw error if it is not in a sequence format.
+
+        chromosome:nnnn..nnnn
+
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
+        """
+        if not value:
+            return
+
+    def _validate_wrapping_values(self, field, dict1, comp_fields):
+        """
+        This is a "placeholder" validation used to indicate whether a field
+        contains wrapping values. It is used by a function in
+        proforma_operations to extract a list of fields which have this characteristic.
+
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
+        """
+        pass

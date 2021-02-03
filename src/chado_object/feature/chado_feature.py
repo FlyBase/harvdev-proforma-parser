@@ -177,6 +177,7 @@ class ChadoFeatureObject(ChadoObject):
                 synonym_sgml = None
                 if 'subscript' in self.process_data[key] and not self.process_data[key]['subscript']:
                     synonym_sgml = sgml_to_unicode(item[FIELD_VALUE])
+                fs = False
                 for pub_id in pubs:
                     fs = fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
                                                          item[FIELD_VALUE], cv_name, cvterm_name, pub_id,
@@ -290,6 +291,19 @@ class ChadoFeatureObject(ChadoObject):
                           value=prop_value,
                           type_id=props_cvterm.cvterm_id)
 
+    def get_feat_type_cvterm(self, key):
+        """Get feature type cvterm."""
+        feat_type_name = None
+        if 'feat_type' in self.process_data[key]:
+            feat_type_name = self.process_data[key]['feat_type']
+        elif 'type_field_in' in self.process_data[key]:
+            type_key = self.process_data[key]['type_field_in']
+            feat_type_name = self.process_data[type_key]['data'][FIELD_VALUE]
+        if not feat_type_name:
+            self.critical_error(self.process_data[key]['data'], "Neither feat_type or type_field_in is defined")
+            return None
+        return get_cvterm(self.session, 'SO', feat_type_name)
+
     def load_feature_relationship(self, key):
         """Add Feature Relationship.
 
@@ -304,8 +318,12 @@ class ChadoFeatureObject(ChadoObject):
         else:
             items = [self.process_data[key]['data']]
 
-        cv_name = self.process_data[key]['cv']
-        cvterm_name = self.process_data[key]['cvterm']
+        cvterm = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data[key]['cvterm'])
+        if not cvterm:
+            message = "Unable to find cvterm {} for Cv {}.".format(self.process_data[key]['cvterm'], self.process_data[key]['cv'])
+            self.critical_error(self.process_data[key]['data'], message)
+            return None
+
         feat_type = None
         if 'feat_type' in self.process_data[key]:
             feat_type = self.process_data[key]['feat_type']
@@ -313,11 +331,6 @@ class ChadoFeatureObject(ChadoObject):
         if 'subscript' in self.process_data[key]:
             if not self.process_data[key]['subscript']:
                 subscript = False
-        cvterm = get_cvterm(self.session, cv_name, cvterm_name)
-        if not cvterm:
-            message = "Unable to find cvterm {} for Cv {}.".format(cvterm_name, cv_name)
-            self.critical_error(self.process_data[key]['data'], message)
-            return None
 
         for item in items:
             name = item[FIELD_VALUE]
@@ -391,6 +404,7 @@ class ChadoFeatureObject(ChadoObject):
         else:
             message = "Coding error. only_one or value must be specified if not a list."
             self.critical_error(self.process_data[self.process_data[key]['value']]['data'], message)
+            return
 
         if is_new:
             fp.value = value
