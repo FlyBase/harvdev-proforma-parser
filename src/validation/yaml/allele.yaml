@@ -105,6 +105,7 @@ GA90b:
     type: string
     required: False
     nullable: True
+    no_bangc: True
     sequence_format: True
 GA90c:
     type: string
@@ -114,38 +115,46 @@ GA90c:
 GA90d:
     type: string
     required: False
+    no_bangc: True
     nullable: True
 GA90e:
     type: string
     required: False
+    no_bangc: True
     nullable: True
 GA90f:
     type: string
     required: False
+    no_bangc: True
     nullable: True
 GA90g:
     type: string
     required: False
+    no_bangc: True
     nullable: True
 GA90h:
     type: string
     required: False
+    no_bangc: True
     nullable: True
 GA90i:
     type: string
     required: False
     nullable: True
     default: '+'
+    no_bangc: True
     allowed: ['+', '-']
 GA90j:
     type: string
     required: False
     nullable: True
+    no_bangc: True
     wrapping_values: True
 GA90k:
     type: string
     required: False
     nullable: True
+    no_bangc: True
     allowed: ['point_mutation', 'rescue_region', 'insertion', 'sequence_variant', 'complex_substitution',
               'deletion', 'insertion_site', 'sequence_alteration']
     dependencies: [GA90a]
