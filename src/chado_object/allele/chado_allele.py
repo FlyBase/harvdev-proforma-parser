@@ -73,24 +73,52 @@ class ChadoAllele(ChadoFeatureObject):
         # self.genus = "Drosophila"
         # self.species = "melanogaster"
 
-    def load_content(self, references):
-        """Process the data."""
+    def checks(self, references):
+        """Check for Allele required data.
+
+        params:
+            references: <dict> previous reference proforma
+
+        return:
+            True/False depending on wether the checks passed or not
+        """
+        okay = True
         try:
             self.pub = references['ChadoPub']
         except KeyError:
             message = "Unable to find publication."
             self.critical_error(self.process_data['GA1a']['data'], message)
-            return None
+            okay = False
         try:
             self.gene = references['ChadoGene']
         except KeyError:
             message = "Unable to find gene. Normally Allele should have a gene before."
             self.warning_error(self.process_data['GA1a']['data'], message)
-            return None
+            okay = False
 
+        # cerburus should be dealing with this but it appears not to be.
+        # so lets check manually if GA90a does not exist then none of the others should
+        if not self.has_data('GA90a'):
+            for postfix in 'bcdefghijk':
+                postkey = 'GA90{}'.format(postfix)
+                if self.has_data(postkey):
+                    self.critical_error(self.process_data[postkey]['data'], "Cannot set {} without GA90a".format(postkey))
+                    okay = False
+        return okay
+
+    def load_content(self, references):
+        """Process the data.
+
+        params:
+            references: <dict> previous reference proforma objects
+        return:
+            <Feature object> Allele feature object.
+        """
+        if not self.checks(references):
+            return None
         self.get_allele()
-        if not self.feature:  # problem getting gene, lets finish
-            return
+        if not self.feature:  # problem getting allele, lets finish
+            return None
 
         # feature pub
         get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id, pub_id=self.pub.pub_id)
@@ -122,7 +150,12 @@ class ChadoAllele(ChadoFeatureObject):
         pass
 
     def add_cvtermprops(self, key, do_dict):
-        """Add props."""
+        """Add props.
+
+        params:
+            key: <string> Proforma field key
+            do_dict: <dict> dictionary of do cvterms.
+        """
         # create feature_cvterm
         feat_cvt, _ = get_or_create(self.session, FeatureCvterm,
                                     feature_id=self.feature.feature_id,
@@ -144,7 +177,11 @@ class ChadoAllele(ChadoFeatureObject):
                           type_id=cvtermprop.cvterm_id)
 
     def load_do(self, key):
-        """Load DO."""
+        """Load DO.
+
+        params:
+            key: <string> proforma field key.
+        """
         do_dict = {}
         for item in self.process_data[key]['data']:
             do_dict = process_DO_line(
@@ -162,7 +199,14 @@ class ChadoAllele(ChadoFeatureObject):
             self.add_cvtermprops(key, do_dict)
 
     def get_ga90a(self, key):
-        """Get feature defned by GA90 A and K."""
+        """Get feature defned by GA90 A and K.
+
+        key: <string> the field name i.e here GA90a
+
+        return:
+           feature: <feature object> feature of type GA90k, name GA90a
+           is_new: <bool> Wether the feature is noe or not.
+        """
         feature = None
         is_new = False
         feat_type_cvterm = self.get_feat_type_cvterm(key)
@@ -189,10 +233,21 @@ class ChadoAllele(ChadoFeatureObject):
     def get_GA90_position(self):
         """Get GA90 position data."""
         position = {'arm': None,
-                    'strand': 1}
+                    'strand': 1,
+                    'addfeatureloc': True}
+        # check with BEV can we have GA90a without a position?
+
         key = 'GA90b'
+
+        if not self.has_data(key):
+            # posible error message if not allowed without this.
+            message = r'MUST have a position GA90 b and c'
+            self.critical_error(self.process_data['GA90a']['data'], message)
+            return position
+
         pattern = r"""
-        ^(\S+)        # arm
+        ^\s*          # possible spaces
+        (\S+)         # arm
         :             # chrom separator
         (\d+)         # start pos
         [.]{2}        # double dots
@@ -205,16 +260,36 @@ class ChadoAllele(ChadoFeatureObject):
             position['start'] = int(s_res.group(2))
             position['end'] = int(s_res.group(3))
         else:
-            message = r'Incorrect format should be chrom:\d+..\d+'
-            self.critical_error(self.process_data[key]['data'], message)
-            return position
+            pattern = r"""
+            ^\s*          # possible spaces
+            (\S+)         # arm
+            :             # chrom separator
+            (\d+)         # start pos
+            /s+           # possible spaces
+            $             # end
+            """
+            s_res = re.search(pattern, self.process_data[key]['data'][FIELD_VALUE], re.VERBOSE)
+            if s_res:  # matches the pattern above
+                arm_name = s_res.group(1)
+                position['start'] = int(s_res.group(2))
+                position['end'] = position['start']
+            else:
+                message = r'Incorrect format should be chrom:\d+..\d+'
+                self.critical_error(self.process_data[key]['data'], message)
+                return position
 
         # get rel data
-        position['release'] = self.process_data['GA90c']['data'][FIELD_VALUE]
-        if not position['release']:
-            message = "Release required to add "
-            self.critical_error(self.process_data['GA90c']['data'], message)
-            return position
+        # If release specified and not equal to current assembly then
+        # flag for the featurelovc to not be created.
+        default_release = os.getenv('ASSEMBLY_RELEASE', '6')
+        if 'GA90c' in self.process_data:
+            position['release'] = self.process_data['GA90c']['data'][FIELD_VALUE]
+        if 'release' not in position:
+            position['release'] = default_release
+        else:
+            if position['release'] != default_release:
+                self.warning_error(self.process_data['GA90c']['data'], "Release {} will not display in Location".format(position['release']))
+                position['addfeatureloc'] = False
 
         # get the strand
         if self.has_data('GA90i'):
@@ -231,7 +306,12 @@ class ChadoAllele(ChadoFeatureObject):
         return position
 
     def process_GA90_bci(self, feature, is_new):
-        """Process GA90 b, c and i."""
+        """Process GA90 b, c and i.
+
+        params:
+            feature: <Feature object> feature defined by GA90a
+            is_new: <bool> wether this was new or not.
+        """
         position = self.get_GA90_position()
         if not position['arm']:
             return
@@ -246,13 +326,14 @@ class ChadoAllele(ChadoFeatureObject):
         get_or_create(self.session, FeaturepropPub, featureprop_id=fp.featureprop_id, pub_id=self.pub.pub_id)
 
         # ADD featureloc
-        fl, is_new = get_or_create(self.session, Featureloc,
-                                   srcfeature_id=position['arm'].feature_id,
-                                   feature_id=feature.feature_id,
-                                   locgroup=0)
-        fl.fmin = position['start'] - 1  # interbase in chado
-        fl.fmax = position['end']
-        fl.strand = position['strand']
+        if position['addfeatureloc']:
+            fl, is_new = get_or_create(self.session, Featureloc,
+                                       srcfeature_id=position['arm'].feature_id,
+                                       feature_id=feature.feature_id,
+                                       locgroup=0)
+            fl.fmin = position['start'] - 1  # interbase in chado
+            fl.fmax = position['end']
+            fl.strand = position['strand']
 
     def GA90_process(self, key):
         """Create feature if needed and feature relationship.
@@ -262,6 +343,8 @@ class ChadoAllele(ChadoFeatureObject):
         Get type from field defined in 'type_field_in' if set
         Allowed to create new feature given in 'create_new_feat'
 
+        params:
+            key: <string> proforma field key. (here it will be GA90a)
         """
         if not self.has_data(key):
             return
@@ -294,6 +377,8 @@ class ChadoAllele(ChadoFeatureObject):
 
         # load_featureprop adds props to self.feature but we want to add it to the feature in GA90a
         # so set that and reset afterwards.
+        # So for each of the featureprop fields GA90d -> GA90j
+        # call the load_featureprop function.
         allele = self.feature
         self.feature = feature
         for postfix in "defghj":  # straight forward featureprops

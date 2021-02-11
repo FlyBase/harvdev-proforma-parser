@@ -82,3 +82,25 @@ DIV2a:
   - Cannot set DIV2a if DIV2b is set.
 DIV2b:
   - Cannot set DIV2b if DIV2a is set.
+GA90a:
+  - is required
+GA90b:
+  - is required
+GA90c:
+  - is required
+GA90d:
+  - is required
+GA90e:
+  - is required
+GA90f:
+  - is required
+GA90g:
+  - is required
+GA90h:
+  - is required
+GA90i:
+  - is required
+GA90j:
+  - is required
+GA90k:
+  - is required  

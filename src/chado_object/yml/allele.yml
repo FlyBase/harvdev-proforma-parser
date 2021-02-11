@@ -94,6 +94,11 @@ GA90a:
     type_field_in: GA90k
     create_new_feat: True
     subscript: False
+#######################################################################
+# NOTE: all GA90x fields are dealt with by the above GA90 function call
+#       So nothing is called invividually for each of the fields BUT
+#       the cvterms definitions etc are used so need to be supplied.
+#######################################################################type
 # 'GA90b', 'featureloc',
 GA90b:  # Done in GA90 process
     type: ignore
