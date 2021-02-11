@@ -107,19 +107,16 @@ GA90b:
     nullable: True
     no_bangc: True
     genomic_location_format: True
-    dependencies: [GA90a]
 GA90c:
     type: string
     required: False
     nullable: True
     no_bangc: True
-    dependencies: [GA90a]
 GA90d:
     type: string
     required: False
     no_bangc: True
     nullable: True
-    dependencies: [GA90a]
 GA90e:
     type: string
     required: False
@@ -130,7 +127,6 @@ GA90f:
     required: False
     no_bangc: True
     nullable: True
-    dependencies: [GA90a]
 GA90g:
     type: string
     required: False
@@ -141,7 +137,6 @@ GA90h:
     required: False
     no_bangc: True
     nullable: True
-    dependencies: [GA90a]
 GA90i:
     type: string
     required: False
@@ -149,7 +144,6 @@ GA90i:
     default: '+'
     no_bangc: True
     allowed: ['+', '-']
-    dependencies: [GA90a]
 GA90j:
     type: string
     required: False
