@@ -67,3 +67,54 @@ class ValidatorAllele(Validator):
         if re.search(r"@+.*@+", value) is not None:
             return
         self._error(field, 'Error {} @...@ is required.'.format(value))
+
+    def _validate_genomic_location_format(self, required, field, value):
+        """
+        Throw error if it is not in a sequence format.
+
+        chromosome:nnnn..nnnn
+
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
+        """
+        if not value:
+            return
+
+        pattern = r"""
+        ^\s*          # may have spaces
+        (\S+)         # arm
+        :             # chrom separator
+        (\d+)         # start pos
+        [.]{2}        # double dots
+        (\d+)         # end pos
+        """
+        s_res = re.search(pattern, value, re.VERBOSE)
+
+        if s_res:  # matches the pattern above
+            return
+
+        pattern = r"""
+        ^\s*          # possible spaces
+        (\S+)         # arm
+        :             # chrom separator
+        (\d+)         # start pos
+        /s+           # possible spaces
+        $             # end
+        """
+        s_res = re.search(pattern, value, re.VERBOSE)
+
+        if s_res:  # matches the pattern above
+            return
+
+        self._error(field, 'Error {} not in a recognised format'.format(value))
+
+    def _validate_wrapping_values(self, field, dict1, comp_fields):
+        """
+        This is a "placeholder" validation used to indicate whether a field
+        contains wrapping values. It is used by a function in
+        proforma_operations to extract a list of fields which have this characteristic.
+
+        The rule's arguments are validated against this schema:
+        {'type': 'boolean'}
+        """
+        pass

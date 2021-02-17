@@ -1,4 +1,4 @@
-GENE: # jusy a placer to store details of relationship to gene
+GENE: # just a placer to store details of relationship to gene
     type: ignore
     cv: relationship type
     cvterm: alleleof
@@ -49,12 +49,6 @@ GA8:
 # 'GA17',  'phenstatement',                   #phenstatement
 GA17:
     type: pheno_cvterm
-# 'GA28a', 'phenotype_comparison',
-# 'GA28b', 'phenotype_comparison',
-# 'GA28c', 'genetic_interaction_pheno',
-# 'GA29a', 'phenotype_comparison',
-# 'GA29b', 'phenotype_comparison',
-# 'GA29c', 'xeno_interaction_pheno',
 
 # 'GA34a', 'disease_ontology',                # feature_cvterm
 GA34a:  # SEE G24b very similar
@@ -92,6 +86,79 @@ GA85:
     cv: property type
     cvterm: deliberate_omission
     value: GA85
+# 'GA90a', 'partof',                          #feature_relationship.subject_id
+GA90a:
+    type: GA90
+    cv: relationship type
+    cvterm: partof
+    type_field_in: GA90k
+    create_new_feat: True
+    subscript: False
+#######################################################################
+# NOTE: all GA90x fields are dealt with by the above GA90 function call
+#       So nothing is called invividually for each of the fields BUT
+#       the cvterms definitions etc are used so need to be supplied.
+#######################################################################type
+# 'GA90b', 'featureloc',
+GA90b:  # Done in GA90 process
+    type: ignore
+    cv: GenBank feature qualifier
+    cvterm: reported_genomic_loc
+    value: GA90b
+    arm_cvterm: golden_path
+    arm_cv: SO
+# 'GA90c', 'reported_genomic_loc',            #cv = GenBank feature qualifier
+GA90c:
+    type: ignore
+    cv: GenBank feature qualifier
+    cvterm: reported_genomic_loc
+    value: GA90c
+# 'GA90d', 'na_change',                       #cv = GenBank feature qualifier
+GA90d:
+    type: ignore
+    cv: GenBank feature qualifier
+    cvterm: na_change
+    value: GA90d
+# 'GA90e', 'reported_na_change',              #cv = GenBank feature qualifier
+GA90e:
+    type: ignore
+    cv: GenBank feature qualifier
+    cvterm: reported_na_change
+    value: GA90e
+# 'GA90f', 'reported_pr_change',              #cv = GenBank feature qualifier
+GA90f:
+    type: ignore
+    cv: GenBank feature qualifier
+    cvterm: reported_pr_change
+    value: GA90f
+# 'GA90g', 'pr_change',                       #cv = GenBank feature qualifier
+GA90g:
+    type: ignore
+    cv: GenBank feature qualifier
+    cvterm: pr_change
+    value: GA90g
+# 'GA90h', 'linked_to',                       #cv = GenBank feature qualifier
+GA90h:
+    type: ignore
+    cv: GenBank feature qualifier
+    cvterm: linked_to
+    value: GA90h
+# 'GA90i', strand info used in feature loc with GA90b
+GA90i:
+    type: ignore
+    cv: GenBank feature qualifier
+    cvterm: reported_genomic_loc
+    value: GA90i
+# GA90j 'comment',                         #cv = GenBank feature qualifier
+GA90j:
+    type: ignore
+    cv: GenBank feature qualifier
+    cvterm: comment
+    value: GA90j
+    wrapping_values: True
+# 'GA90k', 'type',                            #cv = SO
+GA90k: # processed with GA90a
+    type: ignore
 
     # 'GA1e',  'symbol',
     # 'GA1f',  'merge',
@@ -100,6 +167,12 @@ GA85:
     # 'GA32a', 'is_obsolete',
     # 'GA32b', 'dissociate',
 
+    # 'GA28a', 'phenotype_comparison',
+    # 'GA28b', 'phenotype_comparison',
+    # 'GA28c', 'genetic_interaction_pheno',
+    # 'GA29a', 'phenotype_comparison',
+    # 'GA29b', 'phenotype_comparison',
+    # 'GA29c', 'xeno_interaction_pheno',
 
     # 'GA21',  'phenotype_comparison',
 
@@ -123,16 +196,6 @@ GA85:
     # 'GA13',  'misc',
     # 'GA20',  'availability',
     # 'GA14',  'internal_notes',
-    # 'GA90a', 'partof',                          #feature_relationship.subject_id
-    # 'GA90b', 'featureloc',
-    # 'GA90c', 'reported_genomic_loc',            #cv = GenBank feature qualifier
-    # 'GA90d', 'na_change',                       #cv = GenBank feature qualifier
-    # 'GA90e', 'reported_na_change',              #cv = GenBank feature qualifier
-    # 'GA90f', 'reported_pr_change',              #cv = GenBank feature qualifier
-    # 'GA90g', 'pr_change',                       #cv = GenBank feature qualifier
-    # 'GA90h', 'linked_to',                       #cv = GenBank feature qualifier
-    # 'GA90j', 'comment',                         #cv = GenBank feature qualifier
-    # 'GA90k', 'type',                            #cv = SO
     # 'GA91',  'library_feature',                 #library_feature
     # 'GA91a', 'library_featureprop',             #library_featureprop
     # 'GA34b', 'hdm_comments',
