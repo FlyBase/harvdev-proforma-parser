@@ -73,6 +73,43 @@ GA29c: #', 'xeno_interaction_pheno',
     required: False
     nullable: True
     at_required: True   
+# 'GA30a', 'tagged_with',                     #feature_relationship.object_id
+GA30a:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True
+# 'GA30b', 'carries_tool',                    # feature_relationship.object_id
+GA30b:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True
+# 'GA30c', 'encodes_tool',                    #feature_relationship.object_id
+GA30c:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True
+# 'GA30d', 'FlyBase miscellaneous CV',    #feature_cvterm -- feature_cvtermprop type tool_uses
+GA30d:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True
+# 'GA30e', 'has_reg_region',                  #feature_relationship.object_id
+GA30e:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True
+# 'GA30f', 'propagate_transgenic_uses',    #cv property type -- featureprop n/blank
+GA30f:
+    type: string
+    required: False
+    nullable: True
+    at_forbidden: True
+    allowed: ['n']
 GA34a: 
     type: [list, string]
     required: False

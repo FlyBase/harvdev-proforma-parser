@@ -49,7 +49,48 @@ GA8:
 # 'GA17',  'phenstatement',                   #phenstatement
 GA17:
     type: pheno_cvterm
-
+# 'GA30a', 'tagged_with',                     #feature_relationship.object_id
+GA30a:
+    type: feature_relationship
+    cv: relationship type
+    cvterm: tagged_with
+    feat_type: engineered_region
+    subscript: False
+# 'GA30b', 'carries_tool',                    # feature_relationship.object_id
+GA30b:
+    type: feature_relationship
+    cv: relationship type
+    cvterm: carries_tool
+    feat_type: engineered_region
+    subscript: False
+# 'GA30c', 'encodes_tool',                    #feature_relationship.object_id
+GA30c:
+    type: feature_relationship
+    cv: relationship type
+    cvterm: encodes_tool
+    feat_type: engineered_region
+    subscript: False
+# 'GA30d', 'FlyBase miscellaneous CV',    #feature_cvterm -- feature_cvtermprop type tool_uses
+GA30d:
+    type: cvtermprop
+    cv: 'FlyBase miscellaneous CV'
+    cvterm_namespace: experimental_tool_descriptor
+    prop_value: False
+    prop_cvterm: 'tool_uses'
+    prop_cv: 'feature_cvtermprop type'
+# 'GA30e', 'has_reg_region',                  #feature_relationship.object_id
+GA30e:
+    type: feature_relationship
+    cv: relationship type
+    cvterm: has_reg_region
+    feat_type: engineered_region
+    subscript: False
+# 'GA30f', 'propagate_transgenic_uses',    #cv property type -- featureprop n/blank
+GA30f:
+    type: featureprop
+    cv: property type
+    cvterm: propagate_transgenic_uses
+    value: GA30f
 # 'GA34a', 'disease_ontology',                # feature_cvterm
 GA34a:  # SEE G24b very similar
     type: DOcvtermprop
@@ -192,7 +233,6 @@ GA90k: # processed with GA90a
     # 'GA23b', 'origin_comment',
     # 'GA12a', 'nucleotide_sub/aminoacid_rep',
     # 'GA12b', 'molecular_info',
-    # 'GA30',  'included_in',                     #feature_relationship.subject_id
     # 'GA13',  'misc',
     # 'GA20',  'availability',
     # 'GA14',  'internal_notes',
@@ -200,22 +240,16 @@ GA90k: # processed with GA90a
     # 'GA91a', 'library_featureprop',             #library_featureprop
     # 'GA34b', 'hdm_comments',
     # 'GA34c', 'hdm_internal_notes',
-    # 'GA30a', 'tagged_with',                     #feature_relationship.object_id
-    # 'GA30b', 'carries_tool',                    # feature_relationship.object_id
-    # 'GA30c', 'encodes_tool',                    #feature_relationship.object_id
-    # 'GA30e', 'has_reg_region',                  #feature_relationship.object_id
-    # 'GA30f',
-    # 'propagate_transgenic_uses',    #cv property type -- featureprop n/blank
-    # 'GA30d', 'FlyBase miscellaneous CV'
-    # ,    #feature_cvterm -- feature_cvtermprop type tool_uses
     # 'GA35', 'FlyBase miscellaneous CV'
     # ,    #feature_cvterm -- feature_cvtermprop type transgenic_product_class
     # 'GA36', 'disease_associated',    #cv property type -- featureprop y/blank
+ 
+# Implemented bit never used. DIV came in to affect then.
     # 'GA80a', 'fly_disease-implication_change', # feature_relationshipprop:- cv = 'feature_relationshipprop type', cvterm = 'fly_disease-implication_change'
     # 'GA80b', 'representative_isoform', # feature_relationship:- (cv = 'relationship type', cvterm = 'representative_isoform')
     # 'GA80c', 'other_disease-implication_change', # featureprop:- cv = 'property type', cvterm = 'other_disease-implication_change'
     # 'GA80d', 'data_link', # feature_dbxref (db = hgnc)
-    # 'GA81a', 'primary_disease-implication_change', # featureprop:- cv = 'property type', cvterm = 'primary_disease-implication_change'
+   # 'GA81a', 'primary_disease-implication_change', # featureprop:- cv = 'property type', cvterm = 'primary_disease-implication_change'
     # 'GA81b', 'additional_disease-implication_change', # featureprop:- cv = 'property type', cvterm = 'additional_disease-implication_change'
     # 'GA82', 'human_disease_relevant', # humanhealth_feature +
     #                                   # humanhealth_featureprop:- (cv = 'humanhealth_featureprop type', cvterm = 'human_disease_relevant')
@@ -224,10 +258,6 @@ GA90k: # processed with GA90a
     # 'GA83c', 'description', # dbxref.description
     # 'GA83d', 'action',    # remove the above GA83's
     # 'GA84a', 'HDM_comment', # featureprop:- cv = 'property type', cvterm = 'HDM_comment'
-
- #### NOT in svn
- # 'GA3',   'FlyBase miscellaneous CV',        #feature_cvterm
-# 'GA19',  'FlyBase miscellaneous CV',        #feature_cvterm
 
 ############
 # obsoleted.

@@ -229,6 +229,7 @@ def validate_proforma_object(proforma):
 
     log.debug('Field and values to be used for validation: {}'.format(field_value_validation_dict))
     results = validator.validate(field_value_validation_dict, schema)
+    log.debug('Field and values to be used for validation: {}'.format(field_value_validation_dict))
 
     if results is True:
         log.debug('Validation successful.')

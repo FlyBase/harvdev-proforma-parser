@@ -42,7 +42,8 @@ class ChadoAllele(ChadoFeatureObject):
         self.new = False
 
         # yaml file defines what to do with each field. Follow the light
-        self.type_dict = {'cvterm': self.load_feature_cvterm,
+        self.type_dict = {'cvtermprop': self.load_feature_cvtermprop,
+                          'cvterm': self.load_feature_cvterm,
                           'DOcvtermprop': self.load_do,
                           'feature_relationship': self.load_feature_relationship,
                           'GA90': self.GA90_process,
@@ -116,7 +117,11 @@ class ChadoAllele(ChadoFeatureObject):
         """
         if not self.checks(references):
             return None
+        for key in self.process_data:
+            log.debug("Processing 1 {}".format(self.process_data[key]))
         self.get_allele()
+        for key in self.process_data:
+            log.debug("Processing 2 {}".format(self.process_data[key]))
         if not self.feature:  # problem getting allele, lets finish
             return None
 
@@ -126,7 +131,11 @@ class ChadoAllele(ChadoFeatureObject):
         # feature relationship to gene
         self.process_data['GENE']['data'] = [('GENE', self.gene.name, 0, False)]
         self.load_feature_relationship('GENE')  # We have a special key in the yml file called 'GENE'
+        for key in self.process_data:
+            log.debug("Processing 3 {}".format(self.process_data[key]))
         del self.process_data['GENE']
+        for key in self.process_data:
+            log.debug("Processing 4 {}".format(self.process_data[key]))
 
         # bang c first as this supersedes all things
         if self.bang_c:

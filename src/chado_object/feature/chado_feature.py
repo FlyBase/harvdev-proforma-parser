@@ -254,6 +254,7 @@ class ChadoFeatureObject(ChadoObject):
         cv_name = self.process_data[key]['cv']
 
         for item in items:
+            cvterm = None
             prop_value = None
             if self.process_data[key]['prop_value']:
                 cvterm_name = self.process_data[key]['cvterm']
@@ -262,12 +263,19 @@ class ChadoFeatureObject(ChadoObject):
                 # for new ones they are seperated by ';'  x ; y
                 # i.e.
                 cvterm_name = item[FIELD_VALUE]
+            try:
+                cvterm = get_cvterm(self.session, cv_name, cvterm_name)
+            except CodingError:
+                # may not be a coding error if cvterm name given on proforma
+                if prop_value:
+                    message = "Coding error NO cvterm '{}' for Cv '{}'.".format(cvterm_name, cv_name)
+                    self.critical_error(item, message)
+                    continue
 
-            cvterm = get_cvterm(self.session, cv_name, cvterm_name)
             if not cvterm:
-                message = "Unable to find cvterm {} for Cv {}.".format(cvterm_name, cv_name)
+                message = "Unable to find cvterm '{}' for Cv '{}'.".format(cvterm_name, cv_name)
                 self.critical_error(item, message)
-                return None
+                continue
 
             if 'cvterm_namespace' in self.process_data[key]:
                 try:
@@ -278,6 +286,7 @@ class ChadoFeatureObject(ChadoObject):
                     message = "Cvterm '{}' Not in the required namespace of '{}'".\
                         format(cvterm.name, self.process_data[key]['cvterm_namespace'])
                     self.critical_error(item, message)
+                    continue
 
             # create feature_cvterm
             feat_cvt, _ = get_or_create(self.session, FeatureCvterm,
