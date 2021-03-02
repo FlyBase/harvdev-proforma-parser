@@ -353,7 +353,7 @@ class ChadoFeatureObject(ChadoObject):
                 self.critical_error(item, message)
                 return
             except NoResultFound:
-                self.critical_error(item, "No Result found for {} {}".format(feat_type, name))
+                self.critical_error(item, "No Result found for {} {} subscript={}".format(feat_type, name, subscript))
                 return
             fr, _ = get_or_create(self.session, FeatureRelationship,
                                   subject_id=self.feature.feature_id,

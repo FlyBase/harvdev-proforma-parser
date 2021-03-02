@@ -10,20 +10,22 @@ import logging
 import os
 import re
 from harvdev_utils.chado_functions import (
-    get_or_create
+    get_or_create, get_cvterm
 )
+from chado_object.utils.feature_synonym import fs_add_by_synonym_name_and_type
+
 from chado_object.utils.go import process_DO_line
 from chado_object.feature.chado_feature import ChadoFeatureObject
 from harvdev_utils.production import (
     Feature, FeatureRelationshipPub, FeatureRelationship,
     FeaturePub, FeatureCvterm, FeatureCvtermprop,
-    Featureprop, FeaturepropPub, Featureloc
-)
-from harvdev_utils.chado_functions import (
-    get_cvterm
+    Featureprop, FeaturepropPub, Featureloc, FeatureSynonym,
+    Pub, Synonym
 )
 from chado_object.chado_base import FIELD_VALUE
 from sqlalchemy.orm.exc import NoResultFound
+from harvdev_utils.chado_functions import synonym_name_details
+from harvdev_utils.production.production import FeatureRelationshipprop, FeatureRelationshippropPub
 log = logging.getLogger(__name__)
 
 
@@ -47,6 +49,7 @@ class ChadoAllele(ChadoFeatureObject):
                           'DOcvtermprop': self.load_do,
                           'feature_relationship': self.load_feature_relationship,
                           'GA90': self.GA90_process,
+                          'GA10_feature_relationship': self.GA10_feat_rel,
                           'featureprop': self.load_featureprop,
                           'synonym': self.load_synonym,
                           'ignore': self.ignore}
@@ -199,7 +202,7 @@ class ChadoAllele(ChadoFeatureObject):
                 continue
             self.add_cvtermprops(key, do_dict)
 
-    def get_ga90a(self, key):
+    def get_GA90a(self, key):
         """Get feature defned by GA90 A and K.
 
         key: <string> the field name i.e here GA90a
@@ -356,7 +359,7 @@ class ChadoAllele(ChadoFeatureObject):
             self.critical_error(self.process_data[key]['data'], message)
             return
 
-        feature, is_new = self.get_ga90a(key)
+        feature, is_new = self.get_GA90a(key)
         if not feature:
             return
         fr, _ = get_or_create(self.session, FeatureRelationship,
@@ -385,3 +388,138 @@ class ChadoAllele(ChadoFeatureObject):
         for postfix in "defghj":  # straight forward featureprops
             self.load_featureprop("GA90{}".format(postfix))
         self.feature = allele
+
+    def get_GA10_cvterms(self, key):
+        """Get cvterms needed for G10."""
+        cvterms = {}
+
+        cvterms['rel_cvterm'] = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data[key]['cvterm'])
+        if not cvterms['rel_cvterm']:
+            message = "Unable to find cvterm '{}' for Cv '{}'.".format(self.process_data[key]['cvterm'], self.process_data[key]['cv'])
+            self.critical_error(self.process_data[key]['data'], message)
+            return None
+
+        cvterms['prop_cvterm'] = get_cvterm(self.session, self.process_data[key]['prop_cv'], self.process_data[key]['prop_cvterm'])
+        if not cvterms['prop_cvterm']:
+            message = "Unable to find cvterm '{}' for Cv '{}'.".format(self.process_data[key]['prop_cvterm'], self.process_data[key]['prop_cv'])
+            self.critical_error(self.process_data[key]['data'], message)
+            return None
+
+        cvterms['feat_type'] = get_cvterm(self.session, 'SO', self.process_data[key]['feat_type'])
+        if not cvterms['feat_type']:
+            message = "Unable to find cvterm '{}' for Cv 'SO'.".format(self.process_data[key]['cvterm'])
+            self.critical_error(self.process_data[key]['data'], message)
+            return None
+
+        cvterms['syn_type'] = get_cvterm(self.session, self.process_data[key]['syn_cv'], self.process_data[key]['syn_cvterm'])
+        if not cvterms['syn_type']:
+            message = "Unable to find cvterm '{}' for Cv '{}'.".format(self.process_data[key]['syn_cvterm'], self.process_data[key]['syn_cv'])
+            self.critical_error(self.process_data[key]['data'], message)
+            return None
+        return cvterms
+
+    def get_feature(self, key, item, cvterms):
+        """Get feature, may neeed to create it."""
+        name2code = {'transposable_element_insertion_site': 'ti',
+                     'transgenic_transposable_element': 'tp'}
+        is_new_feature = False
+        name = item[FIELD_VALUE]
+        fields = re.search(r"NEW:(\S+)", name)
+        if fields:
+            if fields.group(1):
+                name = fields.group(1)
+                is_new_feature = True
+
+        organism, plain_name, sgml = synonym_name_details(self.session, name)
+        uniquename = 'FB{}:temp_0'.format(name2code[self.process_data[key]['feat_type']])
+        feature, is_new = get_or_create(self.session, Feature, name=name,
+                                        type_id=cvterms['feat_type'].cvterm_id, uniquename=uniquename,
+                                        organism_id=organism.organism_id)
+        if is_new_feature != is_new:
+            if is_new_feature:
+                message = ""
+            else:
+                message = ""
+            self.critical_error(self.process_data[key]['data'], message)
+            return None
+
+        if 'synonym_field' in self.process_data[key] and self.has_data(self.process_data[key]['synonym_field']):
+            syn_key = self.process_data[key]['synonym_field']
+            if self.has_data(syn_key):
+                for syn_data in self.process_data[syn_key]['data']:
+                    syn_name = syn_data[FIELD_VALUE]
+                    organism, syn_plain_name, syn_sgml = synonym_name_details(self.session, syn_name)
+                    fs_add_by_synonym_name_and_type(self.session, feature.feature_id,
+                                                    syn_plain_name, self.process_data[syn_key]['cv'],
+                                                    self.process_data[syn_key]['cvterm'], self.pub.pub_id,
+                                                    synonym_sgml=syn_sgml, is_current=self.process_data[syn_key]['is_current'], is_internal=False)
+
+        # After other synoinyms in case we it is duplicsated as a synonym here and we want to keep it current
+        if is_new_feature:
+            syn_pub = self.session.query(Pub).filter(Pub.uniquename == self.process_data[key]['syn_pub']).one_or_none()
+            if not syn_pub:
+                self.critical_error(self.process_data[key]['data'], 'Pub {} does not exist in the database.'.format())
+                return
+
+            synonym, _ = get_or_create(self.session, Synonym, type_id=cvterms['syn_type'].cvterm_id, name=plain_name, synonym_sgml=sgml)
+
+            fs, _ = get_or_create(self.session, FeatureSynonym, feature_id=feature.feature_id, synonym_id=synonym.synonym_id,
+                                  pub_id=syn_pub.pub_id)
+            fs.is_current = True
+            fs.is_internal = False
+            log.debug("BOB: {} ".format(feature))
+            log.debug("BOB: fs= {}".format(fs))
+            log.debug("BOB: syn {}".format(fs.synonym))
+        else:
+            log.debug("BOB: NOT NEW")
+        return feature
+
+    def GA10_feat_rel(self, key):
+        """Create feature relationship.
+
+        Check if 'NEW:' , if so create before continuing.
+        """
+        if not self.has_data(key):
+            return
+        cvterms = self.get_GA10_cvterms(key)
+        if not cvterms:
+            return
+
+        if type(self.process_data[key]['data']) is list:
+            items = self.process_data[key]['data']
+        else:
+            items = [self.process_data[key]['data']]
+
+        for item in items:
+            feature = self.get_feature(key, item, cvterms)
+            if not feature:
+                continue
+
+            # Add feat relationship for new_feat to allele (self.feature)
+            tp_allele, _ = get_or_create(self.session, FeatureRelationship,
+                                         subject_id=self.feature.feature_id,
+                                         object_id=feature.feature_id,
+                                         type_id=cvterms['rel_cvterm'].cvterm_id)
+
+            frp, _ = get_or_create(self.session, FeatureRelationshipPub,
+                                   feature_relationship_id=tp_allele.feature_relationship_id,
+                                   pub_id=self.pub.pub_id)
+
+            # add feature relationshipproppub to allele
+            frprop, _ = get_or_create(self.session, FeatureRelationshipprop,
+                                      feature_relationship_id=tp_allele.feature_relationship_id,
+                                      value=self.process_data[key]['prop_value'],
+                                      type_id=cvterms['prop_cvterm'].cvterm_id)
+            frp_proppub, _ = get_or_create(self.session, FeatureRelationshippropPub,
+                                           feature_relationshipprop_id=frprop.feature_relationshipprop_id,
+                                           pub_id=self.pub.pub_id)
+
+            # Add feat relationship for new_feat to gene
+            tp_gene, _ = get_or_create(self.session, FeatureRelationship,
+                                       subject_id=self.gene.feature_id,
+                                       object_id=feature.feature_id,
+                                       type_id=cvterms['rel_cvterm'].cvterm_id)
+
+            frp, _ = get_or_create(self.session, FeatureRelationshipPub,
+                                   feature_relationship_id=tp_gene.feature_relationship_id,
+                                   pub_id=self.pub.pub_id)

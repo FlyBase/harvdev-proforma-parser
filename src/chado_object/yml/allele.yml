@@ -46,6 +46,43 @@ GA7a:
 GA8:
     type: cvterm
     cv: FlyBase miscellaneous CV
+# 'GA10a', 'associated_with',                 #feature_relationship.object_id
+GA10a:
+    type: feature_relationship
+    cv: relationship type
+    cvterm: associated_with
+    feat_type: transgenic_transposable_element
+    subscript: False
+# 'GA10b', 'location_comment',
+GA10b: # Do as part of GA10a wheen we have the tte available
+    type: ignore
+    cv: synonym type
+    cvterm: symbol
+    is_current: False    
+# 'GA10c', 'associated_with',
+GA10c:
+    type: GA10_feature_relationship
+    cv: relationship type
+    cvterm: associated_with
+    prop_cv: feature_relationshipprop type
+    prop_cvterm: relative_position
+    prop_value: outside
+    feat_type: transposable_element_insertion_site
+    syn_cv: synonym type
+    syn_cvterm: symbol
+    syn_pub: FBrf0105495
+    subscript: True
+    synonym_field: GA10d
+# 'GA10d', ## 'insertion_into_natTE', this iin seems wrong!
+GA10d: # Do as part of GA10c wheen we have the tte available
+    type: ignore
+    cv: synonym type
+    cvterm: symbol
+    is_current: False
+# 'GA10e', 'associated_with',
+# 'GA10f', ## 'first_base_of_unique_in_natTE', this seems wrong too. really synonym
+# 'GA10g', 'associated_with/cyto_change_comment',      #feature_relationship.subject_id
+
 # 'GA17',  'phenstatement',                   #phenstatement
 GA17:
     type: pheno_cvterm
@@ -69,7 +106,7 @@ GA30c:
     cv: relationship type
     cvterm: encodes_tool
     feat_type: engineered_region
-    subscript: False
+    subscript: True
 # 'GA30d', 'FlyBase miscellaneous CV',    #feature_cvterm -- feature_cvtermprop type tool_uses
 GA30d:
     type: cvtermprop
@@ -219,14 +256,6 @@ GA90k: # processed with GA90a
 
 
     # 'GA22',  'interallele_comp',
-    # 'GA10a', 'associated_with',                 #feature_relationship.object_id
-    # 'GA10b', 'location_comment',
-    # 'GA10c', 'associated_with',
-    # 'GA10d', 'insertion_into_natTE',
-    # 'GA10e', 'associated_with',
-    # 'GA10f', 'first_base_of_unique_in_natTE',
-    # 'GA10g',
-    # 'associated_with/cyto_change_comment',      #feature_relationship.subject_id
     # 'GA15',  'discoverer',
     # 'GA11',  'progenitor',                      #feature_relationship.object_id
     # 'GA23a', 'origin_type',
