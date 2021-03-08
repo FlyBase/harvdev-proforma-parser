@@ -73,6 +73,8 @@ GA10c:
     syn_pub: FBrf0105495
     subscript: True
     synonym_field: GA10d
+    tp_cv: relationship type
+    tp_cvterm: producedby
 # 'GA10d', ## 'insertion_into_natTE', this iin seems wrong!
 GA10d: # Do as part of GA10c wheen we have the tte available
     type: ignore

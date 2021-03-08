@@ -10,7 +10,7 @@ import logging
 import os
 import re
 from harvdev_utils.chado_functions import (
-    get_or_create, get_cvterm
+    get_or_create, get_cvterm, feature_symbol_lookup
 )
 from chado_object.utils.feature_synonym import fs_add_by_synonym_name_and_type
 
@@ -405,6 +405,12 @@ class ChadoAllele(ChadoFeatureObject):
             self.critical_error(self.process_data[key]['data'], message)
             return None
 
+        cvterms['tp_cvterm'] = get_cvterm(self.session, self.process_data[key]['tp_cv'], self.process_data[key]['tp_cvterm'])
+        if not cvterms['tp_cvterm']:
+            message = "Unable to find cvterm '{}' for Cv '{}'.".format(self.process_data[key]['tp_cvterm'], self.process_data[key]['tp_cv'])
+            self.critical_error(self.process_data[key]['data'], message)
+            return None
+
         cvterms['feat_type'] = get_cvterm(self.session, 'SO', self.process_data[key]['feat_type'])
         if not cvterms['feat_type']:
             message = "Unable to find cvterm '{}' for Cv 'SO'.".format(self.process_data[key]['cvterm'])
@@ -416,6 +422,7 @@ class ChadoAllele(ChadoFeatureObject):
             message = "Unable to find cvterm '{}' for Cv '{}'.".format(self.process_data[key]['syn_cvterm'], self.process_data[key]['syn_cv'])
             self.critical_error(self.process_data[key]['data'], message)
             return None
+
         return cvterms
 
     def get_feature(self, key, item, cvterms):
@@ -474,6 +481,51 @@ class ChadoAllele(ChadoFeatureObject):
             log.debug("BOB: NOT NEW")
         return feature
 
+    def tp_part_process(self, key, item, cvterms, ti_object):
+        """Process tp and allele part of name."""
+        pattern = r"""
+                    NEW:* # Ignore NEW: at the start if it has it.
+                    (\S+    # Pre '{' part of tp name
+                    [{]+    # tp part with '{'
+                    \S+     # Non white space name bit of tp
+                    [}]+)   # tp ends with  '}'
+                    (\S+)   # Non white space allele name
+                    """
+        fields = re.search(pattern, item[FIELD_VALUE], re.VERBOSE)
+        if fields:
+            if fields.group(1):
+                tp_part_name = fields.group(1)
+                allele_part_name = fields.group(2)
+        else:
+            self.warning_error(item, "format error ti does not start {...}")
+            return
+
+        # Does the allele part have the same name as the allele
+        try:
+            allele_part = feature_symbol_lookup(self.session, None, allele_part_name)
+            if self.feature.feature_id != allele_part.feature_id:
+                message = "Allele part of name '{}' does NOT match the allele {} given in the allele proforma".\
+                    format(allele_part_name, self.feature.name)
+                self.warning_error(item, message)
+        except NoResultFound:
+            self.warning_error(item, "Could not find Allele '{}' for the allele part of the ti")
+
+        try:
+            tp_part = feature_symbol_lookup(self.session, None, tp_part_name)
+        except NoResultFound:
+            self.warning_error(item, "Could not find tp '{}' for the tp part of the ti".format(tp_part_name))
+            return
+
+        # Create/get tp ti relationship
+        tp_ti, _ = get_or_create(self.session, FeatureRelationship,
+                                 subject_id=ti_object.feature_id,
+                                 object_id=tp_part.feature_id,
+                                 type_id=cvterms['tp_cvterm'].cvterm_id)
+
+        frp, _ = get_or_create(self.session, FeatureRelationshipPub,
+                               feature_relationship_id=tp_ti.feature_relationship_id,
+                               pub_id=self.pub.pub_id)
+
     def GA10_feat_rel(self, key):
         """Create feature relationship.
 
@@ -491,23 +543,25 @@ class ChadoAllele(ChadoFeatureObject):
             items = [self.process_data[key]['data']]
 
         for item in items:
-            feature = self.get_feature(key, item, cvterms)
-            if not feature:
+            ti_feature = self.get_feature(key, item, cvterms)
+            if not ti_feature:
                 continue
 
+            self.tp_part_process(key, item, cvterms, ti_feature)
+
             # Add feat relationship for new_feat to allele (self.feature)
-            tp_allele, _ = get_or_create(self.session, FeatureRelationship,
+            ti_allele, _ = get_or_create(self.session, FeatureRelationship,
                                          subject_id=self.feature.feature_id,
-                                         object_id=feature.feature_id,
+                                         object_id=ti_feature.feature_id,
                                          type_id=cvterms['rel_cvterm'].cvterm_id)
 
             frp, _ = get_or_create(self.session, FeatureRelationshipPub,
-                                   feature_relationship_id=tp_allele.feature_relationship_id,
+                                   feature_relationship_id=ti_allele.feature_relationship_id,
                                    pub_id=self.pub.pub_id)
 
             # add feature relationshipproppub to allele
             frprop, _ = get_or_create(self.session, FeatureRelationshipprop,
-                                      feature_relationship_id=tp_allele.feature_relationship_id,
+                                      feature_relationship_id=ti_allele.feature_relationship_id,
                                       value=self.process_data[key]['prop_value'],
                                       type_id=cvterms['prop_cvterm'].cvterm_id)
             frp_proppub, _ = get_or_create(self.session, FeatureRelationshippropPub,
@@ -517,7 +571,7 @@ class ChadoAllele(ChadoFeatureObject):
             # Add feat relationship for new_feat to gene
             tp_gene, _ = get_or_create(self.session, FeatureRelationship,
                                        subject_id=self.gene.feature_id,
-                                       object_id=feature.feature_id,
+                                       object_id=ti_feature.feature_id,
                                        type_id=cvterms['rel_cvterm'].cvterm_id)
 
             frp, _ = get_or_create(self.session, FeatureRelationshipPub,
