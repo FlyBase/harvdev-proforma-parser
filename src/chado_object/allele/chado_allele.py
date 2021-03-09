@@ -465,7 +465,7 @@ class ChadoAllele(ChadoFeatureObject):
         if is_new_feature:
             syn_pub = self.session.query(Pub).filter(Pub.uniquename == self.process_data[key]['syn_pub']).one_or_none()
             if not syn_pub:
-                self.critical_error(self.process_data[key]['data'], 'Pub {} does not exist in the database.'.format())
+                self.critical_error(self.process_data[key]['data'], 'Pub {} does not exist in the database.'.format(self.process_data[key]['syn_pub']))
                 return
 
             synonym, _ = get_or_create(self.session, Synonym, type_id=cvterms['syn_type'].cvterm_id, name=plain_name, synonym_sgml=sgml)
