@@ -239,7 +239,8 @@ GA90j:
 # 'GA90k', 'type',                            #cv = SO
 GA90k: # processed with GA90a
     type: ignore
-
+GA888:
+    type: ignore
     # 'GA1e',  'symbol',
     # 'GA1f',  'merge',
     # 'GA2c',  'fullname',

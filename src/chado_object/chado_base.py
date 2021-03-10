@@ -49,8 +49,13 @@ class ChadoObject(object):
         # TODO Change bang_c "blank" processing to not require an empty process_data[key]['data'] entry.
         process_data = yaml.load(open(filename), Loader=yaml.FullLoader)
         keys_to_remove = []
+        # Check if we defined what to do with a field.
+        # It could be missing the yml file.
+        for key in params['fields_values']:
+            if key not in process_data:
+                self.critical_error(params['fields_values'][key], "Do not know what to do with this one.")
+
         for key in process_data:
-            # log.debug('process data {}'.format(process_data[key]))
             if process_data[key]['type'] == 'data_set':
                 continue
             if key in params['fields_values']:
