@@ -82,9 +82,31 @@ GA10d: # Do as part of GA10c wheen we have the tte available
     cvterm: symbol
     is_current: False
 # 'GA10e', 'associated_with',
+GA10e:
+    type: GA10_feature_relationship
+    cv: relationship type
+    cvterm: associated_with
+    prop_cv: feature_relationshipprop type
+    prop_cvterm: relative_position
+    prop_value: inside
+    feat_type: transposable_element_insertion_site
+    syn_cv: synonym type
+    syn_cvterm: symbol
+    syn_pub: FBrf0105495
+    subscript: True
+    synonym_field: GA10f
+    tp_cv: relationship type
+    tp_cvterm: producedby
 # 'GA10f', ## 'first_base_of_unique_in_natTE', this seems wrong too. really synonym
-# 'GA10g', 'associated_with/cyto_change_comment',      #feature_relationship.subject_id
+GA10f: # Do as part of GA10e wheen we have the tte available
+    type: ignore
+    cv: synonym type
+    cvterm: symbol
+    is_current: False
 
+# 'GA10g', 'associated_with/cyto_change_comment',      #feature_relationship.subject_id
+GA10g:
+    type: ignore  # to  be filled in later
 # 'GA17',  'phenstatement',                   #phenstatement
 GA17:
     type: pheno_cvterm
