@@ -65,7 +65,6 @@ class ValidatorHumanhealth(Validator):
         for line in check_arr:
             if not line or len(line) == 0:
                 continue
-            log.debug("BOB: field is {}, value is {}".format(field, value))
             if re.search(r"@+.*@+", line) is None:
                 okay = False
         if not okay:

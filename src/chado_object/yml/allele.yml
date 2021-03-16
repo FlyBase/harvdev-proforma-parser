@@ -48,11 +48,15 @@ GA8:
     cv: FlyBase miscellaneous CV
 # 'GA10a', 'associated_with',                 #feature_relationship.object_id
 GA10a:
-    type: feature_relationship
+    type: GA10_feature_relationship
     cv: relationship type
     cvterm: associated_with
     feat_type: transgenic_transposable_element
     subscript: False
+    syn_cv: synonym type
+    syn_cvterm: symbol
+    syn_pub: FBrf0105495
+    synonym_field: GA10b
 # 'GA10b', 'location_comment',
 GA10b: # Do as part of GA10a wheen we have the tte available
     type: ignore
@@ -103,11 +107,18 @@ GA10f: # Do as part of GA10e wheen we have the tte available
     cv: synonym type
     cvterm: symbol
     is_current: False
-
 # 'GA10g', 'associated_with/cyto_change_comment',      #feature_relationship.subject_id
 GA10g:
-    type: ignore  # to  be filled in later
-# 'GA17',  'phenstatement',                   #phenstatement
+    type: GA10_feature_relationship
+    cv: relationship type
+    cvterm: associated_with
+    feat_type: chromosome_structure_variation
+    subscript: False
+    fp_cv: property type
+    fp_cvterm: cyto_change_comment
+    fp_value: Polytene chromosomes normal
+    feature_is_object: True
+## 'GA17',  'phenstatement',                   #phenstatement
 GA17:
     type: pheno_cvterm
 # 'GA30a', 'tagged_with',                     #feature_relationship.object_id

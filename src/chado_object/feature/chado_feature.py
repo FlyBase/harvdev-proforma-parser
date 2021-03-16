@@ -342,33 +342,52 @@ class ChadoFeatureObject(ChadoObject):
                 subscript = False
 
         for item in items:
-            name = item[FIELD_VALUE]
-            try:
-                obj_feat = feature_symbol_lookup(self.session, feat_type, name, convert=subscript)
-            except MultipleResultsFound:
-                message = "Multiple results found for type: '{}' name: '{}'".format(feat_type, name)
-                features = feature_symbol_lookup(self.session, feat_type, name, check_unique=False, convert=subscript)
-                for feature in features:
-                    message += "\n\tfound: {}".format(feature)
-                self.critical_error(item, message)
-                return
-            except NoResultFound:
-                self.critical_error(item, "No Result found for {} {} subscript={}".format(feat_type, name, subscript))
-                return
-            fr, _ = get_or_create(self.session, FeatureRelationship,
-                                  subject_id=self.feature.feature_id,
-                                  object_id=obj_feat.feature_id,
-                                  type_id=cvterm.cvterm_id)
+            other_feat = self.get_other_feature(item, feat_type, subscript)
+            if not other_feat:
+                continue
+            self.add_relationships(key, other_feat, cvterm)
 
+    def get_other_feature(self, item, feat_type, subscript):
+        """Get the other feature."""
+        name = item[FIELD_VALUE]
+        try:
+            other_feat = feature_symbol_lookup(self.session, feat_type, name, convert=subscript)
+        except MultipleResultsFound:
+            message = "Multiple results found for type: '{}' name: '{}'".format(feat_type, name)
+            features = feature_symbol_lookup(self.session, feat_type, name, check_unique=False, convert=subscript)
+            for feature in features:
+                message += "\n\tfound: {}".format(feature)
+            self.critical_error(item, message)
+            return
+        except NoResultFound:
+            self.critical_error(item, "No Result found for {} {} subscript={}".format(feat_type, name, subscript))
+            return
+        return other_feat
+
+    def add_relationships(self, key, obj_feat, cvterm):
+        """Add relationships."""
+        # Sometimes we want to link the relationship the other way around.
+        sub_id = self.feature.feature_id
+        obj_id = obj_feat.feature_id
+        if 'feature_is_object' in self.process_data[key]:
+            if self.process_data[key]['feature_is_object']:
+                obj_id = self.feature.feature_id
+                sub_id = obj_feat.feature_id
+
+        fr, _ = get_or_create(self.session, FeatureRelationship,
+                              subject_id=sub_id,
+                              object_id=obj_id,
+                              type_id=cvterm.cvterm_id)
+
+        frp, _ = get_or_create(self.session, FeatureRelationshipPub,
+                               feature_relationship_id=fr.feature_relationship_id,
+                               pub_id=self.pub.pub_id)
+
+        if 'add_unattributed_paper' in self.process_data[key] and self.process_data[key]['add_unattributed_paper']:
+            unattrib_pub_id = self.get_unattrib_pub().pub_id
             frp, _ = get_or_create(self.session, FeatureRelationshipPub,
                                    feature_relationship_id=fr.feature_relationship_id,
-                                   pub_id=self.pub.pub_id)
-
-            if 'add_unattributed_paper' in self.process_data[key] and self.process_data[key]['add_unattributed_paper']:
-                unattrib_pub_id = self.get_unattrib_pub().pub_id
-                frp, _ = get_or_create(self.session, FeatureRelationshipPub,
-                                       feature_relationship_id=fr.feature_relationship_id,
-                                       pub_id=unattrib_pub_id)
+                                   pub_id=unattrib_pub_id)
 
     def load_featureproplist(self, key, prop_cv_id):
         """Load a feature props that are in a list.

@@ -23,7 +23,7 @@ from harvdev_utils.production import (
     Pub, Synonym
 )
 from chado_object.chado_base import FIELD_VALUE
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from harvdev_utils.chado_functions import synonym_name_details
 from harvdev_utils.production.production import FeatureRelationshipprop, FeatureRelationshippropPub
 log = logging.getLogger(__name__)
@@ -399,18 +399,6 @@ class ChadoAllele(ChadoFeatureObject):
             self.critical_error(self.process_data[key]['data'], message)
             return None
 
-        cvterms['prop_cvterm'] = get_cvterm(self.session, self.process_data[key]['prop_cv'], self.process_data[key]['prop_cvterm'])
-        if not cvterms['prop_cvterm']:
-            message = "Unable to find cvterm '{}' for Cv '{}'.".format(self.process_data[key]['prop_cvterm'], self.process_data[key]['prop_cv'])
-            self.critical_error(self.process_data[key]['data'], message)
-            return None
-
-        cvterms['tp_cvterm'] = get_cvterm(self.session, self.process_data[key]['tp_cv'], self.process_data[key]['tp_cvterm'])
-        if not cvterms['tp_cvterm']:
-            message = "Unable to find cvterm '{}' for Cv '{}'.".format(self.process_data[key]['tp_cvterm'], self.process_data[key]['tp_cv'])
-            self.critical_error(self.process_data[key]['data'], message)
-            return None
-
         cvterms['feat_type'] = get_cvterm(self.session, 'SO', self.process_data[key]['feat_type'])
         if not cvterms['feat_type']:
             message = "Unable to find cvterm '{}' for Cv 'SO'.".format(self.process_data[key]['cvterm'])
@@ -423,12 +411,30 @@ class ChadoAllele(ChadoFeatureObject):
             self.critical_error(self.process_data[key]['data'], message)
             return None
 
+        # GA10a has fewer cvterms as no prop
+        if key == 'GA10a':
+            return cvterms
+
+        cvterms['prop_cvterm'] = get_cvterm(self.session, self.process_data[key]['prop_cv'], self.process_data[key]['prop_cvterm'])
+        if not cvterms['prop_cvterm']:
+            message = "Unable to find cvterm '{}' for Cv '{}'.".format(self.process_data[key]['prop_cvterm'], self.process_data[key]['prop_cv'])
+            self.critical_error(self.process_data[key]['data'], message)
+            return None
+
+        cvterms['tp_cvterm'] = get_cvterm(self.session, self.process_data[key]['tp_cv'], self.process_data[key]['tp_cvterm'])
+        if not cvterms['tp_cvterm']:
+            message = "Unable to find cvterm '{}' for Cv '{}'.".format(self.process_data[key]['tp_cvterm'], self.process_data[key]['tp_cv'])
+            self.critical_error(self.process_data[key]['data'], message)
+            return None
+
         return cvterms
 
     def get_feature(self, key, item, cvterms):
-        """Get feature, may neeed to create it."""
+        """Get feature, may need to create it."""
         name2code = {'transposable_element_insertion_site': 'ti',
                      'transgenic_transposable_element': 'tp'}
+        # organism = {'transposable_element_insertion_site': self.get_organism(self.session, short=''),
+        #             'transgenic_transposable_element': self.get_organism(self.session, short='Dmel')}
         is_new_feature = False
         name = item[FIELD_VALUE]
         fields = re.search(r"NEW:(\S+)", name)
@@ -438,17 +444,25 @@ class ChadoAllele(ChadoFeatureObject):
                 is_new_feature = True
 
         organism, plain_name, sgml = synonym_name_details(self.session, name)
-        uniquename = 'FB{}:temp_0'.format(name2code[self.process_data[key]['feat_type']])
-        feature, is_new = get_or_create(self.session, Feature, name=name,
-                                        type_id=cvterms['feat_type'].cvterm_id, uniquename=uniquename,
-                                        organism_id=organism.organism_id)
-        if is_new_feature != is_new:
-            if is_new_feature:
-                message = ""
-            else:
-                message = ""
-            self.critical_error(self.process_data[key]['data'], message)
-            return None
+        if is_new_feature:
+            uniquename = 'FB{}:temp_0'.format(name2code[self.process_data[key]['feat_type']])
+            feature, is_new = get_or_create(self.session, Feature, name=name,
+                                            type_id=cvterms['feat_type'].cvterm_id, uniquename=uniquename,
+                                            organism_id=organism.organism_id)
+            if not is_new:
+                message = "Feature has NEW: but is not"
+                self.critical_error(item, message)
+                return
+        else:
+            try:
+                feature = feature_symbol_lookup(self.session, self.process_data[key]['feat_type'], name)
+            except NoResultFound:
+                message = "Unable to find Feature with symbol {} Add 'NEW:' if it is to be created.".format(name)
+                self.critical_error(item, message)
+            except MultipleResultsFound:
+                message = "Found more than feature with this symbol {}.".format(name)
+                self.critical_error(item, message)
+                return
 
         if 'synonym_field' in self.process_data[key] and self.has_data(self.process_data[key]['synonym_field']):
             syn_key = self.process_data[key]['synonym_field']
@@ -474,11 +488,6 @@ class ChadoAllele(ChadoFeatureObject):
                                   pub_id=syn_pub.pub_id)
             fs.is_current = True
             fs.is_internal = False
-            log.debug("BOB: {} ".format(feature))
-            log.debug("BOB: fs= {}".format(fs))
-            log.debug("BOB: syn {}".format(fs.synonym))
-        else:
-            log.debug("BOB: NOT NEW")
         return feature
 
     def tp_part_process(self, key, item, cvterms, ti_object):
@@ -533,6 +542,10 @@ class ChadoAllele(ChadoFeatureObject):
         """
         if not self.has_data(key):
             return
+        if key == 'GA10g':
+            self.process_GA10g(key)
+            return
+
         cvterms = self.get_GA10_cvterms(key)
         if not cvterms:
             return
@@ -543,16 +556,21 @@ class ChadoAllele(ChadoFeatureObject):
             items = [self.process_data[key]['data']]
 
         for item in items:
-            ti_feature = self.get_feature(key, item, cvterms)
-            if not ti_feature:
+            tx_feature = self.get_feature(key, item, cvterms)
+            if not tx_feature:
                 continue
 
-            self.tp_part_process(key, item, cvterms, ti_feature)
+            if key == 'GA10a':
+                self.process_GA10a(key, item, cvterms, tx_feature)
+                continue
+
+            # Else GA10[ce]
+            self.tp_part_process(key, item, cvterms, tx_feature)
 
             # Add feat relationship for new_feat to allele (self.feature)
             ti_allele, _ = get_or_create(self.session, FeatureRelationship,
                                          subject_id=self.feature.feature_id,
-                                         object_id=ti_feature.feature_id,
+                                         object_id=tx_feature.feature_id,
                                          type_id=cvterms['rel_cvterm'].cvterm_id)
 
             frp, _ = get_or_create(self.session, FeatureRelationshipPub,
@@ -571,9 +589,39 @@ class ChadoAllele(ChadoFeatureObject):
             # Add feat relationship for new_feat to gene
             tp_gene, _ = get_or_create(self.session, FeatureRelationship,
                                        subject_id=self.gene.feature_id,
-                                       object_id=ti_feature.feature_id,
+                                       object_id=tx_feature.feature_id,
                                        type_id=cvterms['rel_cvterm'].cvterm_id)
 
             frp, _ = get_or_create(self.session, FeatureRelationshipPub,
                                    feature_relationship_id=tp_gene.feature_relationship_id,
                                    pub_id=self.pub.pub_id)
+
+    def process_GA10g(self, key):
+        """Process GA10g."""
+        if self.process_data[key]['data'][FIELD_VALUE] == '+':
+            fp_cvterm = get_cvterm(self.session, self.process_data[key]['fp_cv'], self.process_data[key]['fp_cvterm'])
+            if not fp_cvterm:
+                message = "Unable to find cvterm '{}' for Cv '{}'.".format(self.process_data[key]['fp_cvterm'], self.process_data[key]['fp_cv'])
+                self.critical_error(self.process_data[key]['data'], message)
+                return None
+            fp, is_new = get_or_create(self.session, Featureprop, feature_id=self.feature.feature_id,
+                                       type_id=fp_cvterm.cvterm_id, value=self.process_data[key]['fp_value'])
+            get_or_create(self.session, FeaturepropPub, featureprop_id=fp.featureprop_id, pub_id=self.pub.pub_id)
+        else:
+            # lookup feature
+            self.load_feature_relationship(key)
+
+    def process_GA10a(self, key, item, cvterms, ti_feature):
+        """Add ti relatioships."""
+        # Add feat relationship for new_feat to allele (self.feature)
+        ti_allele, _ = get_or_create(self.session, FeatureRelationship,
+                                     subject_id=self.feature.feature_id,
+                                     object_id=ti_feature.feature_id,
+                                     type_id=cvterms['rel_cvterm'].cvterm_id)
+
+        frp, _ = get_or_create(self.session, FeatureRelationshipPub,
+                               feature_relationship_id=ti_allele.feature_relationship_id,
+                               pub_id=self.pub.pub_id)
+
+        # feature pub
+        get_or_create(self.session, FeaturePub, feature_id=ti_feature.feature_id, pub_id=self.pub.pub_id)
