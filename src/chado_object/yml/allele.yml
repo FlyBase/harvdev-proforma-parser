@@ -272,7 +272,7 @@ GA90j:
 # 'GA90k', 'type',                            #cv = SO
 GA90k: # processed with GA90a
     type: ignore
-GA888:
+GA888:  # made up to test GA888 missing in other yaml file (src/validation/yaml/allele.yaml)
     type: ignore
     # 'GA1e',  'symbol',
     # 'GA1f',  'merge',
@@ -348,4 +348,3 @@ GA888:
 #    ! GA26. Name in paper for GA10                          :
 #    ! GA27. Orientation of insert rel. to chromosome [+-?]  :
 #    ! GA30.  Tagged with                                       *s :
-
