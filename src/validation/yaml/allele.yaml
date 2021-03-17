@@ -234,7 +234,7 @@ GA90k:
     allowed: ['point_mutation', 'rescue_region', 'insertion', 'sequence_variant', 'complex_substitution',
               'deletion', 'insertion_site', 'sequence_alteration']
     dependencies: [GA90a]
-GA999:  # made up to test GA999 missing in other yml file
+GA999:  # made up to test GA999 missing in other yml file (src/chado_object/yml/allele.yml)
     type: string
     required: False
     nullable: True
