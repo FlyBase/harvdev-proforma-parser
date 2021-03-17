@@ -126,6 +126,9 @@ G24a:
     prop_cvs: ['feature_cvtermprop type', 'FlyBase miscellaneous CV', 'FlyBase miscellaneous CV']
     prop_cvterms: ['date', 'provenance', 'evidence_code']
     qualifiers: ['part_of', 'located_in', 'is_active_in', 'colocalizes_with']
+    # list cv's to use for the above cvterms that are NOT 'FlyBase miscellaneous CV'
+    part_of: relationship
+    located_in: relationship
 G24b:
     type: GOcvtermprop
     cv: molecular_function

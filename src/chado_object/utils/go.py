@@ -183,17 +183,17 @@ def process_DO_line(session, line, cv_name, allowed_qualifiers, allowed_symbols,
     return do_dict
 
 
-def process_GO_line(session, line, cv_name, allowed_qualifiers):
+def process_GO_line(session, line, cv_name, allowed_qualifiers, quali_cvs):
     """From string generate and validate GO.
 
-    Examples:-
-    1) nucleolus ; GO:0002001 | IDA
-    2) something ; GO:0002002 | IGI with FLYBASE:symbol-35; FB:FBgn0000035 any bull here
-    3) mRNA binding ; GO:0001001 | IDA
-    4) UniProtKB:colocalizes_with mRNA binding ; GO:0001001 | IDA
-    5) NOT involved_in triglyceride homeostasis ; GO:0070328 | IMP
+    Params:
+      session: <session object>
+      line: <string> Go line to be processed.
+      cv_name: <string> cv name for lookup with GO cvterm
+      allowed_qualifiers: <dict> dictionary of cvterms allowed for qualifiers
+      quali_cvs: <dict> dictionary of cv names for different to cv_name in qualifiers.
 
-    should return dict with the following in it.
+    Returns: <dict>
         {
          'gocvterm': <cvterm object>,
          'error': [], # can be many errors so check for empty array for no error)
@@ -203,13 +203,24 @@ def process_GO_line(session, line, cv_name, allowed_qualifiers):
          'is_not': True/False
         }
 
+    Examples of lines:-
+    1) nucleolus ; GO:0002001 | IDA
+    2) something ; GO:0002002 | IGI with FLYBASE:symbol-35; FB:FBgn0000035 any bull here
+    3) mRNA binding ; GO:0001001 | IDA
+    4) UniProtKB:colocalizes_with mRNA binding ; GO:0001001 | IDA
+    5) NOT involved_in triglyceride homeostasis ; GO:0070328 | IMP
+    6) colocalizes_with nucleolus ; GO:0002001 | IDA
+
+
     Lots of stuff to check here
-    1) name matches go identifier.
-    2) valid code abbreviation.
-    3) if FLYBASE:xxxxxx, xxxxxx must be a valid feature symbol.
-    4) if FB:xxxxxx, xxxxxx must be a valid feature uniquename.
-    5) ? (with|?) ......... must be there for some codes.
-    6) check for NOT
+    1) qualifier without  ':' in it (i.e. located_in)
+    2) qualifier with ':' in it  (i.e. HGNC:contributes_to)
+    3) name matches go identifier.
+    4) valid code abbreviation.
+    5) if FLYBASE:xxxxxx, xxxxxx must be a valid feature symbol.
+    6) if FB:xxxxxx, xxxxxx must be a valid feature uniquename.
+    7) ? (with|?) ......... must be there for some codes.
+    8) check for NOT
     """
     go_dict = {'gocvterm': None,
                'error': [],
@@ -217,6 +228,11 @@ def process_GO_line(session, line, cv_name, allowed_qualifiers):
                'provenance': 'FlyBase',
                'prov_term': None,
                'is_not': False}
+
+    # 1) qualifier without  ':' in it (i.e. located_in)
+    # it is hard to have a regex to maybe get quali without a ':' so do this first.
+    line = quali_checks(session, line, go_dict, allowed_qualifiers, quali_cvs)
+    print("BOB: line is now {}".format(line))
 
     full_pattern = r"""
                 ^           # start of line
@@ -253,15 +269,12 @@ def process_GO_line(session, line, cv_name, allowed_qualifiers):
         go_dict['error'].append("Failed to match format xxxxxx ; GO:ddddddd | XX[X]")
         return go_dict
 
-    for key in fpi.keys():
-        log.debug('GOTERM: {}: {} {}'.format(key, fpi[key], fields.group(fpi[key])))
-
     if fields.group(fpi['is_not']):
         go_dict['is_not'] = True
 
-    # if quali check that it is DB:quali
+    # 2) if quali check that it is DB:quali
     if fields.group(fpi['quali']):
-        update_quali(session, go_dict, fields, fpi, allowed_qualifiers)
+        update_quali(session, go_dict, fields, fpi, allowed_qualifiers, quali_cvs)
 
     # get cvterm using the cvterm name
     cvterm_name = fields.group(fpi['go_name']).strip()
@@ -291,6 +304,36 @@ def process_GO_line(session, line, cv_name, allowed_qualifiers):
     return go_dict
 
 
+def quali_checks(session, line, go_dict, allowed_qualifiers, quali_cvs):
+    """Process qualifiers at the start."""
+    # NOTE: We do not know the order in which the qualifiers are coming in so as we
+    #       are testing for the cvterm at the start of the string we may have to
+    #       repeat this step.
+    # NOTE: Cannot use it in any part as we may have things like HGNCL:contributes_to in
+    #       there so we need to make sure the cvterm is at the start of the string.
+    found = []
+    one_found = True
+    while (one_found):
+        one_found = False
+        for quali in allowed_qualifiers:
+            if line.startswith(quali):
+                print("BOB: MATCH {} {}".format(line, quali))
+                q_cv_name = 'FlyBase miscellaneous CV'
+                if quali in quali_cvs:
+                    q_cv_name = quali_cvs[quali]
+                found.append(quali)
+                one_found = True
+                go_dict['prov_term'] = get_cvterm(session, q_cv_name, quali)
+                line = line.replace(quali, '')
+                line = line.lstrip()
+                print("BOB: POSTMATCH {} {}".format(line, quali))
+            else:
+                print("BOB: No match {} {}".format(line, quali))
+    if len(found) > 1:
+        go_dict['error'].append("Only 1 qualifier allowed. you specified 2 ({})".format(found))
+    return line
+
+
 def check_for_valid_fbs(session, end_comment):
     """Check for valid features if they are in the string."""
     # i.e. FLYBASE:symbol-35; FB:FBgn0000035
@@ -310,7 +353,7 @@ def check_for_valid_fbs(session, end_comment):
     return problem
 
 
-def update_quali(session, go_dict, fields, fpi, allowed_qualifiers):
+def update_quali(session, go_dict, fields, fpi, allowed_qualifiers, alt_cvs=None):
     """Update the go_dict with any qualifiers found."""
     dbname, term = fields.group(fpi['quali']).strip().split(':')
     log.debug("GOTERM: '{}' '{}'".format(dbname, term))
@@ -318,9 +361,15 @@ def update_quali(session, go_dict, fields, fpi, allowed_qualifiers):
     if term not in allowed_qualifiers:
         go_dict['error'].append("{} Not one of the allowed values {}". format(term, allowed_qualifiers))
     else:
-        go_dict['prov_term'] = get_cvterm(session, 'FlyBase miscellaneous CV', term)
+        cv_name = 'FlyBase miscellaneous CV'
+        if alt_cvs and term in alt_cvs:
+            cv_name = alt_cvs[term]
+        if go_dict['prov_term']:
+            go_dict['error'].append("Already have a qualifier {} so cannot add another {}".format(go_dict['prov_term'], term))
+        go_dict['prov_term'] = get_cvterm(session, cv_name, term)
     # check DB is valid
     db, new = get_or_create(session, Db, name=dbname)
     if new:
         go_dict['error'].append("{} Not a valid database".format(db))
     go_dict['provenance'] = dbname
+    return go_dict

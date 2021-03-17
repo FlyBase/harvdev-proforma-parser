@@ -255,15 +255,28 @@ class ChadoGene(ChadoFeatureObject):
 
     def load_gocvtermprop(self, key):
         """Load the cvterm props for GO lines."""
-
         if not self.has_data(key):
             return
         values = {'date': datetime.today().strftime('%Y%m%d'),
                   'provenance': None,
                   'evidence_code': None}
         allowed_qualifiers = self.process_data[key]['qualifiers']
+
+        # If a qualifier which is a cvterm is not linked to a cv of type 'FlyBase miscellaneous CV'
+        # Then the cv name will be given in the yaml file.
+        quali_cvs = {}
+        for quali in allowed_qualifiers:
+            if quali in self.process_data[key]:
+                quali_cvs[quali] = self.process_data[key][quali]
+
         for item in self.process_data[key]['data']:
-            go_dict = process_GO_line(self.session, item[FIELD_VALUE], self.process_data[key]['cv'], allowed_qualifiers)
+            go_dict = None
+            try:
+                go_dict = process_GO_line(self.session, item[FIELD_VALUE], self.process_data[key]['cv'], allowed_qualifiers, quali_cvs)
+            except CodingError as error:
+                log.debug("BOB: eeror is  {}".format(error))
+                self.critical_error(item, error)
+                continue
             if go_dict['error']:
                 for error in go_dict['error']:
                     self.critical_error(item, error)
