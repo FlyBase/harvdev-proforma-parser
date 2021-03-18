@@ -16,8 +16,10 @@ from chado_object.utils.feature_synonym import fs_add_by_synonym_name_and_type
 
 from chado_object.utils.go import process_DO_line
 from chado_object.feature.chado_feature import ChadoFeatureObject
+from harvdev_utils.chado_functions.organism import get_organism
 from harvdev_utils.production import (
     Feature, FeatureRelationshipPub, FeatureRelationship,
+    FeatureRelationshipprop, FeatureRelationshippropPub,
     FeaturePub, FeatureCvterm, FeatureCvtermprop,
     Featureprop, FeaturepropPub, Featureloc, FeatureSynonym,
     Pub, Synonym
@@ -25,7 +27,6 @@ from harvdev_utils.production import (
 from chado_object.chado_base import FIELD_VALUE
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from harvdev_utils.chado_functions import synonym_name_details
-from harvdev_utils.production.production import FeatureRelationshipprop, FeatureRelationshippropPub
 log = logging.getLogger(__name__)
 
 
@@ -432,9 +433,10 @@ class ChadoAllele(ChadoFeatureObject):
     def get_feature(self, key, item, cvterms):
         """Get feature, may need to create it."""
         name2code = {'transposable_element_insertion_site': 'ti',
-                     'transgenic_transposable_element': 'tp'}
-        # organism = {'transposable_element_insertion_site': self.get_organism(self.session, short=''),
-        #             'transgenic_transposable_element': self.get_organism(self.session, short='Dmel')}
+                     'transgenic_transposable_element': 'tp',
+                     'insertion_site': 'ti',
+                     'engineered_region': 'tp'
+                     }
         is_new_feature = False
         name = item[FIELD_VALUE]
         fields = re.search(r"NEW:(\S+)", name)
@@ -444,10 +446,19 @@ class ChadoAllele(ChadoFeatureObject):
                 is_new_feature = True
 
         organism, plain_name, sgml = synonym_name_details(self.session, name)
+        fb_type_name = self.process_data[key]['feat_type']
+        if name.startswith('TI'):
+            if key == 'GA10a':
+                organism = get_organism(self.session, genus='synthetic', species='construct')
+                fb_type_name = 'engineered_region'
+            else:
+                fb_type_name = 'insertion_site'
+        fb_code = name2code[fb_type_name]
+        fb_type = get_cvterm(self.session, 'SO', fb_type_name)
         if is_new_feature:
-            uniquename = 'FB{}:temp_0'.format(name2code[self.process_data[key]['feat_type']])
+            uniquename = 'FB{}:temp_0'.format(fb_code)
             feature, is_new = get_or_create(self.session, Feature, name=name,
-                                            type_id=cvterms['feat_type'].cvterm_id, uniquename=uniquename,
+                                            type_id=fb_type.cvterm_id, uniquename=uniquename,
                                             organism_id=organism.organism_id)
             if not is_new:
                 message = "Feature has NEW: but is not"
@@ -459,6 +470,7 @@ class ChadoAllele(ChadoFeatureObject):
             except NoResultFound:
                 message = "Unable to find Feature with symbol {} Add 'NEW:' if it is to be created.".format(name)
                 self.critical_error(item, message)
+                return
             except MultipleResultsFound:
                 message = "Found more than feature with this symbol {}.".format(name)
                 self.critical_error(item, message)
