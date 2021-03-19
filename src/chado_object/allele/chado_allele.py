@@ -10,17 +10,15 @@ import logging
 import os
 import re
 from harvdev_utils.chado_functions import (
-    get_or_create
+    get_or_create, get_cvterm
 )
+
 from chado_object.utils.go import process_DO_line
 from chado_object.feature.chado_feature import ChadoFeatureObject
 from harvdev_utils.production import (
     Feature, FeatureRelationshipPub, FeatureRelationship,
     FeaturePub, FeatureCvterm, FeatureCvtermprop,
     Featureprop, FeaturepropPub, Featureloc
-)
-from harvdev_utils.chado_functions import (
-    get_cvterm
 )
 from chado_object.chado_base import FIELD_VALUE
 from sqlalchemy.orm.exc import NoResultFound
@@ -29,6 +27,11 @@ log = logging.getLogger(__name__)
 
 class ChadoAllele(ChadoFeatureObject):
     """Process the Disease Implicated Variation (DIV) Proforma."""
+
+    from chado_object.allele.GA10 import (
+        GA10_feat_rel, process_GA10a, process_GA10g, get_GA10_cvterms,
+        tp_part_process, get_feature, synonyms_GA10
+    )
 
     def __init__(self, params):
         """Initialise the chado object."""
@@ -42,10 +45,12 @@ class ChadoAllele(ChadoFeatureObject):
         self.new = False
 
         # yaml file defines what to do with each field. Follow the light
-        self.type_dict = {'cvterm': self.load_feature_cvterm,
+        self.type_dict = {'cvtermprop': self.load_feature_cvtermprop,
+                          'cvterm': self.load_feature_cvterm,
                           'DOcvtermprop': self.load_do,
                           'feature_relationship': self.load_feature_relationship,
                           'GA90': self.GA90_process,
+                          'GA10_feature_relationship': self.GA10_feat_rel,
                           'featureprop': self.load_featureprop,
                           'synonym': self.load_synonym,
                           'ignore': self.ignore}
@@ -116,6 +121,7 @@ class ChadoAllele(ChadoFeatureObject):
         """
         if not self.checks(references):
             return None
+
         self.get_allele()
         if not self.feature:  # problem getting allele, lets finish
             return None
@@ -135,7 +141,6 @@ class ChadoAllele(ChadoFeatureObject):
             self.bang_d_it()
 
         for key in self.process_data:
-            log.debug("Processing {}".format(self.process_data[key]))
             self.type_dict[self.process_data[key]['type']](key)
 
         return self.feature
@@ -198,7 +203,7 @@ class ChadoAllele(ChadoFeatureObject):
                 continue
             self.add_cvtermprops(key, do_dict)
 
-    def get_ga90a(self, key):
+    def get_GA90a(self, key):
         """Get feature defned by GA90 A and K.
 
         key: <string> the field name i.e here GA90a
@@ -355,7 +360,7 @@ class ChadoAllele(ChadoFeatureObject):
             self.critical_error(self.process_data[key]['data'], message)
             return
 
-        feature, is_new = self.get_ga90a(key)
+        feature, is_new = self.get_GA90a(key)
         if not feature:
             return
         fr, _ = get_or_create(self.session, FeatureRelationship,
