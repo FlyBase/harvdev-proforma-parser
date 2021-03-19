@@ -52,6 +52,8 @@ GA10a:
     cv: relationship type
     cvterm: associated_with
     feat_type: transgenic_transposable_element
+    # If names starts with TI then it is a diff feat type.
+    TI_feat_type: engineered_region
     subscript: False
     syn_cv: synonym type
     syn_cvterm: symbol
@@ -72,6 +74,8 @@ GA10c:
     prop_cvterm: relative_position
     prop_value: outside
     feat_type: transposable_element_insertion_site
+    # If names starts with TI then it is a diff feat type.
+    TI_feat_type: insertion_site
     syn_cv: synonym type
     syn_cvterm: symbol
     syn_pub: FBrf0105495
@@ -94,6 +98,8 @@ GA10e:
     prop_cvterm: relative_position
     prop_value: inside
     feat_type: transposable_element_insertion_site
+    # If names starts with TI then it is a diff feat type.
+    TI_feat_type: insertion_site
     syn_cv: synonym type
     syn_cvterm: symbol
     syn_pub: FBrf0105495
