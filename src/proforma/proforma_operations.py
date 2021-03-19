@@ -424,7 +424,7 @@ class Proforma(object):
         log.debug('Proforma type defined as: %s' % proforma_type)
         log.debug('Proforma object begins at line: %s' % line_number)
 
-        log.debug("Global set is: {}".format(Proforma.set_of_fields_that_should_be_lists))
+        log.debug("List set is: {}".format(Proforma.set_of_fields_that_should_be_lists))
 
     def add_field_and_value(self, field, value, type_of_bang, line_number, new_line):
         """Add the field and value from a proforma into a dictionary.

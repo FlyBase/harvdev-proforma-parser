@@ -46,6 +46,7 @@ def process_entry(entry, session, filename, references):
             last_query = statement
 
     try:
+        log.debug(entry.process_data)
         chado_object = entry.load_content(references)
         session.flush()  # For printing out SQL statements in debug mode.
     except NoResultFound:

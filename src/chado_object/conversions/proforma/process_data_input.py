@@ -40,8 +40,8 @@ def create_chado_objects(ChadoObjectType, proforma_object):
     list_of_objects_to_return = []
 
     chado_object = ChadoObjectType(params_to_send)  # Initialize a ChadoObject with this new entry.
-    attrs = vars(chado_object)
-    log.debug('Object attributes: %s' % attrs)
+    # attrs = vars(chado_object)
+    # log.debug('Object attributes: %s' % attrs)
     list_of_objects_to_return.append(chado_object)
 
     return list_of_objects_to_return

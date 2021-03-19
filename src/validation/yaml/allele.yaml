@@ -33,6 +33,44 @@ GA8:
     required: False
     nullable: True
     at_forbidden: True
+GA10a:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True
+GA10b:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True
+    no_bangc: True
+GA10c:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True
+GA10d:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True
+    no_bangc: True
+GA10e:
+    type: string
+    required: False
+    nullable: True
+    at_forbidden: True
+GA10f:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True
+    no_bangc: True
+GA10g:
+    type: string
+    required: False
+    nullable: True
+    at_forbidden: True
 GA17:
     type: [list,string]
     required: False
@@ -73,6 +111,43 @@ GA29c: #', 'xeno_interaction_pheno',
     required: False
     nullable: True
     at_required: True   
+# 'GA30a', 'tagged_with',                     #feature_relationship.object_id
+GA30a:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True
+# 'GA30b', 'carries_tool',                    # feature_relationship.object_id
+GA30b:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True
+# 'GA30c', 'encodes_tool',                    #feature_relationship.object_id
+GA30c:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True
+# 'GA30d', 'FlyBase miscellaneous CV',    #feature_cvterm -- feature_cvtermprop type tool_uses
+GA30d:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True
+# 'GA30e', 'has_reg_region',                  #feature_relationship.object_id
+GA30e:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True
+# 'GA30f', 'propagate_transgenic_uses',    #cv property type -- featureprop n/blank
+GA30f:
+    type: string
+    required: False
+    nullable: True
+    at_forbidden: True
+    allowed: ['n']
 GA34a: 
     type: [list, string]
     required: False
@@ -159,3 +234,7 @@ GA90k:
     allowed: ['point_mutation', 'rescue_region', 'insertion', 'sequence_variant', 'complex_substitution',
               'deletion', 'insertion_site', 'sequence_alteration']
     dependencies: [GA90a]
+GA999:  # made up to test GA999 missing in other yml file (src/chado_object/yml/allele.yml)
+    type: string
+    required: False
+    nullable: True
