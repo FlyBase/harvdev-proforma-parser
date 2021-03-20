@@ -232,7 +232,6 @@ def process_GO_line(session, line, cv_name, allowed_qualifiers, quali_cvs):
     # 1) qualifier without  ':' in it (i.e. located_in)
     # it is hard to have a regex to maybe get quali without a ':' so do this first.
     line = quali_checks(session, line, go_dict, allowed_qualifiers, quali_cvs)
-    print("BOB: line is now {}".format(line))
 
     full_pattern = r"""
                 ^           # start of line
@@ -317,7 +316,6 @@ def quali_checks(session, line, go_dict, allowed_qualifiers, quali_cvs):
         one_found = False
         for quali in allowed_qualifiers:
             if line.startswith(quali):
-                print("BOB: MATCH {} {}".format(line, quali))
                 q_cv_name = 'FlyBase miscellaneous CV'
                 if quali in quali_cvs:
                     q_cv_name = quali_cvs[quali]
@@ -326,9 +324,6 @@ def quali_checks(session, line, go_dict, allowed_qualifiers, quali_cvs):
                 go_dict['prov_term'] = get_cvterm(session, q_cv_name, quali)
                 line = line.replace(quali, '')
                 line = line.lstrip()
-                print("BOB: POSTMATCH {} {}".format(line, quali))
-            else:
-                print("BOB: No match {} {}".format(line, quali))
     if len(found) > 1:
         go_dict['error'].append("Only 1 qualifier allowed. you specified 2 ({})".format(found))
     return line

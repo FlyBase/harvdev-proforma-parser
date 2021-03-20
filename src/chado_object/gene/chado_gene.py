@@ -274,7 +274,6 @@ class ChadoGene(ChadoFeatureObject):
             try:
                 go_dict = process_GO_line(self.session, item[FIELD_VALUE], self.process_data[key]['cv'], allowed_qualifiers, quali_cvs)
             except CodingError as error:
-                log.debug("BOB: eeror is  {}".format(error))
                 self.critical_error(item, error)
                 continue
             if go_dict['error']:
