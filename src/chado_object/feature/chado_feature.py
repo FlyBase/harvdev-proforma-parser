@@ -1,7 +1,8 @@
 """
 :synopsis: The Base Feature Object.
 
-:moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>, Ian Longden <ianlongden@morgan.harvard.edu>
+:moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>,
+               Ian Longden <ianlongden@morgan.harvard.edu>
 """
 from chado_object.chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.chado_functions import get_or_create, get_cvterm
@@ -177,6 +178,12 @@ class ChadoFeatureObject(ChadoObject):
            remove_old: <optional> defaults to False
         NOTE:
           If is_current set to True and cvterm is symbol thensgml to plaintext is done.
+
+        Args:
+            key (string): key/field of proforma to add synonym for.
+            unattrib (Bool): Add another unattributed synonym pub .
+            cvterm_name (string, optional): cv synonym name, obtained from
+                                            if not passed.
         """
         cv_name = self.process_data[key]['cv']
         if not cvterm_name:
@@ -213,7 +220,11 @@ class ChadoFeatureObject(ChadoObject):
                     fs.current = is_current
 
     def load_feature_cvterm(self, key):
-        """Add feature cvterm."""
+        """Add feature cvterm.
+
+        Args:
+            key (string): key/field of proforma to load feature from.
+        """
         if type(self.process_data[key]['data']) is list:
             items = self.process_data[key]['data']
         else:
@@ -267,43 +278,10 @@ class ChadoFeatureObject(ChadoObject):
             self.critical_error(items[0], message)
             return None
 
-        cv_name = self.process_data[key]['cv']
-
         for item in items:
-            cvterm = None
-            prop_value = None
-            if self.process_data[key]['prop_value']:
-                cvterm_name = self.process_data[key]['cvterm']
-                prop_value = item[FIELD_VALUE]
-            else:
-                # for new ones they are seperated by ';'  x ; y
-                # i.e.
-                cvterm_name = item[FIELD_VALUE]
-            try:
-                cvterm = get_cvterm(self.session, cv_name, cvterm_name)
-            except CodingError:
-                # may not be a coding error if cvterm name given on proforma
-                if prop_value:
-                    message = "Coding error NO cvterm '{}' for Cv '{}'.".format(cvterm_name, cv_name)
-                    self.critical_error(item, message)
-                    continue
-
+            cvterm, prop_value = self.get_cvterm_propvalue(key, item)
             if not cvterm:
-                message = "Unable to find cvterm '{}' for Cv '{}'.".format(cvterm_name, cv_name)
-                self.critical_error(item, message)
                 continue
-
-            if 'cvterm_namespace' in self.process_data[key]:
-                try:
-                    self.session.query(Cvtermprop).\
-                        filter(Cvtermprop.cvterm_id == cvterm.cvterm_id,
-                               Cvtermprop.value == self.process_data[key]['cvterm_namespace']).one()
-                except NoResultFound:
-                    message = "Cvterm '{}' Not in the required namespace of '{}'".\
-                        format(cvterm.name, self.process_data[key]['cvterm_namespace'])
-                    self.critical_error(item, message)
-                    continue
-
             # create feature_cvterm
             feat_cvt, _ = get_or_create(self.session, FeatureCvterm,
                                         feature_id=self.feature.feature_id,
@@ -316,8 +294,63 @@ class ChadoFeatureObject(ChadoObject):
                           value=prop_value,
                           type_id=props_cvterm.cvterm_id)
 
+    def get_cvterm_propvalue(self, key, item):
+        """Get cvterm and prop value.
+
+        Also check that if namespace is defined (in the yml) the cvterm belongs to that.
+
+        Args:
+            key (string): key/field of proforma to get data from.
+            item (tuple): Field tuple (field/key, value, line, bang)
+
+        Returns:
+            cvtermObj: cvterm object or None if failed.
+            string: prop value
+        """
+        cvterm = None
+        prop_value = None
+        cv_name = self.process_data[key]['cv']
+        if self.process_data[key]['prop_value']:
+            cvterm_name = self.process_data[key]['cvterm']
+            prop_value = item[FIELD_VALUE]
+        else:
+            # for new ones they are seperated by ';'  x ; y
+            # i.e.
+            cvterm_name = item[FIELD_VALUE]
+        try:
+            cvterm = get_cvterm(self.session, cv_name, cvterm_name)
+        except CodingError:
+            # may not be a coding error if cvterm name given on proforma
+            if prop_value:
+                message = "Coding error NO cvterm '{}' for Cv '{}'.".format(cvterm_name, cv_name)
+                self.critical_error(item, message)
+                return None, None
+
+        if not cvterm:
+            message = "Unable to find cvterm '{}' for Cv '{}'.".format(cvterm_name, cv_name)
+            self.critical_error(item, message)
+            return None, None
+
+        if 'cvterm_namespace' in self.process_data[key]:
+            try:
+                self.session.query(Cvtermprop).\
+                    filter(Cvtermprop.cvterm_id == cvterm.cvterm_id,
+                           Cvtermprop.value == self.process_data[key]['cvterm_namespace']).one()
+            except NoResultFound:
+                message = "Cvterm '{}' Not in the required namespace of '{}'".\
+                    format(cvterm.name, self.process_data[key]['cvterm_namespace'])
+                self.critical_error(item, message)
+                return None, None
+        return cvterm, prop_value
+
     def get_feat_type_cvterm(self, key):
-        """Get feature type cvterm."""
+        """Get feature type cvterm.
+
+        Args:
+            key (string): key/field of proforma to get data from.
+        Returns:
+            cvtermObj: cvterm object or None if failed.
+        """
         feat_type_name = None
         if 'feat_type' in self.process_data[key]:
             feat_type_name = self.process_data[key]['feat_type']
@@ -335,6 +368,10 @@ class ChadoFeatureObject(ChadoObject):
         yml options:
            cv:
            cvterm:
+
+        Args:
+            key (string): key/field of proforma to get data from.
+
         """
         if not self.has_data(key):
             return
@@ -430,10 +467,16 @@ class ChadoFeatureObject(ChadoObject):
         return other_feat
 
     def add_relationships(self, key, obj_feat, cvterm):
-        """Add relationships."""
-        # Sometimes we want to link the relationship the other way around.
+        """Add relationships.
+
+        Args:
+            key (string): key/field of proforma to get data from.
+            obj_feat (FeatureObject): feature to be linked to the self.feature object
+            cvterm (CvtermObject):  create relationship with this cvterm.
+        """
         sub_id = self.feature.feature_id
         obj_id = obj_feat.feature_id
+        # Sometimes we want to link the relationship the other way around.
         if 'feature_is_object' in self.process_data[key]:
             if self.process_data[key]['feature_is_object']:
                 obj_id = self.feature.feature_id
@@ -457,7 +500,9 @@ class ChadoFeatureObject(ChadoObject):
     def load_featureproplist(self, key, prop_cv_id):
         """Load a feature props that are in a list.
 
-        list so obviously more than value allowed.
+        Args:
+            key (string): key/field of proforma to get data from.
+            prop_cv_id (int): id of the prop cvterm
         """
         for item in self.process_data[key]['data']:
             fp, is_new = get_or_create(self.session, Featureprop, feature_id=self.feature.feature_id,
@@ -475,6 +520,9 @@ class ChadoFeatureObject(ChadoObject):
            cvterm:
            value:    <optional>, key to value field.
            only_one: <optional>, defaults to False.
+
+        Args:
+            key (string): key/field of proforma to get data from.
         """
         if not self.has_data(key):
             return
@@ -518,6 +566,11 @@ class ChadoFeatureObject(ChadoObject):
            cv:
            cvterm:
 
+        Args:
+            key (string): key/field of proforma to get data from.
+            bangc (Bool): True if bangc operation.
+                          False if a bangd operation.
+                          Default is False.
         """
         if not bangc:
             self.delete_specific_fp(key)
@@ -535,7 +588,14 @@ class ChadoFeatureObject(ChadoObject):
             # self.session.delete(fpp)
 
     def delete_specific_fp(self, key, bangc=False):
-        """Delete specific featureprop."""
+        """Delete specific featureprop.
+
+        Args:
+            key (string): key/field of proforma to get data from.
+            bangc (Bool): True if bangc operation.
+                          False if a bangd operation.
+                          Default is False.
+        """
         prop_cv_id = self.cvterm_query(self.process_data[key]['cv'], self.process_data[key]['cvterm'])
 
         # can be list or single item so make it always a list.
@@ -564,7 +624,11 @@ class ChadoFeatureObject(ChadoObject):
         self.process_data[key]['data'] = None
 
     def delete_specific_fcp(self, key):
-        """Delete feature cvterm based ob feature and cvterm prop."""
+        """Delete feature cvterm based ob feature and cvterm prop.
+
+        Args:
+            key (string): key/field of proforma to get data from.
+        """
         if key == 'G30':
             if not self.alter_check_g30(key):
                 return
@@ -606,6 +670,12 @@ class ChadoFeatureObject(ChadoObject):
         the cvterm is given.
         Could have gone for if cvterm is not defined etc but
         this way is more explicit.
+
+        Args:
+            key (string): key/field of proforma to get data from.
+            bangc (Bool): True if bangc operation.
+                          False if a bangd operation.
+                          Default is False.
         """
         if not bangc:
             self.delete_specific_fcp(key)
@@ -634,7 +704,12 @@ class ChadoFeatureObject(ChadoObject):
             self.critical_error(self.process_data[key]['data'][0], message)
 
     def delete_specific_fr(self, key, items):
-        """Delete specific feature relationships."""
+        """Delete specific feature relationships.
+
+        Args:
+            key (string): key/field of proforma to get data from.
+            items (list of tuples): tuples are (key, value, line_number, bangc)
+        """
         cv_name = self.process_data[key]['cv']
         cvterm_name = self.process_data[key]['cvterm']
         feat_type = None
@@ -664,7 +739,14 @@ class ChadoFeatureObject(ChadoObject):
         self.process_data[key]['data'] = None
 
     def delete_feature_relationship(self, key, bangc=False):
-        """Delete the feature relationship."""
+        """Delete the feature relationship.
+
+        Args:
+            key (string): key/field of proforma to get data from.
+            bangc (Bool): True if bangc operation.
+                          False if a bangd operation.
+                          Default is False.
+        """
         if type(self.process_data[key]['data']) is list:
             items = self.process_data[key]['data']
         else:
@@ -697,6 +779,12 @@ class ChadoFeatureObject(ChadoObject):
         """Delete synonym.
 
         Well actually set is_current to false for this entry.
+
+        Args:
+            key (string): key/field of proforma to get data from.
+            bangc (Bool): True if bangc operation.
+                          False if a bangd operation.
+                          Default is False.
         """
         if type(self.process_data[key]['data']) is not list:
             data_list = []
