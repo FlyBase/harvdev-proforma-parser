@@ -1,7 +1,8 @@
 """
 :synopsis: The Feature checks that cerberus is unable to do.
 
-:moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>, Ian Longden <ilongden@morgan.harvard.edu>
+:moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>,
+               Ian Longden <ianlongden@morgan.harvard.edu>
 """
 from chado_object.chado_base import FIELD_VALUE
 from harvdev_utils.chado_functions import feature_symbol_lookup
@@ -15,7 +16,12 @@ import re
 
 
 def check_only_certain_fields_allowed(self, key, allowed):
-    """Check only allowed fields exist."""
+    """Check only allowed fields exist.
+
+    Args:
+        key (string): key/field of proforma to get pub for.
+        allowed (list): list of valid allowed strings.
+    """
     bad_fields = []
     for valid_key in self.process_data:
         if valid_key not in allowed:
@@ -29,6 +35,9 @@ def check_at_symbols_exist(self, key):
     """Check that symbols in @@ exist.
 
     If @..@ found then check that the symbol inbetween these exists.
+
+    Args:
+        key (string): key/field of proforma to get pub for.
     """
     # Make sure it is a list to process.
     if type(self.process_data[key]['data']) is list:
@@ -49,7 +58,12 @@ def check_at_symbols_exist(self, key):
 
 
 def check_bad_starts(self, key, bad_list):
-    """Generate warning if any lines contain bad start."""
+    """Generate warning if any lines contain bad start.
+
+    Args:
+        key (string): key/field of proforma to get pub for.
+        bad_list (list): list of bad strings.
+    """
     # Make sure it is a list to process.
     if type(self.process_data[key]['data']) is list:
         check_list = self.process_data[key]['data']
