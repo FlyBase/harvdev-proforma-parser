@@ -1,7 +1,7 @@
 """
 :synopsis: The Base Feature Object.
 
-:moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>, Ian Longden <ilongden@morgan.harvard.edu>
+:moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>, Ian Longden <ianlongden@morgan.harvard.edu>
 """
 from chado_object.chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.chado_functions import get_or_create, get_cvterm
@@ -49,11 +49,23 @@ class ChadoFeatureObject(ChadoObject):
             self.unattrib_pub, _ = get_or_create(self.session, Pub, uniquename='unattributed')
         return self.unattrib_pub
 
-    def _get_feature(self, so_name, symbol_key, unique_bit):
-        """Get the feature."""
-        cvterm = get_cvterm(self.session, 'SO', so_name)
+    def _get_feature(self, cvterm_name, symbol_key, unique_bit, cv_name='SO'):
+        """Get the feature.
+
+        Assigns this to self.feature.
+
+        Args:
+            cvterm_name (string): cvterm name of the feature
+            symbol_key (string): name of the field/key (i.e. 'GA10a')
+            unique_bit (string): Unique two letter code for this feature (i.e. 'gn')
+            cv_name (string, optional): cv name of the feature ('SO' is the default)
+
+        Returns:
+            Bool: True if found/created, False if not.
+        """
+        cvterm = get_cvterm(self.session, cv_name, cvterm_name)
         if not cvterm:
-            message = "Unable to find cvterm '{}' for Cv 'SO'.".format(so_name)
+            message = "Unable to find cvterm '{}' for Cv '{}'.".format(cvterm_name, cv_name)
             self.critical_error(self.process_data[symbol_key]['data'], message)
             return None
         organism, plain_name, sgml = synonym_name_details(self.session, self.process_data[symbol_key]['data'][FIELD_VALUE])
@@ -75,6 +87,9 @@ class ChadoFeatureObject(ChadoObject):
         So for now lets have a general routine for processing the loading of the feature.
         NOTE: this will only work for those that have the same end field key bits matching
         If we get too many that do not work this way then we may have to pass each key separately.
+
+        Args:
+            feature_type (string): feature type to load. (defauts to 'gene')
         """
         CODE = 0
         UNIQUE = 1
@@ -132,7 +147,14 @@ class ChadoFeatureObject(ChadoObject):
             self.load_synonym(symbol_key)
 
     def get_pub_id_for_synonym(self, key):
-        """Get pub_id for a synonym."""
+        """Get pub_id for a synonym.
+
+        Args:
+            key (string): key/field of proforma to get pub for.
+
+        Returns:
+            int: The pub_id for the pub to be used here.
+        """
         if self.has_data('G1f'):
             pub, _ = get_or_create(self.session, Pub, uniquename='unattributed')
             return pub.pub_id
@@ -173,28 +195,22 @@ class ChadoFeatureObject(ChadoObject):
 
         # add the new synonym
         if type(self.process_data[key]['data']) is list:
-            for item in self.process_data[key]['data']:
-                synonym_sgml = None
-                if 'subscript' in self.process_data[key] and not self.process_data[key]['subscript']:
-                    synonym_sgml = sgml_to_unicode(item[FIELD_VALUE])
-                fs = False
-                for pub_id in pubs:
-                    fs = fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
-                                                         item[FIELD_VALUE], cv_name, cvterm_name, pub_id,
-                                                         synonym_sgml=synonym_sgml, is_current=False, is_internal=False)
-                if fs and is_current:
-                    fs.is_current = True
+            items = self.process_data[key]['data']
         else:
+            items = [self.process_data[key]['data']]
+
+        for item in items:
             synonym_sgml = None
             if 'subscript' in self.process_data[key] and not self.process_data[key]['subscript']:
-                synonym_sgml = sgml_to_unicode(self.process_data[key]['data'][FIELD_VALUE])
+                synonym_sgml = sgml_to_unicode(item[FIELD_VALUE])
+            fs = False
             for pub_id in pubs:
-                fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
-                                                self.process_data[key]['data'][FIELD_VALUE], cv_name, cvterm_name, pub_id,
-                                                synonym_sgml=synonym_sgml, is_current=is_current, is_internal=False)
-
-            if is_current and cvterm_name == 'symbol':
-                self.feature.name = sgml_to_plain_text(self.process_data[key]['data'][FIELD_VALUE])
+                fs = fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
+                                                     item[FIELD_VALUE], cv_name, cvterm_name, pub_id,
+                                                     synonym_sgml=synonym_sgml, is_current=is_current, is_internal=False)
+                if is_current and cvterm_name == 'symbol':
+                    self.feature.name = sgml_to_plain_text(item[FIELD_VALUE])
+                    fs.current = is_current
 
     def load_feature_cvterm(self, key):
         """Add feature cvterm."""
@@ -348,8 +364,20 @@ class ChadoFeatureObject(ChadoObject):
             self.add_relationships(key, other_feat, cvterm)
 
     def get_other_feature(self, item, feat_type, subscript):
-        """Get the other feature."""
+        """Get the other feature.
+
+        Args:
+            item (tuple): Field tuple (field/key, value, line, bang)
+            feat_type (list, string): Listor string of allowed feature type(s).
+            subscript (bool): translate name to subscript.
+
+        Returns:
+           feature: FeatureObj or None if error occured.
+
+        """
         name = item[FIELD_VALUE]
+        if type(feat_type) is list:
+            return self.multi_type_lookup(item, feat_type, subscript)
         try:
             other_feat = feature_symbol_lookup(self.session, feat_type, name, convert=subscript)
         except MultipleResultsFound:
@@ -361,6 +389,43 @@ class ChadoFeatureObject(ChadoObject):
             return
         except NoResultFound:
             self.critical_error(item, "No Result found for {} {} subscript={}".format(feat_type, name, subscript))
+            return
+        return other_feat
+
+    def multi_type_lookup(self, item, feat_type_list, subscript):
+        """Get the other feature.
+
+        Some lookups can have multiple types that are allowed.
+        This should deal with those cases.
+
+        Args:
+            item (tuple): Field tuple (field/key, value, line, bang)
+            feat_type_list (list): List of allowed feature types.
+            subscript (bool): translate name to subscript.
+
+        Returns:
+            feature: FeatureObj or None if error occured.
+
+        """
+        name = item[FIELD_VALUE]
+        try:
+            other_feat = feature_symbol_lookup(self.session, None, name, convert=subscript)
+        except MultipleResultsFound:
+            message = "Multiple results found for type: '{}' name: '{}'".format(feat_type_list, name)
+            features = feature_symbol_lookup(self.session, None, name, check_unique=False, convert=subscript)
+            feat_found = None
+            type_found_count = 0
+            for feature in features:
+                message += "\n\tfound: {} of type {}".format(feature, feature.type_id.name)
+                if feature.type_id.name in feat_type_list:
+                    feat_found = feature
+                    type_found_count += 1
+            if type_found_count == 1:
+                return feat_found
+            self.critical_error(item, message)
+            return
+        except NoResultFound:
+            self.critical_error(item, "No Result found for {} {} subscript={}".format(feat_type_list, name, subscript))
             return
         return other_feat
 
