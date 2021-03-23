@@ -50,10 +50,7 @@ class ChadoDb(ChadoObject):
         self.main_key = 'DB1a'
 
     def load_content(self, references):
-        """
-        Main processing routine
-        """
-
+        """Process the proforma."""
         self.db = self.get_db()
 
         # bang c first as this supersedes all things
@@ -72,9 +69,7 @@ class ChadoDb(ChadoObject):
         log.debug('%s' % (curated_by_string))
 
     def get_db(self):
-        """
-        Get/Create Db and do checks.
-        """
+        """Get/Create Db and do checks."""
         db_name = self.process_data[self.main_key]['data'][FIELD_VALUE]
         in_chado = self.process_data['DB1g']['data'][FIELD_VALUE]
         self.db, is_new = get_or_create(self.session, Db, name=db_name)
@@ -89,10 +84,12 @@ class ChadoDb(ChadoObject):
         return self.db
 
     def ignore(self, key):
+        """Ignore."""
         pass
 
     def load_direct(self, key):
-        """
+        """Load direct fields.
+
         Direct fields are those that are directly connected to the db.
         So things like: description, url and preurl
 
@@ -123,6 +120,14 @@ class ChadoDb(ChadoObject):
             setattr(self.db, self.process_data[key]['name'], self.process_data[key]['data'][FIELD_VALUE])
 
     def delete_direct(self, key, bangc=True):
+        """Delete direct.
+
+        Args:
+            key (string): Proforma field key
+            bangc (Bool, optional): True if bangc operation
+                                    False if bangd operation.
+                                    Default is True.
+        """
         try:
             new_value = self.process_data[key]['data'][FIELD_VALUE]
         except KeyError:
@@ -132,4 +137,12 @@ class ChadoDb(ChadoObject):
         self.process_data[key]['data'] = None
 
     def delete_ignore(self, key, bangc=True):
+        """Ignored.
+
+        Args:
+            key (string): Proforma field key
+            bangc (Bool, optional): True if bangc operation
+                                    False if bangd operation.
+                                    Default is True.
+        """
         return

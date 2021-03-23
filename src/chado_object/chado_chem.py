@@ -2,7 +2,8 @@
 
 :synopsis: The "chem" ChadoObject.
 
-:moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>, Ian Longden <ilongden@morgan.harvard.edu>
+:moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>,
+               Ian Longden <ianlongden@morgan.harvard.edu>
 """
 
 from harvdev_utils.production import (
@@ -143,7 +144,7 @@ class ChadoChem(ChadoFeatureObject):
         """Fetch by the FBch (CH1f) and check the name is the same if it is given (CH1a).
 
         Args:
-            chemical_cvterm_id: cvterm_id to be used as type in getting feature.
+            chemical_cvterm_id (int): cvterm_id to be used as type in getting feature.
 
         Raises:
             critical error if CH1f and CH1a are specified and do not match.
@@ -160,7 +161,7 @@ class ChadoChem(ChadoFeatureObject):
                            self.feature.name)
                 self.critical_error(self.process_data['CH1a']['data'], message)
 
-    def get_external_chemical_pub_id(self, key):
+    def get_external_chemical_pub_id(self):
         """Get pub id for Chemical."""
         return self.chemical_information['PubID']
 

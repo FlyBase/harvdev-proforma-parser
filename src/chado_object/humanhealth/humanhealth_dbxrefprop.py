@@ -23,9 +23,8 @@ def process_dbxrefprop(self, key):
         key (str): proforma field key/name
 
     Returns:
-        hh_dbxref object
-
-        hh_dbxrefporp object
+        HumanhealthDbxref Object,
+        HumanhealthDbxrefprop Object
 
     """
     log.debug("key = {}".format(key))

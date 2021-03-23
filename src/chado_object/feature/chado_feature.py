@@ -164,7 +164,7 @@ class ChadoFeatureObject(ChadoObject):
                 pub_id = self.pub.pub_id
             else:
                 # is this chebi or pubchem
-                pub_id = self.get_external_chemical_pub_id(key)
+                pub_id = self.get_external_chemical_pub_id()
             return pub_id
         return self.pub.pub_id
 

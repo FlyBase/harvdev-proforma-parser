@@ -307,7 +307,7 @@ def process_GA10a(self, cvterms, ti_feature):
 
     Args:
         cvterms (dict): Dictionary of cvterms already looked up.
-        ti_featyre (Feature Object): TI feature object
+        ti_feature (Feature Object): TI feature object
     """
     # Add feat relationship for new_feat to allele (self.feature)
     ti_allele, _ = get_or_create(self.session, FeatureRelationship,
