@@ -65,7 +65,7 @@ class ChadoObject(object):
 
         return process_data
 
-    def check_and_add_tp_process(self, params, process_data):
+    def check_and_add_to_process(self, params, process_data):
         """Check if we defined what to do with a field.
 
         It could be missing in the yml file else add it to process_data.
