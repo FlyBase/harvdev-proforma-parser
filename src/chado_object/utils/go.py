@@ -325,7 +325,7 @@ def quali_checks(session, line, go_dict, allowed_qualifiers, quali_cvs):
                 line = line.replace(quali, '')
                 line = line.lstrip()
     if len(found) > 1:
-        go_dict['error'].append("Only 1 qualifier allowed. you specified 2 ({})".format(found))
+        go_dict['error'].append("Only 1 qualifier allowed. you specified many ({})".format(found))
     return line
 
 
