@@ -3,7 +3,8 @@
 
 :overview: Cut down version of Allele to start with to enable DIV Proforma to work.
 
-:moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>, Ian Longden <ilongden@morgan.harvard.edu>
+:moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>
+               Ian Longden <ianlongden@morgan.harvard.edu>
 """
 
 import logging
@@ -81,7 +82,7 @@ class ChadoAllele(ChadoFeatureObject):
     def checks(self, references):
         """Check for Allele required data.
 
-        params:
+        Args:
             references: <dict> previous reference proforma
 
         return:
@@ -114,7 +115,7 @@ class ChadoAllele(ChadoFeatureObject):
     def load_content(self, references):
         """Process the data.
 
-        params:
+        Args:
             references: <dict> previous reference proforma objects
         return:
             <Feature object> Allele feature object.
@@ -157,7 +158,7 @@ class ChadoAllele(ChadoFeatureObject):
     def add_cvtermprops(self, key, do_dict):
         """Add props.
 
-        params:
+        Args:
             key: <string> Proforma field key
             do_dict: <dict> dictionary of do cvterms.
         """
@@ -184,7 +185,7 @@ class ChadoAllele(ChadoFeatureObject):
     def load_do(self, key):
         """Load DO.
 
-        params:
+        Args:
             key: <string> proforma field key.
         """
         do_dict = {}
@@ -206,7 +207,8 @@ class ChadoAllele(ChadoFeatureObject):
     def get_GA90a(self, key):
         """Get feature defned by GA90 A and K.
 
-        key: <string> the field name i.e here GA90a
+        Args:
+            key: <string> the field name i.e here GA90a
 
         return:
            feature: <feature object> feature of type GA90k, name GA90a
@@ -313,7 +315,7 @@ class ChadoAllele(ChadoFeatureObject):
     def process_GA90_bci(self, feature, is_new):
         """Process GA90 b, c and i.
 
-        params:
+        Args:
             feature: <Feature object> feature defined by GA90a
             is_new: <bool> wether this was new or not.
         """
@@ -348,7 +350,7 @@ class ChadoAllele(ChadoFeatureObject):
         Get type from field defined in 'type_field_in' if set
         Allowed to create new feature given in 'create_new_feat'
 
-        params:
+        Args:
             key: <string> proforma field key. (here it will be GA90a)
         """
         if not self.has_data(key):

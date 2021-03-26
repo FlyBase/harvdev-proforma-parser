@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+"""Chado Humanhealth featureprop module.
+
+:synopsis: Deal with humanhealth dbxrefprops.
+:moduleauthor: Ian Longden <ilongden@morgan.harvard.edu>
+"""
 from harvdev_utils.production import (
     Feature, Cvterm, Cv,
     HumanhealthFeature, HumanhealthFeatureprop
@@ -25,7 +31,6 @@ def process_feature(self, params):
         HumanhealthFeature
 
     """
-
     feature = self.session.query(Feature).\
         filter(Feature.name == params['name'],
                Feature.uniquename.like("FB{}%".format(params['feature_code']))).one_or_none()
@@ -97,8 +102,10 @@ def process_featureprop(self, params):
 
 
 def load_featureprop(self, key):
-    """
-    load the hh_feature and hh_featureprop
+    """Load the hh_feature and hh_featureprop.
+
+    Args:
+        key (string): key/field of proforma to get pub for.
     """
     params = {'cvterm': self.process_data[key]['cvterm'],
               'cvname': self.process_data[key]['cv'],
@@ -118,11 +125,15 @@ def load_featureprop(self, key):
 
 
 def process_featurepropset(self, set_key, data_set):  # noqa: C901
-    """
+    """Process feature prop sets.
+
     8a featureprop, 8c different featureprop but to the feature specified in 8a.
     8d dissociate 8a
-    """
 
+    Args:
+        set_key (string): key/field of the proforma. i.e. HH8
+        data_set (dict): dictionary of set field=>tuple.
+    """
     valid_tuple = None  # need a valid key incase something is wrong to report line number etc
     for key in data_set.keys():
         if type(data_set[key]) is list:
@@ -168,11 +179,14 @@ def process_featurepropset(self, set_key, data_set):  # noqa: C901
 
 
 def process_hh8(self, set_key):
-    """
+    """Process HH8.
+
     8a featureprop, 8c different featureprop but to the feature specified in 8a.
     8d dissociate 8a
-    """
 
+    Args:
+        set_key (string): key/field of the proforma. i.e. HH8
+    """
     for data_set in self.set_values[set_key]:
         self.process_featurepropset(set_key, data_set)
 
@@ -183,8 +197,15 @@ def process_hh8(self, set_key):
 
 
 def delete_featureprop_only(self, params):
-    """
-    Delete the prop only and not the hh_feature
+    """Delete the prop only and not the hh_feature.
+
+    Args:
+        params:
+            feature_code
+            name
+            propval
+            bang_type
+            tuple
     """
     # Get feature
     feature = self.session.query(Feature).\
@@ -226,6 +247,13 @@ def delete_featureprop_only(self, params):
 
 
 def delete_featureprop(self, key, bangc):
+    """Delete the featureprop.
+
+    Args:
+        key (string): Proforma field key
+        bangc (Bool): True if bangc operation
+                      False if bangd operation.
+    """
     params = {'cvterm': self.process_data[key]['cvterm'],
               'cvname': self.process_data[key]['cv'],
               'feature_code': self.process_data[key]['feature_code']}
@@ -247,8 +275,13 @@ def delete_featureprop(self, key, bangc):
 
 
 def bangc_featureprop(self, params):
-    """
-    Delete ALL hh_features for specific cvterm and hh.
+    """Delete ALL hh_features for specific cvterm and hh.
+
+    Args:
+        params:
+            cvname
+            cvterm
+            tuple
     """
     cvterm = self.session.query(Cvterm).join(Cv).\
         filter(Cv.name == params['cvname'],
@@ -268,6 +301,15 @@ def bangc_featureprop(self, params):
 
 
 def bangd_featureprop(self, params):
+    """Delete specific band info.
+
+    Args:
+        params:
+            cvname
+            cvterm
+            name
+            tuple
+    """
     cvterm = self.session.query(Cvterm).join(Cv).\
         filter(Cv.name == params['cvname'],
                Cvterm.name == params['cvterm']).\

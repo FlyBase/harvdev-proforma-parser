@@ -319,7 +319,13 @@ class ChadoDiv(ChadoFeatureObject):
             fs.is_current = False
 
     def delete_humanhealth_feature(self, key, bangc):
-        """Delete the humanhealth feature."""
+        """Delete the humanhealth feature.
+
+        Args:
+            key (string): Proforma field key
+            bangc (Bool): True if bangc operation
+                          False if bangd operation.
+        """
         if bangc:
             # delete them all
             self.session.query(HumanhealthFeature).\

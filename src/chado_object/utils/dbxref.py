@@ -12,7 +12,18 @@ from harvdev_utils.chado_functions import get_or_create
 
 
 def get_dbxref_by_params(session, params):
-    """Get dbxref."""
+    """Get/Create dbxref.
+
+    Args:
+        params:
+            dbname
+            accession
+            description
+
+    Returns:
+        Dbxref object:
+        Bool: if it is new or not
+    """
     try:
         db = session.query(Db).filter(Db.name == params['dbname']).one()
         dbxref, is_new = get_or_create(session, Dbxref, db_id=db.db_id, accession=params['accession'])
