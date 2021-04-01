@@ -24,7 +24,12 @@ log = logging.getLogger(__name__)
 
 
 def get_GA10_cvterms(self, key):
-    """Get cvterms needed for G10."""
+    """Get cvterms needed for G10.
+
+    Args:
+        key (string): key/field of proforma to get pub for.
+
+    """
     cvterms = {}
 
     cvterms['rel_cvterm'] = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data[key]['cvterm'])
@@ -65,7 +70,13 @@ def get_GA10_cvterms(self, key):
 
 
 def get_feature(self, key, item, cvterms):
-    """Get feature, may need to create it."""
+    """Get feature, may need to create it.
+
+    Args:
+        key (string): key/field of proforma to get pub for.
+        item (tuple): proforma tuple (key, value, line, bangc).
+        cvterms (dict): Dictionary of cvterms already looked up.
+    """
     name2code = {'transposable_element_insertion_site': 'ti',
                  'transgenic_transposable_element': 'tp',
                  'insertion_site': 'ti',
@@ -114,8 +125,15 @@ def get_feature(self, key, item, cvterms):
 
 
 def synonyms_GA10(self, key, name, feature, is_new_feature, cvterms):
-    """Add GA10 synonyms as needed."""
+    """Add GA10 synonyms as needed.
 
+    Args:
+        key (string): key/field of proforma to get pub for.
+        name (string): synonym name.
+        feature (FeatureObject): Feature to have synonyms added.
+        is_new_feature: True if able feature is newly created.
+        cvterms (dict): Dictionary of cvterms already looked up.
+    """
     if 'synonym_field' in self.process_data[key] and self.has_data(self.process_data[key]['synonym_field']):
         syn_key = self.process_data[key]['synonym_field']
         if self.has_data(syn_key):
@@ -143,8 +161,14 @@ def synonyms_GA10(self, key, name, feature, is_new_feature, cvterms):
         fs.is_internal = False
 
 
-def tp_part_process(self, key, item, cvterms, ti_object):
-    """Process tp and allele part of name."""
+def tp_part_process(self, item, cvterms, ti_object):
+    """Process tp and allele part of name.
+
+    Args:
+        item (tuple): proforma tuple (key, value, line, bangc).
+        cvterms (dict): Dictionary of cvterms already looked up.
+        ti_object (Feature Object): TI feature object
+    """
     pattern = r"""
                 NEW:* # Ignore NEW: at the start if it has it.
                 (\S+    # Pre '{' part of tp name
@@ -197,6 +221,9 @@ def GA10_feat_rel(self, key):
     """Create feature relationship.
 
     Check if 'NEW:' , if so create before continuing.
+
+    Args:
+        key (string): key/field of proforma to get pub for.
     """
     if not self.has_data(key):
         return
@@ -219,11 +246,11 @@ def GA10_feat_rel(self, key):
             continue
 
         if key == 'GA10a':
-            self.process_GA10a(key, item, cvterms, tx_feature)
+            self.process_GA10a(cvterms, tx_feature)
             continue
 
         # Else GA10[ce]
-        self.tp_part_process(key, item, cvterms, tx_feature)
+        self.tp_part_process(item, cvterms, tx_feature)
 
         # Add feat relationship for new_feat to allele (self.feature)
         ti_allele, _ = get_or_create(self.session, FeatureRelationship,
@@ -256,7 +283,11 @@ def GA10_feat_rel(self, key):
 
 
 def process_GA10g(self, key):
-    """Process GA10g."""
+    """Process GA10g.
+
+    Args:
+        key (string): key/field of proforma to get pub for.
+    """
     if self.process_data[key]['data'][FIELD_VALUE] == '+':
         fp_cvterm = get_cvterm(self.session, self.process_data[key]['fp_cv'], self.process_data[key]['fp_cvterm'])
         if not fp_cvterm:
@@ -271,8 +302,13 @@ def process_GA10g(self, key):
         self.load_feature_relationship(key)
 
 
-def process_GA10a(self, key, item, cvterms, ti_feature):
-    """Add ti relatioships."""
+def process_GA10a(self, cvterms, ti_feature):
+    """Add ti relatioships.
+
+    Args:
+        cvterms (dict): Dictionary of cvterms already looked up.
+        ti_feature (Feature Object): TI feature object
+    """
     # Add feat relationship for new_feat to allele (self.feature)
     ti_allele, _ = get_or_create(self.session, FeatureRelationship,
                                  subject_id=self.feature.feature_id,

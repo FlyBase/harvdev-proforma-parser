@@ -3,11 +3,12 @@
 :synopsis: The "base" object for a ChadoObject. The properties here are shared by all other ChadoObjects.
 
 :moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>
+               Ian Longden <ianlongden@morgan.harvard.edu>
 """
 import logging
 import yaml
 from harvdev_utils.production import (
-    Feature, Pub, Synonym, Db, Dbxref
+    Feature, Pub, Db, Dbxref
 )
 from harvdev_utils.chado_functions import get_or_create, get_cvterm
 from harvdev_utils.chado_functions.external_lookups import ExternalLookup
@@ -45,12 +46,36 @@ class ChadoObject(object):
         self.session = session
 
     def load_reference_yaml(self, filename, params):
-        """Load reference Yaml."""
-        # TODO Change bang_c "blank" processing to not require an empty process_data[key]['data'] entry.
+        """Load reference Yaml.
+
+        Args:
+            filename (string): yaml file name.
+            params (dict):
+                * fields_values (dict): field/key => tuple
+        """
         process_data = yaml.load(open(filename), Loader=yaml.FullLoader)
+        keys_to_remove = self.check_and_add_to_process(params, process_data)
+
+        # Remove all unused keys from the dictionary.
+        # This has to be a second loop so we don't modify the first loop while it's running.
+        for key in keys_to_remove:
+            # log.debug("Removing unused key {} from the process_data dictionary".format(key))
+            if key not in SPECIAL_FIELDS:
+                process_data.pop(key)
+
+        return process_data
+
+    def check_and_add_to_process(self, params, process_data):
+        """Check if we defined what to do with a field.
+
+        It could be missing in the yml file else add it to process_data.
+
+        Args:
+            process_data (dict): Dictionary of yaml and data from proforma.
+            params(dict):
+                * field_values: maps field/key name to the tuple.
+        """
         keys_to_remove = []
-        # Check if we defined what to do with a field.
-        # It could be missing the yml file.
         for key in params['fields_values']:
             if key not in process_data:
                 self.critical_error(params['fields_values'][key], "Do not know what to do with this one.")
@@ -62,36 +87,30 @@ class ChadoObject(object):
                 if type(params['fields_values'][key]) is list:
                     # Skip if the first value in the list contains None.
                     if params['fields_values'][key][0][FIELD_VALUE] is None and not self.has_bang_type(key, 'c'):
-                        # log.debug("Skipping field {} -- its value is empty in the proforma.".format(key))
                         keys_to_remove.append(key)
                 else:
                     # Skip if the value contains None.
                     if params['fields_values'][key][FIELD_VALUE] is None and not self.has_bang_type(key, 'c'):
-                        # log.debug("Skipping field {} -- it's value is empty in the proforma.".format(key))
                         keys_to_remove.append(key)
 
                 # If the key exists and it has a non-None value, add it.
                 process_data[key]['data'] = params['fields_values'][key]
-                # log.debug("{}: {}".format(key, process_data[key]))
             else:
                 # If the key is missing from the proforma.
-                # log.debug("Skipping field {} -- it's absent from the proforma.".format(key))
                 keys_to_remove.append(key)
-
-        # Remove all unused keys from the dictionary.
-        # This has to be a second loop so we don't modify the first loop while it's running.
-        for key in keys_to_remove:
-            # log.debug("Removing unused key {} from the process_data dictionary".format(key))
-            if key not in SPECIAL_FIELDS:
-                process_data.pop(key)
-
-        return process_data
+        return keys_to_remove
 
     def get_valid_key_for_data_set(self, data_set):
         """Get key for data set.
 
         Basically check we have at least one valid key and the data is
         not empty.
+
+        Args:
+            data_set (dict): set of data. i.e. HH8 abcd
+
+        Returns:
+            String: A valid key that has data OR None if no data found in data_set.
         """
         valid_key = None  # need a valid key incase something is wrong to report line number etc
         for key in data_set.keys():
@@ -106,6 +125,13 @@ class ChadoObject(object):
         """Check if a key is in the bang lists.
 
         If bang_type is defined then only that one is checked.
+
+        Args:
+            key (string): key/field to be checked.
+            bang_type (String): 'c' for bangc , 'd' for bangd.
+
+        Returns:
+            Bool: True if it is a bang else False.
         """
         if not bang_type or bang_type == 'c':
             if key in self.bang_c:
@@ -119,10 +145,11 @@ class ChadoObject(object):
         """Return true if key has data.
 
         Checks whether a key exists and contains a FIELD_VALUE that isn't None.
+
+        Args:
+            key (string): key/field to be checked if it has data.
         """
         if key in self.process_data:
-            log.debug("key is {}".format(key))
-            log.debug('Checking whether we have data (not-None) in {}'.format(self.process_data[key]))
             if self.process_data[key]['data'] is not None:
                 if type(self.process_data[key]['data']) is list:
                     if self.process_data[key]['data'][0][FIELD_VALUE] is not None:
@@ -133,7 +160,13 @@ class ChadoObject(object):
         return False
 
     def error_track(self, tuple, error_message, level):
-        """Teach error message."""
+        """Track error message.
+
+        Args:
+            tuple (tuple): Contains field name, field value, line number and bang type
+            error_message (string): Error message.
+            level (int): Level of error message. Usually one of CRITICAL/WARNING/DEBUG _ERROR
+        """
         ErrorTracking(self.filename,
                       "Proforma entry starting on line: {}".format(self.proforma_start_line_number),
                       "Proforma error around line: {}".format(tuple[LINE_NUMBER]),
@@ -143,21 +176,31 @@ class ChadoObject(object):
                       level)
 
     def critical_error(self, tuple, error_message):
-        """Add critical errror."""
+        """Add critical errror.
+
+        Args:
+            tuple (tuple): Contains field name, field value, line number and bang type
+            error_message (string): Error message.
+        """
         self.error_track(tuple, error_message, CRITICAL_ERROR)
 
     def warning_error(self, tuple, error_message):
-        """Add warning message."""
+        """Add warning message.
+
+        Args:
+            tuple (tuple): Contains field name, field value, line number and bang type
+            error_message (string): Error message.
+        """
         self.error_track(tuple, error_message, WARNING_ERROR)
 
     def cvterm_query(self, cv, cvterm):
         """Get cvterm.
 
         Args:
-          cv: str. The name of the cv to lookup.
-          cvterm: str. The name of the cvterm to lookup.
+          cv (string). The name of the cv to lookup.
+          cvterm (string). The name of the cvterm to lookup.
         Returns:
-          str. The cvterm_id from the query.
+          Cvterm Object: The cvterm from the query.
         """
         log.debug('Querying for cvterm: {} from cv: {}.'.format(cvterm, cv))
         cvterm = get_cvterm(self.session, cv, cvterm)
@@ -165,20 +208,29 @@ class ChadoObject(object):
         return cvterm.cvterm_id
 
     def pub_from_fbrf(self, fbrf_tuple):
-        """Get pub fron fbrf.
+        """Get pub from fbrf.
 
-        Return pub object for a given fbrf.
-        Return None if it does not exist.
+        Args:
+            fbrf_tuple (tuple): FIELD_VALUE holds the uniquename for the pub to fetch.
+
+        Returns:
+            pub object for a given fbr OR None if it does not exist.
         """
-        log.debug('Querying for FBrf \'%s\'.' % (fbrf_tuple[FIELD_VALUE]))
-
         pub = self.session.query(Pub).\
             filter(Pub.uniquename == fbrf_tuple[FIELD_VALUE]).\
             one_or_none()
         return pub
 
     def feature_from_feature_name(self, feature_name):
-        """Get feature fron feature name."""
+        """Get feature from feature name.
+
+        Args:
+            feature_name (string): Name of featoure to fetch.
+        Returns:
+            Feature Object OR None if not found
+        Raises:
+            sqlalchemy.orm.exc.NoResultFound: if not found
+        """
         log.debug('Querying for feature uniquename from feature id \'%s\'.' % feature_name)
 
         feature = self.session.query(Feature).\
@@ -187,17 +239,6 @@ class ChadoObject(object):
 
         return feature
 
-    def synonym_id_from_synonym_symbol(self, synonym_name_tuple, synonym_type_id):
-        """Get synonym_id from symbol name."""
-        log.debug('Querying for synonym \'%s\'.' % synonym_name_tuple[FIELD_VALUE])
-
-        results = self.session.query(Synonym.synonym_id, Synonym.name, Synonym.type_id).\
-            filter(Synonym.name == synonym_name_tuple[FIELD_VALUE]).\
-            filter(Synonym.type_id == synonym_type_id).\
-            one()
-
-        return results[0]
-
     def get_or_create_dbxref(self, params):
         """Get or create a dbxref.
 
@@ -205,10 +246,11 @@ class ChadoObject(object):
         Requirement is set in the self.process_data[key]['external_lookup']
         and is obtained from the yml files.
 
-        params needed :-
-        dbname:      db name for dbxref
-        accession:   accession for dbxref
-        tuple:       one related tuple to help give better errors
+        Args:
+            params (dict):-
+                * dbname:      db name for dbxref
+                * accession:   accession for dbxref
+                * tuple:       one related tuple to help give better errors
         """
         db = self.session.query(Db).filter(Db.name == params['dbname']).one_or_none()
         if not db:

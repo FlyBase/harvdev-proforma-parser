@@ -98,7 +98,13 @@ class ChadoGene(ChadoFeatureObject):
                                'G39a': self.g39a_check}
 
     def load_content(self, references):
-        """Process the data."""
+        """Process the data.
+
+        Args:
+            references: <dict> previous reference proforma
+        Returns:
+            <Feature object> Allele feature object.
+        """
         try:
             self.pub = references['ChadoPub']
         except KeyError:
@@ -133,7 +139,11 @@ class ChadoGene(ChadoFeatureObject):
         return self.feature
 
     def load_grpmember(self, key):
-        """Load grp member."""
+        """Load grp member.
+
+        Args:
+            key (string): Proforma field key
+        """
         if not self.has_data(key):
             return
         grp_cvt = get_cvterm(self.session, self.process_data[key]['grp_cv'], self.process_data[key]['grp_cvterm'])
@@ -157,7 +167,11 @@ class ChadoGene(ChadoFeatureObject):
                       grpmember_id=grpmem.grpmember_id)
 
     def load_gfr(self, key):
-        """Load grp feature relationship."""
+        """Load grp feature relationship.
+
+        Args:
+            key (string): Proforma field key.
+        """
         if not self.has_data(key):
             return
         try:
@@ -185,7 +199,11 @@ class ChadoGene(ChadoFeatureObject):
                       type_id=cvterm.cvterm_id)
 
     def load_lfp(self, key):
-        """Load LibraryFeatureprop."""
+        """Load LibraryFeatureprop.
+
+        Args:
+            key (string): Proforma field key
+        """
         if (not self.has_data('G91')) and (not self.has_data('G91a')):
             return
 
@@ -233,7 +251,11 @@ class ChadoGene(ChadoFeatureObject):
         self.g30_check('G30')
 
     def dis_pub(self, key):
-        """Dissociate pub from feature."""
+        """Dissociate pub from feature.
+
+        Args:
+            key (string): Proforma field key
+        """
         feat_pub, is_new = get_or_create(self.session, FeaturePub,
                                          feature_id=self.feature.feature_id,
                                          pub_id=self.pub.pub_id)
@@ -246,15 +268,28 @@ class ChadoGene(ChadoFeatureObject):
             self.session.delete(feat_pub)
 
     def ignore(self, key):
-        """Ignore, done by initial setup."""
+        """Ignore, done by initial setup.
+
+        Args:
+            key (string): Proforma field key
+                NOT used, but is passed automatically.
+        """
         pass
 
     def make_obsolete(self, key):
-        """Make gene obsolete."""
+        """Make gene obsolete.
+
+        Args:
+            key (string): Proforma field key
+        """
         self.feature.is_obsolete = True
 
     def load_gocvtermprop(self, key):
-        """Load the cvterm props for GO lines."""
+        """Load the cvterm props for GO lines.
+
+        Args:
+            key (string):  Proforma field key
+        """
         if not self.has_data(key):
             return
         values = {'date': datetime.today().strftime('%Y%m%d'),
@@ -312,7 +347,11 @@ class ChadoGene(ChadoFeatureObject):
                               value=None)
 
     def load_bandinfo(self, key):
-        """Load the band info."""
+        """Load the band info.
+
+        Args:
+            key (styrting): Proforma field key
+        """
         # If format is xyz--abc then xyy is the start and abc is the end band.
         # If not above format then whole thing is the start and end band.
         if not self.has_data(key):
@@ -346,7 +385,12 @@ class ChadoGene(ChadoFeatureObject):
                               pub_id=self.pub.pub_id)
 
     def get_bands(self, key, item):
-        """Get bands form fields."""
+        """Get bands form fields.
+
+        Args:
+            key (string): Proforma field key
+            item (tuple)
+        """
         bands = []
         g10_pattern = r'(.+)--(.+)'
         band_range = re.search(g10_pattern, item[FIELD_VALUE])
@@ -368,7 +412,12 @@ class ChadoGene(ChadoFeatureObject):
         return bands
 
     def get_band(self, key, name):
-        """Look up the band from the name."""
+        """Look up the band from the name.
+
+        Args:
+            key (string): Proforma field key
+            name (string): name part of band. (stored in db as band-{name})
+        """
         cvterm = get_cvterm(self.session, self.process_data[key]['band_cv'], self.process_data[key]['band_cvterm'])
         if not cvterm:
             message = "Unable to find cvterm {} for Cv '{}'.".format(self.process_data[key]['band_cv'],
@@ -386,7 +435,11 @@ class ChadoGene(ChadoFeatureObject):
         return band
 
     def load_prop_g26(self, key):
-        """G26 special."""
+        """G26 special.
+
+        Args:
+            key (string): Proforma field key
+        """
         self.load_featureprop(key)
         if self.g26_dbxref:
             get_or_create(self.session, FeatureDbxref,
@@ -397,6 +450,9 @@ class ChadoGene(ChadoFeatureObject):
         """G10 Special processing to correct format.
 
         Return True if successful, False if fails.
+
+        Args:
+            key (string): Proforma field key
         """
         okay = True
         if not self.has_data(key):
@@ -486,12 +542,18 @@ class ChadoGene(ChadoFeatureObject):
 
         Deleting the feature relationship cascade deletes the featyrerelationshipprop if
         there is one.
+
+        Args:
+            key (string): Proforma field key
+            bangc (Bool, optional): True if bangc operation
+                                    False if bangd operation.
+                                    Default is False.
         """
         has_prop = False
         if 'propvalue' in self.process_data[key] and self.process_data[key]['propvalue']:
             has_prop = True
         if not bangc:
-            self.bangd_bandinfo(key, has_prop)
+            self.bangd_bandinfo(key)
             return
         for idx, cvterm_name in enumerate(self.process_data[key]['cvterms']):
             cvterm = get_cvterm(self.session, self.process_data[key]['cv'], cvterm_name)
@@ -514,8 +576,12 @@ class ChadoGene(ChadoFeatureObject):
                         log.debug("LOOKUP: deleting fr {}".format(fr))
                         self.session.delete(fr)
 
-    def bangd_bandinfo(self, key, has_prop):
-        """Delete the specific band info."""
+    def bangd_bandinfo(self, key):
+        """Delete the specific band info.
+
+        Args:
+            key (string): Proforma field key
+        """
         for item in self.process_data[key]['data']:  # list of values here.
             bands = self.get_bands(key, item)
             for idx, cvterm_name in enumerate(self.process_data[key]['cvterms']):

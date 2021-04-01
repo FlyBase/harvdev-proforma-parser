@@ -248,7 +248,11 @@ class ChadoHumanhealth(ChadoObject):
                 return
 
     def load_direct(self, key):
-        """Load the direct fields."""
+        """Load the direct fields.
+
+        Args:
+            key (string): key/field of proforma to get pub for.
+        """
         if self.has_data(key):
             old_attr = getattr(self.humanhealth, self.process_data[key]['name'])
             if old_attr:
@@ -260,7 +264,11 @@ class ChadoHumanhealth(ChadoObject):
                 setattr(self.humanhealth, self.process_data[key]['name'], self.process_data[key]['data'][FIELD_VALUE])
 
     def load_cvterm(self, key):
-        """Load the cvterms."""
+        """Load the cvterms.
+
+        Args:
+            key (string): key/field of proforma to get pub for.
+        """
         # lookup dbxref DOID:nnnnn
         # get the cvterm for this cv:'disease_ontology' (joined by dbxref)
         # lookup cvterm for doid_term
@@ -306,7 +314,11 @@ class ChadoHumanhealth(ChadoObject):
                                     type_id=doid_cvterm.cvterm_id)
 
     def load_relationship(self, key):
-        """Load relationships between humanhealths."""
+        """Load relationships between humanhealths.
+
+        Args:
+            key (string): key/field of proforma to get pub for.
+        """
         cvterm = self.session.query(Cvterm).join(Cv).\
             filter(Cv.name == self.process_data[key]['cv'],
                    Cvterm.name == self.process_data[key]['cvterm']).\
@@ -341,7 +353,11 @@ class ChadoHumanhealth(ChadoObject):
         return
 
     def load_prop(self, key):
-        """Load the properties."""
+        """Load the properties.
+
+        Args:
+            key (string): key/field of proforma to get pub for.
+        """
         if not self.has_data(key):
             return
 
@@ -372,7 +388,12 @@ class ChadoHumanhealth(ChadoObject):
         return
 
     def load_synonym(self, key, cvterm_name=None):
-        """Load the synonyms."""
+        """Load the synonyms.
+
+        Args:
+            key (string): key/field of proforma to get pub for.
+            cvterm_name (string, optional): cvterm name to be used as synonym type.
+        """
         if not cvterm_name:
             cvterm_name = self.process_data[key]['cvterm']
         cvterm = self.session.query(Cvterm).join(Cv).\
@@ -421,6 +442,8 @@ class ChadoHumanhealth(ChadoObject):
             humanhealth_phenotype and library_humanhealth seem to be empty are not
             filled in by anything here.
 
+        Args:
+            key (string): key/field of proforma to get pub for.
         """
         #################
         # Humanhealth_pub
@@ -460,6 +483,12 @@ class ChadoHumanhealth(ChadoObject):
         """Delete synonym.
 
         Well actually set is_current to false for this entry.
+
+        Args:
+            key (string): Proforma field key
+            bangc (Bool, optional): True if bangc operation
+                                    False if bangd operation.
+                                    Default is False.
         """
         if type(self.process_data[key]['data']) is not list:
             data_list = []
@@ -501,8 +530,11 @@ class ChadoHumanhealth(ChadoObject):
     def delete_cvterm(self, key, bangc=False):
         """Delete the cvterm.
 
-        .. class:: ChadoHumanhealth
-        .. function:: delete_cvterm
+        Args:
+            key (string): Proforma field key
+            bangc (Bool, optional): True if bangc operation
+                                    False if bangd operation.
+                                    Default is False.
         """
         if bangc:
             self.session.query(HumanhealthCvterm).\
@@ -537,7 +569,14 @@ class ChadoHumanhealth(ChadoObject):
                 self.session.delete(hhc)
 
     def delete_relationship(self, key, bangc=False):
-        """Delete the relationship."""
+        """Delete the relationship.
+
+        Args:
+            key (string): Proforma field key
+            bangc (Bool, optional): True if bangc operation
+                                    False if bangd operation.
+                                    Default is False.
+        """
         cvterm = self.session.query(Cvterm).join(Cv).\
             filter(Cv.name == self.process_data[key]['cv'],
                    Cvterm.name == self.process_data[key]['cvterm']).\
@@ -580,18 +619,41 @@ class ChadoHumanhealth(ChadoObject):
                     return
 
     def make_obsolete(self, key):
-        """Make the humanhealth recid obsolete."""
+        """Make the humanhealth recid obsolete.
+
+        Args:
+            key (string): Proforma field key
+            bangc (Bool, optional): True if bangc operation
+                                    False if bangd operation.
+                                    Default is False.
+        """
         self.humanhealth.is_obsolete = True
 
     def ignore(self, key):  # noqa D102
         return
 
     def delete_ignore(self, key, bangc=False):
-        """Delete filler code."""
+        """Delete filler code.
+
+        Does nothing...
+
+        Args:
+            key (string): Proforma field key
+            bangc (Bool, optional): True if bangc operation
+                                    False if bangd operation.
+                                    Default is False.
+        """
         return
 
     def delete_direct(self, key, bangc=True):
-        """Delete the direct fileds."""
+        """Delete the direct fileds..
+
+        Args:
+            key (string): Proforma field key
+            bangc (Bool, optional): True if bangc operation
+                                    False if bangd operation.
+                                    Default is True.
+        """
         try:
             new_value = self.process_data[key]['data'][FIELD_VALUE]
         except KeyError:
@@ -601,7 +663,14 @@ class ChadoHumanhealth(ChadoObject):
         self.process_data[key]['data'] = None
 
     def delete_prop(self, key, bangc=True):
-        """Delete the prop."""
+        """Delete the prop..
+
+        Args:
+            key (string): Proforma field key
+            bangc (Bool, optional): True if bangc operation
+                                    False if bangd operation.
+                                    Default is True.
+        """
         cvterm = self.session.query(Cvterm).join(Cv).\
             filter(Cv.name == self.process_data[key]['cv'],
                    Cvterm.name == self.process_data[key]['cvterm']).\

@@ -1,7 +1,8 @@
 """
 :synopsis: The Base Feature Object.
 
-:moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>, Ian Longden <ilongden@morgan.harvard.edu>
+:moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>,
+               Ian Longden <ianlongden@morgan.harvard.edu>
 """
 from chado_object.chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.chado_functions import get_or_create, get_cvterm
@@ -49,11 +50,23 @@ class ChadoFeatureObject(ChadoObject):
             self.unattrib_pub, _ = get_or_create(self.session, Pub, uniquename='unattributed')
         return self.unattrib_pub
 
-    def _get_feature(self, so_name, symbol_key, unique_bit):
-        """Get the feature."""
-        cvterm = get_cvterm(self.session, 'SO', so_name)
+    def _get_feature(self, cvterm_name, symbol_key, unique_bit, cv_name='SO'):
+        """Get the feature.
+
+        Assigns this to self.feature.
+
+        Args:
+            cvterm_name (string): cvterm name of the feature
+            symbol_key (string): name of the field/key (i.e. 'GA10a')
+            unique_bit (string): Unique two letter code for this feature (i.e. 'gn')
+            cv_name (string, optional): cv name of the feature ('SO' is the default)
+
+        Returns:
+            Bool: True if found/created, False if not.
+        """
+        cvterm = get_cvterm(self.session, cv_name, cvterm_name)
         if not cvterm:
-            message = "Unable to find cvterm '{}' for Cv 'SO'.".format(so_name)
+            message = "Unable to find cvterm '{}' for Cv '{}'.".format(cvterm_name, cv_name)
             self.critical_error(self.process_data[symbol_key]['data'], message)
             return None
         organism, plain_name, sgml = synonym_name_details(self.session, self.process_data[symbol_key]['data'][FIELD_VALUE])
@@ -75,6 +88,9 @@ class ChadoFeatureObject(ChadoObject):
         So for now lets have a general routine for processing the loading of the feature.
         NOTE: this will only work for those that have the same end field key bits matching
         If we get too many that do not work this way then we may have to pass each key separately.
+
+        Args:
+            feature_type (string): feature type to load. (defauts to 'gene')
         """
         CODE = 0
         UNIQUE = 1
@@ -132,7 +148,14 @@ class ChadoFeatureObject(ChadoObject):
             self.load_synonym(symbol_key)
 
     def get_pub_id_for_synonym(self, key):
-        """Get pub_id for a synonym."""
+        """Get pub_id for a synonym.
+
+        Args:
+            key (string): key/field of proforma to get pub for.
+
+        Returns:
+            int: The pub_id for the pub to be used here.
+        """
         if self.has_data('G1f'):
             pub, _ = get_or_create(self.session, Pub, uniquename='unattributed')
             return pub.pub_id
@@ -141,7 +164,7 @@ class ChadoFeatureObject(ChadoObject):
                 pub_id = self.pub.pub_id
             else:
                 # is this chebi or pubchem
-                pub_id = self.get_external_chemical_pub_id(key)
+                pub_id = self.get_external_chemical_pub_id()
             return pub_id
         return self.pub.pub_id
 
@@ -155,6 +178,12 @@ class ChadoFeatureObject(ChadoObject):
            remove_old: <optional> defaults to False
         NOTE:
           If is_current set to True and cvterm is symbol thensgml to plaintext is done.
+
+        Args:
+            key (string): key/field of proforma to add synonym for.
+            unattrib (Bool): Add another unattributed synonym pub .
+            cvterm_name (string, optional): cv synonym name, obtained from
+                                            if not passed.
         """
         cv_name = self.process_data[key]['cv']
         if not cvterm_name:
@@ -173,31 +202,29 @@ class ChadoFeatureObject(ChadoObject):
 
         # add the new synonym
         if type(self.process_data[key]['data']) is list:
-            for item in self.process_data[key]['data']:
-                synonym_sgml = None
-                if 'subscript' in self.process_data[key] and not self.process_data[key]['subscript']:
-                    synonym_sgml = sgml_to_unicode(item[FIELD_VALUE])
-                fs = False
-                for pub_id in pubs:
-                    fs = fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
-                                                         item[FIELD_VALUE], cv_name, cvterm_name, pub_id,
-                                                         synonym_sgml=synonym_sgml, is_current=False, is_internal=False)
-                if fs and is_current:
-                    fs.is_current = True
+            items = self.process_data[key]['data']
         else:
+            items = [self.process_data[key]['data']]
+
+        for item in items:
             synonym_sgml = None
             if 'subscript' in self.process_data[key] and not self.process_data[key]['subscript']:
-                synonym_sgml = sgml_to_unicode(self.process_data[key]['data'][FIELD_VALUE])
+                synonym_sgml = sgml_to_unicode(item[FIELD_VALUE])
+            fs = False
             for pub_id in pubs:
-                fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
-                                                self.process_data[key]['data'][FIELD_VALUE], cv_name, cvterm_name, pub_id,
-                                                synonym_sgml=synonym_sgml, is_current=is_current, is_internal=False)
-
-            if is_current and cvterm_name == 'symbol':
-                self.feature.name = sgml_to_plain_text(self.process_data[key]['data'][FIELD_VALUE])
+                fs = fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
+                                                     item[FIELD_VALUE], cv_name, cvterm_name, pub_id,
+                                                     synonym_sgml=synonym_sgml, is_current=is_current, is_internal=False)
+                if is_current and cvterm_name == 'symbol':
+                    self.feature.name = sgml_to_plain_text(item[FIELD_VALUE])
+                    fs.current = is_current
 
     def load_feature_cvterm(self, key):
-        """Add feature cvterm."""
+        """Add feature cvterm.
+
+        Args:
+            key (string): key/field of proforma to load feature from.
+        """
         if type(self.process_data[key]['data']) is list:
             items = self.process_data[key]['data']
         else:
@@ -251,43 +278,10 @@ class ChadoFeatureObject(ChadoObject):
             self.critical_error(items[0], message)
             return None
 
-        cv_name = self.process_data[key]['cv']
-
         for item in items:
-            cvterm = None
-            prop_value = None
-            if self.process_data[key]['prop_value']:
-                cvterm_name = self.process_data[key]['cvterm']
-                prop_value = item[FIELD_VALUE]
-            else:
-                # for new ones they are seperated by ';'  x ; y
-                # i.e.
-                cvterm_name = item[FIELD_VALUE]
-            try:
-                cvterm = get_cvterm(self.session, cv_name, cvterm_name)
-            except CodingError:
-                # may not be a coding error if cvterm name given on proforma
-                if prop_value:
-                    message = "Coding error NO cvterm '{}' for Cv '{}'.".format(cvterm_name, cv_name)
-                    self.critical_error(item, message)
-                    continue
-
+            cvterm, prop_value = self.get_cvterm_propvalue(key, item)
             if not cvterm:
-                message = "Unable to find cvterm '{}' for Cv '{}'.".format(cvterm_name, cv_name)
-                self.critical_error(item, message)
                 continue
-
-            if 'cvterm_namespace' in self.process_data[key]:
-                try:
-                    self.session.query(Cvtermprop).\
-                        filter(Cvtermprop.cvterm_id == cvterm.cvterm_id,
-                               Cvtermprop.value == self.process_data[key]['cvterm_namespace']).one()
-                except NoResultFound:
-                    message = "Cvterm '{}' Not in the required namespace of '{}'".\
-                        format(cvterm.name, self.process_data[key]['cvterm_namespace'])
-                    self.critical_error(item, message)
-                    continue
-
             # create feature_cvterm
             feat_cvt, _ = get_or_create(self.session, FeatureCvterm,
                                         feature_id=self.feature.feature_id,
@@ -300,8 +294,63 @@ class ChadoFeatureObject(ChadoObject):
                           value=prop_value,
                           type_id=props_cvterm.cvterm_id)
 
+    def get_cvterm_propvalue(self, key, item):
+        """Get cvterm and prop value.
+
+        Also check that if namespace is defined (in the yml) the cvterm belongs to that.
+
+        Args:
+            key (string): key/field of proforma to get data from.
+            item (tuple): Field tuple (field/key, value, line, bang)
+
+        Returns:
+            cvtermObj: cvterm object or None if failed.
+            string: prop value
+        """
+        cvterm = None
+        prop_value = None
+        cv_name = self.process_data[key]['cv']
+        if self.process_data[key]['prop_value']:
+            cvterm_name = self.process_data[key]['cvterm']
+            prop_value = item[FIELD_VALUE]
+        else:
+            # for new ones they are seperated by ';'  x ; y
+            # i.e.
+            cvterm_name = item[FIELD_VALUE]
+        try:
+            cvterm = get_cvterm(self.session, cv_name, cvterm_name)
+        except CodingError:
+            # may not be a coding error if cvterm name given on proforma
+            if prop_value:
+                message = "Coding error NO cvterm '{}' for Cv '{}'.".format(cvterm_name, cv_name)
+                self.critical_error(item, message)
+                return None, None
+
+        if not cvterm:
+            message = "Unable to find cvterm '{}' for Cv '{}'.".format(cvterm_name, cv_name)
+            self.critical_error(item, message)
+            return None, None
+
+        if 'cvterm_namespace' in self.process_data[key]:
+            try:
+                self.session.query(Cvtermprop).\
+                    filter(Cvtermprop.cvterm_id == cvterm.cvterm_id,
+                           Cvtermprop.value == self.process_data[key]['cvterm_namespace']).one()
+            except NoResultFound:
+                message = "Cvterm '{}' Not in the required namespace of '{}'".\
+                    format(cvterm.name, self.process_data[key]['cvterm_namespace'])
+                self.critical_error(item, message)
+                return None, None
+        return cvterm, prop_value
+
     def get_feat_type_cvterm(self, key):
-        """Get feature type cvterm."""
+        """Get feature type cvterm.
+
+        Args:
+            key (string): key/field of proforma to get data from.
+        Returns:
+            cvtermObj: cvterm object or None if failed.
+        """
         feat_type_name = None
         if 'feat_type' in self.process_data[key]:
             feat_type_name = self.process_data[key]['feat_type']
@@ -319,6 +368,10 @@ class ChadoFeatureObject(ChadoObject):
         yml options:
            cv:
            cvterm:
+
+        Args:
+            key (string): key/field of proforma to get data from.
+
         """
         if not self.has_data(key):
             return
@@ -348,8 +401,20 @@ class ChadoFeatureObject(ChadoObject):
             self.add_relationships(key, other_feat, cvterm)
 
     def get_other_feature(self, item, feat_type, subscript):
-        """Get the other feature."""
+        """Get the other feature.
+
+        Args:
+            item (tuple): Field tuple (field/key, value, line, bang)
+            feat_type (list, string): Listor string of allowed feature type(s).
+            subscript (bool): translate name to subscript.
+
+        Returns:
+           feature: FeatureObj or None if error occured.
+
+        """
         name = item[FIELD_VALUE]
+        if type(feat_type) is list:
+            return self.multi_type_lookup(item, feat_type, subscript)
         try:
             other_feat = feature_symbol_lookup(self.session, feat_type, name, convert=subscript)
         except MultipleResultsFound:
@@ -364,11 +429,54 @@ class ChadoFeatureObject(ChadoObject):
             return
         return other_feat
 
+    def multi_type_lookup(self, item, feat_type_list, subscript):
+        """Get the other feature.
+
+        Some lookups can have multiple types that are allowed.
+        This should deal with those cases.
+
+        Args:
+            item (tuple): Field tuple (field/key, value, line, bang)
+            feat_type_list (list): List of allowed feature types.
+            subscript (bool): translate name to subscript.
+
+        Returns:
+            feature: FeatureObj or None if error occured.
+
+        """
+        name = item[FIELD_VALUE]
+        try:
+            other_feat = feature_symbol_lookup(self.session, None, name, convert=subscript)
+        except MultipleResultsFound:
+            message = "Multiple results found for type: '{}' name: '{}'".format(feat_type_list, name)
+            features = feature_symbol_lookup(self.session, None, name, check_unique=False, convert=subscript)
+            feat_found = None
+            type_found_count = 0
+            for feature in features:
+                message += "\n\tfound: {} of type {}".format(feature, feature.type_id.name)
+                if feature.type_id.name in feat_type_list:
+                    feat_found = feature
+                    type_found_count += 1
+            if type_found_count == 1:
+                return feat_found
+            self.critical_error(item, message)
+            return
+        except NoResultFound:
+            self.critical_error(item, "No Result found for {} {} subscript={}".format(feat_type_list, name, subscript))
+            return
+        return other_feat
+
     def add_relationships(self, key, obj_feat, cvterm):
-        """Add relationships."""
-        # Sometimes we want to link the relationship the other way around.
+        """Add relationships.
+
+        Args:
+            key (string): key/field of proforma to get data from.
+            obj_feat (FeatureObject): feature to be linked to the self.feature object
+            cvterm (CvtermObject):  create relationship with this cvterm.
+        """
         sub_id = self.feature.feature_id
         obj_id = obj_feat.feature_id
+        # Sometimes we want to link the relationship the other way around.
         if 'feature_is_object' in self.process_data[key]:
             if self.process_data[key]['feature_is_object']:
                 obj_id = self.feature.feature_id
@@ -392,7 +500,9 @@ class ChadoFeatureObject(ChadoObject):
     def load_featureproplist(self, key, prop_cv_id):
         """Load a feature props that are in a list.
 
-        list so obviously more than value allowed.
+        Args:
+            key (string): key/field of proforma to get data from.
+            prop_cv_id (int): id of the prop cvterm
         """
         for item in self.process_data[key]['data']:
             fp, is_new = get_or_create(self.session, Featureprop, feature_id=self.feature.feature_id,
@@ -410,6 +520,9 @@ class ChadoFeatureObject(ChadoObject):
            cvterm:
            value:    <optional>, key to value field.
            only_one: <optional>, defaults to False.
+
+        Args:
+            key (string): key/field of proforma to get data from.
         """
         if not self.has_data(key):
             return
@@ -453,6 +566,11 @@ class ChadoFeatureObject(ChadoObject):
            cv:
            cvterm:
 
+        Args:
+            key (string): key/field of proforma to get data from.
+            bangc (Bool): True if bangc operation.
+                          False if a bangd operation.
+                          Default is False.
         """
         if not bangc:
             self.delete_specific_fp(key)
@@ -470,7 +588,14 @@ class ChadoFeatureObject(ChadoObject):
             # self.session.delete(fpp)
 
     def delete_specific_fp(self, key, bangc=False):
-        """Delete specific featureprop."""
+        """Delete specific featureprop.
+
+        Args:
+            key (string): key/field of proforma to get data from.
+            bangc (Bool): True if bangc operation.
+                          False if a bangd operation.
+                          Default is False.
+        """
         prop_cv_id = self.cvterm_query(self.process_data[key]['cv'], self.process_data[key]['cvterm'])
 
         # can be list or single item so make it always a list.
@@ -499,7 +624,11 @@ class ChadoFeatureObject(ChadoObject):
         self.process_data[key]['data'] = None
 
     def delete_specific_fcp(self, key):
-        """Delete feature cvterm based ob feature and cvterm prop."""
+        """Delete feature cvterm based ob feature and cvterm prop.
+
+        Args:
+            key (string): key/field of proforma to get data from.
+        """
         if key == 'G30':
             if not self.alter_check_g30(key):
                 return
@@ -541,6 +670,12 @@ class ChadoFeatureObject(ChadoObject):
         the cvterm is given.
         Could have gone for if cvterm is not defined etc but
         this way is more explicit.
+
+        Args:
+            key (string): key/field of proforma to get data from.
+            bangc (Bool): True if bangc operation.
+                          False if a bangd operation.
+                          Default is False.
         """
         if not bangc:
             self.delete_specific_fcp(key)
@@ -569,7 +704,12 @@ class ChadoFeatureObject(ChadoObject):
             self.critical_error(self.process_data[key]['data'][0], message)
 
     def delete_specific_fr(self, key, items):
-        """Delete specific feature relationships."""
+        """Delete specific feature relationships.
+
+        Args:
+            key (string): key/field of proforma to get data from.
+            items (list of tuples): tuples are (key, value, line_number, bangc)
+        """
         cv_name = self.process_data[key]['cv']
         cvterm_name = self.process_data[key]['cvterm']
         feat_type = None
@@ -599,7 +739,14 @@ class ChadoFeatureObject(ChadoObject):
         self.process_data[key]['data'] = None
 
     def delete_feature_relationship(self, key, bangc=False):
-        """Delete the feature relationship."""
+        """Delete the feature relationship.
+
+        Args:
+            key (string): key/field of proforma to get data from.
+            bangc (Bool): True if bangc operation.
+                          False if a bangd operation.
+                          Default is False.
+        """
         if type(self.process_data[key]['data']) is list:
             items = self.process_data[key]['data']
         else:
@@ -632,6 +779,12 @@ class ChadoFeatureObject(ChadoObject):
         """Delete synonym.
 
         Well actually set is_current to false for this entry.
+
+        Args:
+            key (string): key/field of proforma to get data from.
+            bangc (Bool): True if bangc operation.
+                          False if a bangd operation.
+                          Default is False.
         """
         if type(self.process_data[key]['data']) is not list:
             data_list = []

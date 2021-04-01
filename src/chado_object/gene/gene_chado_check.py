@@ -26,13 +26,22 @@ log = logging.getLogger(__name__)
 
 
 def g26_format_error(self, key):
-    """Report format error."""
+    """Report format error.
+
+    Args:
+        key (string): key/field of proforma to get pub for.
+    """
     message = "Does not match format Foreign sequence; species == <Genus species>; gene == <gene symbol>; <optional accession number>."
     self.critical_error(self.process_data[key]['data'], message)
 
 
 def g26_species_check(self, key, species_bit):
-    """Check the species data."""
+    """Check the species data.
+
+    Args:
+        key (string): key/field of proforma to get pub for.
+        species_bit (string): format => 'species == genus species'
+    """
     organism = None
     species = species_bit.strip().split()
     if len(species) < 4:
@@ -56,7 +65,12 @@ def g26_species_check(self, key, species_bit):
 
 
 def g26_gene_symbol_check(self, key, gene_bit):
-    """Check the gene data."""
+    """Check the gene data.
+
+    Args:
+        key (string): key/field of proforma to get pub for.
+        gene_bit (string): see pattern for format
+    """
     pattern = r"""
         gene        # key word
         \s*         # possible spaces
@@ -92,6 +106,11 @@ def g26_dbxref_check(self, key, db_bit, organism):
     """Dbxref get/create (optional).
 
     Set self.g26_dbxref.
+
+    Args:
+        key (string): key/field of proforma to get pub for.
+        db_bit (string): see pattern for format
+        organism (Organism Object, optional): organism to check against.
     """
     org_to_db = {'Hsap': 'HGNC', 'Scer': 'SGD', 'Mmus': 'MGI'}
     db_pattern = r"""
@@ -121,17 +140,7 @@ def g26_dbxref_check(self, key, db_bit, organism):
     # if G35 is set then check that wrt dbxref above.
     #################################################
     if self.has_data('G35'):
-        db_data_check = re.search(db_pattern, self.process_data['G35']['data'][FIELD_VALUE].strip(), re.VERBOSE)
-        if not db_data_check:
-            message = "Wrong format should be dbname:accession"
-            self.critical_error(self.process_data['G35']['data'], message)
-        else:
-            if (db_data_check[1].strip() != db_data[1].strip() or db_data_check[2].strip() != db_data[2].strip()):
-                message = "G26 and G35 DB:Accession do not match. {}:{} != {}:{}".\
-                    format(db_data[1].strip(), db_data[2].strip(),
-                           db_data_check[1].strip(), db_data_check[2].strip())
-                self.critical_error(self.process_data['G35']['data'], message)
-
+        self.g35_data_check(db_data, db_pattern)
     if organism and organism.abbreviation in org_to_db:
         if org_to_db[organism.abbreviation] != params['dbname']:
             message = "Organism {} can only have dbxref to {} NOT {} as stated".\
@@ -140,6 +149,25 @@ def g26_dbxref_check(self, key, db_bit, organism):
         if db_data[0].strip() not in self.process_data[key]['allowed_dbs']:
             message = "Only one of {} can be used for species not in {}".\
                 format(self.process_data[key]['allowed_dbs'], org_to_db.keys())
+
+
+def g35_data_check(self, db_data, db_pattern):
+    """Check g35 data.
+
+    Args:
+        db_data (list): db split into parts.
+        db_pattern (regex): regex to split G35 data.
+    """
+    db_data_check = re.search(db_pattern, self.process_data['G35']['data'][FIELD_VALUE].strip(), re.VERBOSE)
+    if not db_data_check:
+        message = "Wrong format should be dbname:accession"
+        self.critical_error(self.process_data['G35']['data'], message)
+    else:
+        if (db_data_check[1].strip() != db_data[1].strip() or db_data_check[2].strip() != db_data[2].strip()):
+            message = "G26 and G35 DB:Accession do not match. {}:{} != {}:{}".\
+                format(db_data[1].strip(), db_data[2].strip(),
+                       db_data_check[1].strip(), db_data_check[2].strip())
+            self.critical_error(self.process_data['G35']['data'], message)
 
 
 def g26_check(self, key):
@@ -161,6 +189,9 @@ def g26_check(self, key):
     will generate critical errors for checks that fail.
 
     Set self.g26_dbxref if appropriate.
+
+    Args:
+        key (string): key/field of proforma to get pub for.
     """
     parts = self.process_data[key]['data'][FIELD_VALUE].split(';')
     # i.e.  ['Foreign sequence', ' species == Bombyx mori', " gene == 'Cyp306a1'", ' UniProt/TrEMBL:Q6I6X0.']
@@ -197,6 +228,9 @@ def g28a_check(self, key):
 
        'Source for identity of: '
        'Source for merge of: '
+
+    Args:
+        key (string): key/field of proforma to get pub for.
     """
     if not self.has_data(key):
         return
@@ -213,6 +247,9 @@ def g28b_check(self, key):
         using the 'Source for identity of:' SoftCV.
     2) If you are using G1f to merge two (or more) gene reports,
         then you must fill in G28b. using the 'Source for merge of:' SoftCV.
+
+    Args:
+        key (string): key/field of proforma to get pub for.
     """
     if self.has_data('G1e'):
         line_segment = 'Source for identity of:'
@@ -229,7 +266,11 @@ def g28b_check(self, key):
 
 
 def g30_check(self, key):
-    """G30 must be present if new if not rename."""
+    """G30 must be present if new if not rename.
+
+    Args:
+        key (string): key/field of proforma to get pub for.
+    """
     if self.process_data['G1g']['data'][FIELD_VALUE] == 'y':
         return
     if self.feature.new and not self.has_data(key):
@@ -247,6 +288,9 @@ def g31a_check(self, key):
     which is the valid symbol of a gene which is already in FlyBase.
     All other fields in this proforma, including the non-renaming fields,
     must be blank.
+
+    Args:
+        key (string): key/field of proforma to get pub for.
     """
     self.check_only_certain_fields_allowed('G31a', ['G1a', 'G1g', 'G31a'])
 
@@ -259,6 +303,9 @@ def g31b_check(self, key):
     of a gene which is already in FlyBase.
     All other fields in this proforma, including the non-renaming fields,
     must be blank.
+
+    Args:
+        key (string): key/field of proforma to get pub for.
     """
     self.check_only_certain_fields_allowed('G31b', ['G1a', 'G1g', 'G31b'])
 
@@ -298,6 +345,9 @@ def g35_check(self, key):
     'GB_protein' for a GenBank protein sequence (NB: try to use a UniProt sequence instead of using this)
     'UniProt/Swiss-Prot' for a UniProt Swiss-Prot sequence
     'UniProt/TrEMBL' for a UniProt TrEMBL sequence
+
+    Args:
+        key (string): key/field of proforma to get pub for.
     """
     message = "G35 checking not done yet"
     self.critical_error(self.process_data[key]['data'], message)
@@ -310,6 +360,9 @@ def g39a_check(self, key):
        (either existing already in chado or instantiated in the curation record).
 
     2) If G39a is filled in, G39b must be 'y', and G39c and G39d should be filled in.
+
+    Args:
+        key (string): key/field of proforma to get pub for.
     """
     # 1)
     self.check_at_symbols_exist(key)

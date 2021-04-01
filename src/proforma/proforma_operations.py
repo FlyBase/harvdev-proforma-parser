@@ -69,6 +69,10 @@ def process_proforma_file(file_location_from_list, curator_dict):
 
     Args:
         file_location_from_list (str): The location of an individual proforma file.
+        curator_dict (dict): Curator initials to curator full name.
+
+    Returns:
+        (list): Proforma Objects that were procressed.
     """
     proforma_file_object = ProformaFile(file_location_from_list, curator_dict)
 
@@ -83,12 +87,11 @@ def process_proforma_file(file_location_from_list, curator_dict):
         # FBrf to add is only populated from the publications proforma (after validation).
         # It's added to every other type of proforma object as we loop through the list.
 
-        proforma_type, filename, proforma_start_line_number, fields_values = individual_proforma_object.get_data_for_processing()
-
-        log.debug('Processing Proforma object type %s' % (individual_proforma_object.proforma_type))
-        log.debug('From file: %s' % (individual_proforma_object.file_metadata['filename']))
-        log.debug('From line: %s' % (individual_proforma_object.proforma_start_line_number))
-
+        message = "Processing Proforma object type '{}' from '{}' line '{}'".\
+            format(individual_proforma_object.proforma_type,
+                   individual_proforma_object.file_metadata['filename'],
+                   individual_proforma_object.proforma_start_line_number)
+        log.debug(message)
         critical_error_list = validate_proforma_object(individual_proforma_object)
 
         # Still append to list of list_of_processed_proforma_objects
@@ -102,15 +105,6 @@ def process_proforma_file(file_location_from_list, curator_dict):
                          .format(individual_proforma_object.proforma_start_line_number,
                                  individual_proforma_object.file_metadata['filename']))
             log.critical('Proforma object will not be processed into a Chado object.')
-
-    # After extracting the publication proforma, we'll need to associate publication information with
-    # the rest of the proforma objects. This involves a second loop through the validated list.
-    # Obtain the FBrf and other data from the first item in the list. Should be a pub proforma.
-
-    # TODO Check that this entry is a pub proforma. Also implement workaround for processing DATABASE proforma which
-    #  don't have pubs.
-    proforma_type, filename, proforma_start_line_number, fields_values = list_of_proforma_objects[0]\
-        .get_data_for_processing()
 
     # Multipub is the exception as it does not need a pub to start with
     if 'MULTIPUBLICATION' in list_of_proforma_objects[0].proforma_type:
@@ -252,11 +246,8 @@ class ProformaFile(object):
 
     def extract_curator_fullname(self, curator_initials):
         """Get curator fullname."""
-        log.debug('Looking up curator based on filename initials.')
-
         try:
             curator_fullname = self.curator_dict[curator_initials.lower().strip()]
-            log.debug('Found curator %s -> %s' % (curator_initials, curator_fullname))
         except KeyError:
             log.critical('Curator not found for filename: {} using initials: {}'.format(self.filename, curator_initials))
             log.critical('Please check config file specified in the execution of this program.')
@@ -281,8 +272,6 @@ class ProformaFile(object):
             return
         elif current_line.startswith('!c') or current_line.startswith('!d') or current_line.startswith('! '):
             field, value, type_of_bang = self.get_proforma_field_and_content(current_line)
-            log.debug('Current line: {}'.format(current_line))
-            log.debug('Line number: {}'.format(line_number))
             individual_proforma.add_field_and_value(field, value, type_of_bang, line_number, True)
         else:
             # We're in a line which contains a value for the previously defined field.
@@ -432,8 +421,8 @@ class Proforma(object):
         Args:
             field (str): The field from the proforma.
             value (str): The value from the proforma.
-            line_number: The line number.
-            new_line: True if line starts with ! blah else False (continuation of line)
+            line_number (int): The line number.
+            new_line (bool): True if line starts with ! blah else False (continuation of line)
         """
         if type_of_bang and field not in Proforma.set_fields_to_key:
             self.add_bang(field, value, type_of_bang, line_number)

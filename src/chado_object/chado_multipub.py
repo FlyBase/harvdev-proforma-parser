@@ -57,13 +57,16 @@ class ChadoMultipub(ChadoPub):
         self.editor = True
 
     def add_FlyBase_name_from_pub(self, obs_pub):
+        """Create pub dbxref.
+
+        Args:
+            obs_pub (Pub Object): pub to ber linked to the Flybase DB.
+        """
         # copy flybase name xref to self.pub
         dbxrefs = self.session.query(Dbxref).join(PubDbxref).join(Db).\
             filter(PubDbxref.pub_id == obs_pub.pub_id,
                    Db.name == 'FlyBase').all()
-        log.debug("ADD dbxrefs {}".format(dbxrefs))
         for dbxref in dbxrefs:
-            log.debug("Adding dbxref {}".format(dbxref))
             get_or_create(
                 self.session, PubDbxref,
                 pub_id=self.pub.pub_id,
@@ -71,6 +74,11 @@ class ChadoMultipub(ChadoPub):
             )
 
     def make_secondary(self, key):
+        """Make pub obsolete.
+
+        Args:
+            key (string): field/key from proforma
+        """
         # Make these obsolete
         for tuples in self.process_data[key]['data']:
             log.debug("tuples is {}".format(tuples))
@@ -88,7 +96,9 @@ class ChadoMultipub(ChadoPub):
         """Get pub.
 
         get pub or create pub if new.
-        returns None or the pub to be used.
+
+        Returns:
+            Pub to be used OR None.
         """
         if not self.newpub:
             fbrf = "multipub_{}".format(self.process_data['MP1']['data'][FIELD_VALUE])
@@ -119,34 +129,28 @@ class ChadoMultipub(ChadoPub):
 
         # A trigger will swap out multipub:temp_0 to the next rf in the sequence.
         pub, _ = get_or_create(self.session, Pub, type_id=cvterm.cvterm_id, uniquename='multipub:temp_0')
-        log.debug(pub)
-        log.debug("New pub created with fbrf {}.".format(pub.uniquename))
         return pub
+
+    def flag_errors(self):
+        """Apply checks for new pub."""
+        for key in ['MP15', 'MP2b', 'MP17']:
+            if key not in self.process_data:
+                self.critical_error((key, None, 0), 'Error {} Must be set for new pubs.'.format(key))
+        if 'MP17' in self.process_data and self.process_data['MP17']['data'][FIELD_VALUE] == 'book':
+            if 'MP11' not in self.process_data:
+                self.critical_error(('MP11', None, 0), 'Error MP11 is not set so cannot set but MP1 is new and MP17 is book, so is required.')
 
     def load_content(self, references):
         """Process the data."""
         if self.process_data['MP1']['data'][FIELD_VALUE] == "new":
             self.newpub = True
-            for key in ['MP15', 'MP2b', 'MP17']:
-                if key not in self.process_data:
-                    self.critical_error((key, None, 0), 'Error {} Must be set for new pubs.'.format(key))
-            if 'MP17' in self.process_data and self.process_data['MP17']['data'][FIELD_VALUE] == 'book':
-                if 'MP11' not in self.process_data:
-                    self.critical_error(('MP11', None, 0), 'Error MP11 is not set so cannot set but MP1 is new and MP17 is book, so is required.')
-
-            # elif 'MP17' in self.process_data:
-            #     self.critical_error(('MP17', None, 0), 'Error cannot set MP17 if not a new book')
-            # else:
-            #     self.critical_error(('MP17', None, 0), 'Error MP17 Must be set for new pubs.')
-
+            self.flag_errors()
             if not self.has_data('MP17'):
                 return None
 
         self.pub = self.get_pub()
 
-        if self.pub:  # Only proceed if we have a pub. Otherwise we had an error.
-            self.extra_checks()
-        else:
+        if not self.pub:  # Only proceed if we have a pub. Otherwise we had an error.
             return
 
         # bang c first as this supersedes all things
@@ -164,18 +168,15 @@ class ChadoMultipub(ChadoPub):
         log.debug('Curator string assembled as:')
         log.debug('%s' % (curated_by_string))
 
-    def extra_checks(self):
-        """
-        Perform extra checks that validation was not able to do.
-        Matching of miniref to MP17 for existing pub already done in get_pub
-        """
-        pass  # None i can think of at the moment
-
     def load_cvterm(self, key):
-        """
+        """Load multipub cvterm.
+
         MP17 is the only cvterm here and is loaded as part of get_pub
         So it is safe to ignore here. Nope!!
         Okay give an error if not bangc and it has changed
+
+        Args:
+            key (string): field/key from proforma
         """
         if self.has_data(key) and not self.newpub:  # new pub already done
             cvterm = self.session.query(Cvterm).join(Cv).join(Pub).filter(Cv.name == self.process_data[key]['cvname'],
@@ -189,10 +190,12 @@ class ChadoMultipub(ChadoPub):
                     self.critical_error(self.process_data[key]['data'], message)
 
     def delete_cvterm(self, key, bangc):
-        """
-        Will need to add this as MP17 can have bangc
-        """
+        """Change cvterm for pub.
 
+        Args:
+            key (string): field/key from proforma
+            bangc (string): Not used.
+        """
         if self.has_data(key):
             old_cvterm = self.session.query(Cvterm).join(Cv).join(Pub, Pub.type_id == Cvterm.cvterm_id).\
                 filter(Cv.name == self.process_data[key]['cvname'], Pub.pub_id == self.pub.pub_id).one_or_none()

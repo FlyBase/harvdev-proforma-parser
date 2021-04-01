@@ -53,9 +53,7 @@ class ChadoSpecies(ChadoObject):
         self.reference = params.get('reference')
 
     def load_content(self, references):  # noqa: C901
-        """
-        Main processing routine
-        """
+        """Process the Species proforma."""
         try:
             self.pub = references['ChadoPub']
         except KeyError:
@@ -113,9 +111,19 @@ class ChadoSpecies(ChadoObject):
         log.debug('%s' % (curated_by_string))
 
     def ignore(self, key):
+        """Ignore."""
         pass
 
     def load_dbxref(self, key):
+        """Load the dbxref. given the proforma key.
+
+        Args:
+            key (str): proforma key name.
+
+        Returns:
+            None
+
+        """
         db_name = self.process_data[key]['dbname']
 
         log.debug("Looking up db: {}.".format(db_name))
@@ -140,6 +148,14 @@ class ChadoSpecies(ChadoObject):
         )
 
     def load_multiple_cvterms(self, key, cvterm):
+        """Load cvterms.
+
+        Args:
+            key (str): proforma key name.
+            cvterm (Cvterm Object): cvterm to add to orgasmism.
+        Returns:
+            None
+        """
         #
         # Multiple cvterms need to be treated differently as they can be added
         # at any time and do not have as much restrictions
@@ -158,7 +174,11 @@ class ChadoSpecies(ChadoObject):
                               value=item[FIELD_VALUE])
 
     def load_cvterm(self, key):
+        """Load cvterm to species.
 
+        Args:
+            key (str): proforma key name.
+        """
         if self.has_data(key):
             cvterm = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data[key]['cvterm'])
             if not cvterm:
@@ -187,6 +207,14 @@ class ChadoSpecies(ChadoObject):
                 setattr(org_prop, 'value', self.process_data[key]['data'][FIELD_VALUE])
 
     def delete_cvterm(self, key, bangc=True):
+        """Delete the cvterm.
+
+        Args:
+            key (string): Proforma field key
+            bangc (Bool, optional): True if bangc operation
+                                    False if bangd operation.
+                                    Default is True.
+        """
         cvterm = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data[key]['cvterm'])
         if not cvterm:
             message = 'Cvterm lookup failed for cv {} cvterm {}?'.format(self.process_data[key]['cv'],
@@ -226,6 +254,14 @@ class ChadoSpecies(ChadoObject):
                     self.critical_error(item, message)
 
     def delete_dbxref(self, key, bangc=True):
+        """Delete the dbxref.
+
+        Args:
+            key (string): Proforma field key
+            bangc (Bool, optional): True if bangc operation
+                                    False if bangd operation.
+                                    Default is True.
+        """
         db = self.session.query(Db).filter(Db.name == self.process_data[key]['dbname']).one()
         if bangc:
             # delete only the organism_dbxref or dbxref is no others exist.
@@ -238,7 +274,7 @@ class ChadoSpecies(ChadoObject):
             log.debug("Removed {} dbxref's for {}.".format(count, key))
         else:
             if not self.process_data[key]['data']:
-                self.critical_error((key, None, 0,), "Must specify a value with !d.")
+                self.critical_error((key, None, '?',), "Must specify a value with !d.")
                 self.process_data[key]['data'] = None
                 return
             dbxref = self.session.query(OrganismDbxref).join(Organism).join(Dbxref).filter(
