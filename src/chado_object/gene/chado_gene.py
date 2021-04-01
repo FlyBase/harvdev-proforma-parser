@@ -272,7 +272,14 @@ class ChadoGene(ChadoFeatureObject):
         for item in self.process_data[key]['data']:
             go_dict = None
             try:
-                go_dict = process_GO_line(self.session, item[FIELD_VALUE], self.process_data[key]['cv'], allowed_qualifiers, quali_cvs)
+                go_dict = process_GO_line(self.session,
+                                          line=item[FIELD_VALUE],
+                                          cv_name=self.process_data[key]['cv'],
+                                          allowed_qualifiers=allowed_qualifiers,
+                                          qualifier_cv_list=quali_cvs,
+                                          allowed_provenances=self.process_data[key]['provenance_dbs'],
+                                          with_evidence_code=self.process_data[key]['with_allowed'],
+                                          allowed_dbs=self.process_data[key]['allowed_dbs'])
             except CodingError as error:
                 self.critical_error(item, error)
                 continue
@@ -286,7 +293,8 @@ class ChadoGene(ChadoFeatureObject):
                                            pub_id=self.pub.pub_id,
                                            is_not=go_dict['is_not'])
 
-            values['evidence_code'] = go_dict['value']
+            log.debug("BOB: {}".format(go_dict))
+            values['evidence_code'] = go_dict['evidence_code']
             values['provenance'] = go_dict['provenance']
             for idx, cvname in enumerate(self.process_data[key]['prop_cvs']):
                 prop_cvterm_name = self.process_data[key]['prop_cvterms'][idx]
@@ -296,10 +304,11 @@ class ChadoGene(ChadoFeatureObject):
                               feature_cvterm_id=feat_cvterm.feature_cvterm_id,
                               type_id=propcvterm.cvterm_id,
                               value=values[prop_cvterm_name])
-            if 'prov_term' in go_dict and go_dict['prov_term']:  # Extra prop for cvterm from quali stuff
+
+            if 'qualifier' in go_dict and go_dict['qualifier']:  # Extra prop for cvterm from quali stuff
                 get_or_create(self.session, FeatureCvtermprop,
                               feature_cvterm_id=feat_cvterm.feature_cvterm_id,
-                              type_id=go_dict['prov_term'].cvterm_id,
+                              type_id=go_dict['qualifier'].cvterm_id,
                               value=None)
 
     def load_bandinfo(self, key):

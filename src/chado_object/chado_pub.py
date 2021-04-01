@@ -825,7 +825,7 @@ class ChadoPub(ChadoObject):
             log.debug("removed {} Pub dbxref for {}.".format(count, key))
         else:
             if not self.process_data[key]['data']:
-                self.critical_error(item, "Must specify a value with !d.")
+                self.critical_error((key, None, 0,), "Must specify a value with !d.")
                 self.process_data[key]['data'] = None
                 return
             dbxref = self.session.query(PubDbxref).join(Pub).join(Dbxref).filter(Pub.pub_id == PubDbxref.pub_id,

@@ -161,6 +161,7 @@ GA30e:
     type: feature_relationship
     cv: relationship type
     cvterm: has_reg_region
+    #feat_type: ['engineered_region', 'gene'] # put back when we fix GA30
     feat_type: engineered_region
     subscript: False
 # 'GA30f', 'propagate_transgenic_uses',    #cv property type -- featureprop n/blank
@@ -287,14 +288,6 @@ GA888:  # made up to test GA888 missing in other yaml file (src/validation/yaml/
     # 'GA32a', 'is_obsolete',
     # 'GA32b', 'dissociate',
 
-    # 'GA28a', 'phenotype_comparison',
-    # 'GA28b', 'phenotype_comparison',
-    # 'GA28c', 'genetic_interaction_pheno',
-    # 'GA29a', 'phenotype_comparison',
-    # 'GA29b', 'phenotype_comparison',
-    # 'GA29c', 'xeno_interaction_pheno',
-
-    # 'GA21',  'phenotype_comparison',
 
 
     # 'GA22',  'interallele_comp',
@@ -314,8 +307,23 @@ GA888:  # made up to test GA888 missing in other yaml file (src/validation/yaml/
     # 'GA35', 'FlyBase miscellaneous CV'
     # ,    #feature_cvterm -- feature_cvtermprop type transgenic_product_class
     # 'GA36', 'disease_associated',    #cv property type -- featureprop y/blank
- 
-# Implemented bit never used. DIV came in to affect then.
+
+
+####################################################
+# Being revisited, so wait for new format tables etc
+####################################################
+    # 'GA28a', 'phenotype_comparison',
+    # 'GA28b', 'phenotype_comparison',
+    # 'GA28c', 'genetic_interaction_pheno',
+    # 'GA29a', 'phenotype_comparison',
+    # 'GA29b', 'phenotype_comparison',
+    # 'GA29c', 'xeno_interaction_pheno',
+
+    # 'GA21',  'phenotype_comparison',
+
+#########################################################
+# Implemented but never used. DIV came in to affect then.
+#########################################################
     # 'GA80a', 'fly_disease-implication_change', # feature_relationshipprop:- cv = 'feature_relationshipprop type', cvterm = 'fly_disease-implication_change'
     # 'GA80b', 'representative_isoform', # feature_relationship:- (cv = 'relationship type', cvterm = 'representative_isoform')
     # 'GA80c', 'other_disease-implication_change', # featureprop:- cv = 'property type', cvterm = 'other_disease-implication_change'
