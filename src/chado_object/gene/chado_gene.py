@@ -284,6 +284,36 @@ class ChadoGene(ChadoFeatureObject):
         """
         self.feature.is_obsolete = True
 
+    def process_go_dict(self, key, go_dict, values):
+        """Use go_dcit to genereate the chado relationships.
+
+        Params:
+           go_dict: <dict> values obtained from processing line
+           values: <dict> values includig default ones.
+        """
+        feat_cvterm, _ = get_or_create(self.session, FeatureCvterm,
+                                       feature_id=self.feature.feature_id,
+                                       cvterm_id=go_dict['gocvterm'].cvterm_id,
+                                       pub_id=self.pub.pub_id,
+                                       is_not=go_dict['is_not'])
+
+        values['evidence_code'] = go_dict['evidence_code']
+        values['provenance'] = go_dict['provenance']
+        for idx, cvname in enumerate(self.process_data[key]['prop_cvs']):
+            prop_cvterm_name = self.process_data[key]['prop_cvterms'][idx]
+            propcvterm = get_cvterm(self.session, cvname, prop_cvterm_name)
+
+            get_or_create(self.session, FeatureCvtermprop,
+                          feature_cvterm_id=feat_cvterm.feature_cvterm_id,
+                          type_id=propcvterm.cvterm_id,
+                          value=values[prop_cvterm_name])
+
+        if 'qualifier' in go_dict and go_dict['qualifier']:  # Extra prop for cvterm from quali stuff
+            get_or_create(self.session, FeatureCvtermprop,
+                          feature_cvterm_id=feat_cvterm.feature_cvterm_id,
+                          type_id=go_dict['qualifier'].cvterm_id,
+                          value=None)
+
     def load_gocvtermprop(self, key):
         """Load the cvterm props for GO lines.
 
@@ -322,29 +352,7 @@ class ChadoGene(ChadoFeatureObject):
                 for error in go_dict['error']:
                     self.critical_error(item, error)
                 continue
-            feat_cvterm, _ = get_or_create(self.session, FeatureCvterm,
-                                           feature_id=self.feature.feature_id,
-                                           cvterm_id=go_dict['gocvterm'].cvterm_id,
-                                           pub_id=self.pub.pub_id,
-                                           is_not=go_dict['is_not'])
-
-            log.debug("BOB: {}".format(go_dict))
-            values['evidence_code'] = go_dict['evidence_code']
-            values['provenance'] = go_dict['provenance']
-            for idx, cvname in enumerate(self.process_data[key]['prop_cvs']):
-                prop_cvterm_name = self.process_data[key]['prop_cvterms'][idx]
-                propcvterm = get_cvterm(self.session, cvname, prop_cvterm_name)
-
-                get_or_create(self.session, FeatureCvtermprop,
-                              feature_cvterm_id=feat_cvterm.feature_cvterm_id,
-                              type_id=propcvterm.cvterm_id,
-                              value=values[prop_cvterm_name])
-
-            if 'qualifier' in go_dict and go_dict['qualifier']:  # Extra prop for cvterm from quali stuff
-                get_or_create(self.session, FeatureCvtermprop,
-                              feature_cvterm_id=feat_cvterm.feature_cvterm_id,
-                              type_id=go_dict['qualifier'].cvterm_id,
-                              value=None)
+            self.process_go_dict(self, key, go_dict, values)
 
     def load_bandinfo(self, key):
         """Load the band info.

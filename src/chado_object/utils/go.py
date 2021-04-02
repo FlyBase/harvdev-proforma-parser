@@ -111,9 +111,10 @@ def check_dbxref(session, do_dict, dbname, accession, allowed_dbs=None):
 
     Params:
       session: <session object> sql session
+      do_dict: <dict> add ['error'] here if there is a problem.
       dbname: <string> db name
-      Accession: <string> ac cesion to check for the above db.
-
+      accession: <string> ac cesion to check for the above db.
+      allowed_dbs: <list> db names allowed to be used in evidence.
     Returns:
         symbol or None if problem with DB name.
 
@@ -123,7 +124,7 @@ def check_dbxref(session, do_dict, dbname, accession, allowed_dbs=None):
     if allowed_dbs and dbname not in allowed_dbs:
         do_dict['error'].append("Database '{}' not found in list of allowed dbs '{}'".format(dbname, allowed_dbs))
         return None
-    # Leave below in we may want to check thisa in thew python version.
+    # Leave below in we may want to check this in the python version.
     # try:
     #     db = session.query(Db).filter(Db.name == dbname).one()
     # except NoResultFound:
@@ -139,7 +140,17 @@ def check_dbxref(session, do_dict, dbname, accession, allowed_dbs=None):
 
 
 def get_symbols(session, do_dict, bits, allowed_dbs=[]):
-    """Get symbols."""
+    """Get symbols.
+
+    Params:
+      session: <session object> sql session
+      do_dict: <dict> add ['error'] here if there is a problem.
+      bits: <list> symbols/db:accs to process
+      allowed_dbs: <list> database names that are allowed.
+
+    Returns:
+       list of symbols.
+    """
     symbols = []
     at_pattern = '@([^@]+)@'
     db_pattern = r'(\S+):(\S+)'
@@ -170,8 +181,19 @@ def get_symbols(session, do_dict, bits, allowed_dbs=[]):
 
 def process_evidence(session, do_dict, evidence, allowed_codes=[], with_required=[], go_format=False,
                      allowed_dbs=[]):
-    """Process the evidence bit."""
-    log.debug("BOB: evidence is '{}' go_format is {}".format(evidence, go_format))
+    """Process the evidence bit.
+
+    Params:
+        session: <session object> sql session
+        do_dict: <dict> store for dta extracted and errors
+        evidence: <string> evidence line i.e. 'IMP with @bob@' or 'IDA'
+        allowed_codes: <list>  evidence codes that are allowed.
+        with_required: <list> evidence codes that require a with/by in the statement.
+        go_format: <bool> output in go format (Default if False).
+        allowed_dbs: <list> db names allowed to be used in evidence.
+    Returns:
+       dictionary of evidence data with errors if found.
+    """
     bits = evidence.split()
     do_dict['evidence_code'] = bits.pop(0)  # first element should be the code
     if allowed_codes and do_dict['evidence_code'] not in allowed_codes:
@@ -193,37 +215,12 @@ def process_evidence(session, do_dict, evidence, allowed_codes=[], with_required
     if with_required and do_dict['evidence_code'] not in with_required:
         do_dict['error'].append("{} does not allow 'with' or 'by'".format(do_dict['evidence_code']))
 
-    # So we have with or by. Check.
+    # If we reach here we have with or by. Check that.
     symbols = get_symbols(session, do_dict, bits, allowed_dbs)
-    # symbols = []
-    # at_pattern = '@([^@]+)@'
-    # db_pattern = '(\S+):(\S+)'
-    # for item in bits:
-    #     fields = re.search(at_pattern, item)
-    #     if not fields:
-    #         fields = re.search(db_pattern, item)
-    #         if not fields:
-    #             do_dict['error'].append("Only @symbol@ of DB:Acc allowed but here we have {}".format(item))
-    #             continue
-    #         symbols.append(check_dbxref(session, fields.group(1), fields.group(2)))
-    #     else:
-    #         symbol_name = fields.group(1)
-    #         try:
-    #             feature = feature_symbol_lookup(session, 'gene', symbol_name)
-    #         except NoResultFound:
-    #             do_dict['error'].append("Unable to lookup symbol {}".format(symbol_name))
-    #             continue
-    #         except MultipleResultsFound:
-    #             do_dict['error'].append("Non unique lookup for symbol {}".format(symbol_name))
-    #             continue
-    #         symbol_string = "FLYBASE:{}; FB:{}".format(symbol_name, feature.uniquename)
-    #         symbols.append(symbol_string)
 
     if not go_format and symbols:
         do_dict['evidence_code'] = "{} {} {}".format(do_dict['evidence_code'], code_quali, ', '.join(symbols))
     elif symbols:
-        log.debug("BOB: code_quali = {}".format(code_quali))
-        log.debug("BOB: symbols = {}".format(symbols))
         do_dict['evidence_code'] = "{} {} {}".format(code_to_string[do_dict['evidence_code']], code_quali, ', '.join(symbols))
     else:
         do_dict['evidence_code'] = do_dict['evidence_code']
@@ -231,6 +228,13 @@ def process_evidence(session, do_dict, evidence, allowed_codes=[], with_required
 
 def process_DO_line(session, line, cv_name, allowed_qualifiers, allowed_symbols, allowed_codes):
     """From string generate and validate DO.
+
+    Params:
+        session: <session object> sql session
+        line: <string> DO line (see Examples)
+        allowed_qualifiers: <list> qualifiers that are allowed.
+        allowed_symbols: <list> feature types the symbols are allowd to be.
+        allowed_codes: <list> codes allowed to be used in evidence.
 
     Examples:-
     1) Parkinson's disease ; DOID:14330 | CEA with @symbol-15@
@@ -269,7 +273,13 @@ def process_DO_line(session, line, cv_name, allowed_qualifiers, allowed_symbols,
 
 
 def process_provenance(go_dict, provenance, allowed_provenance):
-    """Check the provenance is legal."""
+    """Check the provenance is legal.
+
+    Params:
+        go_dict: <dict> Add provence and errors here.
+        provenance: <string> provenance db name to be checked.
+        allowed_provenance: <list> db names alloawed for provenance
+    """
     if not provenance:
         return
     provenance = provenance[:-1]  # remove the ':' at the end
@@ -280,10 +290,17 @@ def process_provenance(go_dict, provenance, allowed_provenance):
     go_dict['provenance'] = provenance
 
 
-def process_go(session, go_dict, go_name, go_code, go_comment, go_cv_name):
-    """Check the GO name and code match."""
+def process_go(session, go_dict, go_name, go_code, go_cv_name):
+    """Check the GO name and code match.
+
+    Params:
+      session: <session object> sql session
+      go_dict: <dict> store gocvterm and possible errors here.
+      go_name: <string> name of GO.
+      go_code: <string> code for GO.
+      go_cv_name: <string> cv name to look up GO cvterm with.
+    """
     # get cvterm using the cvterm name
-    log.debug("BOB: name:'{}' code:'{}' com:'{}' cv:'{}'".format(go_name, go_code, go_comment, go_cv_name))
     cvterm_name = go_name.strip()
     go_dict['gocvterm'] = cvterm = get_cvterm(session, go_cv_name, cvterm_name)
     # check the cvterm dbxref to make sure the gocode matches the accession
@@ -291,26 +308,18 @@ def process_go(session, go_dict, go_name, go_code, go_comment, go_cv_name):
     if gocode != cvterm.dbxref.accession:
         go_dict['error'].append("{} matches {} but lookup gives {} instead?".format(cvterm_name, gocode, cvterm.dbxref.accession))
 
-    # abbr = go_code.strip()
-    # try:
-    #     start_comment = code_to_string[abbr]
-    # except KeyError:
-    #     go_dict['error'].append("{} Not one of the list valid codes {}.".format(abbr, code_to_string.keys()))
-    #     start_comment = 'Not valid code'
-
-    # go_dict['value'] = start_comment
-    # if go_comment:
-    #     go_dict['value'] += ' ' + go_comment.strip()
-    # if not go_comment:  # can be an empty string some times no additional comments are given
-    #     return go_dict
-
-    # problem = check_for_valid_fbs(session, go_comment)
-    # if problem:
-    #     go_dict['error'].append(problem)
-
 
 def process_qualifier(session, go_dict, qualifier, quali_cvs, allowed_qualifiers):
-    """Check qualifier."""
+    """Check qualifier.
+
+    Params:
+      session: <session object> sql session
+      go_dict: <dict> store gocvterm and possible errors here
+      qualifier: <string> qualifier to be processed.
+      quali_cvs: <dict> qualifer name -> cv name to be used if not defualt.
+      allowed_qualifiers: <list> qualifiers that are allowed.
+
+    """
     if qualifier not in allowed_qualifiers:
         go_dict['error'].append("{} Not one of the allowed values {}". format(qualifier, allowed_qualifiers))
         return
@@ -322,7 +331,12 @@ def process_qualifier(session, go_dict, qualifier, quali_cvs, allowed_qualifiers
 
 
 def check_for_valid_fbs(session, end_comment):
-    """Check for valid features if they are in the string."""
+    """Check for valid features if they are in the string.
+
+    Params:
+      session: <session object> sql session
+      end_comment: <string> flybae symbols.
+     """
     # i.e. FLYBASE:symbol-35; FB:FBgn0000035
     problem = ""
     fields = re.search(r'FLYBASE:(.+)\s+;', end_comment)
@@ -420,11 +434,6 @@ def process_GO_line(session, line=None, cv_name=None, allowed_qualifiers=None,
                'qualifier': None,
                'is_not': False}
 
-    # remove below comments after fixed.
-    # 1) qualifier without  ':' in it (i.e. located_in)
-    # it is hard to have a regex to maybe get quali without a ':' so do this first.
-    # line = quali_checks(session, line, go_dict, allowed_qualifiers, quali_cvs)
-
     full_pattern = r"""
                 ^           # start of line
                 \s*         # possible leading spaces
@@ -467,36 +476,10 @@ def process_GO_line(session, line=None, cv_name=None, allowed_qualifiers=None,
 
     process_provenance(go_dict, fields.group(fpi['provenance']), allowed_provenances)
     process_qualifier(session, go_dict, fields.group(fpi['qualifier']), qualifier_cv_list, allowed_qualifiers)
-    process_go(session, go_dict, fields.group(fpi['go_name']), fields.group(fpi['go_code']), fields.group(fpi['evi_comment']), cv_name)
+    process_go(session, go_dict, fields.group(fpi['go_name']), fields.group(fpi['go_code']), cv_name)
     process_evidence(session, go_dict, fields.group(fpi['evi_comment']),
                      allowed_codes=[], with_required=with_evidence_code, go_format=True,
                      allowed_dbs=allowed_dbs)
 
     return go_dict
 
-
-# To be removed.
-def quali_checks(session, line, go_dict, allowed_qualifiers, quali_cvs):
-    """Process qualifiers at the start."""
-    # NOTE: We do not know the order in which the qualifiers are coming in so as we
-    #       are testing for the cvterm at the start of the string we may have to
-    #       repeat this step.
-    # NOTE: Cannot use it in any part as we may have things like HGNCL:contributes_to in
-    #       there so we need to make sure the cvterm is at the start of the string.
-    found = []
-    one_found = True
-    while (one_found):
-        one_found = False
-        for quali in allowed_qualifiers:
-            if line.startswith(quali):
-                q_cv_name = 'FlyBase miscellaneous CV'
-                if quali in quali_cvs:
-                    q_cv_name = quali_cvs[quali]
-                found.append(quali)
-                one_found = True
-                go_dict['prov_term'] = get_cvterm(session, q_cv_name, quali)
-                line = line.replace(quali, '')
-                line = line.lstrip()
-    if len(found) > 1:
-        go_dict['error'].append("Only 1 qualifier allowed. you specified many ({})".format(found))
-    return line
