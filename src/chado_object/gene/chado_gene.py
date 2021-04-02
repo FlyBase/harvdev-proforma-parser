@@ -37,7 +37,7 @@ class ChadoGene(ChadoFeatureObject):
     from chado_object.gene.gene_chado_check import (
         g26_format_error, g26_species_check, g26_gene_symbol_check, g26_dbxref_check,
         g26_check, g28a_check, g28b_check, g30_check, g31a_check, g31b_check,
-        g39a_check
+        g35_data_check, g39a_check
     )
 
     def __init__(self, params):
