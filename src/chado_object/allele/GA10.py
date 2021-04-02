@@ -197,7 +197,7 @@ def tp_part_process(self, item, cvterms, ti_object):
         self.warning_error(item, "Could not find Allele '{}' for the allele part of the ti")
 
     try:
-        # need diff oranism for TI BOB BOB BOB
+        # need diff oranism for TI.
         organism_id = None
         if tp_part_name.startswith('TI'):
             organism_id = get_organism(self.session, genus='synthetic', species='construct').organism_id

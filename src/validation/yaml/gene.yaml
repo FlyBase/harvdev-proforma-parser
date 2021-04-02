@@ -89,17 +89,14 @@ G24a:
     type: [list, string]
     required: False
     nullable: True
-    at_forbidden: True
 G24b:
     type: [list, string]
     required: False
     nullable: True
-    at_forbidden: True
 G24c:
     type: [list, string]
     required: False
     nullable: True
-    at_forbidden: True
 G24e:
     type: [list, string]
     required: False
