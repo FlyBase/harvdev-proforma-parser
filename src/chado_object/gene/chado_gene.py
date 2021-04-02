@@ -352,7 +352,7 @@ class ChadoGene(ChadoFeatureObject):
                 for error in go_dict['error']:
                     self.critical_error(item, error)
                 continue
-            self.process_go_dict(self, key, go_dict, values)
+            self.process_go_dict(key, go_dict, values)
 
     def load_bandinfo(self, key):
         """Load the band info.
