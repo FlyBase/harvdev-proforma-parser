@@ -482,4 +482,3 @@ def process_GO_line(session, line=None, cv_name=None, allowed_qualifiers=None,
                      allowed_dbs=allowed_dbs)
 
     return go_dict
-
