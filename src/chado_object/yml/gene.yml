@@ -142,6 +142,9 @@ G24b:
     qualifiers: ['contributes_to', 'enables']
     provenance_dbs: ['UniProtKB', 'FlyBase', 'BHF-UCL', 'GOC', 'HGNC', 'IntAct', 'InterPro',
                      'MGI', 'PINC', 'Reactome', 'RefGenome']
+    with_allowed: ['IGI', 'ISS', 'ISO', 'IPI', 'ISA', 'HGI']
+    allowed_symbols: ['gene']
+    allowed_dbs: ['MGI', 'PANTHER', 'UniProtKB', 'WB', 'SGD', 'RGD',' HGNC']
 G24c:
     type: GOcvtermprop
     cv: biological_process
@@ -150,6 +153,9 @@ G24c:
     qualifiers: ['involved_in', 'acts_upstream_of', 'acts_upstream_of_positive_effect', 'acts_upstream_of_negative_effect']
     provenance_dbs: ['UniProtKB', 'FlyBase', 'BHF-UCL', 'GOC', 'HGNC', 'IntAct', 'InterPro',
                      'MGI', 'PINC', 'Reactome', 'RefGenome']
+    with_allowed: ['IGI', 'ISS', 'ISO', 'IPI', 'ISA', 'HGI']
+    allowed_symbols: ['gene']
+    allowed_dbs: ['MGI', 'PANTHER', 'UniProtKB', 'WB', 'SGD', 'RGD',' HGNC']
 G24e:
     type: featureprop
     cv: property type
