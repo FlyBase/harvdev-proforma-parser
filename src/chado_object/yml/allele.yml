@@ -161,8 +161,7 @@ GA30e:
     type: feature_relationship
     cv: relationship type
     cvterm: has_reg_region
-#    feat_type: ['engineered_region', 'gene']
-    feat_type: engineered_region
+    feat_type: ['engineered_region', 'gene']
     subscript: False
 # 'GA30f', 'propagate_transgenic_uses',    #cv property type -- featureprop n/blank
 GA30f:

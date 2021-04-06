@@ -15,7 +15,7 @@ from chado_object.feature.chado_feature import ChadoFeatureObject
 from chado_object.utils.go import process_GO_line
 from harvdev_utils.chado_functions import (DataError, CodingError, feature_symbol_lookup,
                                            get_cvterm, get_dbxref, get_or_create)
-from harvdev_utils.production import (Feature, FeatureCvterm,
+from harvdev_utils.production import (Feature, FeatureCvterm, Cvterm, Cv,
                                       FeatureCvtermprop, FeatureDbxref, FeaturePub,
                                       FeatureRelationship, FeatureRelationshipPub,
                                       FeatureRelationshipprop,
@@ -62,13 +62,17 @@ class ChadoGene(ChadoFeatureObject):
                           'grpmember': self.load_grpmember,
                           'grpfeaturerelationship': self.load_gfr,
                           'featureprop': self.load_featureprop,
-                          'featurerelationship': self.load_feature_relationship}
+                          'featurerelationship': self.load_feature_relationship,
+                          'prop_date_change': self.ignore  # done as part ofGOcvtermprop
+                          }
 
         self.delete_dict = {'synonym': self.delete_synonym,
                             'cvtermprop': self.delete_feature_cvtermprop,
                             'featureprop': self.delete_featureprop,
                             'featurerelationship': self.delete_feature_relationship,
-                            'bandinfo': self.delete_bandinfo}
+                            'bandinfo': self.delete_bandinfo,
+                            'GOcvtermprop': self.delete_gocvtermprop,
+                            'prop_date_change': self.change_GO_date}
         self.proforma_start_line_number = params.get('proforma_start_line_number')
 
         ###########################################################
@@ -325,6 +329,10 @@ class ChadoGene(ChadoFeatureObject):
         values = {'date': datetime.today().strftime('%Y%m%d'),
                   'provenance': None,
                   'evidence_code': None}
+        if self.has_data('G24f'):
+            if len(self.process_data['G24f']['data'][FIELD_VALUE]) != 1:  # Not y or n
+                values['date'] = self.process_data['G24f']['data'][FIELD_VALUE]
+
         allowed_qualifiers = self.process_data[key]['qualifiers']
 
         # If a qualifier which is a cvterm is not linked to a cv of type 'FlyBase miscellaneous CV'
@@ -614,3 +622,52 @@ class ChadoGene(ChadoFeatureObject):
                     self.critical_error(item, message)
                     continue
         self.process_data[key]['data'] = None
+
+    def change_GO_date(self, key, bangc=None):
+        """Change Date for gocv terms, for this gene and pub.
+
+        Args:
+            key (string): Proforma field key
+            bangc (Bool, optional): True if bangc operation
+                                    False if bangd operation.
+                                    Default is None.
+        """
+        new_date = datetime.today().strftime('%Y%m%d')
+        if len(self.process_data[key]['data'][FIELD_VALUE]) != 1:  # Not y or n
+            new_date = self.process_data['G24f']['data'][FIELD_VALUE]
+
+        # Becouse G24[abc] may have no data when G24f is set
+        # we will have no acess to self.process_data[key]['cv'] So
+        # we will have to hard code it here!!!
+        for cvname in ('cellular_component', 'molecular_function', 'biological_process'):
+            feat_cvterms = self.session.query(FeatureCvterm).join(Cvterm).join(Cv).\
+                filter(FeatureCvterm.feature_id == self.feature.feature_id,
+                       FeatureCvterm.cvterm_id == Cvterm.cvterm_id,
+                       FeatureCvterm.pub_id == self.pub.pub_id,
+                       Cvterm.cv_id == Cv.cv_id,
+                       Cv.name == cvname)
+            for feat_cvterm in feat_cvterms:
+                feat_cvterm_prop = self.session.query(FeatureCvtermprop).join(Cvterm).\
+                    filter(FeatureCvtermprop.feature_cvterm_id == feat_cvterm.feature_cvterm_id,
+                           FeatureCvtermprop.type_id == Cvterm.cvterm_id,
+                           Cvterm.name == 'date')
+                for date_prop in feat_cvterm_prop:
+                    date_prop.value = new_date
+
+    def delete_gocvtermprop(self, key, bangc=None):
+        """Delete go cvterm data.
+
+        Args:
+            key (string): Proforma field key
+            bangc (Bool, optional): True if bangc operation
+                                    False if bangd operation.
+                                    Default is None.
+        """
+        feat_cvterms = self.session.query(FeatureCvterm).join(Cvterm).join(Cv).\
+            filter(FeatureCvterm.feature_id == self.feature.feature_id,
+                   FeatureCvterm.cvterm_id == Cvterm.cvterm_id,
+                   FeatureCvterm.pub_id == self.pub.pub_id,
+                   Cvterm.cv_id == Cv.cv_id,
+                   Cv.name == self.process_data[key]['cv'])
+        for feat_cvterm in feat_cvterms:
+            self.session.delete(feat_cvterm)
