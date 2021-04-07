@@ -108,8 +108,6 @@ G24f:
     nullable: True
     at_forbidden: True
     regex: ^(\d{8}|y|n)$ # YYYYMMDD or 'y' or 'n'
-    # required:- Yes, if any/all of G24a, G24b or G24c are filled in. Otherwise, no.
-    # yeed to add dependecies tothis to those when added
 G26:
     type: string
     required: False

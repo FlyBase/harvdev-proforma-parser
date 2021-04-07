@@ -162,10 +162,7 @@ G24e:
     cvterm: GO_internal_notes
     value: G24e
 G24f:
-    type: featureprop
-    cv: property type
-    cvterm: GO_review_date
-    only_one: True
+    type: prop_date_change
 G26:
     type: g26_prop
     cv: property type
