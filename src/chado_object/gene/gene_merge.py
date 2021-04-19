@@ -40,7 +40,8 @@ def transfer_synonyms(self, gene):
     for feat_syn in self.session.query(FeatureSynonym).filter(FeatureSynonym.feature_id == gene.feature_id):
         fs, _ = get_or_create(self.session, FeatureSynonym, synonym_id=feat_syn.synonym_id, feature_id=self.feature.feature_id,
                               pub_id=feat_syn.pub_id)
-        fs.is_current = False
+        if gene.name != self.feature.name:
+            fs.is_current = False
 
 
 def transfer_grpmembers(self, gene):

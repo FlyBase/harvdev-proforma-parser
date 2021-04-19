@@ -13,6 +13,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from chado_object.chado_base import FIELD_NAME, FIELD_VALUE, LINE_NUMBER
 from chado_object.feature.chado_feature import ChadoFeatureObject
 from chado_object.utils.go import process_GO_line
+from chado_object.utils.feature_synonym import fs_add_by_synonym_name_and_type
 from harvdev_utils.chado_functions import (DataError, CodingError, feature_symbol_lookup,
                                            get_cvterm, get_dbxref, get_or_create)
 from harvdev_utils.production import (Feature, FeatureCvterm, Cvterm, Cv,
@@ -135,6 +136,21 @@ class ChadoGene(ChadoFeatureObject):
                 self.critical_error(self.process_data[key]['data'],
                                     "No sub to deal type '{}' yet!! Report to HarvDev".format(key))
             self.type_dict[self.process_data[key]['type']](key)
+
+        if self.has_data('G1f'):
+            key = 'G1f'
+            fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
+                                            self.feature.name,
+                                            self.process_data[key]['cv'],
+                                            self.process_data[key]['cvterm'],
+                                            self.pub.pub_id
+                                            )
+            fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
+                                            self.feature.name,
+                                            self.process_data[key]['cv'],
+                                            self.process_data[key]['cvterm'],
+                                            self.get_unattrib_pub().pub_id
+                                            )
 
         timestamp = datetime.now().strftime('%c')
         curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short, timestamp)
