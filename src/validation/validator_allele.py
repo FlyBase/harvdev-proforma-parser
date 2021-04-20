@@ -64,9 +64,14 @@ class ValidatorAllele(Validator):
         """
         if not value:
             return
-        if re.search(r"@+.*@+", value) is not None:
-            return
-        self._error(field, 'Error {} @...@ is required.'.format(value))
+        if type(value) is list:
+            # cerberus can pass a list
+            list_of_vals = value
+        else:
+            list_of_vals = [value]
+        for item in list_of_vals:
+            if re.search(r"@+.*@+", item) is None:
+                self._error(field, 'Error {} @...@ is required.'.format(item))
 
     def _validate_genomic_location_format(self, required, field, value):
         """

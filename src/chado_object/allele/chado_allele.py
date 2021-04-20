@@ -53,9 +53,11 @@ class ChadoAllele(ChadoFeatureObject):
                           'GA90': self.GA90_process,
                           'GA10_feature_relationship': self.GA10_feat_rel,
                           'featureprop': self.load_featureprop,
+                          'GA12a_featureprop': self.GA12a_featureprop,
                           'synonym': self.load_synonym,
                           'ignore': self.ignore}
         self.delete_dict = {'featureprop': self.delete_featureprop,
+                            'GA12a_featureprop': self.GA12a_featureprop_delete,
                             'synonym': self.delete_synonym,
                             'ignore': self.ignore}
 
@@ -391,3 +393,26 @@ class ChadoAllele(ChadoFeatureObject):
         for postfix in "defghj":  # straight forward featureprops
             self.load_featureprop("GA90{}".format(postfix))
         self.feature = allele
+
+    def GA12a_featureprop(self, key):
+        """GA12a add featureprop."""
+        if not self.has_data(key):
+            return
+        for item in self.process_data[key]['data']:
+            cvterm = None
+            for idx, allowed in enumerate(self.process_data[key]['allowed_starts']):
+                if (item[FIELD_VALUE].startswith(allowed)):
+                    cvterm_name = self.process_data[key]['allowed_cvterms'][idx]
+                    cvterm = get_cvterm(self.session, self.process_data[key]['cv'], cvterm_name)
+            if not cvterm:
+                self.critical_error("Must start with one of {}".format(self.process_data[key]['allowed_starts']))
+                continue
+            fp, is_new = get_or_create(self.session, Featureprop, feature_id=self.feature.feature_id,
+                                       type_id=cvterm.cvterm_id, value=item[FIELD_VALUE])
+            fpp, is_new = get_or_create(self.session, FeaturepropPub, featureprop_id=fp.featureprop_id, pub_id=self.pub.pub_id)
+
+    def GA12a_featureprop_delete(self, key, bangc=False):
+        """Delete GA12 feature props."""
+        for name in self.process_data[key]['allowed_cvterms']:
+            self.process_data[key]['cvterm'] = name
+            self.delete_featureprop(key, bangc=bangc)
