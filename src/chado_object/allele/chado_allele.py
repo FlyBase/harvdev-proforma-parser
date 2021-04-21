@@ -47,6 +47,7 @@ class ChadoAllele(ChadoFeatureObject):
 
         # yaml file defines what to do with each field. Follow the light
         self.type_dict = {'cvtermprop': self.load_feature_cvtermprop,
+                          'merge': self.merge,
                           'cvterm': self.load_feature_cvterm,
                           'DOcvtermprop': self.load_do,
                           'feature_relationship': self.load_feature_relationship,
@@ -147,6 +148,23 @@ class ChadoAllele(ChadoFeatureObject):
             self.type_dict[self.process_data[key]['type']](key)
 
         return self.feature
+
+    def merge(self, key):
+        """Merge alleles."""
+        log.debug(self.feature)
+        # change the pub
+        self.feature.pub_id = self.pub.pub_id
+
+        alleles = self.get_merge_features(key, 'allele')
+        for allele in alleles:
+            log.debug("Allele to be merged is {}".format(allele))
+            allele.is_obsolete = True
+            # Transfer synonyms
+            self.transfer_synonyms(allele)
+            # Transfer cvterms
+            self.transfer_cvterms(allele)
+            # Transfer dbxrefs
+            self.transfer_dbxrefs(allele)
 
     def get_allele(self):
         """Get initial allele and check."""

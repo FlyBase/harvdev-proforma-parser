@@ -6,6 +6,16 @@ GA1b:
     type: string
     required: False
     nullable: True
+GA1f:
+    type: [string, list]
+    required: False
+    nullable: True
+    no_bangc: True
+    excludes: [GA1e, GA2c]
+GA1g:
+    type: string
+    required: True
+    allowed: [y,n]
 GA2a:
     type: string
     required: False
@@ -14,10 +24,6 @@ GA2b:
     type: string
     required: False
     nullable: True
-GA1g:
-    type: string
-    required: True
-    allowed: [y,n]
 GA4:
     type: string
     required: False
