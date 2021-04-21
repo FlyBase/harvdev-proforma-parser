@@ -34,7 +34,7 @@ class ChadoFeatureObject(ChadoObject):
         check_at_symbols_exist, check_bad_starts
     )
     from chado_object.feature.feature_merge import (
-        get_merge_features, multiple_check, transfer_dbxrefs, transfer_synonyms
+        get_merge_features, multiple_check, transfer_cvterms, transfer_dbxrefs, transfer_synonyms
     )
 
     def __init__(self, params):

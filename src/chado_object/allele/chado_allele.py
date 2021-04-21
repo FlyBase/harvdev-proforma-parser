@@ -155,7 +155,7 @@ class ChadoAllele(ChadoFeatureObject):
         # change the pub
         self.feature.pub_id = self.pub.pub_id
 
-        alleles = self.get_merge_features(key, 'allele')
+        alleles = self.get_merge_features(key, feat_type='allele')
         for allele in alleles:
             log.debug("Allele to be merged is {}".format(allele))
             allele.is_obsolete = True

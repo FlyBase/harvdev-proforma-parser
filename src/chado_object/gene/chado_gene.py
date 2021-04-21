@@ -32,7 +32,7 @@ class ChadoGene(ChadoFeatureObject):
 
     from chado_object.gene.gene_merge import (
         merge, transfer_grpmembers,
-        transfer_hh_dbxrefs, transfer_cvterms
+        transfer_hh_dbxrefs
     )
 
     from chado_object.gene.gene_chado_check import (
