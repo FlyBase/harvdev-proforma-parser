@@ -9,6 +9,7 @@ cache: pip
 
 before_install:
   # Pull down our images from Dockerhub.
+  - echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
   - docker pull busybox  # A very small image used for copying files to our volume.
   - docker pull flybase/proformatestdb
   - docker pull flybase/harvdev-docker
