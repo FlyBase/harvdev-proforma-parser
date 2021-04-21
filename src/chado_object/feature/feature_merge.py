@@ -1,4 +1,12 @@
-"""Gane and Allele merging methods."""
+"""Gane and Allele merging methods.
+
+:synopsis: merge features.
+
+:moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>, Ian Longden <ilongden@morgan.harvard.edu>
+
+NOTE: transfer methods do not transfer but merely copy to the new feature.
+      Old features are made obsolete that is all.
+"""
 from chado_object.chado_base import FIELD_VALUE
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from harvdev_utils.chado_functions import (
