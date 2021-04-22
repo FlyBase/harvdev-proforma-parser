@@ -15,14 +15,96 @@ from harvdev_utils.chado_functions import (
     synonym_name_details
 )
 from harvdev_utils.production import (
-    FeatureDbxref, Featureloc, FeatureSynonym, FeatureCvterm
+    FeatureDbxref, Featureloc, FeatureSynonym, FeatureCvterm,
+    FeatureRelationship, FeatureRelationshipPub,
+    FeatureRelationshipprop, FeatureRelationshippropPub
 )
 import logging
 log = logging.getLogger(__name__)
 
 
+def process_feat_relation_dependents(self, old_feat_rela, new_feat_rela):
+    """Add feature relationship (_pub, prop, prop_pub).
+
+    Args:
+        old_feat_rela: <FeatureRelationship> old featurerelatiosnhip to copy from
+        new_feat_rela: <FeatureRelationship> to be copied too.
+
+    The following are related to the feature relationship so need to be transferered.
+
+    public | feature_relationship_pub                                        | table    | postgres
+    public | feature_relationshipprop                                        | table    | postgres
+    public | feature_relationshipprop_pub                                    | table    | postgres
+
+    """
+    # _pub
+    frpubs = self.session.query(FeatureRelationshipPub).\
+        filter(FeatureRelationshipPub.feature_relationship_id == old_feat_rela.feature_relationship_id)
+    for frpub in frpubs:
+        get_or_create(
+            self.session, FeatureRelationshipPub,
+            feature_relationship_id=new_feat_rela.feature_relationship_id,
+            pub_id=frpub.pub_id)
+    # prop
+    frprops = self.session.query(FeatureRelationshipprop).\
+        filter(FeatureRelationshipprop.feature_relationship_id == old_feat_rela.feature_relationship_id)
+    for old_frprop in frprops:
+        new_frprop, _ = get_or_create(
+            self.session, FeatureRelationshipprop,
+            feature_relationship_id=new_feat_rela.feature_relationship_id,
+            type_id=old_frprop.type_id,
+            value=old_frprop.value)
+        # prop_pub
+        old_frp_pubs = self.session.query(FeatureRelationshippropPub).\
+            filter(FeatureRelationshippropPub.feature_relationshipprop_id == old_frprop.feature_relationshipprop_id)
+        for old_frp_pub in old_frp_pubs:
+            get_or_create(
+                self.session, FeatureRelationshippropPub,
+                feature_relationshipprop_id=new_frprop.feature_relationshipprop_id,
+                pub_id=new_frprop.pub_id)
+
+
+def transfer_feature_relationships(self, feat):
+    """Transfer Feature Relationships.
+
+    Args:
+        feat: <Feature> old feature to copy from
+    Copied to self.feature (the new feature)
+
+    public | feature_relationship                                            | table    | postgres
+    public | feature_relationship_pub                                        | table    | postgres
+    public | feature_relationshipprop                                        | table    | postgres
+    public | feature_relationshipprop_pub                                    | table    | postgres
+
+    """
+    for old_feat_is_object in (True, False):
+        if old_feat_is_object:
+            filter_spec = (FeatureRelationship.object_id == feat.feature_id,)
+        else:
+            filter_spec = (FeatureRelationship.subject_id == feat.feature_id,)
+
+        old_feat_relas = self.session.query(FeatureRelationship).filter(*filter_spec)
+        for old_feat_rela in old_feat_relas:
+            if old_feat_is_object:
+                object_id = self.feature.feature_id
+                subject_id = old_feat_rela.subject_id
+            else:
+                subject_id = self.feature.feature_id
+                object_id = old_feat_rela.object_id
+            new_feat_rela, _ = get_or_create(
+                self.session, FeatureRelationship,
+                subject_id=subject_id, object_id=object_id,
+                value=old_feat_rela.value, type_id=old_feat_rela.type_id)
+            self.process_feat_relation_dependents(old_feat_rela, new_feat_rela)
+
+
 def transfer_cvterms(self, feat):
-    """Transfer feature cvterms."""
+    """Transfer feature cvterms.
+
+    Args:
+        feat: <Feature> old feature to copy from
+    Copied to self.feature (the new feature)
+    """
     for feat_cvterm in self.session.query(FeatureCvterm).filter(FeatureCvterm.feature_id == feat.feature_id):
         get_or_create(self.session, FeatureCvterm, feature_id=self.feature.feature_id, cvterm_id=feat_cvterm.cvterm_id,
                       pub_id=feat_cvterm.pub_id)
@@ -30,6 +112,10 @@ def transfer_cvterms(self, feat):
 
 def transfer_dbxrefs(self, feat):
     """Transfer dbxref from feat to self.feature.
+
+    Args:
+        feat: <Feature> old feature to copy from
+    Copied to self.feature (the new feature)
 
     If dbxref is from a Flybase db then we want move it to the merge
     feat and set is_current to False.
@@ -46,7 +132,12 @@ def transfer_dbxrefs(self, feat):
 
 
 def transfer_synonyms(self, feat):
-    """Create new feature synonyms and make is_current True."""
+    """Create new feature synonyms and make is_current True.
+
+    Args:
+        feat: <Feature> old feature to copy from
+    Copied to self.feature (the new feature)
+    """
     for feat_syn in self.session.query(FeatureSynonym).filter(FeatureSynonym.feature_id == feat.feature_id):
         fs, _ = get_or_create(self.session, FeatureSynonym, synonym_id=feat_syn.synonym_id, feature_id=self.feature.feature_id,
                               pub_id=feat_syn.pub_id)
@@ -55,13 +146,22 @@ def transfer_synonyms(self, feat):
 
 
 def multiple_check(self, feats, feat_type, merge_feat_symbol, merge_feat_symbol_tuple, organism):
-    """Check if multiple values is okay."""
+    """Check if multiple values is okay.
+
+    Args:
+        feats: <list of Features> old features to check
+        feat_type: <str> feature type name
+        merge_feat_symbol: <str> symbol name
+        merge_feat_symbol_tuple: <tuple> proforma (field, value, bangc)
+        organism: <Organism> orgainsm to use
+    """
     message = "Multiple results found for type: '{}' name: '{}'".format(feat_type, merge_feat_symbol)
     features = feature_symbol_lookup(self.session, feat_type, merge_feat_symbol,
                                      organism_id=organism.organism_id, check_unique=False)
     count = -1
     for feature in features:
-        if 'temp' in feature.uniquename:  # For merging we have new teml gene/allele and the original with possibly the same synonym
+        # For merging we have new temp gene/allele and the original with possibly the same synonym
+        if 'temp' in feature.uniquename:
             count += 1
             message += "\n\tfound: {}".format(feature)
         else:
@@ -77,7 +177,11 @@ def get_merge_features(self, key, feat_type='gene'):
 
     Get genes/allels to be merged and do some checks.
 
-    Returns: list of valid feature objects to be merged.
+    Args:
+        key: <str> proforma merge key (i.e. GA1f, G1f)
+        feat_type: <str> feature type
+    Returns:
+        list of valid feature objects to be merged.
 
     Raise: Critical errors on:-
         If G[A]1g = 'y' then G[A]1a (self.feature now) MUST be in G[A]1f list.
