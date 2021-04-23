@@ -15,7 +15,7 @@ from harvdev_utils.chado_functions import (
     synonym_name_details
 )
 from harvdev_utils.production import (
-    FeatureDbxref, Featureloc, FeatureSynonym, FeatureCvterm,
+    FeatureDbxref, Featureloc, FeatureSynonym, FeatureCvterm, FeatureCvtermprop,
     FeatureRelationship, FeatureRelationshipPub,
     FeatureRelationshipprop, FeatureRelationshippropPub
 )
@@ -106,8 +106,11 @@ def transfer_cvterms(self, feat):
     Copied to self.feature (the new feature)
     """
     for feat_cvterm in self.session.query(FeatureCvterm).filter(FeatureCvterm.feature_id == feat.feature_id):
-        get_or_create(self.session, FeatureCvterm, feature_id=self.feature.feature_id, cvterm_id=feat_cvterm.cvterm_id,
-                      pub_id=feat_cvterm.pub_id)
+        new_cv, _ = get_or_create(self.session, FeatureCvterm, feature_id=self.feature.feature_id, cvterm_id=feat_cvterm.cvterm_id,
+                                  pub_id=feat_cvterm.pub_id)
+        for cvprop in self.session.query(FeatureCvtermprop).filter(FeatureCvtermprop.feature_cvterm_id == feat_cvterm.feature_cvterm_id):
+            get_or_create(self.session, FeatureCvtermprop, feature_cvterm_id=cvprop.feature_cvterm_id,
+                          type_id=cvprop.type_id, value=cvprop.value)
 
 
 def transfer_dbxrefs(self, feat):
@@ -148,6 +151,9 @@ def transfer_synonyms(self, feat):
 def multiple_check(self, feats, feat_type, merge_feat_symbol, merge_feat_symbol_tuple, organism):
     """Check if multiple values is okay.
 
+    Make sure the synonym os found only once. It may exist again as a 'temp' but this is okay,
+    as that means it is a newly created synonym and the old one will be removed at the end.
+
     Args:
         feats: <list of Features> old features to check
         feat_type: <str> feature type name
@@ -161,10 +167,9 @@ def multiple_check(self, feats, feat_type, merge_feat_symbol, merge_feat_symbol_
     count = -1
     for feature in features:
         # For merging we have new temp gene/allele and the original with possibly the same synonym
-        if 'temp' in feature.uniquename:
+        if 'temp' not in feature.uniquename:
             count += 1
             message += "\n\tfound: {}".format(feature)
-        else:
             feats.append(feature)
             feat = feature
     if count:
@@ -190,7 +195,7 @@ def get_merge_features(self, key, feat_type='gene'):
     """
     feats = []
     found = False
-    featlock_count = 0
+    featloc_count = 0
     # Check gene from G[A]1a (self.feature) is in the list to be merged
     for merge_feat_symbol_tuple in self.process_data[key]['data']:
         merge_feat_symbol = merge_feat_symbol_tuple[FIELD_VALUE]
@@ -208,11 +213,11 @@ def get_merge_features(self, key, feat_type='gene'):
             found = True
         # Not allowed to merge feats with featureloc
         if self.session.query(Featureloc).filter(Featureloc.feature_id == feat.feature_id).one_or_none():
-            featlock_count += 1
+            featloc_count += 1
 
     if self.session.query(Featureloc).filter(Featureloc.feature_id == self.feature.feature_id).one_or_none():
-        featlock_count += 1
-    if featlock_count > 1:
+        featloc_count += 1
+    if featloc_count > 1:
         message = "More than one {} has featureloc which is not allowed in merges.".format(feat_type)
         self.critical_error(merge_feat_symbol_tuple, message)
 
