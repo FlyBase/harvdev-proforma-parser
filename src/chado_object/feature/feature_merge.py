@@ -109,7 +109,7 @@ def transfer_cvterms(self, feat):
         new_cv, _ = get_or_create(self.session, FeatureCvterm, feature_id=self.feature.feature_id, cvterm_id=feat_cvterm.cvterm_id,
                                   pub_id=feat_cvterm.pub_id)
         for cvprop in self.session.query(FeatureCvtermprop).filter(FeatureCvtermprop.feature_cvterm_id == feat_cvterm.feature_cvterm_id):
-            get_or_create(self.session, FeatureCvtermprop, feature_cvterm_id=cvprop.feature_cvterm_id,
+            get_or_create(self.session, FeatureCvtermprop, feature_cvterm_id=new_cv.feature_cvterm_id,
                           type_id=cvprop.type_id, value=cvprop.value)
 
 
