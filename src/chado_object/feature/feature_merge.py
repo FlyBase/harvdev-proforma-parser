@@ -125,14 +125,13 @@ def transfer_dbxrefs(self, feat):
 
     Else we want to copy the dbxref.
     """
-    # copy feature's dbxref to dbxref table
-    featdbx, _ = get_or_create(self.session, FeatureDbxref, dbxref_id=feat.dbxref_id, feature_id=self.feature.feature_id)
-    featdbx.is_current = False
-
     for featdbx in self.session.query(FeatureDbxref).filter(FeatureDbxref.feature_id == feat.feature_id):
         fd, _ = get_or_create(self.session, FeatureDbxref,
                               dbxref_id=featdbx.dbxref.dbxref_id, feature_id=self.feature.feature_id)
-        fd.is_current = featdbx.is_current
+        if fd.dbxref.db.name == 'FlyBase':
+            fd.is_current = False
+        else:
+            fd.is_current = featdbx.is_current
 
 
 def transfer_synonyms(self, feat):
