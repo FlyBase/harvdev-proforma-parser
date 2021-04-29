@@ -31,8 +31,8 @@ class ChadoGene(ChadoFeatureObject):
     """ChadoGene object."""
 
     from chado_object.gene.gene_merge import (
-        merge, get_merge_genes, transfer_dbxrefs, transfer_synonyms, transfer_grpmembers,
-        transfer_hh_dbxrefs, transfer_cvterms
+        merge, transfer_grpmembers,
+        transfer_hh_dbxrefs
     )
 
     from chado_object.gene.gene_chado_check import (
