@@ -253,16 +253,21 @@ class ChadoAllele(ChadoFeatureObject):
         feature, is_new = get_or_create(self.session, Feature, name=name,
                                         type_id=feat_type_cvterm.cvterm_id, uniquename=name,
                                         organism_id=self.feature.organism.organism_id)
+
         if is_new and not new_allowed:
             message = "Feature of type {} and name {} not found and create_new_feat not set.".format(feat_type_cvterm.name, name)
             self.critical_error(self.process_data[key]['data'], message)
             return None, is_new
+
+        # add feature pub
+        get_or_create(self.session, FeaturePub, feature_id=feature.feature_id, pub_id=self.pub.pub_id)
+
         return feature, is_new
 
     def get_GA90_position(self):
         """Get GA90 position data."""
         position = {'arm': None,
-                    'strand': 1,
+                    'strand': 0,
                     'addfeatureloc': True}
         # check with BEV can we have GA90a without a position?
 
@@ -324,6 +329,8 @@ class ChadoAllele(ChadoFeatureObject):
         if self.has_data('GA90i'):
             if self.process_data['GA90i']['data'][FIELD_VALUE] == '-':
                 position['strand'] = -1
+            else:
+                position['strand'] = 1
 
         # convert arm name to feature
         arm_type_id = self.cvterm_query(self.process_data[key]['arm_cv'], self.process_data[key]['arm_cvterm'])
