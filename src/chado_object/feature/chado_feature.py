@@ -78,9 +78,9 @@ class ChadoFeatureObject(ChadoObject):
                                              type_id=cvterm.cvterm_id, uniquename='FB{}:temp_0'.format(unique_bit),
                                              organism_id=organism.organism_id)
         if is_new:
-            self.feature.new = True
+            self.is_new = True
         else:
-            self.feature.new = False
+            self.is_new = False
 
     def load_feature(self, feature_type='gene'):
         """Get feature.
@@ -111,7 +111,22 @@ class ChadoFeatureObject(ChadoObject):
         merge_key = '{}1f'.format(supported_features[feature_type][CODE])
         id_key = '{}1h'.format(supported_features[feature_type][CODE])
         current_key = '{}1g'.format(supported_features[feature_type][CODE])
+        rename_key = '{}1e'.format(supported_features[feature_type][CODE])
 
+        if self.has_data(rename_key):
+            self.feature = feature_symbol_lookup(self.session, supported_features[feature_type][SO], self.process_data[rename_key]['data'][FIELD_VALUE])
+            self.warning_error(self.process_data[rename_key]['data'], str(self.feature))
+            self.feature.name = self.process_data[symbol_key]['data'][FIELD_VALUE]
+            self.warning_error(self.process_data[rename_key]['data'], str(self.feature))
+            self.is_new = False
+            fs_remove_current_symbol(self.session, self.feature.feature_id,
+                                     cv_name='synonym type', cvterm_name='symbol')
+            # We do not want to reset synonyms etc later so mask
+            self.process_data[rename_key]['data'] = None
+
+            self.load_synonym(symbol_key, cvterm_name='fullname', overrule_removeold=True)
+            self.load_synonym(symbol_key, unattrib=True)
+            return
         if self.has_data(merge_key):  # if feature merge we want to create a new feature even if one exist already
             self._get_feature(supported_features[feature_type][SO], symbol_key, supported_features[feature_type][UNIQUE])
             self.load_synonym(symbol_key, cvterm_name='fullname')
@@ -126,7 +141,7 @@ class ChadoFeatureObject(ChadoObject):
                                                                   self.process_data[id_key]['data'][FIELD_VALUE],
                                                                   self.process_data[symbol_key]['data'][FIELD_VALUE],
                                                                   type_name=supported_features[feature_type][SO])
-                self.feature.new = False
+                self.is_new = False
             except DataError as e:
                 self.critical_error(self.process_data[id_key]['data'], e.error)
 
@@ -136,7 +151,7 @@ class ChadoFeatureObject(ChadoObject):
             #  organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['G1a']['data'][FIELD_VALUE])
             try:
                 self.feature = feature_symbol_lookup(self.session, supported_features[feature_type][SO], self.process_data[symbol_key]['data'][FIELD_VALUE])
-                self.feature.new = False
+                self.is_new = False
             except MultipleResultsFound:
                 message = "Multiple {}'s with symbol {}.".format(feature_type, self.process_data[symbol_key]['data'][FIELD_VALUE])
                 log.info(message)
@@ -172,7 +187,7 @@ class ChadoFeatureObject(ChadoObject):
             return pub_id
         return self.pub.pub_id
 
-    def load_synonym(self, key, unattrib=True, cvterm_name=None):
+    def load_synonym(self, key, unattrib=True, cvterm_name=None, overrule_removeold=False):
         """Load Synonym.
 
         yml options:
@@ -188,7 +203,10 @@ class ChadoFeatureObject(ChadoObject):
             unattrib (Bool): Add another unattributed synonym pub .
             cvterm_name (string, optional): cv synonym name, obtained from
                                             if not passed.
+            overrule_removeold (Bool): wether to overrule the yml remove_old and do not do it.
         """
+        if not self.has_data(key):
+            return
         cv_name = self.process_data[key]['cv']
         if not cvterm_name:
             cvterm_name = self.process_data[key]['cvterm']
@@ -201,8 +219,10 @@ class ChadoFeatureObject(ChadoObject):
                 pubs.append(unattrib_pub_id)
 
         # remove the current symbol if is_current is set and yaml says remove old is_current
-        if 'remove_old' in self.process_data[key] and self.process_data[key]['remove_old']:
-            fs_remove_current_symbol(self.session, self.feature.feature_id, cv_name, cvterm_name, pub_id)
+        # ecxcept if over rule is passed.
+        if not overrule_removeold:
+            if 'remove_old' in self.process_data[key] and self.process_data[key]['remove_old']:
+                fs_remove_current_symbol(self.session, self.feature.feature_id, cv_name, cvterm_name)
 
         # add the new synonym
         if type(self.process_data[key]['data']) is list:

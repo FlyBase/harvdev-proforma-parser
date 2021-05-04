@@ -30,6 +30,7 @@ G1a:  # Main gene symbol to be used. Processed first and seperately
     cvterm: symbol
     is_current: True
     add_unattributed_paper: True
+    remove_old: True
 G1b:
     type: synonym
     cv: synonym type
@@ -39,7 +40,8 @@ G1e:
     type: synonym
     cv: synonym type
     cvterm: symbol
-    is_current: False
+    is_current: True
+    add_unattributed_paper: True
 G1f:
     type: merge
     cv: synonym type
