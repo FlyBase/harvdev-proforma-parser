@@ -115,9 +115,7 @@ class ChadoFeatureObject(ChadoObject):
 
         if self.has_data(rename_key):
             self.feature = feature_symbol_lookup(self.session, supported_features[feature_type][SO], self.process_data[rename_key]['data'][FIELD_VALUE])
-            self.warning_error(self.process_data[rename_key]['data'], str(self.feature))
             self.feature.name = self.process_data[symbol_key]['data'][FIELD_VALUE]
-            self.warning_error(self.process_data[rename_key]['data'], str(self.feature))
             self.is_new = False
             fs_remove_current_symbol(self.session, self.feature.feature_id,
                                      cv_name='synonym type', cvterm_name='symbol')
