@@ -100,8 +100,7 @@ class ChadoFeatureObject(ChadoObject):
         UNIQUE = 1
         SO = 2
         supported_features = {'gene': ['G', 'gn', 'gene'],
-                              'allele': ['GA', 'al', 'allele'],
-                              'aberration': ['A', 'ti', 'transposon']}
+                              'allele': ['GA', 'al', 'allele']}
 
         if feature_type not in supported_features:
             message = "Unsupported feature type '{}' used in load_feature call. Coding error.".format(feature_type)
