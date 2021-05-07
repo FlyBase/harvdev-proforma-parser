@@ -101,7 +101,7 @@ def fs_add_by_synonym_name_and_type(session, feature_id, synonym_name, cv_name, 
     return fs
 
 
-def fs_remove_current_symbol(session, feature_id, cv_name, cvterm_name, pub_id):
+def fs_remove_current_symbol(session, feature_id, cv_name, cvterm_name):
     """Remove is_current for this feature_synonym.
 
     Make the current symbol for this feature is_current=False.
@@ -119,8 +119,6 @@ def fs_remove_current_symbol(session, feature_id, cv_name, cvterm_name, pub_id):
 
         cvterm_name (str):  cvterm name to get type of synonym
 
-        pub_id (int): chado pub_id.
-
     Returns: Null
 
     Raises:
@@ -131,17 +129,16 @@ def fs_remove_current_symbol(session, feature_id, cv_name, cvterm_name, pub_id):
         raise CodingError("HarvdevError: Could not find cvterm '{}' for cv {}".format(cvterm_name, cv_name))
 
     try:
-        fs = session.query(FeatureSynonym).join(Synonym).\
+        fss = session.query(FeatureSynonym).join(Synonym).\
             filter(FeatureSynonym.feature_id == feature_id,
-                   # FeatureSynonym.pub_id == pub_id,
                    Synonym.type_id == cvterm.cvterm_id,
-                   FeatureSynonym.is_current == 't').one()
-        fs.is_current = False
+                   FeatureSynonym.is_current == 't')
+        for fs in fss:
+            fs.is_current = False
     except MultipleResultsFound:
         log.error("More than one result for feature id = {}".format(feature_id))
         fss = session.query(FeatureSynonym).join(Synonym).\
             filter(FeatureSynonym.feature_id == feature_id,
-                   # FeatureSynonym.pub_id == pub_id,
                    Synonym.type_id == cvterm.cvterm_id,
                    FeatureSynonym.is_current == 't')
         for fs in fss:

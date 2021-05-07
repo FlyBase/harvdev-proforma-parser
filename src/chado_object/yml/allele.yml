@@ -20,6 +20,12 @@ GA1b:
     cv: synonym type
     cvterm: symbol
     is_current: False
+# 'GA1e',  'symbol',
+GA1e:
+    type: synonym
+    cv: synonym type
+    cvterm: symbol
+    is_current: False
 # 'GA1f',  'merge',
 GA1f:
     type: merge
@@ -313,7 +319,6 @@ GA90k: # processed with GA90a
     type: ignore
 GA888:  # made up to test GA888 missing in other yaml file (src/validation/yaml/allele.yaml)
     type: ignore
-    # 'GA1e',  'symbol',
     # 'GA2c',  'fullname',
     # 'GA31',  'etymology',                       #feaureprop
     # 'GA32a', 'is_obsolete',

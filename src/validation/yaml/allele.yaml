@@ -6,6 +6,11 @@ GA1b:
     type: string
     required: False
     nullable: True
+GA1e:
+    type: string
+    required: False
+    nullable: True
+    no_bangc: True
 GA1f:
     type: [string, list]
     required: False

@@ -273,7 +273,8 @@ def g30_check(self, key):
     """
     if self.process_data['G1g']['data'][FIELD_VALUE] == 'y':
         return
-    if self.feature.new and not self.has_data(key):
+
+    if self.is_new and not self.has_data(key):
         for rename in ['G1f', 'G2c', 'G1e']:
             if rename in self.process_data and len(self.process_data[rename]):
                 return
