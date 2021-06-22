@@ -1,8 +1,3 @@
-CH1f:
-  type: string
-  required: True
-  regex: ^(FBch\d{7}|new)$
-  no_bangc: True
 CH1a:
   # bangc permitted.
   type: string
@@ -13,6 +8,16 @@ CH1b:
   type: [list, string]
   required: False
   nullable: True
+CH1c:
+  type: string
+  required: False
+  allowed: [y]
+  nullable: True
+CH1f:
+  type: string
+  required: True
+  regex: ^(FBch\d{7}|new)$
+  no_bangc: True
 CH3a:
   type: string
   required: True

@@ -23,6 +23,8 @@ from harvdev_utils.chado_functions import (
 from datetime import datetime
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 import logging
+
+from harvdev_utils.production.production import FeaturePub
 log = logging.getLogger(__name__)
 
 
@@ -843,3 +845,29 @@ class ChadoFeatureObject(ChadoObject):
                 elif not f_syn_count:
                     self.critical_error(data, 'Synonym {} Does not exist for this Feature that is not current.'.format(data[FIELD_VALUE]))
                     continue
+
+    def dissociate_from_pub(self, key):
+        """Dissociate feature from pub"""
+        if not self.has_data(key):
+            return
+        if 'del_feature_on_last_ref' in self.process_data[key]:
+            remove_if_last = self.process_data[key]['del_feature_on_last_ref']
+        else:
+            message = "Dissociate feature from pub called BUT 'del_feature_on_last_ref' not specified in yml file?"
+            self.critical_error(self.process_data[key]['data'], message)
+            return
+
+        # remove the association
+        fp, is_new = get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id,
+                                   pub_id=self.pub.pub_id)
+        if is_new:
+            message = "Cannot dissociate feature and pub as there is no association"
+            self.critical_error(self.process_data[key]['data'], message)
+        else:
+            self.session.delete(fp)
+
+        # If remove_if_last and it is the last then we can delete the feature
+        if remove_if_last:
+            count = self.session.query(FeaturePub).filter(FeaturePub.feature_id == self.feature.feature_id).count()
+            if not count:
+                self.session.delete(self.feature)
