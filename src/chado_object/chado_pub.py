@@ -496,7 +496,8 @@ class ChadoPub(ChadoObject):
             self.parent_pub = self.get_parent_pub()
 
             self.extra_checks()
-
+        else:
+            return
         # bang c first as this supersedes all things
         if self.bang_c:
             self.bang_c_it()
