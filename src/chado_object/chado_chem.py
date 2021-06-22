@@ -267,7 +267,7 @@ class ChadoChem(ChadoFeatureObject):
         if not self.new_chemical_entry:  # Fetch by FBch and check CH1a ONLY
             self.fetch_by_FBch_and_check(chemical_cvterm_id)
             if not self.has_data('CH1c'):
-                feature_pub, _ = get_or_create(self.session, FeaturePub, 
+                feature_pub, _ = get_or_create(self.session, FeaturePub,
                                                feature_id=self.feature.feature_id,
                                                pub_id=self.pub.pub_id)
             return
@@ -289,10 +289,8 @@ class ChadoChem(ChadoFeatureObject):
         if exists_already:
             self.feature = exists_already
             if self.has_data('CH1c'):
-                log.debug("BOB: Do NOT create feature pub as we want to dissacociate")
                 pass
             else:
-                log.debug("BOB: adding feature pub")
                 feature_pub, _ = get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id,
                                                pub_id=self.pub.pub_id)
             return
