@@ -124,8 +124,8 @@ class ChadoChem(ChadoFeatureObject):
             return
 
         # Dissociate pub ONLY
-        if self.has_data('Ch1c'):
-            self.dissociate_from_pub(self, 'CH1c')
+        if self.has_data('Ch3g'):
+            self.dissociate_from_pub(self, 'CH3g')
             return
 
         # bang c first as this supersedes all things
@@ -266,7 +266,7 @@ class ChadoChem(ChadoFeatureObject):
 
         if not self.new_chemical_entry:  # Fetch by FBch and check CH1a ONLY
             self.fetch_by_FBch_and_check(chemical_cvterm_id)
-            if not self.has_data('CH1c'):
+            if not self.has_data('CH3g'):
                 feature_pub, _ = get_or_create(self.session, FeaturePub,
                                                feature_id=self.feature.feature_id,
                                                pub_id=self.pub.pub_id)
@@ -288,9 +288,7 @@ class ChadoChem(ChadoFeatureObject):
         exists_already = self.check_existing_already()
         if exists_already:
             self.feature = exists_already
-            if self.has_data('CH1c'):
-                pass
-            else:
+            if not self.has_data('CH3g'):
                 feature_pub, _ = get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id,
                                                pub_id=self.pub.pub_id)
             return
