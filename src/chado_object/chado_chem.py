@@ -52,7 +52,8 @@ class ChadoChem(ChadoFeatureObject):
         self.type_dict = {'featureprop': self.load_featureprop,
                           'synonym': self.load_synonym_chem,
                           'ignore': self.ignore,
-                          'value': self.ignore}
+                          'value': self.ignore,
+                          'disspub': self.dissociate_from_pub}
 
         self.delete_dict = {'ignore': self.ignore,
                             'synonym': self.rename_synonym,
@@ -120,6 +121,11 @@ class ChadoChem(ChadoFeatureObject):
         self.get_or_create_chemical()
         if not self.feature:
             log.info("CHEM/FEAT NO FEATURE???")
+            return
+
+        # Dissociate pub ONLY
+        if self.has_data('Ch3g'):
+            self.dissociate_from_pub(self, 'CH3g')
             return
 
         # bang c first as this supersedes all things
@@ -260,6 +266,10 @@ class ChadoChem(ChadoFeatureObject):
 
         if not self.new_chemical_entry:  # Fetch by FBch and check CH1a ONLY
             self.fetch_by_FBch_and_check(chemical_cvterm_id)
+            if not self.has_data('CH3g'):
+                feature_pub, _ = get_or_create(self.session, FeaturePub,
+                                               feature_id=self.feature.feature_id,
+                                               pub_id=self.pub.pub_id)
             return
 
         # So we have a new chemical, lets get the data for this.
@@ -278,6 +288,9 @@ class ChadoChem(ChadoFeatureObject):
         exists_already = self.check_existing_already()
         if exists_already:
             self.feature = exists_already
+            if not self.has_data('CH3g'):
+                feature_pub, _ = get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id,
+                                               pub_id=self.pub.pub_id)
             return
 
         # Check if we already have an existing entry by feature name -> dbx xref.
@@ -303,14 +316,14 @@ class ChadoChem(ChadoFeatureObject):
 
         self.add_dbxref(self.chemical_information)
 
-        feature_pub, _ = get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id,
-                                       pub_id=self.pub.pub_id)
-        log.debug("Created new feature_pub: {}".format(feature_pub.feature_pub_id))
-        # Add pub link to Chebi or pubchem
+        # Add pub link to Chebi or pubchem amd current pub
         feature_pub, _ = get_or_create(self.session, FeaturePub,
                                        feature_id=self.feature.feature_id,
                                        pub_id=self.chemical_information['PubID'])
         log.debug("Created new feature_pub: {}".format(feature_pub.feature_pub_id))
+        feature_pub, _ = get_or_create(self.session, FeaturePub,
+                                       feature_id=self.feature.feature_id,
+                                       pub_id=self.pub.pub_id)
 
         self.add_alternative_info()
 

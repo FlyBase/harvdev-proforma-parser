@@ -6,6 +6,8 @@
 """
 import re
 import os
+
+from harvdev_utils.chado_functions.cvterm import get_cvterm
 from .chado_base import ChadoObject, FIELD_VALUE, FIELD_NAME
 
 from harvdev_utils.production import (
@@ -494,7 +496,8 @@ class ChadoPub(ChadoObject):
             self.parent_pub = self.get_parent_pub()
 
             self.extra_checks()
-
+        else:
+            return
         # bang c first as this supersedes all things
         if self.bang_c:
             self.bang_c_it()
@@ -506,9 +509,15 @@ class ChadoPub(ChadoObject):
             self.type_dict[self.process_data[key]['type']](key)
 
         timestamp = datetime.now().strftime('%c')
-        curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short, timestamp)
+        curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (self.curator_fullname, self.filename_short.split('/')[-1], timestamp)
         log.debug('Curator string assembled as:')
         log.debug('%s' % (curated_by_string))
+        curated_by = get_cvterm(self.session, 'pubprop type', 'curated_by')
+        get_or_create(
+            self.session, Pubprop,
+            type_id=curated_by.cvterm_id,
+            pub_id=self.pub.pub_id,
+            value=curated_by_string)
         return self.pub
 
     def get_author(self, author):
