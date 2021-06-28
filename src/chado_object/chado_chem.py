@@ -124,8 +124,12 @@ class ChadoChem(ChadoFeatureObject):
             return
 
         # Dissociate pub ONLY
-        if self.has_data('Ch3g'):
-            self.dissociate_from_pub(self, 'CH3g')
+        if self.has_data('CH3g'):
+            if self.has_data('CH1f') and self.process_data['CH1f']['data'][FIELD_VALUE] == 'new':
+                message = "Cannot dissociate pub with CH1f as 'new'."
+                self.critical_error(self.process_data['CH1f']['data'], message)
+                return None
+            self.dissociate_from_pub('CH3g')
             return
 
         # bang c first as this supersedes all things
@@ -155,8 +159,15 @@ class ChadoChem(ChadoFeatureObject):
         Raises:
             critical error if CH1f and CH1a are specified and do not match.
         """
+        organism_id = get_default_organism_id(self.session)
         self.feature, is_new = get_or_create(self.session, Feature, type_id=chemical_cvterm_id,
+                                             organism_id=organism_id,
                                              uniquename=self.process_data['CH1f']['data'][FIELD_VALUE])
+        if self.feature.is_obsolete:
+            message = "{} is obsolete set CH1a to 'new' to re-add it.".format(self.process_data['CH1f']['data'][FIELD_VALUE])
+            self.critical_error(self.process_data['CH1f']['data'], message)
+            return
+
         if is_new:
             message = "Could not find {} in the database. Please check it exists.".format(self.process_data['CH1f']['data'][FIELD_VALUE])
             self.critical_error(self.process_data['CH1f']['data'], message)
@@ -520,7 +531,8 @@ class ChadoChem(ChadoFeatureObject):
         feature_dbxref_chemical_chebi_result = self.session.query(Feature, Dbxref).\
             join(Feature, (Feature.dbxref_id == Dbxref.dbxref_id)).\
             filter(Dbxref.accession == chemical['accession'],
-                   Dbxref.db_id == chemical['DBObject'].db_id).one_or_none()
+                   Dbxref.db_id == chemical['DBObject'].db_id,
+                   Feature.is_obsolete == 'f').one_or_none()
 
         # feature_dbxref_chemical_chebi_result[0] accesses the 'Feature' object from the result.
         if feature_dbxref_chemical_chebi_result:

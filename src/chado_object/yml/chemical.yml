@@ -47,7 +47,7 @@ CH3f:
   value: CH3f
 CH3g:
   type: disspub
-  del_feature_on_last_ref: True
+  obsolete_feature_on_last_ref: True
 # CH4a:
 #   type: feature_relationship
 #   cv: relationship type
