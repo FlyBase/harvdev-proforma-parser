@@ -129,7 +129,7 @@ class ChadoChem(ChadoFeatureObject):
                 message = "Cannot dissociate pub with CH1f as 'new'."
                 self.critical_error(self.process_data['CH1f']['data'], message)
                 return None
-            self.dissociate_from_pub(self, 'CH3g')
+            self.dissociate_from_pub('CH3g')
             return
 
         # bang c first as this supersedes all things
