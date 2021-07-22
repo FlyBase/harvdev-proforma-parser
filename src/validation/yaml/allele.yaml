@@ -29,6 +29,13 @@ GA2b:
     type: string
     required: False
     nullable: True
+GA2c:
+    type: string
+    required: False
+    nullable: True
+    no_bangc: True
+    excludes: [GA1f]
+    dependencies: [GA2a] 
 GA4:
     type: string
     required: False
@@ -264,3 +271,4 @@ GA999:  # made up to test GA999 missing in other yml file (src/chado_object/yml/
     type: string
     required: False
     nullable: True
+

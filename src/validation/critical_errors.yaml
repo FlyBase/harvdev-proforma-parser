@@ -84,6 +84,8 @@ DIV2b:
   - Cannot set DIV2b if DIV2a is set.
 GA30f: 
   - unallowed value
+GA2c:
+  - excludes
 GA90a:
   - is required
 GA90b:

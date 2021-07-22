@@ -56,7 +56,8 @@ class ChadoAllele(ChadoFeatureObject):
                           'featureprop': self.load_featureprop,
                           'GA12a_featureprop': self.GA12a_featureprop,
                           'synonym': self.load_synonym,
-                          'ignore': self.ignore}
+                          'ignore': self.ignore,
+                          'rename': self.ignore}
         self.delete_dict = {'featureprop': self.delete_featureprop,
                             'GA12a_featureprop': self.GA12a_featureprop_delete,
                             'synonym': self.delete_synonym,
@@ -104,6 +105,13 @@ class ChadoAllele(ChadoFeatureObject):
             message = "Unable to find gene. Normally Allele should have a gene before."
             self.warning_error(self.process_data['GA1a']['data'], message)
             okay = False
+
+        # cerberus not good at testing for values just fields so we need to do some extra checks here.
+        if self.has_data('GA2c'):
+            if not (self.has_data('GA1e') or self.has_data('GA2a')):
+                message = "When GA2c is set then GA1e or GA2a must be set aswell"
+                self.critical_error(self.process_data['GA2c']['data'], message)
+                okay = False
 
         # cerburus should be dealing with this but it appears not to be.
         # so lets check manually if GA90a does not exist then none of the others should

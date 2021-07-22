@@ -44,6 +44,9 @@ GA2b:
     cv: synonym type
     cvterm: fullname
     is_current: False
+# 'GA2c',  'fullname',
+GA2c:
+    type: rename
 # 'GA4',   'FlyBase miscellaneous CV',        #feature_cvterm
 GA4:
     type: cvterm
@@ -319,7 +322,7 @@ GA90k: # processed with GA90a
     type: ignore
 GA888:  # made up to test GA888 missing in other yaml file (src/validation/yaml/allele.yaml)
     type: ignore
-    # 'GA2c',  'fullname',
+
     # 'GA31',  'etymology',                       #feaureprop
     # 'GA32a', 'is_obsolete',
     # 'GA32b', 'dissociate',
