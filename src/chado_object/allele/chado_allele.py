@@ -28,7 +28,7 @@ from harvdev_utils.production import (
 from chado_object.chado_base import FIELD_VALUE
 from sqlalchemy.orm.exc import NoResultFound
 
-from harvdev_utils.production.production import FeatureSynonym, Synonym
+from harvdev_utils.production.production import Cvterm, FeatureSynonym, Synonym
 log = logging.getLogger(__name__)
 
 
@@ -237,7 +237,9 @@ class ChadoAllele(ChadoFeatureObject):
         syn_sgml = sgml_to_unicode(sub_sup_to_sgml((self.process_data[key]['data'][FIELD_VALUE])))
         fss = self.session.query(FeatureSynonym).\
             join(Synonym, Synonym.synonym_id == FeatureSynonym.synonym_id).\
+            join(Cvterm, Synonym.type_id == Cvterm.cvterm_id).\
             filter(FeatureSynonym.feature_id == self.feature.feature_id,
+                   Cvterm.name == 'fullname',
                    Synonym.synonym_sgml == syn_sgml)
         found = False
         for fs in fss:
