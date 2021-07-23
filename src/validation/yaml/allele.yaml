@@ -208,7 +208,7 @@ GA90a:
     required: False
     nullable: True
     no_bangc: True
-    dependencies: [GA90k, GA90b, GA90c]
+    dependencies: [GA90k]
 GA90b:
     type: string
     required: False
@@ -263,7 +263,6 @@ GA90k:
     type: string
     required: False
     nullable: True
-    no_bangc: True
     allowed: ['point_mutation', 'rescue_region', 'insertion', 'sequence_variant', 'complex_substitution',
               'deletion', 'insertion_site', 'sequence_alteration']
     dependencies: [GA90a]

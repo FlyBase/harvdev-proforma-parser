@@ -67,7 +67,7 @@ class ChadoAllele(ChadoFeatureObject):
         self.delete_dict = {'featureprop': self.delete_featureprop,
                             'GA12a_featureprop': self.GA12a_featureprop_delete,
                             'synonym': self.delete_synonym,
-                            'ignore': self.ignore}
+                            'ignore': self.ignore_bang}
 
         self.proforma_start_line_number = params.get('proforma_start_line_number')
 
@@ -191,6 +191,10 @@ class ChadoAllele(ChadoFeatureObject):
         """Ignore."""
         pass
 
+    def ignore_bang(self, key, bangc):
+        """Ignore."""
+        pass
+
     def add_cvtermprops(self, key, do_dict):
         """Add props.
 
@@ -297,6 +301,15 @@ class ChadoAllele(ChadoFeatureObject):
         if not name.startswith(self.feature.name):
             self.critical_error(self.process_data[key]['data'], "GA90a value '{}' does not start with name of the allele '{}'".format(self.feature.name, name))
             return feature, is_new
+
+        if 'GA90k' in self.bang_c:
+            try:
+                f = self.session.query(Feature).filter(Feature.uniquename == self.process_data[key]['data'][FIELD_VALUE]).one()
+            except NoResultFound:
+                message = "Feature name {} not found.".format(self.process_data[key]['data'][FIELD_VALUE])
+                self.critical_error(self.process_data['GA90k']['data'], message)
+            f.type_id = feat_type_cvterm.cvterm_id
+            return feature, False
         feature, is_new = get_or_create(self.session, Feature, name=name,
                                         type_id=feat_type_cvterm.cvterm_id, uniquename=name,
                                         organism_id=self.feature.organism.organism_id)
@@ -441,6 +454,12 @@ class ChadoAllele(ChadoFeatureObject):
         feature, is_new = self.get_GA90a(key)
         if not feature:
             return
+        if is_new:
+            if not self.has_data('GA90b') or not self.has_data('GA90c'):
+                mess = "GA90b and GA90c must be defined for new Lesions"
+                self.critical_error(self.process_data[key]['data'], mess)
+                return
+
         fr, _ = get_or_create(self.session, FeatureRelationship,
                               subject_id=feature.feature_id,
                               object_id=self.feature.feature_id,
