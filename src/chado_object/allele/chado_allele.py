@@ -455,8 +455,8 @@ class ChadoAllele(ChadoFeatureObject):
         if not feature:
             return
         if is_new:
-            if not self.has_data('GA90b') or not self.has_data('GA90c'):
-                mess = "GA90b and GA90c must be defined for new Lesions"
+            if not self.has_data('GA90b'):
+                mess = "GA90b must be defined for new Lesions"
                 self.critical_error(self.process_data[key]['data'], mess)
                 return
 
