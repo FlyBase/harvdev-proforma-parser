@@ -47,6 +47,9 @@ GA2b:
 # 'GA2c',  'fullname',
 GA2c:
     type: rename
+    cv: synonym type
+    cvterm: fullname
+    is_current: True
 # 'GA4',   'FlyBase miscellaneous CV',        #feature_cvterm
 GA4:
     type: cvterm

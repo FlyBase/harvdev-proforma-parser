@@ -10,9 +10,13 @@
 import logging
 import os
 import re
+
+
+# from sqlalchemy.sql.functions import ReturnTypeFromArgs
 from harvdev_utils.chado_functions import (
     get_or_create, get_cvterm
 )
+from harvdev_utils.char_conversions import sub_sup_to_sgml, sgml_to_unicode
 
 from chado_object.utils.go import process_DO_line
 from chado_object.feature.chado_feature import ChadoFeatureObject
@@ -23,6 +27,8 @@ from harvdev_utils.production import (
 )
 from chado_object.chado_base import FIELD_VALUE
 from sqlalchemy.orm.exc import NoResultFound
+
+from harvdev_utils.production.production import FeatureSynonym, Synonym
 log = logging.getLogger(__name__)
 
 
@@ -57,7 +63,7 @@ class ChadoAllele(ChadoFeatureObject):
                           'GA12a_featureprop': self.GA12a_featureprop,
                           'synonym': self.load_synonym,
                           'ignore': self.ignore,
-                          'rename': self.ignore}
+                          'rename': self.rename}
         self.delete_dict = {'featureprop': self.delete_featureprop,
                             'GA12a_featureprop': self.GA12a_featureprop_delete,
                             'synonym': self.delete_synonym,
@@ -108,8 +114,8 @@ class ChadoAllele(ChadoFeatureObject):
 
         # cerberus not good at testing for values just fields so we need to do some extra checks here.
         if self.has_data('GA2c'):
-            if not (self.has_data('GA1e') or self.has_data('GA2a')):
-                message = "When GA2c is set then GA1e or GA2a must be set aswell"
+            if not self.has_data('GA2a'):
+                message = "When GA2c is set then GA2a must be set aswell"
                 self.critical_error(self.process_data['GA2c']['data'], message)
                 okay = False
 
@@ -211,6 +217,39 @@ class ChadoAllele(ChadoFeatureObject):
                           feature_cvterm_id=feat_cvt.feature_cvterm_id,
                           value=do_dict[prop_key],
                           type_id=cvtermprop.cvterm_id)
+
+    def rename(self, key):
+        """Rename 'fullname' synonym.
+
+        Lookup fullname synonym foir the alelle ansd make sure one of them is the one
+        given in GA2c this should be the current 'fullname' synonym before this step.
+        If it is not then lets give an error.
+        If it is then set all 'fullname's to be is_current False.
+        Add new synonym given by GA2a and make is is_current True
+        with the 'unattributed' pub.
+        """
+
+        # Lets look it up and set to is_current False if found
+        syn_sgml = sgml_to_unicode(sub_sup_to_sgml((self.process_data[key]['data'][FIELD_VALUE])))
+        fss = self.session.query(FeatureSynonym).\
+            join(Synonym, Synonym.synonym_id == FeatureSynonym.synonym_id).\
+            filter(FeatureSynonym.feature_id == self.feature.feature_id,
+                   Synonym.synonym_sgml == syn_sgml)
+        found = False
+        for fs in fss:
+            if fs.is_current:
+                fs.is_current = False
+                found = True
+        if not found:
+            mess = "{} is not a fullname synonym for {}, so cannot use it to rename".\
+                format(self.process_data[key]['data'][FIELD_VALUE], self.feature.name)
+            self.critical_error(self.process_data[key]['data'], mess)
+            return
+
+        # Use GA2a field value and pass to synonym processing
+        self.process_data[key]['data'] = (key, self.process_data['GA2a']['data'][FIELD_VALUE],
+                                          self.process_data[key]['data'][2], False)
+        self.load_synonym(key, unattrib=True)
 
     def load_do(self, key):
         """Load DO.
