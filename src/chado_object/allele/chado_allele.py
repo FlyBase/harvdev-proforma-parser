@@ -311,7 +311,7 @@ class ChadoAllele(ChadoFeatureObject):
                 message = "Feature name {} not found.".format(self.process_data[key]['data'][FIELD_VALUE])
                 self.critical_error(self.process_data['GA90k']['data'], message)
             f.type_id = feat_type_cvterm.cvterm_id
-            return feature, False
+            return f, False
         feature, is_new = get_or_create(self.session, Feature, name=name,
                                         type_id=feat_type_cvterm.cvterm_id, uniquename=name,
                                         organism_id=self.feature.organism.organism_id)
