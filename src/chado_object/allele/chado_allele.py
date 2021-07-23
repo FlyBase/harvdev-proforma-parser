@@ -10,9 +10,13 @@
 import logging
 import os
 import re
+
+
+# from sqlalchemy.sql.functions import ReturnTypeFromArgs
 from harvdev_utils.chado_functions import (
     get_or_create, get_cvterm
 )
+from harvdev_utils.char_conversions import sub_sup_to_sgml, sgml_to_unicode
 
 from chado_object.utils.go import process_DO_line
 from chado_object.feature.chado_feature import ChadoFeatureObject
@@ -23,6 +27,8 @@ from harvdev_utils.production import (
 )
 from chado_object.chado_base import FIELD_VALUE
 from sqlalchemy.orm.exc import NoResultFound
+
+from harvdev_utils.production.production import Cvterm, FeatureSynonym, Synonym
 log = logging.getLogger(__name__)
 
 
@@ -56,11 +62,12 @@ class ChadoAllele(ChadoFeatureObject):
                           'featureprop': self.load_featureprop,
                           'GA12a_featureprop': self.GA12a_featureprop,
                           'synonym': self.load_synonym,
-                          'ignore': self.ignore}
+                          'ignore': self.ignore,
+                          'rename': self.rename}
         self.delete_dict = {'featureprop': self.delete_featureprop,
                             'GA12a_featureprop': self.GA12a_featureprop_delete,
                             'synonym': self.delete_synonym,
-                            'ignore': self.ignore}
+                            'ignore': self.ignore_bang}
 
         self.proforma_start_line_number = params.get('proforma_start_line_number')
 
@@ -104,6 +111,13 @@ class ChadoAllele(ChadoFeatureObject):
             message = "Unable to find gene. Normally Allele should have a gene before."
             self.warning_error(self.process_data['GA1a']['data'], message)
             okay = False
+
+        # cerberus not good at testing for values just fields so we need to do some extra checks here.
+        if self.has_data('GA2c'):
+            if not self.has_data('GA2a'):
+                message = "When GA2c is set then GA2a must be set aswell"
+                self.critical_error(self.process_data['GA2c']['data'], message)
+                okay = False
 
         # cerburus should be dealing with this but it appears not to be.
         # so lets check manually if GA90a does not exist then none of the others should
@@ -177,6 +191,10 @@ class ChadoAllele(ChadoFeatureObject):
         """Ignore."""
         pass
 
+    def ignore_bang(self, key, bangc):
+        """Ignore."""
+        pass
+
     def add_cvtermprops(self, key, do_dict):
         """Add props.
 
@@ -203,6 +221,41 @@ class ChadoAllele(ChadoFeatureObject):
                           feature_cvterm_id=feat_cvt.feature_cvterm_id,
                           value=do_dict[prop_key],
                           type_id=cvtermprop.cvterm_id)
+
+    def rename(self, key):
+        """Rename 'fullname' synonym.
+
+        Lookup fullname synonym foir the alelle ansd make sure one of them is the one
+        given in GA2c this should be the current 'fullname' synonym before this step.
+        If it is not then lets give an error.
+        If it is then set all 'fullname's to be is_current False.
+        Add new synonym given by GA2a and make is is_current True
+        with the 'unattributed' pub.
+        """
+
+        # Lets look it up and set to is_current False if found
+        syn_sgml = sgml_to_unicode(sub_sup_to_sgml((self.process_data[key]['data'][FIELD_VALUE])))
+        fss = self.session.query(FeatureSynonym).\
+            join(Synonym, Synonym.synonym_id == FeatureSynonym.synonym_id).\
+            join(Cvterm, Synonym.type_id == Cvterm.cvterm_id).\
+            filter(FeatureSynonym.feature_id == self.feature.feature_id,
+                   Cvterm.name == 'fullname',
+                   Synonym.synonym_sgml == syn_sgml)
+        found = False
+        for fs in fss:
+            if fs.is_current:
+                fs.is_current = False
+                found = True
+        if not found:
+            mess = "{} is not a fullname synonym for {}, so cannot use it to rename".\
+                format(self.process_data[key]['data'][FIELD_VALUE], self.feature.name)
+            self.critical_error(self.process_data[key]['data'], mess)
+            return
+
+        # Use GA2a field value and pass to synonym processing
+        self.process_data[key]['data'] = (key, self.process_data['GA2a']['data'][FIELD_VALUE],
+                                          self.process_data[key]['data'][2], False)
+        self.load_synonym(key, unattrib=True)
 
     def load_do(self, key):
         """Load DO.
@@ -250,6 +303,15 @@ class ChadoAllele(ChadoFeatureObject):
         if not name.startswith(self.feature.name):
             self.critical_error(self.process_data[key]['data'], "GA90a value '{}' does not start with name of the allele '{}'".format(self.feature.name, name))
             return feature, is_new
+
+        if 'GA90k' in self.bang_c:
+            try:
+                f = self.session.query(Feature).filter(Feature.uniquename == self.process_data[key]['data'][FIELD_VALUE]).one()
+            except NoResultFound:
+                message = "Feature name {} not found.".format(self.process_data[key]['data'][FIELD_VALUE])
+                self.critical_error(self.process_data['GA90k']['data'], message)
+            f.type_id = feat_type_cvterm.cvterm_id
+            return f, False
         feature, is_new = get_or_create(self.session, Feature, name=name,
                                         type_id=feat_type_cvterm.cvterm_id, uniquename=name,
                                         organism_id=self.feature.organism.organism_id)
@@ -394,6 +456,15 @@ class ChadoAllele(ChadoFeatureObject):
         feature, is_new = self.get_GA90a(key)
         if not feature:
             return
+        if is_new:
+            if not self.has_data('GA90b'):
+                mess = "GA90b must be defined for new Lesions"
+                self.critical_error(self.process_data[key]['data'], mess)
+                return
+        # bang as not new, so there may not be any new location data
+        elif not (self.has_data('GA90b') and self.has_data('GA90c')):
+            return
+
         fr, _ = get_or_create(self.session, FeatureRelationship,
                               subject_id=feature.feature_id,
                               object_id=self.feature.feature_id,
