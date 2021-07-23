@@ -461,6 +461,9 @@ class ChadoAllele(ChadoFeatureObject):
                 mess = "GA90b must be defined for new Lesions"
                 self.critical_error(self.process_data[key]['data'], mess)
                 return
+        # bang as not new, so there may not be any new location data
+        elif not (self.has_data('GA90b') and self.has_data('GA90c')):
+            return
 
         fr, _ = get_or_create(self.session, FeatureRelationship,
                               subject_id=feature.feature_id,
