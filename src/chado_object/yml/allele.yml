@@ -214,6 +214,11 @@ GA30f:
     cv: property type
     cvterm: propagate_transgenic_uses
     value: GA30f
+# 'GA31',  'etymology',                       #feaureprop
+GA31:
+    type: featureprop
+    cv: 'property type'
+    cvterm: etymology
 # 'GA34a', 'disease_ontology',                # feature_cvterm
 GA34a:  # SEE G24b very similar
     type: DOcvtermprop

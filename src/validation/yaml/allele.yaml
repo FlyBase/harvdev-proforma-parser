@@ -181,7 +181,12 @@ GA30f:
     nullable: True
     at_forbidden: True
     allowed: ['n']
-GA34a: 
+GA31:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True
+GA34a:
     type: [list, string]
     required: False
     nullable: True
