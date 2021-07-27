@@ -270,23 +270,6 @@ class ChadoGene(ChadoFeatureObject):
                 self.checks_for_key[key](key)
         self.g30_check('G30')
 
-    def dis_pub(self, key):
-        """Dissociate pub from feature.
-
-        Args:
-            key (string): Proforma field key
-        """
-        feat_pub, is_new = get_or_create(self.session, FeaturePub,
-                                         feature_id=self.feature.feature_id,
-                                         pub_id=self.pub.pub_id)
-        if is_new:
-            message = "Cannot dissociate {} to {} as relationship does not exist".\
-                format(self.feature.uniquename, self.pub.uniquename)
-            self.critical_error(self.process_data[key]['data'], message)
-        else:
-            log.info("Deleting relationship between {} and {}".format(self.feature.uniquename, self.pub.uniquename))
-            self.session.delete(feat_pub)
-
     def ignore(self, key):
         """Ignore, done by initial setup.
 
@@ -295,14 +278,6 @@ class ChadoGene(ChadoFeatureObject):
                 NOT used, but is passed automatically.
         """
         pass
-
-    def make_obsolete(self, key):
-        """Make gene obsolete.
-
-        Args:
-            key (string): Proforma field key
-        """
-        self.feature.is_obsolete = True
 
     def process_go_dict(self, key, go_dict, values):
         """Use go_dcit to genereate the chado relationships.

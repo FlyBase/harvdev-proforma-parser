@@ -186,6 +186,16 @@ GA31:
     required: False
     nullable: True
     at_forbidden: True
+GA32a:
+    type: string
+    required: False
+    nullable: True
+    allowed: ['y']
+GA32b:
+    type: string
+    required: False
+    nullable: True
+    allowed: ['y']
 GA34a:
     type: [list, string]
     required: False
