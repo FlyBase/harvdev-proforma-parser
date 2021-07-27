@@ -219,6 +219,12 @@ GA31:
     type: featureprop
     cv: 'property type'
     cvterm: etymology
+# 'GA32a', 'is_obsolete',
+GA32a:
+    type: make_obsolete
+# 'GA32b', 'dissociate',
+GA32b:
+    type: dis_pub
 # 'GA34a', 'disease_ontology',                # feature_cvterm
 GA34a:  # SEE G24b very similar
     type: DOcvtermprop
@@ -331,9 +337,6 @@ GA90k: # processed with GA90a
 GA888:  # made up to test GA888 missing in other yaml file (src/validation/yaml/allele.yaml)
     type: ignore
 
-    # 'GA31',  'etymology',                       #feaureprop
-    # 'GA32a', 'is_obsolete',
-    # 'GA32b', 'dissociate',
 
 
 

@@ -63,7 +63,9 @@ class ChadoAllele(ChadoFeatureObject):
                           'GA12a_featureprop': self.GA12a_featureprop,
                           'synonym': self.load_synonym,
                           'ignore': self.ignore,
-                          'rename': self.rename}
+                          'rename': self.rename,
+                          'dis_pub': self.dis_pub,
+                          'make_obsolete': self.make_obsolete}
         self.delete_dict = {'featureprop': self.delete_featureprop,
                             'GA12a_featureprop': self.GA12a_featureprop_delete,
                             'synonym': self.delete_synonym,
@@ -108,9 +110,10 @@ class ChadoAllele(ChadoFeatureObject):
         try:
             self.gene = references['ChadoGene']
         except KeyError:
-            message = "Unable to find gene. Normally Allele should have a gene before."
-            self.warning_error(self.process_data['GA1a']['data'], message)
-            okay = False
+            if not self.has_data('GA32b'):  # Diss pub does not need gene
+                message = "Unable to find gene. Normally Allele should have a gene before."
+                self.warning_error(self.process_data['GA1a']['data'], message)
+                okay = False
 
         # cerberus not good at testing for values just fields so we need to do some extra checks here.
         if self.has_data('GA2c'):
@@ -144,13 +147,14 @@ class ChadoAllele(ChadoFeatureObject):
         if not self.feature:  # problem getting allele, lets finish
             return None
 
-        # feature pub
-        get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id, pub_id=self.pub.pub_id)
+        # feature pub if not dissociate pub
+        if not self.has_data('GA32b'):
+            get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id, pub_id=self.pub.pub_id)
 
-        # feature relationship to gene
-        self.process_data['GENE']['data'] = [('GENE', self.gene.name, 0, False)]
-        self.load_feature_relationship('GENE')  # We have a special key in the yml file called 'GENE'
-        del self.process_data['GENE']
+            # feature relationship to gene
+            self.process_data['GENE']['data'] = [('GENE', self.gene.name, 0, False)]
+            self.load_feature_relationship('GENE')  # We have a special key in the yml file called 'GENE'
+            del self.process_data['GENE']
 
         # bang c first as this supersedes all things
         if self.bang_c:

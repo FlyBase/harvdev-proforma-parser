@@ -50,6 +50,31 @@ class ChadoFeatureObject(ChadoObject):
         self.unattrib_pub = None
         self.new = None
 
+    def make_obsolete(self, key):
+        """Make feature obsolete.
+
+        Args:
+            key (string): Proforma field key (Not used)
+        """
+        self.feature.is_obsolete = True
+
+    def dis_pub(self, key):
+        """Dissociate pub from feature.
+
+        Args:
+            key (string): Proforma field key
+        """
+        feat_pub, is_new = get_or_create(self.session, FeaturePub,
+                                         feature_id=self.feature.feature_id,
+                                         pub_id=self.pub.pub_id)
+        if is_new:
+            message = "Cannot dissociate {} to {} as relationship does not exist".\
+                format(self.feature.uniquename, self.pub.uniquename)
+            self.critical_error(self.process_data[key]['data'], message)
+        else:
+            log.info("Deleting relationship between {} and {}".format(self.feature.uniquename, self.pub.uniquename))
+            self.session.delete(feat_pub)
+
     def get_unattrib_pub(self):
         """Get the unattributed pub."""
         if not self.unattrib_pub:
