@@ -168,10 +168,39 @@ GA12b:
     cv: property type
     cvterm: molecular_info
     value: GA12b
-
+# 'GA13',  ,'misc', ,
+GA13:
+    type: featureprop
+    cv: property type
+    cvterm: misc
+    value: GA13
+# 'GA14',  'internal_notes',
+GA14:
+    type: featureprop
+    cv: property type
+    cvterm: internal_notes
+    value: GA14
 # 'GA17',  'phenstatement',                   #phenstatement
 GA17:
     type: pheno_cvterm
+# 'GA20',  'availability',
+GA20:
+    type: featureprop
+    cv: property type
+    cvterm: availability
+    value: GA20
+# 'GA23a', 'origin_type',
+GA23a:
+    type: featureprop
+    cv: property type
+    cvterm: origin_type
+    value: GA23a
+# 'GA23b', 'origin_comment',
+GA23b:
+    type: featureprop
+    cv: property type
+    cvterm: origin_comment
+    value: GA23b
 # 'GA30a', 'tagged_with',                     #feature_relationship.object_id
 GA30a:
     type: feature_relationship
@@ -234,6 +263,18 @@ GA34a:  # SEE G24b very similar
     allowed_qualifiers: ['model of', 'ameliorates', 'exacerbates', 'DOES NOT model', 'DOES NOT ameliorate', 'DOES NOT exacerbate']
     allowed_symbols: ['gene']
     allowed_codes: ['CEC', 'CEA' ,'modeled']
+# 'GA34b', 'hdm_comments',
+GA34b:
+    type: featureprop
+    cv: property type
+    cvterm: hdm_comments
+    value: GA34b
+# 'GA34c', 'hdm_internal_notes',
+GA34c:
+    type: featureprop
+    cv: property type
+    cvterm: hdm_internal_notes
+    value: GA34c
 # 'GA56',  'phenstatement',                   #phenstatement
 GA56:
     type: pheno_cvterm
@@ -334,23 +375,30 @@ GA90j:
 # 'GA90k', 'type',                            #cv = SO
 GA90k: # processed with GA90a
     type: ignore
+
+
 GA888:  # made up to test GA888 missing in other yaml file (src/validation/yaml/allele.yaml)
     type: ignore
 
 
+#select * from cvterm, cv where cvterm.cv_id = cv.cv_id and cvterm.name in ('discoverer', 'origin_type', 'origin_comment', 'misc', 'availability', 'internal_notes', 'hdm_comments', 'hdm_internal_notes', 'library_feature', 'library_featureprop');
+# cvterm_id | cv_id | definition | dbxref_id | is_obsolete | is_relationshiptype |        name        | cv_id |           name            | definition 
+#-----------+-------+------------+-----------+-------------+---------------------+--------------------+-------+---------------------------+------------
+#     60342 |     2 |            |   1663221 |           0 |                   0 | misc               |     2 | property type             | X
+#     60349 |     2 |            |   1663228 |           0 |                   0 | origin_comment     |     2 | property type             | X
+#     60363 |     2 |            |   1663243 |           0 |                   0 | discoverer         |     2 | property type             | 
+#     60366 |     2 |            |   1663246 |           0 |                   0 | internal_notes     |     2 | property type             | X
+#    116883 |     2 |            |   9007338 |           0 |                   0 | hdm_comments       |     2 | property type             | 
+#     59995 |     2 |            |   1663239 |           0 |                   0 | availability       |     2 | property type             | 
+#    116890 |     2 |            |   9007345 |           0 |                   0 | hdm_internal_notes |     2 | property type             | X
+#     60131 |    22 |            |   2413474 |           0 |                   0 | misc               |    22 | transgene_characteristics | 
+#     92316 |     2 |            |   2403246 |           0 |                   0 | origin_type        |     2 | property type             | 
+#(9 rows)
 
 
-    # 'GA22',  'interallele_comp',
-    # 'GA15',  'discoverer',
-    # 'GA23a', 'origin_type',
-    # 'GA23b', 'origin_comment',
-    # 'GA13',  'misc',
-    # 'GA20',  'availability',
-    # 'GA14',  'internal_notes',
     # 'GA91',  'library_feature',                 #library_feature
     # 'GA91a', 'library_featureprop',             #library_featureprop
-    # 'GA34b', 'hdm_comments',
-    # 'GA34c', 'hdm_internal_notes',
+    # 'GA22',  'interallele_comp',
     # 'GA35', 'FlyBase miscellaneous CV'
     # ,    #feature_cvterm -- feature_cvtermprop type transgenic_product_class
     # 'GA36', 'disease_associated',    #cv property type -- featureprop y/blank

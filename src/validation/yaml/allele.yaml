@@ -104,11 +104,37 @@ GA12b:
     required: False
     nullable: True
     at_required: True
+GA13:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_required: True
+GA14:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True
 GA17:
     type: [list,string]
     required: False
     nullable: True
     no_bangc: True
+    at_forbidden: True
+GA20:
+    type: string
+    required: False
+    nullable: True
+    at_forbidden: True
+    allowed: ['Stated to be lost.']
+GA23a:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_required: True
+GA23b:
+    type: [list, string]
+    required: False
+    nullable: True
     at_forbidden: True
 GA28a: #', 'phenotype_comparison',
     type: [list, string]
@@ -200,6 +226,15 @@ GA34a:
     type: [list, string]
     required: False
     nullable: True
+GA34b:
+    type: [list, string]
+    required: False
+    nullable: True
+GA34c:
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True
 GA56:
     type: [list,string]
     required: False
