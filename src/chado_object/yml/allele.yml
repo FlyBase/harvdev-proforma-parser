@@ -168,12 +168,14 @@ GA12b:
     cv: property type
     cvterm: molecular_info
     value: GA12b
+    at_symbol_required: ['ANY']
 # 'GA13',  ,'misc', ,
 GA13:
     type: featureprop
     cv: property type
     cvterm: misc
     value: GA13
+    at_symbol_required: ['ANY']
 # 'GA14',  'internal_notes',
 GA14:
     type: featureprop
@@ -195,12 +197,14 @@ GA23a:
     cv: property type
     cvterm: origin_type
     value: GA23a
+    at_symbol_required: ['ANY']
 # 'GA23b', 'origin_comment',
 GA23b:
     type: featureprop
     cv: property type
     cvterm: origin_comment
     value: GA23b
+    at_symbol_required: ['ANY']
 # 'GA30a', 'tagged_with',                     #feature_relationship.object_id
 GA30a:
     type: feature_relationship
@@ -269,6 +273,7 @@ GA34b:
     cv: property type
     cvterm: hdm_comments
     value: GA34b
+    at_symbol_required: ['ANY']
 # 'GA34c', 'hdm_internal_notes',
 GA34c:
     type: featureprop

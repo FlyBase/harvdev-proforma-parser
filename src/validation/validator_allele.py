@@ -72,6 +72,9 @@ class ValidatorAllele(Validator):
         for item in list_of_vals:
             if re.search(r"@+.*@+", item) is None:
                 self._error(field, 'Error {} @...@ is required.'.format(item))
+            # NOTE: do not check here as the symbol may not exist yet.
+            # It could be created earlier in the proforma and checks are done
+            # before it is processed.
 
     def _validate_genomic_location_format(self, required, field, value):
         """

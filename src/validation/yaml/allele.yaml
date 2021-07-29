@@ -131,11 +131,12 @@ GA23a:
     required: False
     nullable: True
     at_required: True
+    regex: ^(Separable from:.*)$ #  does not work on lists presently!
 GA23b:
     type: [list, string]
     required: False
     nullable: True
-    at_forbidden: True
+    at_required: True
 GA28a: #', 'phenotype_comparison',
     type: [list, string]
     required: False

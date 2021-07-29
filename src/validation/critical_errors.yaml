@@ -94,8 +94,9 @@ GA20:
   - unallowed value
 GA23a:
   - is required
+  - regex
 GA23b:
-  - is forbidden
+  - is required
 GA34c:
   - is forbidden
 GA90a:

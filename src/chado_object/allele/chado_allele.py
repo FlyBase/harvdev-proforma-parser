@@ -100,6 +100,9 @@ class ChadoAllele(ChadoFeatureObject):
         return:
             True/False depending on wether the checks passed or not
         """
+        # warning for failed symbol in @@ lookups
+        self.at_symbol_check_all()
+
         okay = True
         try:
             self.pub = references['ChadoPub']

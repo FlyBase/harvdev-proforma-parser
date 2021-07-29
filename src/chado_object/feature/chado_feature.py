@@ -12,7 +12,7 @@ from chado_object.utils.feature_synonym import fs_remove_current_symbol
 from harvdev_utils.char_conversions import sgml_to_plain_text, sgml_to_unicode
 from harvdev_utils.production import (
     Cvtermprop, Feature, FeatureRelationship, FeatureRelationshipPub, Featureprop,
-    FeaturepropPub, FeatureCvterm, FeatureCvtermprop, FeatureSynonym,
+    FeaturepropPub, FeaturePub, FeatureCvterm, FeatureCvtermprop, FeatureSynonym,
     Pub, Synonym
 )
 from harvdev_utils.chado_functions import (
@@ -23,8 +23,8 @@ from harvdev_utils.chado_functions import (
 from datetime import datetime
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 import logging
+import re
 
-from harvdev_utils.production.production import FeaturePub
 log = logging.getLogger(__name__)
 
 
@@ -49,6 +49,46 @@ class ChadoFeatureObject(ChadoObject):
         self.feature = None
         self.unattrib_pub = None
         self.new = None
+
+    def at_symbol_check_all(self):
+        """Check symbols in all fields"""
+        for key in self.process_data:
+            if key == 'GENE' or key == 'DRIVERS':
+                continue
+            print("BOB: {}".format(key))
+            if self.has_data(key) and 'at_symbol_required' in self.process_data[key]:
+                self.at_symbol_check(key)
+
+    def at_symbol_check(self, key):
+        """
+        Throw warning if it has symbol that cannot be found (and is not of a specific
+        type if self.process_data[key]['at_symbol_required'] is not ['ANY'])
+
+        Args:
+            key (string): Proforma field key
+        """
+        if not self.has_data(key) or 'at_symbol_required' not in self.process_data[key]:
+            return
+        if type(self.process_data[key]['data']) is list:
+            # cerberus can pass a list
+            list_of_vals = self.process_data[key]['data']
+        else:
+            list_of_vals = [self.process_data[key]['data']]
+        pattern = re.compile(r"@([^@]+)@")
+        for item in list_of_vals:
+            for symbol in pattern.findall(item[FIELD_VALUE]):
+                print("symbol:{} item:{}".format(symbol, item))
+                try:
+                    feat = feature_symbol_lookup(self.session, None, symbol)
+                except NoResultFound:
+                    self.warning_error(item, "symbol '{}' lookup failed".format(symbol))
+                    continue
+                if self.process_data[key]['at_symbol_required'][0] == 'ANY':
+                    return
+                if feat.cvterm.name not in self.process_data[key]['at_symbol_required']:
+                    message = "{} is of type {} and not one of those listed {}".\
+                        format(symbol, feat.cvterm.name, self.process_data[key]['at_symbol_required'])
+                    self.warning_error(item, message)
 
     def make_obsolete(self, key):
         """Make feature obsolete.
