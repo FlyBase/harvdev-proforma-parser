@@ -105,4 +105,4 @@ class ValidatorGene(Validator):
             if re.search(r"@+.*@+", line) is not None:
                 okay = True
         if not okay:
-            self._error(field, 'Error {} @...@ is required on at least one line.'.format(value))
+            self._error(field, '{} @...@ is required on at least one line.'.format(value))

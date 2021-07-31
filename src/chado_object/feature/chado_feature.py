@@ -55,7 +55,6 @@ class ChadoFeatureObject(ChadoObject):
         for key in self.process_data:
             if key == 'GENE' or key == 'DRIVERS':
                 continue
-            print("BOB: {}".format(key))
             if self.has_data(key) and 'at_symbol_required' in self.process_data[key]:
                 self.at_symbol_check(key)
 
