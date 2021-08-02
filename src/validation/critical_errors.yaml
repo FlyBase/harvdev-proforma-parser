@@ -51,15 +51,13 @@ DB4:
 G1A:
   - required
 G1f: 
-  - is required
   - must be in G1f list when G1g is set to y
   - must not be present with
+  - is required
 G5:
   - forbidden here
 G6:
   - forbidden here
-G8:
-  - is required
 G11: 
   - is forbidden here
 G14a:
@@ -68,6 +66,8 @@ G15:
   - forbidden here
 G27:
   - is forbidden here
+G28b:
+  - is required
 G30:
   - Must be set for new gene
 G31a:
@@ -86,8 +86,14 @@ GA30f:
   - unallowed value
 GA2c:
   - excludes
-GA90a:
-  - is required
+GA14:
+  - is forbidden
+GA20:
+  - unallowed value
+GA23a:
+  - regex
+GA34c:
+  - is forbidden
 GA90b:
   - is required
 GA90c:

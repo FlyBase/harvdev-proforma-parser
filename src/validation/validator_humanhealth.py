@@ -68,7 +68,7 @@ class ValidatorHumanhealth(Validator):
             if re.search(r"@+.*@+", line) is None:
                 okay = False
         if not okay:
-            self._error(field, 'Error {} @...@ is required.'.format(value))
+            self._error(field, '{} @...@ is required.'.format(value))
 
     def _validate_wrapping_values(self, field, dict1, comp_fields):
         """
