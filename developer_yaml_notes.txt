@@ -1,6 +1,6 @@
 NOTES on the various yaml formats/uses in the parser.
 Ones used in the validation (src/validation/yaml/*.yaml) one for each proforma.
-Secondly the ones used by the code to make decisions on what fields do what.
+Secondly the ones used by the code to make decisions on what fields do what (src/chado_object/yml/*.yml).
 Third file is a file that determines if a cerberus validation error is a warning
 or an error (src/validation/critical_errors.yaml).
 
@@ -263,5 +263,4 @@ P1:
 whatever is after the '-' has to be in the error message to make it critical.
 The actual error message can be longer as it may have the symbol name etc in it which changes but
 as long as that bit after the '-' is part of it the error, it gets upgraded to a critical error.
-
 
