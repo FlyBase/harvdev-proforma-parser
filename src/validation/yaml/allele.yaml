@@ -236,6 +236,11 @@ GA34c:
     required: False
     nullable: True
     at_forbidden: True
+GA36:
+    type: string
+    required: False
+    nullable: True
+    allowed: ['y']
 GA56:
     type: [list,string]
     required: False

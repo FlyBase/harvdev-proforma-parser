@@ -280,6 +280,11 @@ GA34c:
     cv: property type
     cvterm: hdm_internal_notes
     value: GA34c
+# 'GA36', 'disease_associated',    #cv property type -- featureprop y/blank
+GA36:
+    type: featureprop
+    cv: property type
+    cvterm: disease_associated
 # 'GA56',  'phenstatement',                   #phenstatement
 GA56:
     type: pheno_cvterm
@@ -393,7 +398,6 @@ GA888:  # made up to test GA888 missing in other yaml file (src/validation/yaml/
     # 'GA22',  'interallele_comp',
     # 'GA35', 'FlyBase miscellaneous CV'
     # ,    #feature_cvterm -- feature_cvtermprop type transgenic_product_class
-    # 'GA36', 'disease_associated',    #cv property type -- featureprop y/blank
 
 
 ####################################################
