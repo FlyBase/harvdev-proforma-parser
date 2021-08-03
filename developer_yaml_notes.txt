@@ -1,0 +1,266 @@
+NOTES on the various yaml formats/uses in the parser.
+Ones used in the validation (src/validation/yaml/*.yaml) one for each proforma.
+Secondly the ones used by the code to make decisions on what fields do what (src/chado_object/yml/*.yml).
+Third file is a file that determines if a cerberus validation error is a warning
+or an error (src/validation/critical_errors.yaml).
+
+
+Validation.
+-----------
+
+  This is controlled by cerberus (https://docs.python-cerberus.org/en/stable/api.html).
+  There is a separate yaml file for each proforma type and are in the directory 
+  src/validation/yaml/. Here are the common used fields:-
+
+  Standard cerberus fields
+  ------------------------
+  (these validations are built into cerberus)
+
+  type: 
+    Can be one or more of string, list, dict.
+
+  required:
+    wether this field is required. Values True or False
+  nullable:
+    wether this field can be blank. True or False
+  excludes: 
+    wether if this field is used then those in the list are not allowed
+    i.e. [GA1e, GA2c]
+  allowed:
+    List of allowed values i.e. ['y', 'n']
+  dependencies: 
+    List of fields that MUST be filled in if this field has a value.
+  regex:
+    The regular expression that the field value MUST match.
+    NOTE: This does not work with lists presently!!!
+
+  None standard cerberus fields.
+  ------------------------------
+  Code for these MUST be put into the proforma file that uses it.
+  NOTE: Bug in cerberus meansa that there is no inheritance so the code
+        needs to be added for each file that uses it.
+  Code it in src/validator_xxx.py (xxx is the proforma type)
+  i.e. src/validation_allele.py
+ 
+  no_bangc:
+    wether bang_c is NOT allowed. True or False
+  at_required:
+    wether @symbol@ is required or not (values True or False)
+  at_forbidden:
+    wether @symbol@ is fornbidden or not (values True or False)
+  regex:
+    The regular expression that the field value MUST match.
+  P22_unattributed_allowed: True
+
+  Examples:-
+
+  P22:
+    required: True
+    no_bangc: True
+    type: string
+    regex: ^(FBrf\d{7}|none|unattributed|new)$
+
+  So here P22 is always required and you cannot bang_c it (change the value).
+  The value must one of none, unattributed, new of FBrfddddddd. (where d is an integer)
+  We expect a string so ONLY one value is allowed.
+
+
+  GA1f:
+    type: [string, list]
+    required: False
+    nullable: True
+    no_bangc: True
+    excludes: [GA1e, GA2c]
+
+   So here GA1f can have multiple string values (i.e. over multiple lines)
+   This field is not required and can be null ad can be changed using bang_c.
+   If tis field is specified then GA1e and GA2c are NOY allowed to be set. 
+
+
+
+Control and None cerberus testing.
+----------------------------------
+  These files (one for each proforma) allow runing of extra tests that cerberus
+  cannot easily do and contains all the info on what to do with the field in the code.
+  These are all in the directory src/chado_object/yml/.
+
+  All fields will have a type which instructs the code what function to call.
+  Other fields are used by the that function to do certain tasks.
+
+  Here is a list of the most common types:-
+
+  ignore:
+    No function is called for this BUT as it will be processed as part of anther field.
+    There may be other fields listed in here that are required by other functions.
+
+    e.g.
+    GA1a:  # Main gene symbol to be used. Processed first and seperately
+        type: ignore
+        cv: synonym type
+        cvterm: symbol
+        is_current: True
+
+
+  synonym:
+    Add entry to the feature_synonym, synonym tables.
+    This can have the following fields to help:-
+    cv: synonym type
+    cvterm: symbol or fullname
+    is_current: True or False
+    remove_old: True or False
+    subscript: True or False
+    add_unattributed_paper: True or False
+
+    cv, cvterm and is_current are mandatory fields.
+    i.e.
+    G2a:
+      type: synonym
+      cv: synonym type
+      cvterm: fullname
+      is_current: True
+      add_unattributed_paper: True
+
+
+  cvterm:
+    Add cvterm and feature_cvterm.
+    cv: cv name 
+
+    e.g.
+    GA4:
+      type: cvterm
+      cv: FlyBase miscellaneous CV
+
+
+  cvtermprop:
+    Add cvterm and cvterm prop for a feature.
+    cv: cv name
+    cvterm_namespace: namespace for the cvterm
+    prop_value: False or the text for the value.
+    prop_cvterm: cvterm name for prop
+    prop_cv: cv name for prop
+
+    e.g.
+    G40:
+      type: cvtermprop
+      cv: 'FlyBase miscellaneous CV'
+      cvterm_namespace: experimental_tool_descriptor
+      prop_value: False
+      prop_cvterm: 'common_tool_uses'
+      prop_cv: 'feature_cvtermprop type'
+
+
+  featureprop:
+    Add featureprop, featurepropvalue, featureproppub
+      cv: cv name
+      cvterm: cvterm name
+      only_one: True or False
+        (if only one is True then previous will be deleted)
+      value: Either the field to get the value from or a format
+             IF no value then the same field is implied but also that
+             it is a list.
+      at_symbol_required: list of feature types allowed or ['ANY']
+    e.g.
+    G6:
+      type: featureprop
+      cv: property type
+      cvterm: gen_loc_error
+      value: G6
+    or
+    G39c:
+      type: featureprop
+      cv: property type
+      cvterm: gene_summary_date
+      only_one: True
+      value: YYYYMMDD
+    or
+    G15:
+      type: featureprop
+      cv: property type
+      cvterm: internal_notes
+      # is a list, so value implied
+
+
+  featurerelationship:
+    Add a feature relationship for the self.feature to the symbol given here.
+    Feature must already exist and symbol is given here.
+      cv: cv name used in relationship
+      cvterm: cvterm used in relationship
+      allowed_types: list of feature types that are allowed here. 
+
+    e.g.
+    G7a:
+      type: featurerelationship
+      cv: relationship type
+      cvterm: recom_left_end
+      allowed_types: ['gene', 'transposable_element_insertion_site']
+
+  feature_relationship:
+    Create feature if needed then the feature_relationship
+      cv: cv name
+      cvterm: cvterm name
+      feat_type: feature type name
+      subscript: False or True
+
+    e.g.
+    GA81a:
+      type: feature_relationship
+      cv: relationship type
+      cvterm: has_variant
+      feat_type: disease implicated variant
+      subscript: False
+
+  make_obsolete:
+    Make the current feature obsolete, no other fields are needed.
+    e.g.
+    G31a:
+      type: make_obsolete
+
+  dis_pub:
+    Dissociate this feature from the pub in the pub proforma.
+    No other fields are needed.
+    e.g.
+    G31b:
+      type: dis_pub
+
+
+  So this is the yml that the code uses to work everything out.
+  In each of the xxx_chado.py file there will be a dict of these types to the functions.
+
+  So here is an example for the chemical entitys:-
+    src/chado_object/chem_chado.py ....
+
+        # yaml file defines what to do with each field. Follow the light
+        self.type_dict = {'featureprop': self.load_featureprop,
+                          'synonym': self.load_synonym_chem,
+                          'ignore': self.ignore,
+                          'value': self.ignore,
+                          'disspub': self.dissociate_from_pub}
+
+        self.delete_dict = {'ignore': self.ignore,
+                            'synonym': self.rename_synonym,
+                            'featureprop': self.delete_featureprop,
+                            'value': self.change_featurepropvalue}
+
+  Most of these functions are in the base_feature object so can be used by all.
+  But you may need to write your own occasionally. Also NOTE: that if bang_c is allowed
+  then the type needs to be added to the delete_dict. 
+  
+  There are some "Specials". In Allele.yml we have two keys 'GENE' and 'DRIVER' that are not actual
+  proforma fields but rather information that is needed to process the proforma.
+  So sometimes in the code you will see if it is one of these then ignore whcih is okay.
+
+  There are many more 'types' but theses tend to be specific to those fields and are not generally applicable.
+
+
+By default all validation errors are warnings. To change these to critical errors they need to be added to the src/validation/critical_errors.yaml file.
+i.e for P1
+P1:
+  - null value not allowed
+  - unallowed value journal
+  - unallowed value compendium
+  - Cannot set P1 for an unattributed Pub
+
+whatever is after the '-' has to be in the error message to make it critical.
+The actual error message can be longer as it may have the symbol name etc in it which changes but
+as long as that bit after the '-' is part of it the error, it gets upgraded to a critical error.
+
