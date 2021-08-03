@@ -63,6 +63,7 @@ class ChadoAllele(ChadoFeatureObject):
                           'GA12a_featureprop': self.GA12a_featureprop,
                           'synonym': self.load_synonym,
                           'ignore': self.ignore,
+                          'libraryfeatureprop': self.load_lfp,
                           'rename': self.rename,
                           'dis_pub': self.dis_pub,
                           'make_obsolete': self.make_obsolete}
