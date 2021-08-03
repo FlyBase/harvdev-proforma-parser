@@ -76,18 +76,17 @@ class ChadoFeatureObject(ChadoObject):
         pattern = re.compile(r"@([^@]+)@")
         for item in list_of_vals:
             for symbol in pattern.findall(item[FIELD_VALUE]):
-                print("symbol:{} item:{}".format(symbol, item))
                 try:
                     feat = feature_symbol_lookup(self.session, None, symbol)
                 except NoResultFound:
-                    self.warning_error(item, "symbol '{}' lookup failed".format(symbol))
+                    self.critical_error(item, "symbol '{}' lookup failed".format(symbol))
                     continue
                 if self.process_data[key]['at_symbol_required'][0] == 'ANY':
                     return
                 if feat.cvterm.name not in self.process_data[key]['at_symbol_required']:
                     message = "{} is of type {} and not one of those listed {}".\
                         format(symbol, feat.cvterm.name, self.process_data[key]['at_symbol_required'])
-                    self.warning_error(item, message)
+                    self.critical_error(item, message)
 
     def make_obsolete(self, key):
         """Make feature obsolete.
