@@ -63,8 +63,12 @@ class ChadoFeatureObject(ChadoObject):
 
         # belts and braces check. Should be caught by validation but...
         if not self.has_data(key) or not self.has_data(keya):
+            if self.has_data(key):
+                data_key = key
+            else:
+                data_key = keya
             message = "{} cannot exist with out {} and vice versa".format(key, keya)
-            self.critical_error(self.process_data[key]['data'], message)
+            self.critical_error(self.process_data[data_key]['data'], message)
             return
 
         # Look up library given in GA91 or G91
@@ -86,7 +90,7 @@ class ChadoFeatureObject(ChadoObject):
         try:
             cvterm = get_cvterm(self.session, self.process_data[keya]['cv'], self.process_data[keya]['data'][FIELD_VALUE])
         except CodingError:
-            message = "Could not find cv '{}' cvterm '{}'".format(self.process_data[key]['cv'], self.process_data[keya]['data'][FIELD_VALUE])
+            message = "Could not find cv '{}' cvterm '{}'".format(self.process_data[keya]['cv'], self.process_data[keya]['data'][FIELD_VALUE])
             self.critical_error(self.process_data[key]['data'], message)
             return
 

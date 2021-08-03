@@ -285,6 +285,7 @@ GA36:
     type: featureprop
     cv: property type
     cvterm: disease_associated
+    only_one: True
 # 'GA56',  'phenstatement',                   #phenstatement
 GA56:
     type: pheno_cvterm
