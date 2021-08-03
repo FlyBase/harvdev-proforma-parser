@@ -21,8 +21,7 @@ from harvdev_utils.production import (Feature, FeatureCvterm, Cvterm, Cv,
                                       FeatureRelationship, FeatureRelationshipPub,
                                       FeatureRelationshipprop,
                                       FeatureGrpmember,
-                                      Grp, Grpmember,
-                                      Library, LibraryFeature, LibraryFeatureprop)
+                                      Grp, Grpmember)
 
 log = logging.getLogger(__name__)
 
@@ -216,48 +215,6 @@ class ChadoGene(ChadoFeatureObject):
         get_or_create(self.session, FeatureRelationship,
                       subject_id=self.feature.feature_id,
                       object_id=feature.feature_id,
-                      type_id=cvterm.cvterm_id)
-
-    def load_lfp(self, key):
-        """Load LibraryFeatureprop.
-
-        Args:
-            key (string): Proforma field key
-        """
-        if (not self.has_data('G91')) and (not self.has_data('G91a')):
-            return
-
-        # belts and braces check. Should be caught by validation but...
-        if not self.has_data('G91') or not self.has_data('G91a'):
-            message = "G91 cannot exist with out G91a and vice versa"
-            self.critical_error(self.process_data[key]['data'], message)
-            return
-
-        # Look up library given in GA91
-        # May need to do a library synonym lookup at some point.
-        try:
-            library = self.session.query(Library).\
-                filter(Library.name == self.process_data['G91']['data'][FIELD_VALUE],
-                       Library.organism_id == self.feature.organism_id).one()
-        except NoResultFound:
-            message = "No Library exists with the name {}".format(self.process_data['G91']['data'][FIELD_VALUE])
-            self.critical_error(self.process_data[key]['data'], message)
-            return
-
-        # create LibraryFeature
-        lib_feat, _ = get_or_create(self.session, LibraryFeature,
-                                    feature_id=self.feature.feature_id,
-                                    library_id=library.library_id)
-        # get cvterm for LibraryFeatureprop
-        try:
-            cvterm = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data['G91a']['data'][FIELD_VALUE])
-        except CodingError:
-            message = "Could not find cv '{}' cvterm '{}'".format(self.process_data[key]['cv'], self.process_data['G91a']['data'][FIELD_VALUE])
-            self.critical_error(self.process_data[key]['data'], message)
-            return
-
-        get_or_create(self.session, LibraryFeatureprop,
-                      library_feature_id=lib_feat.library_feature_id,
                       type_id=cvterm.cvterm_id)
 
     def extra_checks(self):

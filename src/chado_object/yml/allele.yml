@@ -280,6 +280,12 @@ GA34c:
     cv: property type
     cvterm: hdm_internal_notes
     value: GA34c
+# 'GA36', 'disease_associated',    #cv property type -- featureprop y/blank
+GA36:
+    type: featureprop
+    cv: property type
+    cvterm: disease_associated
+    only_one: True
 # 'GA56',  'phenstatement',                   #phenstatement
 GA56:
     type: pheno_cvterm
@@ -380,33 +386,19 @@ GA90j:
 # 'GA90k', 'type',                            #cv = SO
 GA90k: # processed with GA90a
     type: ignore
-
-
+# 'GA91',  'library_feature',                 #library_feature
+GA91:
+    type: ignore  # Dealt with by GA91a (has to have a prop)
+# 'GA91a', 'library_featureprop',             #library_featureprop    
+GA91a:
+    type: libraryfeatureprop
+    cv: library_featureprop type
 GA888:  # made up to test GA888 missing in other yaml file (src/validation/yaml/allele.yaml)
     type: ignore
 
-
-#select * from cvterm, cv where cvterm.cv_id = cv.cv_id and cvterm.name in ('discoverer', 'origin_type', 'origin_comment', 'misc', 'availability', 'internal_notes', 'hdm_comments', 'hdm_internal_notes', 'library_feature', 'library_featureprop');
-# cvterm_id | cv_id | definition | dbxref_id | is_obsolete | is_relationshiptype |        name        | cv_id |           name            | definition 
-#-----------+-------+------------+-----------+-------------+---------------------+--------------------+-------+---------------------------+------------
-#     60342 |     2 |            |   1663221 |           0 |                   0 | misc               |     2 | property type             | X
-#     60349 |     2 |            |   1663228 |           0 |                   0 | origin_comment     |     2 | property type             | X
-#     60363 |     2 |            |   1663243 |           0 |                   0 | discoverer         |     2 | property type             | 
-#     60366 |     2 |            |   1663246 |           0 |                   0 | internal_notes     |     2 | property type             | X
-#    116883 |     2 |            |   9007338 |           0 |                   0 | hdm_comments       |     2 | property type             | 
-#     59995 |     2 |            |   1663239 |           0 |                   0 | availability       |     2 | property type             | 
-#    116890 |     2 |            |   9007345 |           0 |                   0 | hdm_internal_notes |     2 | property type             | X
-#     60131 |    22 |            |   2413474 |           0 |                   0 | misc               |    22 | transgene_characteristics | 
-#     92316 |     2 |            |   2403246 |           0 |                   0 | origin_type        |     2 | property type             | 
-#(9 rows)
-
-
-    # 'GA91',  'library_feature',                 #library_feature
-    # 'GA91a', 'library_featureprop',             #library_featureprop
     # 'GA22',  'interallele_comp',
     # 'GA35', 'FlyBase miscellaneous CV'
     # ,    #feature_cvterm -- feature_cvtermprop type transgenic_product_class
-    # 'GA36', 'disease_associated',    #cv property type -- featureprop y/blank
 
 
 ####################################################

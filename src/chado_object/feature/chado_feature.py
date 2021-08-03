@@ -13,7 +13,7 @@ from harvdev_utils.char_conversions import sgml_to_plain_text, sgml_to_unicode
 from harvdev_utils.production import (
     Cvtermprop, Feature, FeatureRelationship, FeatureRelationshipPub, Featureprop,
     FeaturepropPub, FeaturePub, FeatureCvterm, FeatureCvtermprop, FeatureSynonym,
-    Pub, Synonym
+    Pub, Synonym, Library, LibraryFeature, LibraryFeatureprop
 )
 from harvdev_utils.chado_functions import (
     DataError, CodingError, feature_name_lookup, synonym_name_details, feature_symbol_lookup,
@@ -49,6 +49,54 @@ class ChadoFeatureObject(ChadoObject):
         self.feature = None
         self.unattrib_pub = None
         self.new = None
+
+    def load_lfp(self, key):
+        """Load LibraryFeatureprop.
+
+        Args:
+            key (string): Proforma field key
+        """
+        keya = key
+        key = keya[:-1]  # GA91a -> GA91, G91a -> G91
+        if (not self.has_data(key)) and (not self.has_data(keya)):
+            return
+
+        # belts and braces check. Should be caught by validation but...
+        if not self.has_data(key) or not self.has_data(keya):
+            if self.has_data(key):
+                data_key = key
+            else:
+                data_key = keya
+            message = "{} cannot exist with out {} and vice versa".format(key, keya)
+            self.critical_error(self.process_data[data_key]['data'], message)
+            return
+
+        # Look up library given in GA91 or G91
+        # May need to do a library synonym lookup at some point.
+        try:
+            library = self.session.query(Library).\
+                filter(Library.name == self.process_data[key]['data'][FIELD_VALUE],
+                       Library.organism_id == self.feature.organism_id).one()
+        except NoResultFound:
+            message = "No Library exists with the name {}".format(self.process_data[key]['data'][FIELD_VALUE])
+            self.critical_error(self.process_data[key]['data'], message)
+            return
+
+        # create LibraryFeature
+        lib_feat, _ = get_or_create(self.session, LibraryFeature,
+                                    feature_id=self.feature.feature_id,
+                                    library_id=library.library_id)
+        # get cvterm for LibraryFeatureprop
+        try:
+            cvterm = get_cvterm(self.session, self.process_data[keya]['cv'], self.process_data[keya]['data'][FIELD_VALUE])
+        except CodingError:
+            message = "Could not find cv '{}' cvterm '{}'".format(self.process_data[keya]['cv'], self.process_data[keya]['data'][FIELD_VALUE])
+            self.critical_error(self.process_data[key]['data'], message)
+            return
+
+        get_or_create(self.session, LibraryFeatureprop,
+                      library_feature_id=lib_feat.library_feature_id,
+                      type_id=cvterm.cvterm_id)
 
     def at_symbol_check_all(self):
         """Check symbols in all fields"""
