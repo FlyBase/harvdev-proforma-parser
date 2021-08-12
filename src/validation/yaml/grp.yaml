@@ -1,0 +1,183 @@
+#! GG1h. FlyBase gene group ID (FBgg) *z :
+GG1h:
+    type: string
+    required: False
+    nullable: True
+    no_bangc: True
+    regex: ^(FBgn\d{7})$
+    dependencies: [GG1a]
+    excludes: [GG1e, G1f]
+
+#! GG1a. Gene group symbol *a :
+GG1a:
+    type: string
+    required: True
+    no_bangc: True
+    regex: ^([A-Z,0-9,-]+)$ #Symbols are short (usually 2-6 characters), all UPPERCASE, without spaces. Valid characters are English letters, numbers, and hyphens (if necessary to preserve meaning/clarity).
+
+#! GG1b. Gene group symbol synonym(s) *i :
+GG1b:
+    type: [string, list]
+    nullable: True
+    at_forbidden: True
+    required: False
+
+#! GG1e. Action - rename this gene group symbol :
+GG1e:
+    type: string
+    no_bangc: True
+    at_forbidden: True
+    required: False
+    nullable: True
+    dependencies: [GG1g]
+    excludes: [GG1h]
+
+#! GG1g. Is GG1a the current symbol of a gene group? (y/n) :y
+GG1g:
+    type: string
+    required: True
+    allowed: [y,n]
+    no_bangc: True
+
+#! GG2a. Action - gene group name to use in FlyBase *e :
+GG2a:
+    type: string
+    required: False # Yes for new groups or merges, otherwise no. Do in code
+    no_bangc: True
+    at_forbidden: True
+    regex: ^([A-Z])$ # Free text, all UPPERCASE (except where lowercase brings meaning to the name). So warning
+
+#! GG2b. Gene group name synonym(s) *V :
+GG2b:
+    type: [list, string]
+    at_forbidden: True
+    required: False
+    no_bangc: True
+
+#! GG2c. Action - rename this gene group name :
+GG2c:
+   type: string
+   at_forbidden: True
+   required: False
+   nullable: True
+   no_bangc: True
+   dependencies: [GG2a]
+
+#! GG3a. Action - obsolete GG1a in FlyBase (y) TAKE CARE :
+GG3a:
+    type: string
+    at_forbidden: True
+    no_bangc: True
+    allowed: [y]
+    nullable: True
+
+#! GG3b. Action - dissociate GG1a from reference (y) TAKE CARE :
+GG3b:
+    type: string
+    at_forbidden: True
+    nullable: True
+    no_bangc: True
+    required: False
+    allowed: [y]
+
+#! GG4. Type of gene group [CV] *t :
+GG4:
+    type: string
+    at_forbidden: True
+    nullable: True
+    required: False
+
+#! GG5. Description of gene group [free text] *D :
+GG5:
+    type: [list, string]
+    at_required: True
+    nullable: True
+
+#! GG6a. Key GO term(s) - Cellular Component (term ; ID) *f :
+GG6a:
+    type: [list, string]
+    at_forbidden: True
+    nullable: True
+    regex: ^(.* ; GO:\d+)$
+  
+#! GG6b. Key GO term(s) - Molecular Function (term ; ID) *F :
+GG6b:
+    type: [list, string]
+    nullable: True
+    at_forbidden: True
+    regex: ^(.* ; GO:\d+)$
+
+#! GG6c. Key GO term(s) - Biological Process (term ; ID) *d :
+GG6a:
+    type: [list, string]
+    at_forbidden: True
+    nullable: True
+    regex: ^(.* ; GO:\d+)$
+
+#! GG7a. Related gene group(s) in FB - parent (symbol) *P :
+GG7a:
+    type: [list, string]
+    at_forbidden: True
+    nullable: True
+
+#! GG7c. Related gene group(s) in FB - undefined (symbol) *U :
+GG7c:
+    type: [list, string]
+    at_forbidden: True
+    nullable: True
+
+#! GG7d. Related dataset(s)/collection(s) in FB (symbol) *C :
+    # N.B. As of 150324, this field has not yet been implemented in the database and has thus been removed from the proforma - SO DO NOT USE THIS FIELD YET!!
+
+#! GG8a. Orthologous gene group accession (rpt. sect. for mult.) *O :
+GG8a:
+    type: string
+    at_forbidden: True
+    nullable: True
+    dependencies: [GG8b, GG8c]
+#! GG8b. FlyBase database symbol (DB1a) for GG8a *O :
+GG8b:
+    type: string
+    at_forbidden: True
+    nullable: True
+    dependencies: [GG8a, GG8c]  
+#! GG8c. Title for GG8a [free text] *T :
+GG8c:
+    type: string
+    at_forbidden: True
+    nullable: True
+    dependencies: [GG8a, GG8b]
+#! GG8d. Action - dissociate the accession in GG8a/GG8b from gene group in GG1a? (blank/y) :
+GG8d:
+    type: string
+    at_forbidden: True
+    nullable: True
+    allowed: [y]
+    dependencies: [GG8a, GG8b, GG8c]
+#! GG9. Other related external resource(s) ([title](URL)) *E :
+GG9:
+    type: [list, string]
+    at_forbidden: True
+    nullable: True
+    
+#! GG10. Comments [free text] *u :
+GG10:
+    type: [list, string]
+    at_required: True
+
+#! GG11. Date gene group last reviewed (YYYYMMDD) *y :
+G11:
+    type: string
+    at_forbidden: True
+    no_bangc: True
+    regex: ^(\d{8})$  # YYYYMMDD
+
+#! GG13. Pathway Thumbnails, archived at ftp site :
+GG13:
+    type: string
+    at_forbidden: True
+
+#! GG12. Internal notes *W :
+GG12:
+    type: [list, string]
+    at_forbidden: True

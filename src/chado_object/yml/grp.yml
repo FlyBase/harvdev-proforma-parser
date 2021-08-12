@@ -1,0 +1,84 @@
+#    'GG1a', 'symbol',                #grp_synonym
+GG1a:
+    type: ignore
+    cv: synonym type
+    cvterm: symbol
+    is_current: True
+    add_unattributed_paper: True
+    remove_old: True
+#    'GG1b', 'symbol',                #grp_synonym
+GG1b:
+    type: ignore
+#    'GG2a', 'fullname',              #grp_synonym
+GG2a:
+    type: ignore
+#    'GG2b', 'fullname',              #grp_synonym
+GG2b:
+    type: ignore
+#    'GG2c', 'fullname',              #rename grp_synonym
+GG2c:
+    type: ignore
+#    'GG1e', 'symbol',                #rename grp_synonym
+GG1e:
+    type: ignore
+
+#    'GG1g', 'new',                   #checking
+GG1g:
+    type: ignore
+#    'GG3a', 'is_obsolete',           #grp.is_obsolete
+GG13a:
+    type: ignore
+#    'GG3b', 'dissociate_pub',        #grp_pub
+GG3b:
+    type: ignore
+
+#    'GG4',  'FBcv',                  #grp_cvterm
+GG4:
+    type: ignore
+#    'GG6a', 'cellular_component',    #grp_cvterm
+GG6a:
+    type: ignore
+#    'GG6b', 'molecular_function',    #grp_cvterm
+GG6b:
+    type: ignore
+#    'GG6c', 'biological_process',    #grp_cvterm
+GG6c:
+    type: ignore
+
+#    'GG7a', 'parent_grp',            #grp_relationship.object_id
+GG7a:
+    type: ignore
+#    'GG7c', 'undefined_grp',         #grp_relationship.object_id
+GG7c:
+    type: ignore
+
+#    'GG7d', 'grpmember_dataset'
+GG7d:
+    type: ignore
+#    , #library_grpmember , grpmember.grp_id,grpmember.type_id='grpmember_dataset', library_id
+#
+#    'GG8a', '',  #grp_dbxref GG8a = dbxref.accession, GG8b = db.name, GG8c = dbxref.description
+GG8a:
+    type: ignore
+#    'GG5',  'gg_description',        #grpprop
+GG5:
+    type: ignore
+#    'GG9',  'gg_owner',             #grpprop
+GG9:
+    type: ignore
+#    'GG10', 'gg_comment',           #grpprop
+GG10:
+    type: ignore
+#    'GG11', 'gg_review_date',       #grpprop
+GG11:
+    type: ignore
+#    'GG12', 'gg_internal_notes',    #grpprop
+GG12:
+    type: ignore
+#    'GG13', 'gg_pathway_abstract',  #grpprop
+GG13:
+    type: ignore
+
+########## obsoleted ###############
+#    'GG1f', 'merge',                 #grp_merge_function
+
