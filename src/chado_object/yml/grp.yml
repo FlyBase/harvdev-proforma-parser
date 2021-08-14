@@ -3,12 +3,17 @@ GG1a:
     type: ignore
     cv: synonym type
     cvterm: symbol
+    type_cv: SO
+    type_cvterm: gene_group
     is_current: True
     add_unattributed_paper: True
     remove_old: True
 #    'GG1b', 'symbol',                #grp_synonym
 GG1b:
-    type: ignore
+    type: synonym
+    cv: synonym type
+    cvterm: symbol
+    is_current: False
 #    'GG2a', 'fullname',              #grp_synonym
 GG2a:
     type: ignore
@@ -35,6 +40,7 @@ GG3b:
 #    'GG4',  'FBcv',                  #grp_cvterm
 GG4:
     type: ignore
+    cv: FlyBase miscellaneous CV
 #    'GG6a', 'cellular_component',    #grp_cvterm
 GG6a:
     type: ignore
@@ -59,6 +65,10 @@ GG7d:
 #
 #    'GG8a', '',  #grp_dbxref GG8a = dbxref.accession, GG8b = db.name, GG8c = dbxref.description
 GG8a:
+    type: ignore
+GG8b:
+    type: ignore
+GG8c:
     type: ignore
 #    'GG5',  'gg_description',        #grpprop
 GG5:
