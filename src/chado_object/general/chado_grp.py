@@ -10,14 +10,11 @@
 import logging
 import os
 
-# from sqlalchemy.sql.functions import ReturnTypeFromArgs
 from harvdev_utils.chado_functions import get_or_create
 from chado_object.general.chado_general import ChadoGeneralObject
 from harvdev_utils.production import (
-    Grp, GrpSynonym, GrpPub, Synonym
+    Grp, GrpSynonym, GrpPub, Grpprop, GrppropPub
 )
-# from chado_object.chado_base import FIELD_VALUE
-# from sqlalchemy.orm.exc import NoResultFound
 
 log = logging.getLogger(__name__)
 
@@ -40,7 +37,9 @@ class ChadoGrp(ChadoGeneralObject):
         # Add the chado object type
         self.alchemy_object = {"general": Grp,
                                "synonym": GrpSynonym,
-                               "pub": GrpPub}
+                               "pub": GrpPub,
+                               "prop": Grpprop,
+                               "proppub": GrppropPub}
         # self.alchemy_object_primary = {"synonym": GrpSynonym.grp_id}
 
         # add the chado table name i.i. grp, cell_line, library
@@ -64,14 +63,6 @@ class ChadoGrp(ChadoGeneralObject):
         # Populated self.process_data with all possible keys.
         self.process_data = self.load_reference_yaml(yml_file, params)
 
-    def synonym_lookup(self, cvterm):
-        """filter for synonym lookup"""
-        fs = self.session.query(self.alchemy_object['synonym']).join(Synonym).\
-            filter(GrpSynonym.grp_id == self.chado.id(),
-                   Synonym.type_id == cvterm.cvterm_id,
-                   GrpSynonym.is_current == 't')
-        return fs
-
     def load_content(self, references):
         """Process the data.
 
@@ -92,15 +83,11 @@ class ChadoGrp(ChadoGeneralObject):
         # Set up how to process each type of input
         ##########################################
         self.type_dict = {'synonym': self.load_synonym,
-                          'ignore': self.load_ignore}
+                          'ignore': self.load_ignore,
+                          'prop': self.load_generalprop}
 
         self.chado = self.initialise_object()
 
-        print("We got here!!!!")
-        print("chado is {}".format(self.chado))
-        print(dir(self.chado))
-        print(dir(self.chado.__table__))
-        print(self.chado.__table__.primary_key.columns.values()[0].name)
         # add pub if not dissociate from pub
         if not self.creation_keys['dissociate'] or not self.has_data(self.creation_keys['dissociate']):
             get_or_create(self.session, self.alchemy_object['pub'], grp_id=self.chado.grp_id, pub_id=self.pub.pub_id)

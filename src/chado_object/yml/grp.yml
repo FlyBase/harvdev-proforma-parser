@@ -16,10 +16,16 @@ GG1b:
     is_current: False
 #    'GG2a', 'fullname',              #grp_synonym
 GG2a:
-    type: ignore
+    type: synonym
+    cv: synonym type
+    cvterm: fullname
+    is_current: True
 #    'GG2b', 'fullname',              #grp_synonym
 GG2b:
-    type: ignore
+    type: synonym
+    cv: synonym type
+    cvterm: fullname
+    is_current: False
 #    'GG2c', 'fullname',              #rename grp_synonym
 GG2c:
     type: ignore
@@ -72,23 +78,39 @@ GG8c:
     type: ignore
 #    'GG5',  'gg_description',        #grpprop
 GG5:
-    type: ignore
+    type: prop
+    cv: grp property type
+    cvterm: gg_description
+    # is a list, so value implied
 #    'GG9',  'gg_owner',             #grpprop
 GG9:
-    type: ignore
+    type: prop
+    cv: grp property type
+    cvterm: gg_owner
+    # is a list, so value implied
 #    'GG10', 'gg_comment',           #grpprop
 GG10:
-    type: ignore
+    type: prop
+    cv: grp property type
+    cvterm: gg_comment
 #    'GG11', 'gg_review_date',       #grpprop
 GG11:
-    type: ignore
+    type: prop
+    cv: grp property type
+    cvterm: gg_review_date
+    value: GG11
 #    'GG12', 'gg_internal_notes',    #grpprop
 GG12:
-    type: ignore
+    type: prop
+    cv: grp property type
+    cvterm: gg_internal_notes
+    # is a list, so value implied
 #    'GG13', 'gg_pathway_abstract',  #grpprop
 GG13:
-    type: ignore
-
+    type: prop
+    cv: grp property type
+    cvterm: gg_pathway_abstract
+    value: GG13
 ########## obsoleted ###############
 #    'GG1f', 'merge',                 #grp_merge_function
 

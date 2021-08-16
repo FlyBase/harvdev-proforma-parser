@@ -108,7 +108,7 @@ GG6b:
     regex: ^(.* ; GO:\d+)$
 
 #! GG6c. Key GO term(s) - Biological Process (term ; ID) *d :
-GG6a:
+GG6c:
     type: [list, string]
     at_forbidden: True
     nullable: True
@@ -166,7 +166,7 @@ GG10:
     at_required: True
 
 #! GG11. Date gene group last reviewed (YYYYMMDD) *y :
-G11:
+GG11:
     type: string
     at_forbidden: True
     no_bangc: True

@@ -188,6 +188,7 @@
 
 
 """
+# from sqlalchemy.sql.schema import PrimaryKeyConstraint
 from chado_object.chado_base import ChadoObject, FIELD_VALUE
 
 from harvdev_utils.chado_functions import get_or_create, get_cvterm
@@ -199,7 +200,7 @@ from harvdev_utils.char_conversions import sgml_to_unicode
 from harvdev_utils.production import Synonym
 from harvdev_utils.chado_functions import CodingError
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
-# from datetime import datetime
+from datetime import datetime
 import logging
 # import re
 from harvdev_utils.production import Pub
@@ -249,6 +250,16 @@ class ChadoGeneralObject(ChadoObject):
             'org': None
         }
         self.fb_code = None
+
+    def synonym_lookup(self, cvterm):
+        """filter for synonym lookup"""
+        id_method = getattr(self.alchemy_object['synonym'], self.primary_key_name())
+        cur_method = getattr(self.alchemy_object['synonym'], 'is_current')
+        gs = self.session.query(self.alchemy_object['synonym']).join(Synonym).\
+            filter(id_method == self.chado.id(),
+                   Synonym.type_id == cvterm.cvterm_id,
+                   cur_method == 't')
+        return gs
 
     def primary_key_name(self):
         """Get primary key name"""
@@ -374,6 +385,7 @@ class ChadoGeneralObject(ChadoObject):
                 fs = self.add_by_synonym_name_and_type(key, item[FIELD_VALUE], cv_name, cvterm_name, pub_id)
                 if is_current and cvterm_name == 'symbol':
                     self.chado.name = sgml_to_plain_text(item[FIELD_VALUE])
+                if is_current:
                     fs.is_current = is_current
 
     def add_by_synonym_name_and_type(self, key, synonym_name, cv_name, cvterm_name, pub_id):
@@ -433,9 +445,6 @@ class ChadoGeneralObject(ChadoObject):
             raise CodingError("HarvdevError: Could not find cvterm '{}' for cv {}".format(cvterm_name, cv_name))
 
         try:
-            print("BOB: {}".format(self.alchemy_object['synonym']))
-            print("BOB: {}".format(dir(self.alchemy_object['synonym'])))
-            print("BOB: {}".format(self.alchemy_object['synonym'].grp_id))
             fss = self.synonym_lookup(cvterm)
             for fs in fss:
                 fs.is_current = False
@@ -450,3 +459,71 @@ class ChadoGeneralObject(ChadoObject):
             raise MultipleResultsFound
         except NoResultFound:
             return
+
+    def load_generalproplist(self, key, prop_cv_id):
+        """Load a general props that are in a list.
+
+        Args:
+            key (string): key/field of proforma to get data from.
+            prop_cv_id (int): id of the prop cvterm
+        """
+        for item in self.process_data[key]['data']:
+            opts = {self.primary_key_name(): self.chado.id(),
+                    'type_id': prop_cv_id,
+                    'value': item[FIELD_VALUE]}
+            gp, _ = get_or_create(self.session, self.alchemy_object['prop'], **opts)
+            opts = {"{}prop_id".format(self.table_name): gp.id(),
+                    "pub_id": self.pub.pub_id}
+            get_or_create(self.session, self.alchemy_object['proppub'], **opts)
+
+    def load_generalprop(self, key):
+        """Store the feature prop.
+
+        If there is a value then it will have a 'value' in the yaml
+        pointing to the field that is holding the value.
+
+        yml options:
+           cv:
+           cvterm:
+           value:    <optional>, key to value field.
+           only_one: <optional>, defaults to False.
+
+        Args:
+            key (string): key/field of proforma to get data from.
+        """
+        if not self.has_data(key):
+            return
+        value = None
+        prop_cv_id = self.cvterm_query(self.process_data[key]['cv'], self.process_data[key]['cvterm'])
+        if type(self.process_data[key]['data']) is list:
+            self.load_generalproplist(key, prop_cv_id)
+            return
+        if 'only_one' in self.process_data[key] and self.process_data[key]['only_one']:
+            opts = {self.primary_key_name(): self.chado.id(),
+                    'type_id': prop_cv_id}
+            fp, is_new = get_or_create(self.session, self.alchemy_object['prop'], **opts)
+            if 'value' in self.process_data[key] and self.process_data[key]['value'] != 'YYYYMMDD':
+                value = self.process_data[self.process_data[key]['value']]['data'][FIELD_VALUE]
+            elif 'value' in self.process_data[key]:
+                value = datetime.today().strftime('%Y%m%d')
+            if is_new:
+                fp.value = value
+            elif fp.value:
+                message = "Already has a value. Use bangc to change it"
+                self.critical_error(self.process_data[self.process_data[key]['value']]['data'], message)
+        elif ('value' in self.process_data[key] and self.has_data(self.process_data[key]['value'])):
+            opts = {self.primary_key_name(): self.chado.id(),
+                    'type_id': prop_cv_id,
+                    'value': self.process_data[self.process_data[key]['value']]['data'][FIELD_VALUE]}
+            print("BOB: {}: '{}'".format(self.process_data[key]['cvterm'],
+                                         self.process_data[self.process_data[key]['value']]['data'][FIELD_VALUE]))
+            fp, is_new = get_or_create(self.session, self.alchemy_object['prop'], **opts)
+        else:
+            message = "Coding error. only_one or value must be specified if not a list."
+            self.critical_error(self.process_data[self.process_data[key]['value']]['data'], message)
+            return
+
+        # create general prop pub
+        opts = {"{}prop_id".format(self.table_name): fp.id(),
+                "pub_id": self.pub.pub_id}
+        get_or_create(self.session, self.alchemy_object['proppub'], **opts)
