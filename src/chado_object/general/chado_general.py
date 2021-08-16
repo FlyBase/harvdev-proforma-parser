@@ -202,7 +202,7 @@ from harvdev_utils.chado_functions import CodingError
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from datetime import datetime
 import logging
-# import re
+import re
 from harvdev_utils.production import Pub
 
 log = logging.getLogger(__name__)
@@ -515,8 +515,6 @@ class ChadoGeneralObject(ChadoObject):
             opts = {self.primary_key_name(): self.chado.id(),
                     'type_id': prop_cv_id,
                     'value': self.process_data[self.process_data[key]['value']]['data'][FIELD_VALUE]}
-            print("BOB: {}: '{}'".format(self.process_data[key]['cvterm'],
-                                         self.process_data[self.process_data[key]['value']]['data'][FIELD_VALUE]))
             fp, is_new = get_or_create(self.session, self.alchemy_object['prop'], **opts)
         else:
             message = "Coding error. only_one or value must be specified if not a list."
@@ -527,3 +525,25 @@ class ChadoGeneralObject(ChadoObject):
         opts = {"{}prop_id".format(self.table_name): fp.id(),
                 "pub_id": self.pub.pub_id}
         get_or_create(self.session, self.alchemy_object['proppub'], **opts)
+
+    def load_goterm(self, key):
+        """Load GO cvterms"""
+        pattern = r'^(.+)\s*;\s*GO:(\d+)$'
+        for item in self.process_data[key]['data']:  # always a list
+            fields = re.search(pattern, item[FIELD_VALUE])
+            if fields:
+                go_name = fields.group(1).strip()
+                gocode = fields.group(2)
+            else:
+                message = "'{}' Does not fit the regex of {}/".format(item[FIELD_VALUE], pattern)
+                self.critical_error(self.process_data[key]['data'][0], message)
+                continue
+            cvterm = get_cvterm(self.session, self.process_data[key]['cv'], go_name)
+            if gocode != cvterm.dbxref.accession:
+                mess = "{} matches {} but lookup gives {} instead?".format(go_name, gocode, cvterm.dbxref.accession)
+                self.warning_error(self.process_data[self.process_data[key]['value']]['data'][0], mess)
+
+            opts = {self.primary_key_name(): self.chado.id(),
+                    'cvterm_id': cvterm.cvterm_id,
+                    'pub_id': self.pub.pub_id}
+            get_or_create(self.session, self.alchemy_object['cvterm'], **opts)

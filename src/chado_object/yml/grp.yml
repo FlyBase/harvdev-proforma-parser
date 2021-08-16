@@ -49,14 +49,16 @@ GG4:
     cv: FlyBase miscellaneous CV
 #    'GG6a', 'cellular_component',    #grp_cvterm
 GG6a:
-    type: ignore
+    type: cvterm
+    cv: cellular_component
 #    'GG6b', 'molecular_function',    #grp_cvterm
 GG6b:
-    type: ignore
+    type: cvterm
+    cv: molecular_function
 #    'GG6c', 'biological_process',    #grp_cvterm
 GG6c:
-    type: ignore
-
+    type: cvterm
+    cv: biological_process
 #    'GG7a', 'parent_grp',            #grp_relationship.object_id
 GG7a:
     type: ignore
