@@ -20,6 +20,8 @@ GG2a:
     cv: synonym type
     cvterm: fullname
     is_current: True
+    add_unattributed_paper: True
+    remove_old: True
 #    'GG2b', 'fullname',              #grp_synonym
 GG2b:
     type: synonym
@@ -45,19 +47,19 @@ GG3b:
 
 #    'GG4',  'FBcv',                  #grp_cvterm
 GG4:
-    type: ignore
+    type: cvterm
     cv: FlyBase miscellaneous CV
 #    'GG6a', 'cellular_component',    #grp_cvterm
 GG6a:
-    type: cvterm
+    type: gocvterm
     cv: cellular_component
 #    'GG6b', 'molecular_function',    #grp_cvterm
 GG6b:
-    type: cvterm
+    type: gocvterm
     cv: molecular_function
 #    'GG6c', 'biological_process',    #grp_cvterm
 GG6c:
-    type: cvterm
+    type: gocvterm
     cv: biological_process
 #    'GG7a', 'parent_grp',            #grp_relationship.object_id
 GG7a:
@@ -73,10 +75,13 @@ GG7d:
 #
 #    'GG8a', '',  #grp_dbxref GG8a = dbxref.accession, GG8b = db.name, GG8c = dbxref.description
 GG8a:
+    type: dbxref
+    accession: GG8a
+    dbname: GG8b
+    description: GG8c
+GG8b:  # processed by GG8a
     type: ignore
-GG8b:
-    type: ignore
-GG8c:
+GG8c:  # processed by GG8a
     type: ignore
 #    'GG5',  'gg_description',        #grpprop
 GG5:

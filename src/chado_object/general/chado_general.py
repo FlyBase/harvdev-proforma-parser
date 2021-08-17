@@ -190,7 +190,6 @@
 """
 # from sqlalchemy.sql.schema import PrimaryKeyConstraint
 from chado_object.chado_base import ChadoObject, FIELD_VALUE
-
 from harvdev_utils.chado_functions import get_or_create, get_cvterm
 from harvdev_utils.chado_functions.organism import get_organism  # ,get_default_organism,
 from harvdev_utils.chado_functions.general import general_symbol_lookup
@@ -203,7 +202,7 @@ from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from datetime import datetime
 import logging
 import re
-from harvdev_utils.production import Pub
+from harvdev_utils.production import Pub, Db, Dbxref
 
 log = logging.getLogger(__name__)
 
@@ -547,3 +546,61 @@ class ChadoGeneralObject(ChadoObject):
                     'cvterm_id': cvterm.cvterm_id,
                     'pub_id': self.pub.pub_id}
             get_or_create(self.session, self.alchemy_object['cvterm'], **opts)
+
+    def load_cvterm(self, key):
+        """Load cvterm."""
+        if type(self.process_data[key]['data']) is list:
+            items = self.process_data[key]['data']
+        else:
+            items = [self.process_data[key]['data']]
+
+        for item in items:
+            try:
+                cvterm = get_cvterm(self.session, self.process_data[key]['cv'], item[FIELD_VALUE])
+            except CodingError:
+                mess = "Could not find cv '{}', cvterm '{}'.".format(self.process_data[key]['cv'], item[FIELD_VALUE])
+                self.critical_error(item, mess)
+                continue
+            opts = {self.primary_key_name(): self.chado.id(),
+                    'cvterm_id': cvterm.cvterm_id,
+                    'pub_id': self.pub.pub_id}
+            get_or_create(self.session, self.alchemy_object['cvterm'], **opts)
+
+    def load_dbxref(self, key):  # noqa
+        """Load cvterm"""
+        if not self.has_data(key):
+            return
+        mess = None
+        try:
+            db_name = self.process_data[self.process_data[key]['dbname']]['data'][FIELD_VALUE]
+            acc = self.process_data[self.process_data[key]['accession']]['data'][FIELD_VALUE]
+        except KeyError:
+            try:
+                mess = "dbname Field '{}' and accession Field '{}' REQUIRED for this.".\
+                    format(self.process_data[key]['dbname'], self.process_data[key]['accession'])
+            except KeyError:
+                mess = "Contact Harvdev: fields not defined for accession and description"
+        if mess:
+            self.critical_error(self.process_data[key]['data'], mess)
+            return
+
+        # lookup db make sure it exists!
+        try:
+            db = self.session.query(Db).filter(Db.name == db_name).one()
+        except NoResultFound:
+            mess = "Could not find db '{}' in the database.".format(db_name)
+            self.critical_error(self.process_data[key]['data'], mess)
+            return
+
+        # create/get the dbxref.
+        opts = {'db_id': db.db_id,
+                'accession': acc}
+        dbx, _ = get_or_create(self.session, Dbxref, **opts)
+        if 'description' in self.process_data[key]:
+            desc_key = self.process_data[key]['description']
+            dbx.description = self.process_data[desc_key]['data'][FIELD_VALUE]
+
+        # add this to self.chado.
+        opts = {self.primary_key_name(): self.chado.id(),
+                'dbxref_id': dbx.dbxref_id}
+        get_or_create(self.session, self.alchemy_object['dbxref'], **opts)

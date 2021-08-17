@@ -11,10 +11,9 @@ import logging
 import os
 
 from harvdev_utils.chado_functions import get_or_create
-from harvdev_utils.production.production import GrpCvterm
 from chado_object.general.chado_general import ChadoGeneralObject
 from harvdev_utils.production import (
-    Grp, GrpSynonym, GrpPub, Grpprop, GrppropPub
+    Grp, GrpCvterm, GrpDbxref, GrpPub, Grpprop, GrppropPub, GrpSynonym
 )
 
 log = logging.getLogger(__name__)
@@ -41,7 +40,8 @@ class ChadoGrp(ChadoGeneralObject):
                                "pub": GrpPub,
                                "prop": Grpprop,
                                "proppub": GrppropPub,
-                               "cvterm": GrpCvterm}
+                               "cvterm": GrpCvterm,
+                               "dbxref": GrpDbxref}
         # self.alchemy_object_primary = {"synonym": GrpSynonym.grp_id}
 
         # add the chado table name i.i. grp, cell_line, library
@@ -87,7 +87,9 @@ class ChadoGrp(ChadoGeneralObject):
         self.type_dict = {'synonym': self.load_synonym,
                           'ignore': self.load_ignore,
                           'prop': self.load_generalprop,
-                          'cvterm': self.load_goterm}
+                          'gocvterm': self.load_goterm,
+                          'cvterm': self.load_cvterm,
+                          'dbxref': self.load_dbxref}
 
         self.chado = self.initialise_object()
 
