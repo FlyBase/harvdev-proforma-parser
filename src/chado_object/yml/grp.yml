@@ -63,11 +63,16 @@ GG6c:
     cv: biological_process
 #    'GG7a', 'parent_grp',            #grp_relationship.object_id
 GG7a:
-    type: ignore
+    type: relationship
+    subject: False
+    rel_cv: relationship type
+    rel_cvterm: parent_grp
 #    'GG7c', 'undefined_grp',         #grp_relationship.object_id
 GG7c:
-    type: ignore
-
+    type: relationship
+    subject: False
+    rel_cv: relationship type
+    rel_cvterm: undefined_grp
 #    'GG7d', 'grpmember_dataset'
 GG7d:
     type: ignore

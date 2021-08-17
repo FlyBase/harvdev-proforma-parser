@@ -604,3 +604,31 @@ class ChadoGeneralObject(ChadoObject):
         opts = {self.primary_key_name(): self.chado.id(),
                 'dbxref_id': dbx.dbxref_id}
         get_or_create(self.session, self.alchemy_object['dbxref'], **opts)
+
+    def load_relationship(self, key):
+        """Load relationship (too same type)"""
+        # lookup relationship object
+        for item in self.process_data[key]['data']:
+            cvterm = get_cvterm(self.session, 'synonym type', 'symbol')
+            gensyn = self.session.query(self.alchemy_object['synonym']).join(Synonym).\
+                filter(Synonym.name == item[FIELD_VALUE],
+                       Synonym.type_id == cvterm.cvterm_id,
+                       self.alchemy_object['synonym'].is_current == 't').one()
+
+            # get cvterm for type of relatiosnhip
+            cvterm = get_cvterm(self.session, self.process_data[key]['rel_cv'], self.process_data[key]['rel_cvterm'])
+
+            # create XXX_relationship
+            opts = {'type_id': cvterm.cvterm_id}
+            if self.process_data[key]['subject']:
+                opts['subject_id'] = gensyn.gen_id()
+                opts['object_id'] = self.chado.id()
+            else:
+                opts['object_id'] = gensyn.gen_id()
+                opts['subject_id'] = self.chado.id()
+            gr, _ = get_or_create(self.session, self.alchemy_object['relationship'], **opts)
+
+            # create XXX_relationshipPub
+            opts = {'{}_relationship_id'.format(self.table_name): gr.id(),
+                    'pub_id': self.pub.pub_id}
+            get_or_create(self.session, self.alchemy_object['relationshippub'], **opts)
