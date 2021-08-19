@@ -927,11 +927,8 @@ class ChadoFeatureObject(ChadoObject):
             data_list = self.process_data[key]['data']
 
         if bangc:
-            # hh_syn has only one cvterm related to it so no need to specify.
             self.session.query(FeatureSynonym).\
                 filter(FeatureSynonym.pub_id == self.pub.pub_id,
-                       FeatureSynonym.is_current == False,  # noqa: E712
-                       FeatureSynonym.pub_id == self.pub.pub_id,
                        FeatureSynonym.feature_id == self.feature.feature_id).delete()
         else:
             for data in data_list:
@@ -942,9 +939,8 @@ class ChadoFeatureObject(ChadoObject):
                 for syn in synonyms:
                     syn_count += 1
                     f_syns = self.session.query(FeatureSynonym).\
-                        filter(FeatureSynonym.humanhealth_id == self.feature.feature_id,
+                        filter(FeatureSynonym.feature_id == self.feature.feature_id,
                                FeatureSynonym.synonym_id == syn.synonym_id,
-                               FeatureSynonym.is_current == False,  # noqa: E712
                                FeatureSynonym.pub_id == self.pub.pub_id)
                     for f_syn in f_syns:
                         f_syn_count += 1
