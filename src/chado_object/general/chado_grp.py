@@ -1,7 +1,7 @@
 """
-:synopsis: The "Allele" ChadoObject.
+:synopsis: The "Grp" ChadoObject.
 
-:overview: Cut down version of Allele to start with to enable DIV Proforma to work.
+:overview: Code to setup and process GENEGROUP PROFORMA.
 
 :moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>
                Ian Longden <ianlongden@morgan.harvard.edu>
@@ -35,7 +35,7 @@ class ChadoGrp(ChadoGeneralObject):
         self.new = False
         self.pub = None
         self.chado = None
-        # Add the chado object type
+        # Add the chado object types needed
         self.alchemy_object = {"general": Grp,
                                "synonym": GrpSynonym,
                                "pub": GrpPub,
@@ -45,9 +45,8 @@ class ChadoGrp(ChadoGeneralObject):
                                "dbxref": GrpDbxref,
                                "relationship": GrpRelationship,
                                "relationshippub": GrpRelationshipPub}
-        # self.alchemy_object_primary = {"synonym": GrpSynonym.grp_id}
 
-        # add the chado table name i.i. grp, cell_line, library
+        # add the chado table name
         self.table_name = 'grp'
         self.fb_code = 'gg'
         self.creation_keys = {

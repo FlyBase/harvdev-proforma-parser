@@ -190,6 +190,14 @@
  public | strainprop_pub                                                  | table    | go
 
 
+
+You will need to add some functions to harvdev-utils production.py for new children i.e.
+for Grp we added:-
+gen_id() to GrpSynonym
+id() to GrpSynonym and Grpprop
+
+so add simlar for new ones.
+
 """
 # from sqlalchemy.sql.schema import PrimaryKeyConstraint
 from chado_object.chado_base import ChadoObject, FIELD_VALUE
@@ -227,7 +235,7 @@ class ChadoGeneralObject(ChadoObject):
         # add the chado table name i.e. grp, cell_line, library
         self.table_name = None
 
-        # chado object
+        # chado object i.e. Grp, CellLine,  Library
         self.chado = None
 
         # Do we add unattrubuted pub
@@ -236,11 +244,9 @@ class ChadoGeneralObject(ChadoObject):
         # Is the object new
         self.new = None
 
-        # common start bit of all fields.
-        # self.field_code = None  # e.g. for Strain "SN"
-
         # field extensions needed for initial get or create.
         # these will be set in the children
+        # Allows for a common method to be used to do this.
         self.creation_keys = {
             'symbol': None,  # e.g.'GG1a'
             'merge': None,
@@ -254,7 +260,11 @@ class ChadoGeneralObject(ChadoObject):
         self.fb_code = None
 
     def synonym_lookup(self, cvterm):
-        """filter for synonym lookup"""
+        """filter for synonym lookup
+
+        Args:
+            cvterm (cvterm object): type of synonym to look up
+        """
         id_method = getattr(self.alchemy_object['synonym'], self.primary_key_name())
         cur_method = getattr(self.alchemy_object['synonym'], 'is_current')
         gs = self.session.query(self.alchemy_object['synonym']).join(Synonym).\
@@ -264,11 +274,22 @@ class ChadoGeneralObject(ChadoObject):
         return gs
 
     def primary_key_name(self):
-        """Get primary key name"""
+        """Get primary key name
+
+        This could have been put in the utils production.py and hardcoded
+        but this make it more foolproof i hope.
+        """
         return self.chado.__table__.primary_key.columns.values()[0].name
 
     def add_type(self, opts):
-        """ Add type to opts if exists."""
+        """ Add type to opts if exists.
+
+        Args:
+            opts (dict): dictionary to add type to.
+
+        Returns:
+            cvterm that was looked up.
+        """
         type_name = None
         if self.creation_keys['type']:
             opts['type_id'] = get_cvterm(self.session,
@@ -289,7 +310,13 @@ class ChadoGeneralObject(ChadoObject):
         return is_new
 
     def add_organism(self, opts):
-        """Get organism."""
+        """Get organism.
+
+        Args:
+            opts (dict): dictionary to add organism_id to.
+        Returns:
+            organsim_id looked up.
+        """
         organism_id = None
         if self.creation_keys['org']:
             if not self.has_data(self.creation_keys['org']):
@@ -320,14 +347,14 @@ class ChadoGeneralObject(ChadoObject):
     def initialise_object(self):
         """ Get or create an object.
 
-        Should be replaced in individual children due to the
-        wide array of none values allowed.
+        See creation_keys defined in the child.
+        The proforma field/keys are defined in this to control.
         """
         if self.creation_keys['rename'] and self.has_data(self.creation_keys['rename']):
             return self.initialise_and_rename()
 
         if self.creation_keys['merge'] and self.has_data(self.creation_keys['merge']):
-            pass  # Need to code this still
+            pass  # Need to code this still Not needed for Grp
 
         proforma_defined_as_new = self.is_new()
         opts = {'name': self.process_data[self.creation_keys['symbol']]['data'][FIELD_VALUE]}
@@ -358,7 +385,16 @@ class ChadoGeneralObject(ChadoObject):
         return self.unattrib_pub
 
     def get_pubs(self, key):
-        """Get list of pubs to use."""
+        """Get list of pubs to use.
+
+        chado_object/yml/xxx_yml has info on what pubs are allowed
+        so process this info and pass on what is needed.
+
+        Args:
+           key (string): proforma field/key.
+        Returns:
+           List of pub_ids.
+        """
         pub_id = self.pub.pub_id
         pubs = [pub_id]
         unattrib_pub_id = self.get_unattrib_pub().pub_id
@@ -370,7 +406,11 @@ class ChadoGeneralObject(ChadoObject):
         return pubs
 
     def check_old_synonym(self, key):
-        """Check current synonyms match."""
+        """Check current synonyms match.
+
+        Args:
+           key (string): proforma field/key.
+        """
         cv_name = self.process_data[key]['cv']
         cvterm_name = self.process_data[key]['cvterm']
         cvterm = get_cvterm(self.session, cv_name, cvterm_name)
@@ -425,7 +465,15 @@ class ChadoGeneralObject(ChadoObject):
                 fs.is_current = is_current
 
     def add_by_synonym_name_and_type(self, key, synonym_name, cv_name, cvterm_name, pub_id):
-        """Add synonym"""
+        """Add synonym.
+
+        Args:
+           key (string): proforma field/key.
+           synonym_name (string): name of the synonym to add
+           cv_name (string): name of the synonyms cv (usually 'synonym type')
+           cvterm_name (string): name of the synonym (i.e. 'symbol' or 'fullname')
+           pub_id (int): pub primary key id.
+        """
         cvterm = get_cvterm(self.session, cv_name, cvterm_name)
 
         if not cvterm:
@@ -552,7 +600,11 @@ class ChadoGeneralObject(ChadoObject):
         get_or_create(self.session, self.alchemy_object['proppub'], **opts)
 
     def load_goterm(self, key):
-        """Load GO cvterms"""
+        """Load GO cvterms.
+
+        Args:
+            key (string): key/field of proforma to get data from.
+        """
         pattern = r'^(.+)\s*;\s*GO:(\d+)$'
         for item in self.process_data[key]['data']:  # always a list
             fields = re.search(pattern, item[FIELD_VALUE])
@@ -574,7 +626,11 @@ class ChadoGeneralObject(ChadoObject):
             get_or_create(self.session, self.alchemy_object['cvterm'], **opts)
 
     def load_cvterm(self, key):
-        """Load cvterm."""
+        """Load cvterm.
+
+        Args:
+            key (string): key/field of proforma to get data from.
+        """
         if type(self.process_data[key]['data']) is list:
             items = self.process_data[key]['data']
         else:
@@ -593,7 +649,14 @@ class ChadoGeneralObject(ChadoObject):
             get_or_create(self.session, self.alchemy_object['cvterm'], **opts)
 
     def load_dbxref(self, key):  # noqa
-        """Load cvterm"""
+        """Load dbxref.
+
+        yml will have defined the keys for the dbname, accession and possibly the desciption.
+        See GG8a in chado_object/yml/grp.yml for example.
+
+        Args:
+            key (string): key/field of proforma to get data from.
+        """
         if not self.has_data(key):
             return
         mess = None
@@ -632,7 +695,11 @@ class ChadoGeneralObject(ChadoObject):
         get_or_create(self.session, self.alchemy_object['dbxref'], **opts)
 
     def load_relationship(self, key):
-        """Load relationship (too same type)"""
+        """Load relationship (too same type).
+
+        Args:
+            key (string): key/field of proforma to get data from.
+        """
         # lookup relationship object
         for item in self.process_data[key]['data']:
             cvterm = get_cvterm(self.session, 'synonym type', 'symbol')
@@ -663,12 +730,16 @@ class ChadoGeneralObject(ChadoObject):
             get_or_create(self.session, self.alchemy_object['relationshippub'], **opts)
 
     def make_obsolete(self, key):
-        """ Make self obsolete """
+        """ Make self obsolete.
+
+        Args:
+            key (string): Proforma field key
+        """
         if not self.has_data(key) or self.process_data[key]['data'][FIELD_VALUE] != 'y':
             return
         self.chado.is_obsolete = True
 
-    def dis_pub_table(self, key, chado_object_table):
+    def dis_pub_table(self, chado_object_table):
         """Dissociate pub and self.chado form table.
 
         Args:
@@ -693,4 +764,4 @@ class ChadoGeneralObject(ChadoObject):
         for chado_table in (self.alchemy_object['cvterm'],
                             self.alchemy_object['synonym'],
                             self.alchemy_object['pub']):
-            self.dis_pub_table(key, chado_table)
+            self.dis_pub_table(chado_table)
