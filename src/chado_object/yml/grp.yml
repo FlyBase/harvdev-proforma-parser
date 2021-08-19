@@ -20,8 +20,9 @@ GG2a:
     cv: synonym type
     cvterm: fullname
     is_current: True
-    add_unattributed_paper: True
+    add_unattributed_paper_only: True
     remove_old: True
+    check_old_synonym: 'GG2c'
 #    'GG2b', 'fullname',              #grp_synonym
 GG2b:
     type: synonym
@@ -30,21 +31,25 @@ GG2b:
     is_current: False
 #    'GG2c', 'fullname',              #rename grp_synonym
 GG2c:
-    type: ignore
+    type: ignore  # check added to GG2a wrt this.
+    cv: synonym type
+    cvterm: fullname
 #    'GG1e', 'symbol',                #rename grp_synonym
 GG1e:
-    type: ignore
-
+    type: ignore # Done as part of initialisation
+    must_be_blank: ['GG1h']
+    must_be_n: ['GG1g']
+    must_be_diff: ['GG1a']
 #    'GG1g', 'new',                   #checking
 GG1g:
     type: ignore
 #    'GG3a', 'is_obsolete',           #grp.is_obsolete
-GG13a:
-    type: ignore
+GG3a:
+    type: obsolete
 #    'GG3b', 'dissociate_pub',        #grp_pub
 GG3b:
-    type: ignore
-
+    type: dis_pub
+    obsolete_if_last: True
 #    'GG4',  'FBcv',                  #grp_cvterm
 GG4:
     type: cvterm

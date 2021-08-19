@@ -89,6 +89,9 @@
  public | grp_relationship_pub                                            | table    | go
  public | grp_relationshipprop                                            | table    | go
  public | grp_synonym                                                     | table    | go
+
+ GRPMEMBER
+ ---------
  public | grpmember                                                       | table    | go
  public | grpmember_cvterm                                                | table    | go
  public | grpmember_pub                                                   | table    | go
@@ -297,6 +300,23 @@ class ChadoGeneralObject(ChadoObject):
                                                    self.process_data[self.creation_keys['org']]['data'][FIELD_VALUE]).id
         return organism_id
 
+    def initialise_and_rename(self):
+        """ """
+        name = self.process_data[self.creation_keys['rename']]['data'][FIELD_VALUE]
+        opts = {}
+        type_name = self.add_type(opts)
+        organism_id = self.add_organism(opts)
+
+        self.chado = general_symbol_lookup(self.session, self.alchemy_object['general'], self.alchemy_object['synonym'],
+                                           type_name,
+                                           name,
+                                           organism_id=organism_id, cv_name='synonym type',
+                                           cvterm_name='symbol', check_unique=True, obsolete='f', convert=True)
+        # now rename it
+        self.load_synonym(self.creation_keys['symbol'])
+        self.chado.name = self.process_data[self.creation_keys['symbol']]['data'][FIELD_VALUE]
+        return self.chado
+
     def initialise_object(self):
         """ Get or create an object.
 
@@ -304,7 +324,7 @@ class ChadoGeneralObject(ChadoObject):
         wide array of none values allowed.
         """
         if self.creation_keys['rename'] and self.has_data(self.creation_keys['rename']):
-            pass  # Need to code this still
+            return self.initialise_and_rename()
 
         if self.creation_keys['merge'] and self.has_data(self.creation_keys['merge']):
             pass  # Need to code this still
@@ -337,6 +357,30 @@ class ChadoGeneralObject(ChadoObject):
             self.unattrib_pub, _ = get_or_create(self.session, Pub, uniquename='unattributed')
         return self.unattrib_pub
 
+    def get_pubs(self, key):
+        """Get list of pubs to use."""
+        pub_id = self.pub.pub_id
+        pubs = [pub_id]
+        unattrib_pub_id = self.get_unattrib_pub().pub_id
+        if 'add_unattributed_paper' in self.process_data[key] and self.process_data[key]['add_unattributed_paper']:
+            if pub_id != unattrib_pub_id:
+                pubs.append(unattrib_pub_id)
+        if 'add_unattributed_paper_only' in self.process_data[key] and self.process_data[key]['add_unattributed_paper_only']:
+            pubs = [unattrib_pub_id]
+        return pubs
+
+    def check_old_synonym(self, key):
+        """Check current synonyms match."""
+        cv_name = self.process_data[key]['cv']
+        cvterm_name = self.process_data[key]['cvterm']
+        cvterm = get_cvterm(self.session, cv_name, cvterm_name)
+
+        old_syn = self.process_data[key]['data'][FIELD_VALUE]
+        gss = self.synonym_lookup(cvterm)
+        if gss[0].synonym.name != old_syn:
+            mess = "current {} synonym {} does not equal {}".format(cvterm.name, gss[0].synonym.name, old_syn)
+            self.critical_error(self.process_data[key]['data'], mess)
+
     def load_synonym(self, key):
         """Load Synonym.
 
@@ -350,26 +394,20 @@ class ChadoGeneralObject(ChadoObject):
 
         Args:
             key (string): key/field of proforma to add synonym for.
-            unattrib (Bool): Add another unattributed synonym pub .
-            cvterm_name (string, optional): cv synonym name, obtained from
-                                            if not passed.
-            overrule_removeold (Bool): wether to overrule the yml remove_old and do not do it.
         """
         if not self.has_data(key):
             return
         cv_name = self.process_data[key]['cv']
         cvterm_name = self.process_data[key]['cvterm']
         is_current = self.process_data[key]['is_current']
-        pub_id = self.pub.pub_id
-        pubs = [pub_id]
-        if 'add_unattributed_paper' in self.process_data[key] and self.process_data[key]['add_unattributed_paper']:
-            unattrib_pub_id = self.get_unattrib_pub().pub_id
-            if pub_id != unattrib_pub_id:
-                pubs.append(unattrib_pub_id)
+        if 'check_old_synonym' in self.process_data[key] and self.has_data(self.process_data[key]['check_old_synonym']):
+            self.check_old_synonym(self.process_data[key]['check_old_synonym'])
+
+        pubs = self.get_pubs(key)
 
         # remove the current symbol if is_current is set and yaml says remove old is_current
-        # ecxcept if over rule is passed.
-        if 'remove_old' in self.process_data[key] and self.process_data[key]['remove_old']:
+        # exccept if over rule is passed.        if 'remove_old' in self.process_data[key] and self.process_data[key]['remove_old']:
+        if is_current:
             self.remove_current_symbol(key)
 
         # add the new synonym
@@ -384,8 +422,7 @@ class ChadoGeneralObject(ChadoObject):
                 fs = self.add_by_synonym_name_and_type(key, item[FIELD_VALUE], cv_name, cvterm_name, pub_id)
                 if is_current and cvterm_name == 'symbol':
                     self.chado.name = sgml_to_plain_text(item[FIELD_VALUE])
-                if is_current:
-                    fs.is_current = is_current
+                fs.is_current = is_current
 
     def add_by_synonym_name_and_type(self, key, synonym_name, cv_name, cvterm_name, pub_id):
         """Add synonym"""
@@ -422,18 +459,7 @@ class ChadoGeneralObject(ChadoObject):
         to is_current = False and not to delete it.
 
         Args:
-            session (sqlalchemy.orm.session.Session object): db connection  to use.
-
-            object_id (int): chado obect_id.
-
-        synonym_name (str): synonym name.
-
-        cv_name (str):  cv name to get type of synonym
-
-        cvterm_name (str):  cvterm name to get type of synonym
-
-        Returns: Null
-
+            key (string): key/field of proforma to get data from.
         Raises:
             CodingError: cv/cvterm lookup fails. unable to get synonym type.
         """
@@ -610,8 +636,11 @@ class ChadoGeneralObject(ChadoObject):
         # lookup relationship object
         for item in self.process_data[key]['data']:
             cvterm = get_cvterm(self.session, 'synonym type', 'symbol')
-            gensyn = self.session.query(self.alchemy_object['synonym']).join(Synonym).\
+            # Shpuld we just do unattributed ?
+            gensyn = self.session.query(self.alchemy_object['synonym']).\
+                join(Synonym).join(Pub).\
                 filter(Synonym.name == item[FIELD_VALUE],
+                       Pub.uniquename == 'unattributed',
                        Synonym.type_id == cvterm.cvterm_id,
                        self.alchemy_object['synonym'].is_current == 't').one()
 
@@ -632,3 +661,36 @@ class ChadoGeneralObject(ChadoObject):
             opts = {'{}_relationship_id'.format(self.table_name): gr.id(),
                     'pub_id': self.pub.pub_id}
             get_or_create(self.session, self.alchemy_object['relationshippub'], **opts)
+
+    def make_obsolete(self, key):
+        """ Make self obsolete """
+        if not self.has_data(key) or self.process_data[key]['data'][FIELD_VALUE] != 'y':
+            return
+        self.chado.is_obsolete = True
+
+    def dis_pub_table(self, key, chado_object_table):
+        """Dissociate pub and self.chado form table.
+
+        Args:
+            key (string): Proforma field key
+            chado_object_table: <class 'sqlalchemy.ext.declarative.api.DeclarativeMeta'>
+        """
+        id_method = getattr(chado_object_table, self.primary_key_name())
+        gss = self.session.query(chado_object_table).join(Pub).\
+            filter(id_method == self.chado.id(),
+                   Pub.pub_id == self.pub.pub_id)
+        for gs in gss:
+            self.session.delete(gs)
+
+    def dis_pub(self, key):
+        """Dissociate pub and grp from all self.chado objects.
+
+        Args:
+            key (string): Proforma field key
+        """
+        if not self.has_data(key) or self.process_data[key]['data'][FIELD_VALUE] != 'y':
+            return
+        for chado_table in (self.alchemy_object['cvterm'],
+                            self.alchemy_object['synonym'],
+                            self.alchemy_object['pub']):
+            self.dis_pub_table(key, chado_table)

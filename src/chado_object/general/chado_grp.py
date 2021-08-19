@@ -93,7 +93,9 @@ class ChadoGrp(ChadoGeneralObject):
                           'gocvterm': self.load_goterm,
                           'cvterm': self.load_cvterm,
                           'dbxref': self.load_dbxref,
-                          'relationship': self.load_relationship}
+                          'relationship': self.load_relationship,
+                          'obsolete': self.make_obsolete,
+                          'dis_pub': self.dis_pub}
 
         self.chado = self.initialise_object()
 
