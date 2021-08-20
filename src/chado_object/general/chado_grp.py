@@ -46,6 +46,7 @@ class ChadoGrp(ChadoGeneralObject):
                                "relationship": GrpRelationship,
                                "relationshippub": GrpRelationshipPub}
 
+        self.dissociate_list = ['synonym', 'cvterm', 'pub']
         # add the chado table name
         self.table_name = 'grp'
         self.fb_code = 'gg'
@@ -95,6 +96,9 @@ class ChadoGrp(ChadoGeneralObject):
                           'relationship': self.load_relationship,
                           'obsolete': self.make_obsolete,
                           'dis_pub': self.dis_pub}
+
+        self.delete_dict = {'synonym': self.delete_synonym,
+                            'prop': self.delete_prop}
 
         self.chado = self.initialise_object()
 

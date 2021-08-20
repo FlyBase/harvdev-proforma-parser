@@ -204,13 +204,9 @@ from chado_object.chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.chado_functions import get_or_create, get_cvterm
 from harvdev_utils.chado_functions.organism import get_organism  # ,get_default_organism,
 from harvdev_utils.chado_functions.general import general_symbol_lookup
-from harvdev_utils.char_conversions import sgml_to_plain_text
-from harvdev_utils.char_conversions import sub_sup_to_sgml
-from harvdev_utils.char_conversions import sgml_to_unicode
 from harvdev_utils.production import Synonym
 from harvdev_utils.chado_functions import CodingError
-from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
-from datetime import datetime
+from sqlalchemy.orm.exc import NoResultFound
 import logging
 import re
 from harvdev_utils.production import Pub, Db, Dbxref
@@ -220,6 +216,13 @@ log = logging.getLogger(__name__)
 
 class ChadoGeneralObject(ChadoObject):
     """ChadoGeneral object."""
+    from chado_object.general.synonym import (
+        synonym_lookup, load_synonym, add_by_synonym_name_and_type, check_old_synonym,
+        remove_current_symbol, delete_synonym
+    )
+    from chado_object.general.prop import (
+        load_generalproplist, load_generalprop, delete_prop
+    )
 
     def __init__(self, params):
         """Initialise the ChadoGeneral Object."""
@@ -257,21 +260,10 @@ class ChadoGeneralObject(ChadoObject):
             'type': None,  # where type_cv and type_cvterm are found OR blank if no type.
             'org': None
         }
+
+        # list of tyoe to be removed on pub dissociation
+        self.dissociate_list = []
         self.fb_code = None
-
-    def synonym_lookup(self, cvterm):
-        """filter for synonym lookup
-
-        Args:
-            cvterm (cvterm object): type of synonym to look up
-        """
-        id_method = getattr(self.alchemy_object['synonym'], self.primary_key_name())
-        cur_method = getattr(self.alchemy_object['synonym'], 'is_current')
-        gs = self.session.query(self.alchemy_object['synonym']).join(Synonym).\
-            filter(id_method == self.chado.id(),
-                   Synonym.type_id == cvterm.cvterm_id,
-                   cur_method == 't')
-        return gs
 
     def primary_key_name(self):
         """Get primary key name
@@ -405,199 +397,9 @@ class ChadoGeneralObject(ChadoObject):
             pubs = [unattrib_pub_id]
         return pubs
 
-    def check_old_synonym(self, key):
-        """Check current synonyms match.
-
-        Args:
-           key (string): proforma field/key.
-        """
-        cv_name = self.process_data[key]['cv']
-        cvterm_name = self.process_data[key]['cvterm']
-        cvterm = get_cvterm(self.session, cv_name, cvterm_name)
-
-        old_syn = self.process_data[key]['data'][FIELD_VALUE]
-        gss = self.synonym_lookup(cvterm)
-        if gss[0].synonym.name != old_syn:
-            mess = "current {} synonym {} does not equal {}".format(cvterm.name, gss[0].synonym.name, old_syn)
-            self.critical_error(self.process_data[key]['data'], mess)
-
-    def load_synonym(self, key):
-        """Load Synonym.
-
-        yml options:
-           cv:
-           cvterm:
-           is_current:
-           remove_old: <optional> defaults to False
-        NOTE:
-          If is_current set to True and cvterm is symbol thensgml to plaintext is done.
-
-        Args:
-            key (string): key/field of proforma to add synonym for.
-        """
-        if not self.has_data(key):
-            return
-        cv_name = self.process_data[key]['cv']
-        cvterm_name = self.process_data[key]['cvterm']
-        is_current = self.process_data[key]['is_current']
-        if 'check_old_synonym' in self.process_data[key] and self.has_data(self.process_data[key]['check_old_synonym']):
-            self.check_old_synonym(self.process_data[key]['check_old_synonym'])
-
-        pubs = self.get_pubs(key)
-
-        # remove the current symbol if is_current is set and yaml says remove old is_current
-        # exccept if over rule is passed.        if 'remove_old' in self.process_data[key] and self.process_data[key]['remove_old']:
-        if is_current:
-            self.remove_current_symbol(key)
-
-        # add the new synonym
-        if type(self.process_data[key]['data']) is list:
-            items = self.process_data[key]['data']
-        else:
-            items = [self.process_data[key]['data']]
-
-        for item in items:
-            fs = False
-            for pub_id in pubs:
-                fs = self.add_by_synonym_name_and_type(key, item[FIELD_VALUE], cv_name, cvterm_name, pub_id)
-                if is_current and cvterm_name == 'symbol':
-                    self.chado.name = sgml_to_plain_text(item[FIELD_VALUE])
-                fs.is_current = is_current
-
-    def add_by_synonym_name_and_type(self, key, synonym_name, cv_name, cvterm_name, pub_id):
-        """Add synonym.
-
-        Args:
-           key (string): proforma field/key.
-           synonym_name (string): name of the synonym to add
-           cv_name (string): name of the synonyms cv (usually 'synonym type')
-           cvterm_name (string): name of the synonym (i.e. 'symbol' or 'fullname')
-           pub_id (int): pub primary key id.
-        """
-        cvterm = get_cvterm(self.session, cv_name, cvterm_name)
-
-        if not cvterm:
-            raise CodingError("HarvdevError: Could not find cvterm '{}' for cv {}".format(cvterm_name, cv_name))
-        synonym_sgml = None
-        if 'subscript' in self.process_data[key] and not self.process_data[key]['subscript']:
-            synonym_sgml = sgml_to_unicode(synonym_name)
-
-        # Then get_create the synonym
-        if not synonym_sgml:
-            synonym_sgml = sgml_to_unicode(sub_sup_to_sgml(synonym_name))
-        synonym_name = sgml_to_plain_text(synonym_name)
-        synonym, _ = get_or_create(self.session, Synonym, type_id=cvterm.cvterm_id, name=synonym_name, synonym_sgml=synonym_sgml)
-        if not synonym:
-            raise CodingError("HarvdevError: Could not create synonym")
-        opts = {'{}'.format(self.primary_key_name()): self.chado.id(),
-                'synonym_id': synonym.synonym_id,
-                'pub_id': pub_id}
-        gs, is_new = get_or_create(self.session, self.alchemy_object['synonym'], **opts)
-        return gs
-
     def load_ignore(self, key):
         """Ignore"""
         pass
-
-    def remove_current_symbol(self, key):
-        """Remove is_current for this feature_synonym.
-
-        Make the current symbol for this feature is_current=False.
-        Usually done when assigning a new symbol we want to set the old one
-        to is_current = False and not to delete it.
-
-        Args:
-            key (string): key/field of proforma to get data from.
-        Raises:
-            CodingError: cv/cvterm lookup fails. unable to get synonym type.
-        """
-        cv_name = self.process_data[key]['cv']
-        cvterm_name = self.process_data[key]['cvterm']
-        cvterm = get_cvterm(self.session, cv_name, cvterm_name)
-        if not cvterm:
-            raise CodingError("HarvdevError: Could not find cvterm '{}' for cv {}".format(cvterm_name, cv_name))
-
-        try:
-            fss = self.synonym_lookup(cvterm)
-            for fs in fss:
-                fs.is_current = False
-        except MultipleResultsFound:
-            log.error("More than one result for BLAH id = {}".format(self.chado.id()))
-            fss = self.session.query(self.alchemy_object['synonym']).join(Synonym).\
-                filter(self.alchemy_object['synonym'].feature_id == self.chado.id(),
-                       Synonym.type_id == cvterm.cvterm_id,
-                       self.alchemy_object['synonym'].is_current == 't')
-            for fs in fss:
-                log.error(fs)
-            raise MultipleResultsFound
-        except NoResultFound:
-            return
-
-    def load_generalproplist(self, key, prop_cv_id):
-        """Load a general props that are in a list.
-
-        Args:
-            key (string): key/field of proforma to get data from.
-            prop_cv_id (int): id of the prop cvterm
-        """
-        for item in self.process_data[key]['data']:
-            opts = {self.primary_key_name(): self.chado.id(),
-                    'type_id': prop_cv_id,
-                    'value': item[FIELD_VALUE]}
-            gp, _ = get_or_create(self.session, self.alchemy_object['prop'], **opts)
-            opts = {"{}prop_id".format(self.table_name): gp.id(),
-                    "pub_id": self.pub.pub_id}
-            get_or_create(self.session, self.alchemy_object['proppub'], **opts)
-
-    def load_generalprop(self, key):
-        """Store the feature prop.
-
-        If there is a value then it will have a 'value' in the yaml
-        pointing to the field that is holding the value.
-
-        yml options:
-           cv:
-           cvterm:
-           value:    <optional>, key to value field.
-           only_one: <optional>, defaults to False.
-
-        Args:
-            key (string): key/field of proforma to get data from.
-        """
-        if not self.has_data(key):
-            return
-        value = None
-        prop_cv_id = self.cvterm_query(self.process_data[key]['cv'], self.process_data[key]['cvterm'])
-        if type(self.process_data[key]['data']) is list:
-            self.load_generalproplist(key, prop_cv_id)
-            return
-        if 'only_one' in self.process_data[key] and self.process_data[key]['only_one']:
-            opts = {self.primary_key_name(): self.chado.id(),
-                    'type_id': prop_cv_id}
-            fp, is_new = get_or_create(self.session, self.alchemy_object['prop'], **opts)
-            if 'value' in self.process_data[key] and self.process_data[key]['value'] != 'YYYYMMDD':
-                value = self.process_data[self.process_data[key]['value']]['data'][FIELD_VALUE]
-            elif 'value' in self.process_data[key]:
-                value = datetime.today().strftime('%Y%m%d')
-            if is_new:
-                fp.value = value
-            elif fp.value:
-                message = "Already has a value. Use bangc to change it"
-                self.critical_error(self.process_data[self.process_data[key]['value']]['data'], message)
-        elif ('value' in self.process_data[key] and self.has_data(self.process_data[key]['value'])):
-            opts = {self.primary_key_name(): self.chado.id(),
-                    'type_id': prop_cv_id,
-                    'value': self.process_data[self.process_data[key]['value']]['data'][FIELD_VALUE]}
-            fp, is_new = get_or_create(self.session, self.alchemy_object['prop'], **opts)
-        else:
-            message = "Coding error. only_one or value must be specified if not a list."
-            self.critical_error(self.process_data[self.process_data[key]['value']]['data'], message)
-            return
-
-        # create general prop pub
-        opts = {"{}prop_id".format(self.table_name): fp.id(),
-                "pub_id": self.pub.pub_id}
-        get_or_create(self.session, self.alchemy_object['proppub'], **opts)
 
     def load_goterm(self, key):
         """Load GO cvterms.
@@ -740,7 +542,7 @@ class ChadoGeneralObject(ChadoObject):
         self.chado.is_obsolete = True
 
     def dis_pub_table(self, chado_object_table):
-        """Dissociate pub and self.chado form table.
+        """Dissociate pub and self.chado from table.
 
         Args:
             key (string): Proforma field key
@@ -761,7 +563,5 @@ class ChadoGeneralObject(ChadoObject):
         """
         if not self.has_data(key) or self.process_data[key]['data'][FIELD_VALUE] != 'y':
             return
-        for chado_table in (self.alchemy_object['cvterm'],
-                            self.alchemy_object['synonym'],
-                            self.alchemy_object['pub']):
-            self.dis_pub_table(chado_table)
+        for chado_table in (self.dissociate_list):
+            self.dis_pub_table(self.alchemy_object[chado_table])
