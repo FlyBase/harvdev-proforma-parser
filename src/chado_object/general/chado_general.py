@@ -1,8 +1,7 @@
 """
 :synopsis: The Base Other None Feature Object.
 
-:moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>,
-               Ian Longden <ianlongden@morgan.harvard.edu>
+:moduleauthor: Ian Longden <ianlongden@morgan.harvard.edu>
 
     NOTES: delete at some point once all is done
 
@@ -221,7 +220,7 @@ class ChadoGeneralObject(ChadoObject):
         remove_current_symbol, delete_synonym
     )
     from chado_object.general.prop import (
-        load_generalproplist, load_generalprop, delete_prop
+        load_generalproplist, load_generalprop, delete_prop, proppubs_exist
     )
 
     def __init__(self, params):
@@ -320,7 +319,7 @@ class ChadoGeneralObject(ChadoObject):
         return organism_id
 
     def initialise_and_rename(self):
-        """ """
+        """Initialise and rename."""
         name = self.process_data[self.creation_keys['rename']]['data'][FIELD_VALUE]
         opts = {}
         type_name = self.add_type(opts)

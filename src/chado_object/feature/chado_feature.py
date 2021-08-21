@@ -933,10 +933,12 @@ class ChadoFeatureObject(ChadoObject):
             return None
 
         if bangc:
-            self.session.query(FeatureSynonym).\
+            fss = self.session.query(FeatureSynonym).join(Synonym).\
                 filter(FeatureSynonym.pub_id == self.pub.pub_id,
-                       FeatureSynonym.type_id == cvterm.cvterm_id,
-                       FeatureSynonym.feature_id == self.feature.feature_id).delete()
+                       Synonym.type_id == cvterm.cvterm_id,
+                       FeatureSynonym.feature_id == self.feature.feature_id)
+            for fs in fss:
+                self.session.delete(fs)
         else:
             for data in data_list:
                 synonyms = self.session.query(Synonym).\
