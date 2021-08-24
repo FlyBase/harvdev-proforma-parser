@@ -189,7 +189,6 @@ def delete_synonym(self, key, bangc=False):
                    Synonym.type_id == cvterm.cvterm_id,
                    Pub.pub_id == self.pub.pub_id)
         for gs in gss:
-            print("BOB: deleting {}".format(gs))
             self.session.delete(gs)
     else:
         for data in data_list:

@@ -20,6 +20,7 @@ def get_cvterm_by_name(self, key, item):
         key (string): key/field of proforma to get data from.
         item (list): proforma tuple of (key/field, value, bangc)
     """
+    pattern = None
     if 'go' in self.process_data[key] and self.process_data[key]['go']:
         pattern = r'^(.+)\s*;\s*GO:(\d+)$'
     cv_name = item[FIELD_VALUE]
