@@ -1,7 +1,7 @@
 """
 :synopsis: Synonym functions wrt general.
 
-:moduleauthor: Ian Longden <ilongden@morgan.harvard.edu>
+:moduleauthor: Ian Longden <ianlongden@morgan.harvard.edu>
 """
 from chado_object.chado_base import FIELD_VALUE
 from harvdev_utils.chado_functions import get_or_create, get_cvterm

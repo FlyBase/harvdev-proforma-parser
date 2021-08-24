@@ -1,7 +1,7 @@
 """
 :synopsis: Prop functions wrt general.
 
-:moduleauthor: Ian Longden <ilongden@morgan.harvard.edu>
+:moduleauthor: Ian Longden <ianlongden@morgan.harvard.edu>
 """
 from harvdev_utils.chado_functions.cvterm import get_cvterm
 from chado_object.chado_base import FIELD_VALUE
@@ -88,6 +88,63 @@ def proppubs_exist(self, prop_cvterm, genprop_method):
                self.alchemy_object['prop'].type_id == prop_cvterm.cvterm_id).count()
 
 
+def bangc_prop(self, key):
+    """Bangc prop"""
+    prop_cvterm = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data[key]['cvterm'])
+    genprop_method = getattr(self.alchemy_object['prop'], self.primary_key_name())
+
+    grpprop_pubs = self.session.query(self.alchemy_object['proppub']).join(self.alchemy_object['prop']).\
+        filter(genprop_method == self.chado.id(),
+               self.alchemy_object['prop'].type_id == prop_cvterm.cvterm_id,
+               self.alchemy_object['proppub'].pub_id == self.pub.pub_id)
+
+    count = 0
+    for grpprop_pub in grpprop_pubs:
+        grpprop_id = grpprop_pub.gen_id()
+        count += 1
+        self.session.delete(grpprop_pub)
+        if not self.proppubs_exist(prop_cvterm, genprop_method):  # No more prop
+            self.session.query(self.alchemy_object['prop']).\
+                filter(genprop_method == grpprop_id).delete()
+        if not count:
+            mess = "!d produced no deletions for cv '{}'  and pub '{}'".\
+                format(prop_cvterm.name, self.pub.uniquename)
+            if type(self.process_data[key]['data']) is not list:
+                self.critical_error(self.process_data[key]['data'], mess)
+            else:
+                self.critical_error(self.process_data[key]['data'][0], mess)
+
+
+def bangd_prop(self, key):
+    """Bangd prop"""
+    prop_cvterm = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data[key]['cvterm'])
+    genprop_method = getattr(self.alchemy_object['prop'], self.primary_key_name())
+
+    if type(self.process_data[key]['data']) is not list:
+        data_list = [self.process_data[key]['data']]
+    else:
+        data_list = self.process_data[key]['data']
+    for item in data_list:
+        grpprop_pubs = self.session.query(self.alchemy_object['proppub']).join(self.alchemy_object['prop']).\
+            filter(genprop_method == self.chado.id(),
+                   self.alchemy_object['prop'].type_id == prop_cvterm.cvterm_id,
+                   self.alchemy_object['prop'].value == item[FIELD_VALUE],
+                   self.alchemy_object['proppub'].pub_id == self.pub.pub_id)
+        count = 0
+        for grpprop_pub in grpprop_pubs:
+            grpprop_id = grpprop_pub.gen_id()
+            count += 1
+            print("BOB: deleting {}".format(grpprop_pub))
+            self.session.delete(grpprop_pub)
+            if not self.proppubs_exist(prop_cvterm, genprop_method):  # No more prop
+                self.session.query(self.alchemy_object['prop']).\
+                    filter(genprop_method == grpprop_id).delete()
+        if not count:
+            mess = "!d produced no deletions for cv '{}', value '{}' and pub '{}'".\
+                format(prop_cvterm.name, item[FIELD_VALUE], self.pub.uniquename)
+            self.critical_error(item, mess)
+
+
 def delete_prop(self, key, bangc=False):
     """Delete prop.
 
@@ -97,25 +154,8 @@ def delete_prop(self, key, bangc=False):
                       False if a bangd operation.
                       Default is False.
     """
-    if type(self.process_data[key]['data']) is not list:
-        data_list = []
-        data_list.append(self.process_data[key]['data'])
-    else:
-        data_list = self.process_data[key]['data']
-
-    prop_cvterm = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data[key]['cvterm'])
-    genprop_method = getattr(self.alchemy_object['prop'], self.primary_key_name())
 
     if bangc:
-        grpprop_pubs = self.session.query(self.alchemy_object['proppub']).join(self.alchemy_object['prop']).\
-            filter(genprop_method == self.chado.id(),
-                   self.alchemy_object['prop'].type_id == prop_cvterm.cvterm_id,
-                   self.alchemy_object['proppub'].pub_id == self.pub.pub_id)
-
-        for grpprop_pub in grpprop_pubs:
-            print("BOB: {}".format(grpprop_pub))
-            grpprop_id = grpprop_pub.gen_id()
-            self.session.delete(grpprop_pub)
-            if not self.proppubs_exist(prop_cvterm, genprop_method):  # No more prop pubs
-                self.session.query(self.alchemy_object['prop']).\
-                    filter(genprop_method == grpprop_id).delete()
+        self.bangc_prop(key)
+    else:
+        self.bangd_prop(key)

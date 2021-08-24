@@ -201,13 +201,10 @@ so add simlar for new ones.
 # from sqlalchemy.sql.schema import PrimaryKeyConstraint
 from chado_object.chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.chado_functions import get_or_create, get_cvterm
-from harvdev_utils.chado_functions.organism import get_organism  # ,get_default_organism,
+from harvdev_utils.chado_functions.organism import get_organism
 from harvdev_utils.chado_functions.general import general_symbol_lookup
-from harvdev_utils.production import Synonym
-from harvdev_utils.chado_functions import CodingError
 from sqlalchemy.orm.exc import NoResultFound
 import logging
-import re
 from harvdev_utils.production import Pub, Db, Dbxref
 
 log = logging.getLogger(__name__)
@@ -220,7 +217,15 @@ class ChadoGeneralObject(ChadoObject):
         remove_current_symbol, delete_synonym
     )
     from chado_object.general.prop import (
-        load_generalproplist, load_generalprop, delete_prop, proppubs_exist
+        load_generalproplist, load_generalprop, delete_prop, proppubs_exist,
+        bangc_prop, bangd_prop
+    )
+    from chado_object.general.cvterm import (
+        load_cvterm, get_cvterm_by_name, delete_cvterm
+    )
+    from chado_object.general.relationship import (
+        load_relationship, delete_relationship, relatepubs_exist,
+        bangd_relationship, bangc_relationship
     )
 
     def __init__(self, params):
@@ -400,55 +405,6 @@ class ChadoGeneralObject(ChadoObject):
         """Ignore"""
         pass
 
-    def load_goterm(self, key):
-        """Load GO cvterms.
-
-        Args:
-            key (string): key/field of proforma to get data from.
-        """
-        pattern = r'^(.+)\s*;\s*GO:(\d+)$'
-        for item in self.process_data[key]['data']:  # always a list
-            fields = re.search(pattern, item[FIELD_VALUE])
-            if fields:
-                go_name = fields.group(1).strip()
-                gocode = fields.group(2)
-            else:
-                message = "'{}' Does not fit the regex of {}/".format(item[FIELD_VALUE], pattern)
-                self.critical_error(self.process_data[key]['data'][0], message)
-                continue
-            cvterm = get_cvterm(self.session, self.process_data[key]['cv'], go_name)
-            if gocode != cvterm.dbxref.accession:
-                mess = "{} matches {} but lookup gives {} instead?".format(go_name, gocode, cvterm.dbxref.accession)
-                self.warning_error(self.process_data[self.process_data[key]['value']]['data'][0], mess)
-
-            opts = {self.primary_key_name(): self.chado.id(),
-                    'cvterm_id': cvterm.cvterm_id,
-                    'pub_id': self.pub.pub_id}
-            get_or_create(self.session, self.alchemy_object['cvterm'], **opts)
-
-    def load_cvterm(self, key):
-        """Load cvterm.
-
-        Args:
-            key (string): key/field of proforma to get data from.
-        """
-        if type(self.process_data[key]['data']) is list:
-            items = self.process_data[key]['data']
-        else:
-            items = [self.process_data[key]['data']]
-
-        for item in items:
-            try:
-                cvterm = get_cvterm(self.session, self.process_data[key]['cv'], item[FIELD_VALUE])
-            except CodingError:
-                mess = "Could not find cv '{}', cvterm '{}'.".format(self.process_data[key]['cv'], item[FIELD_VALUE])
-                self.critical_error(item, mess)
-                continue
-            opts = {self.primary_key_name(): self.chado.id(),
-                    'cvterm_id': cvterm.cvterm_id,
-                    'pub_id': self.pub.pub_id}
-            get_or_create(self.session, self.alchemy_object['cvterm'], **opts)
-
     def load_dbxref(self, key):  # noqa
         """Load dbxref.
 
@@ -494,41 +450,6 @@ class ChadoGeneralObject(ChadoObject):
         opts = {self.primary_key_name(): self.chado.id(),
                 'dbxref_id': dbx.dbxref_id}
         get_or_create(self.session, self.alchemy_object['dbxref'], **opts)
-
-    def load_relationship(self, key):
-        """Load relationship (too same type).
-
-        Args:
-            key (string): key/field of proforma to get data from.
-        """
-        # lookup relationship object
-        for item in self.process_data[key]['data']:
-            cvterm = get_cvterm(self.session, 'synonym type', 'symbol')
-            # Shpuld we just do unattributed ?
-            gensyn = self.session.query(self.alchemy_object['synonym']).\
-                join(Synonym).join(Pub).\
-                filter(Synonym.name == item[FIELD_VALUE],
-                       Pub.uniquename == 'unattributed',
-                       Synonym.type_id == cvterm.cvterm_id,
-                       self.alchemy_object['synonym'].is_current == 't').one()
-
-            # get cvterm for type of relatiosnhip
-            cvterm = get_cvterm(self.session, self.process_data[key]['rel_cv'], self.process_data[key]['rel_cvterm'])
-
-            # create XXX_relationship
-            opts = {'type_id': cvterm.cvterm_id}
-            if self.process_data[key]['subject']:
-                opts['subject_id'] = gensyn.gen_id()
-                opts['object_id'] = self.chado.id()
-            else:
-                opts['object_id'] = gensyn.gen_id()
-                opts['subject_id'] = self.chado.id()
-            gr, _ = get_or_create(self.session, self.alchemy_object['relationship'], **opts)
-
-            # create XXX_relationshipPub
-            opts = {'{}_relationship_id'.format(self.table_name): gr.id(),
-                    'pub_id': self.pub.pub_id}
-            get_or_create(self.session, self.alchemy_object['relationshippub'], **opts)
 
     def make_obsolete(self, key):
         """ Make self obsolete.

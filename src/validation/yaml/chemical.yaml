@@ -16,6 +16,7 @@ CH1f:
 CH3a:
   type: string
   required: True
+  no_bangc: True
 CH3b:
   nullable: True
   required: False
@@ -30,6 +31,7 @@ CH3d:
   type: string
   required: False
   nullable: True
+  no_bangc: True
 CH3f:
   type: string
   required: False

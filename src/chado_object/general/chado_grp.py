@@ -3,8 +3,7 @@
 
 :overview: Code to setup and process GENEGROUP PROFORMA.
 
-:moduleauthor: Christopher Tabone <ctabone@morgan.harvard.edu>
-               Ian Longden <ianlongden@morgan.harvard.edu>
+:moduleauthor: Ian Longden <ianlongden@morgan.harvard.edu>
 """
 
 import logging
@@ -90,7 +89,7 @@ class ChadoGrp(ChadoGeneralObject):
         self.type_dict = {'synonym': self.load_synonym,
                           'ignore': self.load_ignore,
                           'prop': self.load_generalprop,
-                          'gocvterm': self.load_goterm,
+                          #  'gocvterm': self.load_goterm,
                           'cvterm': self.load_cvterm,
                           'dbxref': self.load_dbxref,
                           'relationship': self.load_relationship,
@@ -98,7 +97,9 @@ class ChadoGrp(ChadoGeneralObject):
                           'dis_pub': self.dis_pub}
 
         self.delete_dict = {'synonym': self.delete_synonym,
-                            'prop': self.delete_prop}
+                            'prop': self.delete_prop,
+                            'cvterm': self.delete_cvterm,
+                            'relationship': self.delete_relationship}
 
         self.chado = self.initialise_object()
 
