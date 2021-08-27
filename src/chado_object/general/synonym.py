@@ -22,12 +22,12 @@ def synonym_lookup(self, cvterm):
     Args:
         cvterm (cvterm object): type of synonym to look up
     """
-    id_method = getattr(self.alchemy_object['synonym'], self.primary_key_name())
-    cur_method = getattr(self.alchemy_object['synonym'], 'is_current')
+    id_statement = getattr(self.alchemy_object['synonym'], self.primary_key_name())
+    cur_statement = getattr(self.alchemy_object['synonym'], 'is_current')
     gs = self.session.query(self.alchemy_object['synonym']).join(Synonym).\
-        filter(id_method == self.chado.id(),
+        filter(id_statement == self.chado.primary_id(),
                Synonym.type_id == cvterm.cvterm_id,
-               cur_method == 't')
+               cur_statement == 't')
     return gs
 
 
@@ -100,7 +100,7 @@ def add_by_synonym_name_and_type(self, key, synonym_name, cv_name, cvterm_name, 
     synonym, _ = get_or_create(self.session, Synonym, type_id=cvterm.cvterm_id, name=synonym_name, synonym_sgml=synonym_sgml)
     if not synonym:
         raise CodingError("HarvdevError: Could not create synonym")
-    opts = {'{}'.format(self.primary_key_name()): self.chado.id(),
+    opts = {'{}'.format(self.primary_key_name()): self.chado.primary_id(),
             'synonym_id': synonym.synonym_id,
             'pub_id': pub_id}
     gs, is_new = get_or_create(self.session, self.alchemy_object['synonym'], **opts)
@@ -147,9 +147,9 @@ def remove_current_symbol(self, key):
         for fs in fss:
             fs.is_current = False
     except MultipleResultsFound:
-        log.error("More than one result for BLAH id = {}".format(self.chado.id()))
+        log.error("More than one result for BLAH id = {}".format(self.chado.primary_id()))
         fss = self.session.query(self.alchemy_object['synonym']).join(Synonym).\
-            filter(self.alchemy_object['synonym'].feature_id == self.chado.id(),
+            filter(self.alchemy_object['synonym'].feature_id == self.chado.primary_id(),
                    Synonym.type_id == cvterm.cvterm_id,
                    self.alchemy_object['synonym'].is_current == 't')
         for fs in fss:
@@ -182,10 +182,10 @@ def delete_synonym(self, key, bangc=False):
         self.critical_error(self.process_data[key]['data'], message)
         return None
 
-    id_method = getattr(self.alchemy_object['synonym'], self.primary_key_name())
+    id_statement = getattr(self.alchemy_object['synonym'], self.primary_key_name())
     if bangc:
         gss = self.session.query(self.alchemy_object['synonym']).join(Synonym).join(Pub).\
-            filter(id_method == self.chado.id(),
+            filter(id_statement == self.chado.primary_id(),
                    Synonym.type_id == cvterm.cvterm_id,
                    Pub.pub_id == self.pub.pub_id)
         for gs in gss:
@@ -200,7 +200,7 @@ def delete_synonym(self, key, bangc=False):
             for syn in synonyms:
                 syn_count += 1
                 f_syns = self.session.query(self.alchemy_object['synonym']).\
-                    filter(id_method == self.chado.id(),
+                    filter(id_statement == self.chado.primary_id(),
                            self.alchemy_object['synonym'].synonym_id == syn.synonym_id,
                            self.alchemy_object['synonym'].pub_id == self.pub.pub_id)
                 for f_syn in f_syns:

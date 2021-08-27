@@ -81,15 +81,13 @@ class ChadoGrp(ChadoGeneralObject):
             message = "Unable to find publication."
             self.critical_error(self.process_data['GG1a']['data'], message)
             return None
-        # if not self.checks(references):
-        #    return None
+
         ##########################################
         # Set up how to process each type of input
         ##########################################
         self.type_dict = {'synonym': self.load_synonym,
                           'ignore': self.load_ignore,
                           'prop': self.load_generalprop,
-                          #  'gocvterm': self.load_goterm,
                           'cvterm': self.load_cvterm,
                           'dbxref': self.load_dbxref,
                           'relationship': self.load_relationship,
@@ -102,6 +100,8 @@ class ChadoGrp(ChadoGeneralObject):
                             'relationship': self.delete_relationship}
 
         self.chado = self.initialise_object()
+        if not self.chado:
+            return
 
         # add pub if not dissociate from pub
         if not self.creation_keys['dissociate'] or not self.has_data(self.creation_keys['dissociate']):

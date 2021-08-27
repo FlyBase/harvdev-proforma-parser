@@ -7,6 +7,7 @@ from harvdev_utils.chado_functions.cvterm import get_cvterm
 from chado_object.chado_base import FIELD_VALUE
 from harvdev_utils.chado_functions import get_or_create
 from harvdev_utils.production import Synonym, Pub
+from sqlalchemy.orm.exc import NoResultFound
 import logging
 
 log = logging.getLogger(__name__)
@@ -27,13 +28,16 @@ def load_relationship(self, key):
     # lookup relationship object
     for item in data_list:
         cvterm = get_cvterm(self.session, 'synonym type', 'symbol')
-        # Shpuld we just do unattributed ?
-        gensyn = self.session.query(self.alchemy_object['synonym']).\
-            join(Synonym).join(Pub).\
-            filter(Synonym.name == item[FIELD_VALUE],
-                   Pub.uniquename == 'unattributed',
-                   Synonym.type_id == cvterm.cvterm_id,
-                   self.alchemy_object['synonym'].is_current == 't').one()
+        try:
+            gensyn = self.session.query(self.alchemy_object['synonym']).\
+                join(Synonym).join(Pub).\
+                filter(Synonym.name == item[FIELD_VALUE],
+                       Pub.uniquename == 'unattributed',
+                       Synonym.type_id == cvterm.cvterm_id,
+                       self.alchemy_object['synonym'].is_current == 't').one()
+        except NoResultFound:
+            self.critical_error(item, "Could not find '{}' in synonym lookup.".format(item[FIELD_VALUE]))
+            return
 
         # get cvterm for type of relationship
         cvterm = get_cvterm(self.session, self.process_data[key]['rel_cv'], self.process_data[key]['rel_cvterm'])
@@ -41,15 +45,15 @@ def load_relationship(self, key):
         # create XXX_relationship
         opts = {'type_id': cvterm.cvterm_id}
         if self.process_data[key]['subject']:
-            opts['subject_id'] = gensyn.gen_id()
-            opts['object_id'] = self.chado.id()
+            opts['subject_id'] = gensyn.first_id()
+            opts['object_id'] = self.chado.primary_id()
         else:
-            opts['object_id'] = gensyn.gen_id()
-            opts['subject_id'] = self.chado.id()
+            opts['object_id'] = gensyn.first_id()
+            opts['subject_id'] = self.chado.primary_id()
         gr, _ = get_or_create(self.session, self.alchemy_object['relationship'], **opts)
 
         # create XXX_relationshipPub
-        opts = {'{}_relationship_id'.format(self.table_name): gr.id(),
+        opts = {'{}_relationship_id'.format(self.table_name): gr.primary_id(),
                 'pub_id': self.pub.pub_id}
         get_or_create(self.session, self.alchemy_object['relationshippub'], **opts)
 
@@ -57,12 +61,12 @@ def load_relationship(self, key):
 def relatepubs_exist(self, cvterm, subject_lookup):
     """Count of genrelationshippubs"""
     if subject_lookup:
-        method = getattr(self.alchemy_object['relationship'], 'subject_id')
+        statement = getattr(self.alchemy_object['relationship'], 'subject_id')
     else:
-        method = getattr(self.alchemy_object['relationship'], 'object_id')
+        statement = getattr(self.alchemy_object['relationship'], 'object_id')
     return self.session.query(self.alchemy_object['relationshippub']).\
         join(self.alchemy_object['relationship']).\
-        filter(method == self.chado.id(),
+        filter(statement == self.chado.primary_id(),
                self.alchemy_object['relationship'].type_id == cvterm.cvterm_id).count()
 
 
@@ -70,28 +74,28 @@ def bangc_relationship(self, key):
     """Bangc the rerlationship"""
     cvterm = get_cvterm(self.session, self.process_data[key]['rel_cv'], self.process_data[key]['rel_cvterm'])
 
-    genrelate_method = getattr(self.alchemy_object['relationship'], "{}_relationship_id".format(self.table_name))
+    genrelate_statement = getattr(self.alchemy_object['relationship'], "{}_relationship_id".format(self.table_name))
     subject_lookup = False
     # If subject is specified in the yml then it means the self.chado object is the object_id
     if self.process_data[key]['subject']:
         subject_lookup = True
-        id_method = getattr(self.alchemy_object['relationship'], 'object_id')
+        id_statement = getattr(self.alchemy_object['relationship'], 'object_id')
     else:
-        id_method = getattr(self.alchemy_object['relationship'], 'subject_id')
+        id_statement = getattr(self.alchemy_object['relationship'], 'subject_id')
     genrelate_pubs = self.session.query(self.alchemy_object['relationshippub']).\
         join(self.alchemy_object['relationship']).\
         filter(self.alchemy_object['relationship'].type_id == cvterm.cvterm_id,
                self.alchemy_object['relationshippub'].pub_id == self.pub.pub_id,
-               id_method == self.chado.id())
+               id_statement == self.chado.primary_id())
 
     count = 0
     for genrelate_pub in genrelate_pubs:
-        genrelate_id = genrelate_pub.gen_id()
+        genrelate_id = genrelate_pub.first_id()
         self.session.delete(genrelate_pub)
         count += 1
         if not self.relatepubs_exist(cvterm, subject_lookup):  # No more relationship pubs
             self.session.query(self.alchemy_object['relationship']).\
-                filter(genrelate_method == genrelate_id).delete()
+                filter(genrelate_statement == genrelate_id).delete()
     if not count:
         mess = "No relationships to bangc for {} and {}".format(self.chado.name, self.pub.uniquename)
         if type(self.process_data[key]['data']) is not list:
@@ -102,9 +106,9 @@ def bangc_relationship(self, key):
 
 def bangd_relationship(self, key):
     """Bangd relationship"""
-    genrelate_method = getattr(self.alchemy_object['relationship'], "{}_relationship_id".format(self.table_name))
-    sub_method = getattr(self.alchemy_object['relationship'], 'subject_id')
-    obj_method = getattr(self.alchemy_object['relationship'], 'object_id')
+    genrelate_statement = getattr(self.alchemy_object['relationship'], "{}_relationship_id".format(self.table_name))
+    sub_statement = getattr(self.alchemy_object['relationship'], 'subject_id')
+    obj_statement = getattr(self.alchemy_object['relationship'], 'object_id')
     syn_cvterm = get_cvterm(self.session, 'synonym type', 'symbol')
     rel_cvterm = get_cvterm(self.session, self.process_data[key]['rel_cv'], self.process_data[key]['rel_cvterm'])
 
@@ -114,37 +118,40 @@ def bangd_relationship(self, key):
         data_list = self.process_data[key]['data']
 
     for item in data_list:
-        # Should we just do unattributed ?
-        gensyn = self.session.query(self.alchemy_object['synonym']).\
-            join(Synonym).join(Pub).\
-            filter(Synonym.name == item[FIELD_VALUE],
-                   Pub.uniquename == 'unattributed',
-                   Synonym.type_id == syn_cvterm.cvterm_id,
-                   self.alchemy_object['synonym'].is_current == 't').one()
-
+        # Lookup the synonym in the relationship with self.chado
+        try:
+            gensyn = self.session.query(self.alchemy_object['synonym']).\
+                join(Synonym).join(Pub).\
+                filter(Synonym.name == item[FIELD_VALUE],
+                       Pub.uniquename == 'unattributed',
+                       Synonym.type_id == syn_cvterm.cvterm_id,
+                       self.alchemy_object['synonym'].is_current == 't').one()
+        except NoResultFound:
+            log.critical(item, "Could not find '{}' in synonym lookup.".format(item[FIELD_VALUE]))
+            return
         subject_lookup = False
         if self.process_data[key]['subject']:
             subject_lookup = True
-            obj_id = self.chado.id()
-            sub_id = gensyn.gen_id()
+            obj_id = self.chado.primary_id()
+            sub_id = gensyn.first_id()
         else:
-            sub_id = self.chado.id()
-            obj_id = gensyn.gen_id()
+            sub_id = self.chado.primary_id()
+            obj_id = gensyn.first_id()
 
         genrelate_pubs = self.session.query(self.alchemy_object['relationshippub']).\
             join(self.alchemy_object['relationship']).\
             filter(self.alchemy_object['relationship'].type_id == rel_cvterm.cvterm_id,
                    self.alchemy_object['relationshippub'].pub_id == self.pub.pub_id,
-                   sub_method == sub_id,
-                   obj_method == obj_id)
+                   sub_statement == sub_id,
+                   obj_statement == obj_id)
         count = 0
         for genrelate_pub in genrelate_pubs:
-            genrelate_id = genrelate_pub.gen_id()
+            genrelate_id = genrelate_pub.secondary_id()
             self.session.delete(genrelate_pub)
             count += 1
             if not self.relatepubs_exist(rel_cvterm, subject_lookup):  # No more relationship pubs
                 self.session.query(self.alchemy_object['relationship']).\
-                    filter(genrelate_method == genrelate_id).delete()
+                    filter(genrelate_statement == genrelate_id).delete()
         if not count:
             mess = "No relationship found for bangd for {} {} and {}".\
                 format(self.chado.name, item[FIELD_VALUE], self.pub.uniquename)

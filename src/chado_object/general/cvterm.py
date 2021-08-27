@@ -63,7 +63,7 @@ def load_cvterm(self, key):
         if not cvterm:
             continue
 
-        opts = {self.primary_key_name(): self.chado.id(),
+        opts = {self.primary_key_name(): self.chado.primary_id(),
                 'cvterm_id': cvterm.cvterm_id,
                 'pub_id': self.pub.pub_id}
         get_or_create(self.session, self.alchemy_object['cvterm'], **opts)
@@ -79,14 +79,14 @@ def delete_cvterm(self, key, bangc=False):
                       Default is False.
     """
 
-    id_method = getattr(self.alchemy_object['cvterm'], self.primary_key_name())
+    id_statement = getattr(self.alchemy_object['cvterm'], self.primary_key_name())
     count = 0
     if bangc:
         g_cvs = self.session.query(self.alchemy_object['cvterm']).\
             join(Cvterm, self.alchemy_object['cvterm'].cvterm_id == Cvterm.cvterm_id).\
             join(Cv, Cvterm.cv_id == Cv.cv_id).\
             join(Pub, self.alchemy_object['cvterm'].pub_id == Pub.pub_id).\
-            filter(id_method == self.chado.id(),
+            filter(id_statement == self.chado.primary_id(),
                    Cv.name == self.process_data[key]['cv'],
                    Pub.pub_id == self.pub.pub_id)
         for g_cv in g_cvs:
@@ -109,7 +109,7 @@ def delete_cvterm(self, key, bangc=False):
             # get the specific cvterm, it could be go which needs extra checks
             cvterm = self.get_cvterm_by_name(key, item)
             g_cvs = self.session.query(self.alchemy_object['cvterm']).join(Cvterm).join(Pub).\
-                filter(id_method == self.chado.id(),
+                filter(id_statement == self.chado.primary_id(),
                        Cvterm.cvterm_id == cvterm.cvterm_id,
                        Pub.pub_id == self.pub.pub_id)
             count = 0

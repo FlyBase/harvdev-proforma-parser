@@ -189,14 +189,6 @@
  public | strainprop_pub                                                  | table    | go
 
 
-
-You will need to add some functions to harvdev-utils production.py for new children i.e.
-for Grp we added:-
-gen_id() to GrpSynonym
-id() to GrpSynonym and Grpprop
-
-so add simlar for new ones.
-
 """
 # from sqlalchemy.sql.schema import PrimaryKeyConstraint
 from chado_object.chado_base import ChadoObject, FIELD_VALUE
@@ -238,7 +230,7 @@ class ChadoGeneralObject(ChadoObject):
         # Add the chado object type i.e. Grp, CellLine, Library
         # Then GrpCvterm, etc
         self.alchemy_objects = {}
-        self.alchemy_object_primary = {}
+
         # add the chado table name i.e. grp, cell_line, library
         self.table_name = None
 
@@ -253,20 +245,27 @@ class ChadoGeneralObject(ChadoObject):
 
         # field extensions needed for initial get or create.
         # these will be set in the children
-        # Allows for a common method to be used to do this.
+        # Allows for a common statement to be used to do this.
+        # NOTE: We have various ways of defining if something is new or not
+        #       Hence is_current which has y/n normally or
+        #             is_new which is either 'new' or an FBxxddddddd
         self.creation_keys = {
             'symbol': None,  # e.g.'GG1a'
             'merge': None,
             'dissociate': None,
             'id': None,
             'is_current': None,
+            'is_new': None,
             'rename': None,
             'type': None,  # where type_cv and type_cvterm are found OR blank if no type.
-            'org': None
+            'org': None,
+            'delete': None
         }
 
-        # list of tyoe to be removed on pub dissociation
+        # list of types to be removed on pub dissociation
         self.dissociate_list = []
+
+        # Uniquename code i.e. 'gg' for grp
         self.fb_code = None
 
     def primary_key_name(self):
@@ -350,7 +349,9 @@ class ChadoGeneralObject(ChadoObject):
             return self.initialise_and_rename()
 
         if self.creation_keys['merge'] and self.has_data(self.creation_keys['merge']):
-            pass  # Need to code this still Not needed for Grp
+            # Need to code this still, Not needed for Grp and that is the only one done
+            # at present. Delete this message when code has bben addded.
+            log.critical("Merging not coded yet.")
 
         proforma_defined_as_new = self.is_new()
         opts = {'name': self.process_data[self.creation_keys['symbol']]['data'][FIELD_VALUE]}
@@ -366,11 +367,16 @@ class ChadoGeneralObject(ChadoObject):
             if not is_new:
                 log.critical("Old one returned expected a new one")
         else:
-            chado = general_symbol_lookup(self.session, self.alchemy_object['general'], self.alchemy_object['synonym'],
-                                          type_name,
-                                          self.process_data[self.creation_keys['symbol']]['data'][FIELD_VALUE],
-                                          organism_id=organism_id, cv_name='synonym type',
-                                          cvterm_name='symbol', check_unique=True, obsolete='f', convert=True)
+            try:
+                chado = general_symbol_lookup(self.session, self.alchemy_object['general'], self.alchemy_object['synonym'],
+                                              type_name,
+                                              self.process_data[self.creation_keys['symbol']]['data'][FIELD_VALUE],
+                                              organism_id=organism_id, cv_name='synonym type',
+                                              cvterm_name='symbol', check_unique=True, obsolete='f', convert=True)
+            except NoResultFound:
+                mess = "Could not find '{}' in synonym lookup.".format(self.process_data[self.creation_keys['symbol']]['data'][FIELD_VALUE])
+                self.critical_error(self.process_data[self.creation_keys['symbol']]['data'], mess)
+                return None
 
         return chado
 
@@ -402,7 +408,11 @@ class ChadoGeneralObject(ChadoObject):
         return pubs
 
     def load_ignore(self, key):
-        """Ignore"""
+        """Ignore.
+
+        Some fields/keys are dealt with by other functions. So this is okay for some.
+        i.e. those keys needed for creation of the initial object or part of a set.
+        """
         pass
 
     def load_dbxref(self, key):  # noqa
@@ -411,6 +421,8 @@ class ChadoGeneralObject(ChadoObject):
         yml will have defined the keys for the dbname, accession and possibly the desciption.
         See GG8a in chado_object/yml/grp.yml for example.
 
+        Usually done as part of a set. In the yml file the fields.keys to use for the dbname and
+        accession and maybe the description are defined. See GG8a as an example.
         Args:
             key (string): key/field of proforma to get data from.
         """
@@ -447,7 +459,7 @@ class ChadoGeneralObject(ChadoObject):
             dbx.description = self.process_data[desc_key]['data'][FIELD_VALUE]
 
         # add this to self.chado.
-        opts = {self.primary_key_name(): self.chado.id(),
+        opts = {self.primary_key_name(): self.chado.primary_id(),
                 'dbxref_id': dbx.dbxref_id}
         get_or_create(self.session, self.alchemy_object['dbxref'], **opts)
 
@@ -468,9 +480,9 @@ class ChadoGeneralObject(ChadoObject):
             key (string): Proforma field key
             chado_object_table: <class 'sqlalchemy.ext.declarative.api.DeclarativeMeta'>
         """
-        id_method = getattr(chado_object_table, self.primary_key_name())
+        id_statement = getattr(chado_object_table, self.primary_key_name())
         gss = self.session.query(chado_object_table).join(Pub).\
-            filter(id_method == self.chado.id(),
+            filter(id_statement == self.chado.primary_id(),
                    Pub.pub_id == self.pub.pub_id)
         for gs in gss:
             self.session.delete(gs)
@@ -483,5 +495,7 @@ class ChadoGeneralObject(ChadoObject):
         """
         if not self.has_data(key) or self.process_data[key]['data'][FIELD_VALUE] != 'y':
             return
+        # dissociate_list has a list of tables that on dissociate from pub
+        # need to be deleted.
         for chado_table in (self.dissociate_list):
             self.dis_pub_table(self.alchemy_object[chado_table])
