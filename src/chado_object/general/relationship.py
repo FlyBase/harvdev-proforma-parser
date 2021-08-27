@@ -146,7 +146,7 @@ def bangd_relationship(self, key):
                    obj_statement == obj_id)
         count = 0
         for genrelate_pub in genrelate_pubs:
-            genrelate_id = genrelate_pub.secondary_id()
+            genrelate_id = genrelate_pub.first_id()
             self.session.delete(genrelate_pub)
             count += 1
             if not self.relatepubs_exist(rel_cvterm, subject_lookup):  # No more relationship pubs
