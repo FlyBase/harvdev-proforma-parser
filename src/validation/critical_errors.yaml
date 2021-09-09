@@ -42,6 +42,8 @@ SP1b:
 SP1g:
   - null value not allowed
   - required field
+SP2:
+  - Must be set for new
 SP4:
   - value does not match regex
 DB3:
@@ -69,9 +71,9 @@ G27:
 G28b:
   - is required
 G30:
-  - Must be set for new gene
+  - Must be set for new
 G31a:
-  - not allowed with bang c or bang d
+  - not allowed with bang
   - prohibits use of
 G91a:
   - unallowed value
@@ -79,13 +81,15 @@ DIV1a:
   - null value not allowed
   - required field
 DIV2a:
-  - Cannot set DIV2a if DIV2b is set.
+  - must not be present with
 DIV2b:
-  - Cannot set DIV2b if DIV2a is set.
+  - must not be present with
 GA30f: 
   - unallowed value
 GA2c:
   - excludes
+GA13:
+  - validation_base
 GA14:
   - is forbidden
 GA20:

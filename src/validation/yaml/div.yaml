@@ -20,20 +20,20 @@ DIV1d:
 DIV1e:
     required: False
     type: string
-    exclude: 'DIV1d'
+    excludes: ['DIV1d']
     nullable: True
 DIV2a:
   type: [list, string]
   required: False
   regex: ^(FBhh\d{7})$
   nullable: True
-  exclude: 'DIV2b'
+  excludes: ['DIV2b']
 DIV2b:
   required: False
   nullable: True
   type: string
   allowed: [y]
-  exclude: 'DIV2a'
+  excludes: ['DIV2a']
 DIV3a:
   required: False
   type: string
