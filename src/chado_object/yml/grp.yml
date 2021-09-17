@@ -1,0 +1,136 @@
+#    'GG1a', 'symbol',                #grp_synonym
+GG1a:
+    type: ignore
+    cv: synonym type
+    cvterm: symbol
+    type_cv: SO
+    type_cvterm: gene_group
+    is_current: True
+    add_unattributed_paper: True
+    remove_old: True
+#    'GG1b', 'symbol',                #grp_synonym
+GG1b:
+    type: synonym
+    cv: synonym type
+    cvterm: symbol
+    is_current: False
+#    'GG2a', 'fullname',              #grp_synonym
+GG2a:
+    type: synonym
+    cv: synonym type
+    cvterm: fullname
+    is_current: True
+    add_unattributed_paper_only: True
+    remove_old: True
+    check_old_synonym: 'GG2c'
+#    'GG2b', 'fullname',              #grp_synonym
+GG2b:
+    type: synonym
+    cv: synonym type
+    cvterm: fullname
+    is_current: False
+#    'GG2c', 'fullname',              #rename grp_synonym
+GG2c:
+    type: ignore  # check added to GG2a wrt this.
+    cv: synonym type
+    cvterm: fullname
+#    'GG1e', 'symbol',                #rename grp_synonym
+GG1e:
+    type: ignore # Done as part of initialisation
+    must_be_blank: ['GG1h']
+    must_be_n: ['GG1g']
+    must_be_diff: ['GG1a']
+#    'GG1g', 'new',                   #checking
+GG1g:
+    type: ignore
+#    'GG3a', 'is_obsolete',           #grp.is_obsolete
+GG3a:
+    type: obsolete
+#    'GG3b', 'dissociate_pub',        #grp_pub
+GG3b:
+    type: dis_pub
+    obsolete_if_last: True
+#    'GG4',  'FBcv',                  #grp_cvterm
+GG4:
+    type: cvterm
+    cv: FlyBase miscellaneous CV
+#    'GG6a', 'cellular_component',    #grp_cvterm
+GG6a:
+    type: cvterm
+    go: True
+    cv: cellular_component
+#    'GG6b', 'molecular_function',    #grp_cvterm
+GG6b:
+    type: cvterm
+    go: True
+    cv: molecular_function
+#    'GG6c', 'biological_process',    #grp_cvterm
+GG6c:
+    type: cvterm
+    go: True
+    cv: biological_process
+#    'GG7a', 'parent_grp',            #grp_relationship.object_id
+GG7a:
+    type: relationship
+    subject: False
+    rel_cv: relationship type
+    rel_cvterm: parent_grp
+#    'GG7c', 'undefined_grp',         #grp_relationship.object_id
+GG7c:
+    type: relationship
+    subject: False
+    rel_cv: relationship type
+    rel_cvterm: undefined_grp
+#    'GG7d', 'grpmember_dataset'
+GG7d:
+    type: ignore
+#    , #library_grpmember , grpmember.grp_id,grpmember.type_id='grpmember_dataset', library_id
+#
+#    'GG8a', '',  #grp_dbxref GG8a = dbxref.accession, GG8b = db.name, GG8c = dbxref.description
+GG8a:
+    type: dbxref
+    accession: GG8a
+    dbname: GG8b
+    description: GG8c
+GG8b:  # processed by GG8a
+    type: ignore
+GG8c:  # processed by GG8a
+    type: ignore
+#    'GG5',  'gg_description',        #grpprop
+GG5:
+    type: prop
+    cv: grp property type
+    cvterm: gg_description
+    # is a list, so value implied
+#    'GG9',  'gg_owner',             #grpprop
+GG9:
+    type: prop
+    cv: grp property type
+    cvterm: gg_owner
+    # is a list, so value implied
+#    'GG10', 'gg_comment',           #grpprop
+GG10:
+    type: prop
+    cv: grp property type
+    cvterm: gg_comment
+#    'GG11', 'gg_review_date',       #grpprop
+GG11:
+    type: prop
+    cv: grp property type
+    cvterm: gg_review_date
+    value: GG11
+#    'GG12', 'gg_internal_notes',    #grpprop
+GG12:
+    type: prop
+    cv: grp property type
+    cvterm: gg_internal_notes
+    # is a list, so value implied
+#    'GG13', 'gg_pathway_abstract',  #grpprop
+GG13:
+    type: prop
+    cv: grp property type
+    cvterm: gg_pathway_abstract
+    value: GG13
+########## obsoleted ###############
+#    'GG1f', 'merge',                 #grp_merge_function
+

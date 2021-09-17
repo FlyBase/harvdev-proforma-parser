@@ -15,7 +15,7 @@ from chado_object.chado_multipub import ChadoMultipub
 from chado_object.humanhealth.chado_humanhealth import ChadoHumanhealth
 from chado_object.chado_species import ChadoSpecies
 from chado_object.chado_db import ChadoDb
-
+from chado_object.general.chado_grp import ChadoGrp
 import logging
 import sys
 import re
@@ -89,6 +89,7 @@ def process_data_input(proforma_object):
     type_conversion_dict = {
         'PUBLICATION': (ChadoPub),
         'GENE': (ChadoGene),
+        'GENEGROUP': (ChadoGrp),
         'ALLELE': (ChadoAllele),
         'CHEMICAL': (ChadoChem),
         'DISEASE': (ChadoDiv),

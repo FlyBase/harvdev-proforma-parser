@@ -9,3 +9,4 @@ from .chado_species import ChadoSpecies
 from .chado_db import ChadoDb
 from .chado_div import ChadoDiv
 from .chado_exceptions import ValidationError
+from .general.chado_grp import ChadoGrp

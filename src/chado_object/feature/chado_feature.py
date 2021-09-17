@@ -912,8 +912,6 @@ class ChadoFeatureObject(ChadoObject):
     def delete_synonym(self, key, bangc=False):
         """Delete synonym.
 
-        Well actually set is_current to false for this entry.
-
         Args:
             key (string): key/field of proforma to get data from.
             bangc (Bool): True if bangc operation.
@@ -926,25 +924,33 @@ class ChadoFeatureObject(ChadoObject):
         else:
             data_list = self.process_data[key]['data']
 
+        cv_name = self.process_data[key]['cv']
+        cvterm_name = self.process_data[key]['cvterm']
+        cvterm = get_cvterm(self.session, cv_name, cvterm_name)
+        if not cvterm:
+            message = "Unable to find cvterm {} for Cv {}.".format(cvterm_name, cv_name)
+            self.critical_error(self.process_data[key]['data'], message)
+            return None
+
         if bangc:
-            # hh_syn has only one cvterm related to it so no need to specify.
-            self.session.query(FeatureSynonym).\
+            fss = self.session.query(FeatureSynonym).join(Synonym).\
                 filter(FeatureSynonym.pub_id == self.pub.pub_id,
-                       FeatureSynonym.is_current == False,  # noqa: E712
-                       FeatureSynonym.pub_id == self.pub.pub_id,
-                       FeatureSynonym.feature_id == self.feature.feature_id).delete()
+                       Synonym.type_id == cvterm.cvterm_id,
+                       FeatureSynonym.feature_id == self.feature.feature_id)
+            for fs in fss:
+                self.session.delete(fs)
         else:
             for data in data_list:
                 synonyms = self.session.query(Synonym).\
-                    filter(Synonym.name == data[FIELD_VALUE])
+                    filter(Synonym.name == sgml_to_plain_text(data[FIELD_VALUE]),
+                           FeatureSynonym.type_id == cvterm.cvterm_id)
                 syn_count = 0
                 f_syn_count = 0
                 for syn in synonyms:
                     syn_count += 1
                     f_syns = self.session.query(FeatureSynonym).\
-                        filter(FeatureSynonym.humanhealth_id == self.feature.feature_id,
+                        filter(FeatureSynonym.feature_id == self.feature.feature_id,
                                FeatureSynonym.synonym_id == syn.synonym_id,
-                               FeatureSynonym.is_current == False,  # noqa: E712
                                FeatureSynonym.pub_id == self.pub.pub_id)
                     for f_syn in f_syns:
                         f_syn_count += 1
