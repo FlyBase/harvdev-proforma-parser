@@ -88,6 +88,10 @@ def get_validate_db_schema(fields_values):
     return "db.yaml"
 
 
+def get_validate_grp_schema(fields_values):
+    return "grp.yaml"
+
+
 def validation_file_schema_lookup(proforma_type, fields_values):
     """Lookup the file schema.
 
@@ -115,7 +119,8 @@ def validation_file_schema_lookup(proforma_type, fields_values):
                        "DISEASE": get_validate_div_schema,
                        "HUMAN": get_validate_humanhealth_schema,
                        "DATABASE": get_validate_db_schema,
-                       "SPECIES": get_validate_species_schema}
+                       "SPECIES": get_validate_species_schema,
+                       "GENEGROUP": get_validate_grp_schema}
     # if we have specific validation stuff set it up here.
     validation_base = {"PUBLICATION": ValidatorPub,
                        "MULTIPUBLICATION": ValidatorMultipub,
@@ -125,7 +130,8 @@ def validation_file_schema_lookup(proforma_type, fields_values):
                        "DISEASE": ValidatorDiv,
                        "HUMAN": ValidatorHumanhealth,
                        "DATABASE": ValidatorDb,
-                       "SPECIES": ValidatorSpecies}
+                       "SPECIES": ValidatorSpecies,
+                       "GENEGROUP": ValidatorAllele}
     validator = None
 
     pattern = r"""
