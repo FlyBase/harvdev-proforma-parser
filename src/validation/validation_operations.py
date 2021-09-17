@@ -9,13 +9,7 @@
 import yaml
 from validation.validator_pub import ValidatorPub
 from validation.validator_multipub import ValidatorMultipub
-from validation.validator_chem import ValidatorChem
-from validation.validator_humanhealth import ValidatorHumanhealth
-from validation.validator_species import ValidatorSpecies
-from validation.validator_db import ValidatorDb
-from validation.validator_gene import ValidatorGene
-from validation.validator_allele import ValidatorAllele
-from validation.validator_div import ValidatorDiv
+from validation.validator_base import ValidatorBase
 from error.error_tracking import ErrorTracking, CRITICAL_ERROR, WARNING_ERROR
 
 # Additional tools for validation
@@ -124,14 +118,14 @@ def validation_file_schema_lookup(proforma_type, fields_values):
     # if we have specific validation stuff set it up here.
     validation_base = {"PUBLICATION": ValidatorPub,
                        "MULTIPUBLICATION": ValidatorMultipub,
-                       "GENE": ValidatorGene,
-                       "ALLELE": ValidatorAllele,
-                       "CHEMICAL": ValidatorChem,
-                       "DISEASE": ValidatorDiv,
-                       "HUMAN": ValidatorHumanhealth,
-                       "DATABASE": ValidatorDb,
-                       "SPECIES": ValidatorSpecies,
-                       "GENEGROUP": ValidatorAllele}
+                       "GENE": ValidatorBase,  # ValidatorGene,
+                       "ALLELE": ValidatorBase,  # ValidatorAllele,
+                       "CHEMICAL": ValidatorBase,  # ValidatorChem,
+                       "DISEASE": ValidatorBase,  # ValidatorDiv,
+                       "HUMAN": ValidatorBase,  # ValidatorHumanhealth,
+                       "DATABASE": ValidatorBase,
+                       "SPECIES": ValidatorBase,
+                       "GENEGROUP": ValidatorBase}
     validator = None
 
     pattern = r"""
@@ -187,7 +181,7 @@ def validation_field_to_dict(fields_values):
             log.critical('Unexpected value type: {} found, expected list or tuple.'.format(type(value)))
             log.critical(field)
             log.critical(value)
-            log.critical('Please contact Harvdev / Chris.')
+            log.critical('Please contact Harvdev.')
             log.critical('Exiting.')
             sys.exit(-1)
     return field_value_validation_dict
@@ -215,7 +209,7 @@ def validate_proforma_object(proforma):
         schema_file = open(yaml_file_location, 'r')
     except FileNotFoundError:
         log.critical('Could not open file name "{}" generated for schema {}.'.format(yaml_file_location, proforma_type))
-        log.critical('Please contact Harvdev / Chris.')
+        log.critical('Please contact Harvdev.')
         log.critical('Exiting.')
         sys.exit(-1)
 

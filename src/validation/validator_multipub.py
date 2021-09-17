@@ -39,6 +39,7 @@ class ValidatorMultipub(Validator):
     def _validate_only_allowed(self, field_keys, field, comp_fields):
         """
         Check only fields in the list are allowed. (including self)
+
         The rule's arguments are validated against this schema:
         {'type': 'string'}
         """
@@ -53,14 +54,6 @@ class ValidatorMultipub(Validator):
                 bad_fields.append(key)
         if bad_fields:
             self._error(field, 'Error {} is set so cannot set {}'.format(field, bad_fields))
-
-    def _validate_need_data(self, field, dict1, comp_fields):
-        """
-        Throws error if comp_fields do NOT have data.
-        The rule's arguments are validated against this schema:
-        {'type': 'string'}
-        """
-        pass
 
     def _validate_wrapping_values(self, field, dict1, comp_fields):
         """

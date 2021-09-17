@@ -14,7 +14,7 @@ SP1g:
     nullable: False
 SP2:
     type: string
-    if_new_required: True
+    if_new_required: SP1g
     nullable: True
     no_bang: True
 SP3a:

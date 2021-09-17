@@ -131,7 +131,7 @@ G30:
     type: [list, string]
     nullable: True
     required: False
-    if_new_required: True
+    if_new_required: G1g
 G31a:
     type: string
     required: False
