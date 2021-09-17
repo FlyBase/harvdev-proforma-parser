@@ -1,0 +1,69 @@
+#    'TC1f', 'uniquename',
+TC1f:
+    type: ignore
+
+#     'TC1a', 'symbol',
+TC1a:
+    type: ignore    
+#     'TC1b', 'symbol',
+TC1b:
+    type: ignore    
+#     'TC1c', 'symbol',
+TC1c:
+    type: ignore    
+#     'TC1j', 'DGRC_cell_line', ###cell_line_dbxref db = 'DGRC_cel_line' accession = decimal part of FBte0000000
+TC1j:
+    type: ignore
+#     'TC1d', 'organism.abbreviation',###cell_line.organism_id
+TC1d:
+    type: ignore    
+#     'TC1e', 'rename',##action items
+TC1e:
+    type: ignore#     'TC1g', 'merge', ## action items
+# #    'TC1h', 'delete',##action items
+TC1h:
+    type: ignore#     'TC1i', 'dissociate_FBrf', ## action items
+    
+#     'TC2a', 'source_strain',  ### cell_lineprop
+TC2a:
+    type: ignore#     'TC2b', 'source_genotype',  ## cell_lineprop
+#     'TC2c', 'source_cross',  ## cell_lineprop
+TC2c:
+    type: ignore#     'TC2d', 'FlyBase anatomy CV',
+     ##cell_line_cvterm
+#     'TC2e', 'FlyBase development CV',  ##cell_line_cvterm
+TC2e:
+    type: ignore    
+#     'TC3a', 'lab_of_origin',  ##cell_lineprop
+TC3a:
+    type: ignore    
+# #    'TC4a', 'transformed_from',  ### parent cell_line_relationship.object_id on field mapping but check DB default cv = 'cell_line_relationship'
+TC4a:
+    type: ignore    
+# #    'TC4b', '',      #cell_line_relationship.type_id (isolate_of, targeted_mutant_from, cloned_from, selected_from, transformed_from)
+TC4b:
+    type: ignore    
+#     'TC5a', 'cell_line_feature', ###cell_line_feature FBti
+TC5a:
+    type: ignore    
+#     'TC5b', 'karyotype',      ###cell_lineprop   
+TC5b:
+    type: ignore    
+    cv: noidea
+    cvterm: karyotype
+#     'TC5c',  'FlyBase miscellaneous CV',  ##cell_line_cvterm
+TC5c:
+    type: ignore    
+    cv: FlyBase miscellaneous CV
+#     'TC5d', 'basis',  ##cell_line_cvtermprop
+TC5d:
+    type: ignore    
+#     'TC8', 'member_of_reagent_collection', #cell_line_library, cell_line_libraryprop    
+TC8:
+    type: ignore    
+#     'TC9',  'comment', ## cell_lineprop
+TC9:
+    type: ignore    
+#     'TC10', 'internalnotes' ##cell_lineprop
+TC10:
+    type: ignore    

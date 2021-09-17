@@ -1,0 +1,154 @@
+#    'TC1f', 'uniquename',
+TC1f:
+    type: string
+    required: True
+    regex: ^(FBtc\d{7}|new)$
+    no_bang: True
+#     'TC1a', 'symbol',
+TC1a:
+    type: string
+    required: True
+    no_bang: True
+
+#     'TC1b', 'symbol',
+TC1b:
+    type: [list, string]
+    required: False
+    nullable: True
+    no_bang: True
+#     'TC1c', 'symbol',
+TC1c:
+    type: [list, string]
+    required: False
+    nullable: True
+    no_bang: True
+#     'TC1j', 'DGRC_cell_line', ###cell_line_dbxref db = 'DGRC_cel_line' accession = decimal part of FBte0000000
+TC1j:
+    type: string
+    required: False
+    nullable: True
+    if_new_required: TC1f
+    no_bangc: True
+    regex: ^(FBtc9\d{6})$
+#     'TC1d', 'organism.abbreviation',###cell_line.organism_id
+TC1d:
+    type: string
+    required: False
+    nullable: True
+    no_bang: True
+    if_new_required: TC1f
+#     'TC1e', 'rename',##action items
+TC1e:
+    type: string
+    required: False
+    nullable: True
+    no_bang: True
+#     'TC1g', 'merge', ## action items
+TC1g:
+    type: [list, string]
+    required: False
+    nullable: True
+    no_bang: True
+
+#    'TC1h', 'delete',##action items
+TC1h:
+    type: string
+    required: False
+    nullable: True
+    no_bang: True
+    allowed: [y]
+#     'TC1i', 'dissociate_FBrf', ## action items
+TC1i:
+    type: string
+    nullable: True
+    required: False
+    no_bang: True
+    allowed: [y]    
+#     'TC2a', 'source_strain',  ### cell_lineprop
+TC2a:
+    type: string
+    required: False
+    nullable: True
+### TC1i dissociate? 
+
+#     'TC2b', 'source_genotype',  ## cell_lineprop
+TC2b:
+    type: string
+    required: False
+    nullable: True
+    no_bang: True
+#     'TC2c', 'source_cross',  ## cell_lineprop
+TC2c:
+    type: string
+    required: False
+    nullable: True
+#     'TC2d', 'FlyBase anatomy CV', ##cell_line_cvterm
+TC2d:
+    type: [list, string]
+    required: False
+    nullable: True
+#     'TC2e', 'FlyBase development CV',  ##cell_line_cvterm
+TC2e:
+    type: [list, string]
+    required: False
+    nullable: True
+    
+#     'TC3a', 'lab_of_origin',  ##cell_lineprop
+TC2e:
+    type: [list, string]
+    required: False
+    nullable: True
+# #    'TC4a', 'transformed_from',  ### parent cell_line_relationship.object_id on field mapping but check DB default cv = 'cell_line_relationship'
+TC4a:
+    type: string
+    required: False
+    nullable: True
+    no_bang: True
+    dependencies: [TC4s]
+# #    'TC4b', '',      #cell_line_relationship.type_id (isolate_of, targeted_mutant_from, cloned_from, selected_from, transformed_from)
+TC4b:
+    type: string
+    required: False
+    nullable: True
+    no_bang: True
+    dependencies: [TC4c]
+#     'TC5a', 'cell_line_feature', ###cell_line_feature FBti
+TC5a:
+    type: [list, string]
+    required: False
+    nullable: True
+    no_bang: True
+    regex: ^(FBti\d{7}$
+#     'TC5b', 'karyotype',      ###cell_lineprop   
+TC5b:
+    type: [list, string]
+    required: False
+    nullable: True
+#     'TC5c',  'FlyBase miscellaneous CV',  ##cell_line_cvterm
+TC5c:
+    type: string
+    required: False
+    nullable: True
+    allowed: ['male', 'female']
+#     'TC5d', 'basis',  ##cell_line_cvtermprop
+TC5d:
+    type: [list, string]
+    required: False
+    nullable: True
+    no_bang: True
+#     'TC8', 'member_of_reagent_collection', 
+#     cell_line_library, cell_line_libraryprop
+TC8:
+    type: string
+    required: False
+    nullable: True   
+#     'TC9',  'comment', ## cell_lineprop
+TC9:
+    type: [list, string]
+    required: False
+    nullable: True
+#     'TC10', 'internalnotes' ##cell_lineprop
+TC10:
+    type: [list, string]
+    required: False
+    nullable: True

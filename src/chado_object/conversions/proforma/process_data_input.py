@@ -16,6 +16,7 @@ from chado_object.humanhealth.chado_humanhealth import ChadoHumanhealth
 from chado_object.chado_species import ChadoSpecies
 from chado_object.chado_db import ChadoDb
 from chado_object.general.chado_grp import ChadoGrp
+from chado_object.general.chado_cell_line import ChadoCellLine
 import logging
 import sys
 import re
@@ -97,6 +98,7 @@ def process_data_input(proforma_object):
         'MULTIPUBLICATION': (ChadoMultipub),
         'SPECIES': (ChadoSpecies),
         'DATABASE': (ChadoDb),
+        'CULTURED': (ChadoCellLine),
     }
 
     try:
