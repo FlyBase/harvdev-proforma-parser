@@ -65,16 +65,19 @@ class ChadoCellLine(ChadoGeneralObject):
         self.table_name = 'cell_line'
         self.fb_code = 'tc'
         self.creation_keys = {
-            'symbol': 'TC1b',
+            'symbol': 'TC1a',
             'merge': 'TC1g',
             'dissociate': 'TC1i',
-            'id': 'TC1j',
+            'id': 'TC1f',
+            'uniquename': 'TC1j',
             'is_new': 'TC1f',
             'rename': 'TC1e',
-            'type': 'TC1b',  # where type_cv and type_cvterm are defined
+            'type': None,  # 'TC1b',  # where type_cv and type_cvterm are defined
             'org': 'TC1d',
-            'delete': 'TC1h'
+            'delete': 'TC1h',
+            'no_obsolete': True,
         }
+
         ############################################################
         # Get processing info and data to be processed.
         # Please see the yml/chemical.yml file for more details
@@ -120,7 +123,7 @@ class ChadoCellLine(ChadoGeneralObject):
 
         # add pub if not dissociate from pub
         if not self.creation_keys['dissociate'] or not self.has_data(self.creation_keys['dissociate']):
-            get_or_create(self.session, self.alchemy_object['pub'], grp_id=self.chado.cell_line_id, pub_id=self.pub.pub_id)
+            get_or_create(self.session, self.alchemy_object['pub'], cell_line_id=self.chado.cell_line_id, pub_id=self.pub.pub_id)
         # bang c first as this supersedes all things
         if self.bang_c:
             self.bang_c_it()

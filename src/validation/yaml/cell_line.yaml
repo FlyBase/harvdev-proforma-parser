@@ -94,7 +94,7 @@ TC2e:
     nullable: True
     
 #     'TC3a', 'lab_of_origin',  ##cell_lineprop
-TC2e:
+TC3a:
     type: [list, string]
     required: False
     nullable: True
@@ -104,14 +104,14 @@ TC4a:
     required: False
     nullable: True
     no_bang: True
-    dependencies: [TC4s]
+    dependencies: [TC4b]
 # #    'TC4b', '',      #cell_line_relationship.type_id (isolate_of, targeted_mutant_from, cloned_from, selected_from, transformed_from)
 TC4b:
     type: string
     required: False
     nullable: True
     no_bang: True
-    dependencies: [TC4c]
+    dependencies: [TC4a]
 #     'TC5a', 'cell_line_feature', ###cell_line_feature FBti
 TC5a:
     type: [list, string]
