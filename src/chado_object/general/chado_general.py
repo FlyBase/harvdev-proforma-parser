@@ -213,12 +213,14 @@ class ChadoGeneralObject(ChadoObject):
         bangc_prop, bangd_prop
     )
     from chado_object.general.cvterm import (
-        load_cvterm, get_cvterm_by_name, delete_cvterm
+        load_cvterm, get_cvterm_by_name, delete_cvterm, load_cvtermprop
     )
     from chado_object.general.relationship import (
         load_relationship, delete_relationship, relatepubs_exist,
         bangd_relationship, bangc_relationship
     )
+    from chado_object.general.feature import load_feature
+    from chado_object.general.library import load_library
 
     def __init__(self, params):
         """Initialise the ChadoGeneral Object."""
@@ -370,6 +372,9 @@ class ChadoGeneralObject(ChadoObject):
             chado, is_new = get_or_create(self.session, self.alchemy_object['general'], **opts)
             self.chado = chado
             self.load_synonym(self.creation_keys['symbol'])
+            if 'add_dbxref' in self.creation_keys and self.creation_keys['add_dbxref']:
+                # create dbxref and connect to self.chado
+                self.add_dbxref()
             if not is_new:
                 log.critical("Old one returned expected a new one")
         else:
@@ -389,6 +394,25 @@ class ChadoGeneralObject(ChadoObject):
                 return None
 
         return chado
+
+    def add_dbxref(self):
+        """Add dbxref and connect"""
+        db_name, acc_format = self.creation_keys['add_dbxref'].split(':')
+        if 'uniquename' in self.creation_keys['add_dbxref']:
+            acc_format = self.creation_keys['add_dbxref']
+            acc = acc_format.replace('uniquename', self.chado.uniquename)
+        else:
+            mess = "Harv dev problem: dbxref does not have uniquename in specification"
+            log.critical_error(self.process_data[self.creation_keys['symbol']]['data'], mess)
+            exit(-1)
+
+        db = self.session.query(Db).filter(Db.name == db_name).one()
+        dbxref, _ = get_or_create(self.session, Dbxref,
+                                  accession=acc, db_id=db.db_id)
+        # add this to self.chado.
+        opts = {self.primary_key_name(): self.chado.primary_id(),
+                'dbxref_id': dbxref.dbxref_id}
+        get_or_create(self.session, self.alchemy_object['dbxref'], **opts)
 
     def get_unattrib_pub(self):
         """Get the unattributed pub."""

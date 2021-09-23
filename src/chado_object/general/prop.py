@@ -72,7 +72,7 @@ def load_generalprop(self, key):
         fp, is_new = get_or_create(self.session, self.alchemy_object['prop'], **opts)
     else:
         message = "Coding error. only_one or value must be specified if not a list."
-        self.critical_error(self.process_data[self.process_data[key]['value']]['data'], message)
+        self.critical_error(self.process_data[key]['data'], message)
         return
 
     # create prop pub for this new prop.

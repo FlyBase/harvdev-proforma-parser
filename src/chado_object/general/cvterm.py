@@ -58,15 +58,48 @@ def load_cvterm(self, key):
     else:
         items = [self.process_data[key]['data']]
 
+    cvterms = []
     for item in items:
         cvterm = self.get_cvterm_by_name(key, item)
         if not cvterm:
             continue
 
-        opts = {self.primary_key_name(): self.chado.primary_id(),
+        opts = {"{}_id".format(self.table_name): self.chado.primary_id(),
                 'cvterm_id': cvterm.cvterm_id,
                 'pub_id': self.pub.pub_id}
-        get_or_create(self.session, self.alchemy_object['cvterm'], **opts)
+        cvterm, _ = get_or_create(self.session, self.alchemy_object['cvterm'], **opts)
+        cvterms.append(cvterm)
+    return cvterms
+
+
+def load_cvtermprop(self, key):
+    """Load cvterm props.
+
+    NOTE: key here relates to the cvterm, which sould have reference to what to use
+          for the prop.
+    """
+    gen_cvterms = self.load_cvterm(key)
+    prop_key = self.process_data[key]['prop_field']
+    try:
+        propcvterm = get_cvterm(self.session, self.process_data[prop_key]['cv'], self.process_data[prop_key]['cvterm'])
+    except CodingError:
+        mess = "Could not find cv '{}', cvterm '{}'.".format(self.process_data[prop_key]['cv'], self.process_data[prop_key]['cvterm'])
+        self.critical_error(self.process_data[prop_key]['data'][0], mess)
+        return None
+
+    if type(self.process_data[prop_key]['data']) is not list:
+        data_list = [self.process_data[prop_key]['data']]
+    else:
+        data_list = self.process_data[prop_key]['data']
+
+    for gen_cvterm in gen_cvterms:
+        # INFO -- CellLineCvtermprop id=1 CellLineCvterm id=2: rank=0 value='five'
+        # type=(Cvterm id=39: name:'basis' cv:(Cv id=5: name:'cell_line_cvtermprop type'))
+        for item in data_list:
+            opts = {'{}_cvterm_id'.format(self.table_name): gen_cvterm.primary_id(),
+                    'value': item[FIELD_VALUE],
+                    'type_id': propcvterm.cvterm_id}
+            get_or_create(self.session,  self.alchemy_object['cvtermprop'], **opts)
 
 
 def delete_cvterm(self, key, bangc=False):

@@ -112,6 +112,7 @@ TC4b:
     nullable: True
     no_bang: True
     dependencies: [TC4a]
+    allowed: [isolate_of, targeted_mutant_from, cloned_from, selected_from, transformed_from]
 #     'TC5a', 'cell_line_feature', ###cell_line_feature FBti
 TC5a:
     type: [list, string]
@@ -132,10 +133,11 @@ TC5c:
     allowed: ['male', 'female']
 #     'TC5d', 'basis',  ##cell_line_cvtermprop
 TC5d:
-    type: [list, string]
+    type: string  # [list, string]
     required: False
     nullable: True
     no_bang: True
+    wrapping_values: True
 #     'TC8', 'member_of_reagent_collection', 
 #     cell_line_library, cell_line_libraryprop
 TC8:

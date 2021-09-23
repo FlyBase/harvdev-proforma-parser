@@ -27,8 +27,9 @@ import os
 from harvdev_utils.chado_functions import get_or_create
 from chado_object.general.chado_general import ChadoGeneralObject
 from harvdev_utils.production import (
-    CellLine, CellLineCvterm, CellLineDbxref, CellLinePub, CellLineprop, CellLinepropPub, CellLineSynonym,
-    CellLineRelationship
+    CellLine, CellLineCvterm, CellLineCvtermprop, CellLineDbxref, CellLinePub,
+    CellLineprop, CellLinepropPub, CellLineSynonym, CellLineRelationship,
+    CellLineFeature, CellLineLibrary, CellLineLibraryprop
 )
 
 log = logging.getLogger(__name__)
@@ -56,7 +57,11 @@ class ChadoCellLine(ChadoGeneralObject):
                                "prop": CellLineprop,
                                "proppub": CellLinepropPub,
                                "cvterm": CellLineCvterm,
+                               "cvtermprop": CellLineCvtermprop,
                                "dbxref": CellLineDbxref,
+                               "feature": CellLineFeature,
+                               "library": CellLineLibrary,
+                               "libraryprop": CellLineLibraryprop,
                                "relationship": CellLineRelationship}
 
         self.dissociate_list = ['synonym', 'cvterm', 'pub']
@@ -76,6 +81,7 @@ class ChadoCellLine(ChadoGeneralObject):
             'org': 'TC1d',
             'delete': 'TC1h',
             'no_obsolete': True,
+            'add_dbxref': 'FlyBase:uniquename',  # db name ':' and what to substitute
         }
 
         ############################################################
@@ -111,6 +117,9 @@ class ChadoCellLine(ChadoGeneralObject):
                           'cvterm': self.load_cvterm,
                           'dbxref': self.load_dbxref,
                           'relationship': self.load_relationship,
+                          'cvtermprop': self.load_cvtermprop,
+                          'feature': self.load_feature,
+                          'library': self.load_library,
                           'obsolete': self.make_obsolete,
                           'dis_pub': self.dis_pub}
 
