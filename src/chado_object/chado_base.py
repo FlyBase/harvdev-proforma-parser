@@ -78,7 +78,6 @@ class ChadoObject(object):
         keys_to_remove = []
         for key in params['fields_values']:
             if key not in process_data:
-                print("BOB: key is {}".format(key))
                 self.critical_error(params['fields_values'][key], "Do not know what to do with this one.")
 
         for key in process_data:
