@@ -27,32 +27,48 @@ def load_relationship(self, key):
         data_list = self.process_data[key]['data']
     # lookup relationship object
     for item in data_list:
-        cvterm = get_cvterm(self.session, 'synonym type', 'symbol')
-        try:
-            gensyn = self.session.query(self.alchemy_object['synonym']).\
-                join(Synonym).join(Pub).\
-                filter(Synonym.name == item[FIELD_VALUE],
-                       Pub.uniquename == 'unattributed',
-                       Synonym.type_id == cvterm.cvterm_id,
-                       self.alchemy_object['synonym'].is_current == 't').one()
-        except NoResultFound:
-            self.critical_error(item, "Could not find '{}' in synonym lookup.".format(item[FIELD_VALUE]))
-            return
+        if 'lookup_unique' in self.process_data[key] and self.process_data[key]['lookup_unique']:
+            unique_statement = getattr(self.alchemy_object['general'], "uniquename")
+            try:
+                other_obj = self.session.query(self.alchemy_object['general']).\
+                    filter(unique_statement == item[FIELD_VALUE]).one()
+            except NoResultFound:
+                self.critical_error(item, "Could not find '{}' in uniquename lookup.".format(item[FIELD_VALUE]))
+                return
+        else:
+            cvterm = get_cvterm(self.session, 'synonym type', 'symbol')
+            try:
+                other_obj = self.session.query(self.alchemy_object['general']).\
+                    join(self.alchemy_object['synonym']).\
+                    join(Synonym).join(Pub).\
+                    filter(Synonym.name == item[FIELD_VALUE],
+                           Pub.uniquename == 'unattributed',
+                           Synonym.type_id == cvterm.cvterm_id,
+                           self.alchemy_object['synonym'].is_current == 't').one()
+            except NoResultFound:
+                self.critical_error(item, "Could not find '{}' in synonym lookup.".format(item[FIELD_VALUE]))
+                return
 
         # get cvterm for type of relationship
-        cvterm = get_cvterm(self.session, self.process_data[key]['rel_cv'], self.process_data[key]['rel_cvterm'])
+        if 'rel_cvterm_placement' in self.process_data[key] and self.process_data[key]['rel_cvterm_placement']:
+            new_key = self.process_data[key]['rel_cvterm_placement']
+            cvterm = get_cvterm(self.session, self.process_data[key]['rel_cv'], self.process_data[new_key]['data'][FIELD_VALUE])
+        else:
+            cvterm = get_cvterm(self.session, self.process_data[key]['rel_cv'], self.process_data[key]['rel_cvterm'])
 
         # create XXX_relationship
         opts = {'type_id': cvterm.cvterm_id}
         if self.process_data[key]['subject']:
-            opts['subject_id'] = gensyn.first_id()
+            opts['subject_id'] = other_obj.primary_id()
             opts['object_id'] = self.chado.primary_id()
         else:
-            opts['object_id'] = gensyn.first_id()
+            opts['object_id'] = other_obj.primary_id()
             opts['subject_id'] = self.chado.primary_id()
         gr, _ = get_or_create(self.session, self.alchemy_object['relationship'], **opts)
 
         # create XXX_relationshipPub
+        if 'no_pub' in self.process_data[key] and self.process_data[key]['no_pub']:
+            return
         opts = {'{}_relationship_id'.format(self.table_name): gr.primary_id(),
                 'pub_id': self.pub.pub_id}
         get_or_create(self.session, self.alchemy_object['relationshippub'], **opts)

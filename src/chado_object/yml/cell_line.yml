@@ -1,0 +1,145 @@
+#    'TC1f', 'uniquename',
+TC1f:
+    type: ignore  # Done as part of initialisation.
+
+
+#     'TC1a', 'symbol',
+TC1a:
+    type: ignore  # Done as part of initialisation.
+    is_current: True
+    cv: synonym type
+    cvterm: symbol
+
+#     'TC1b', 'symbol',
+TC1b:
+    type: synonym
+    is_current: False
+    cv: synonym type
+    cvterm: symbol
+
+#     'TC1c', 'symbol',
+TC1c:
+    type: synonym
+    is_current: False
+    cv: synonym type
+    cvterm: symbol
+    add_unattributed_paper_only: True
+
+#     'TC1j', 'DGRC_cell_line', ###cell_line_dbxref db = 'DGRC_cel_line' accession = decimal part of FBte0000000
+TC1j:
+    type: ignore  # Done as part of initialisation.
+    cv: synonym type
+    cvterm: symbol
+    is_current:
+
+#     'TC1d', 'organism.abbreviation',###cell_line.organism_id
+TC1d:
+    type: ignore  # Done as part of initialisation
+
+#     'TC1e', 'rename',##action items
+TC1e:
+    type: ignore
+
+    #     'TC1g', 'merge', ## action items
+TC1g:
+    type: ignore
+
+#    'TC1h', 'delete',##action items
+TC1h:
+    type: ignore
+
+#     'TC1i', 'dissociate_FBrf', ## action items
+TC1i:
+    type: ignore  
+
+#     'TC2a', 'source_strain',  ### cell_lineprop
+TC2a:
+    type: prop
+    cvterm: 'source_strain' 
+    cv: 'cell_lineprop type'
+    only_one: True
+
+#     'TC2b', 'source_genotype',  ## cell_lineprop
+TC2b:
+    type: prop
+    cvterm: 'source_genotype' 
+    cv: 'cell_lineprop type'
+    only_one: True
+
+#     'TC2c', 'source_cross',  ## cell_lineprop
+TC2c:
+    type: prop
+    cvterm: 'source_cross' 
+    cv: 'cell_lineprop type'
+    only_one: True
+
+#     'TC2d', 'FlyBase anatomy CV', ##cell_line_cvterm
+TC2d:
+    type: cvterm
+    cv: FlyBase anatomy CV
+
+#     'TC2e', 'FlyBase development CV',  ##cell_line_cvterm
+TC2e:
+    type: cvterm
+    cv: FlyBase development CV    
+
+#     'TC3a', 'lab_of_origin',  ##cell_lineprop
+TC3a:
+    type: prop
+    cvterm: 'lab_of_origin' 
+    cv: 'cell_lineprop type'
+ 
+# #    'TC4a', 'transformed_from',  ### parent cell_line_relationship.object_id on field mapping but check DB default cv = 'cell_line_relationship'
+TC4a:
+    type: relationship
+    subject: False
+    rel_cv: cell_line_relationship
+    rel_cvterm_placement: TC4b
+    lookup_unique: True
+    no_pub: True
+
+# #    'TC4b', '',      #cell_line_relationship.type_id (isolate_of, targeted_mutant_from, cloned_from, selected_from, transformed_from)
+TC4b:
+    type: ignore  # Done by TC4a
+   
+#     'TC5a', 'cell_line_feature', ###cell_line_feature FBti
+TC5a:
+    type: feature
+    uniquename: True
+  
+#     'TC5b', 'karyotype',      ###cell_lineprop   
+TC5b:
+    type: prop  
+    cv: cell_lineprop type
+    cvterm: karyotype
+
+#     'TC5c',  'FlyBase miscellaneous CV',  ##cell_line_cvterm
+TC5c:
+    type: cvtermprop   
+    cv: FlyBase miscellaneous CV
+    prop_field: TC5d
+
+#     'TC5d', 'basis',  ##cell_line_cvtermprop
+TC5d:
+    type: ignore  # Done by TC5c
+    cv: cell_line_cvtermprop type
+    cvterm: basis
+    value: TC5d
+
+#     'TC8', 'member_of_reagent_collection', #cell_line_library, cell_line_libraryprop    
+TC8:
+    type: library
+    cv: cell_line_libraryprop type
+    cvterm: member_of_reagent_collection
+
+#     'TC9',  'comment', ## cell_lineprop
+TC9:
+    type: prop
+    cvterm: 'comment' 
+    cv: 'cell_lineprop type'
+
+#     'TC10', 'internalnotes' ##cell_lineprop
+TC10:
+    type: prop
+    cvterm: 'internalnotes' 
+    cv: 'cell_lineprop type'    

@@ -213,12 +213,14 @@ class ChadoGeneralObject(ChadoObject):
         bangc_prop, bangd_prop
     )
     from chado_object.general.cvterm import (
-        load_cvterm, get_cvterm_by_name, delete_cvterm
+        load_cvterm, get_cvterm_by_name, delete_cvterm, load_cvtermprop
     )
     from chado_object.general.relationship import (
         load_relationship, delete_relationship, relatepubs_exist,
         bangd_relationship, bangc_relationship
     )
+    from chado_object.general.feature import load_feature
+    from chado_object.general.library import load_library
 
     def __init__(self, params):
         """Initialise the ChadoGeneral Object."""
@@ -295,14 +297,15 @@ class ChadoGeneralObject(ChadoObject):
 
     def is_new(self):
         """Should object be new."""
-        is_new = False
-        id_key = self.creation_keys['id']
-        if (id_key and self.has_data(id_key) and self.process_data[id_key]['data'][FIELD_VALUE] == 'new'):
-            is_new = True
-        new_key = self.creation_keys['is_current']
-        if (new_key and self.has_data(new_key) and self.process_data[new_key]['data'][FIELD_VALUE] == 'n'):
-            is_new = True
-        return is_new
+        if 'is_new' in self.creation_keys:
+            new_key = self.creation_keys['is_new']
+            if (self.has_data(new_key) and self.process_data[new_key]['data'][FIELD_VALUE] == 'new'):
+                return True
+        if 'is_current' in self.creation_keys:
+            new_key = self.creation_keys['is_current']
+            if (self.has_data(new_key) and self.process_data[new_key]['data'][FIELD_VALUE] == 'n'):
+                return True
+        return False
 
     def add_organism(self, opts):
         """Get organism.
@@ -318,8 +321,8 @@ class ChadoGeneralObject(ChadoObject):
                 log.error("org is required")
                 return None
             else:
-                opts['organism_id'] = get_organism(self.session,
-                                                   self.process_data[self.creation_keys['org']]['data'][FIELD_VALUE]).id
+                organism_id = opts['organism_id'] = get_organism(self.session,
+                                                                 self.process_data[self.creation_keys['org']]['data'][FIELD_VALUE]).organism_id
         return organism_id
 
     def initialise_and_rename(self):
@@ -354,31 +357,62 @@ class ChadoGeneralObject(ChadoObject):
             log.critical("Merging not coded yet.")
 
         proforma_defined_as_new = self.is_new()
+        print("BOB: is new {}".format(proforma_defined_as_new))
         opts = {'name': self.process_data[self.creation_keys['symbol']]['data'][FIELD_VALUE]}
 
         type_name = self.add_type(opts)
         organism_id = self.add_organism(opts)
 
         if proforma_defined_as_new:
-            opts['uniquename'] = 'FB{}:temp_0'.format(self.fb_code)
+            if 'uniquename' in self.creation_keys:
+                unique_key = self.creation_keys['uniquename']
+                opts['uniquename'] = self.process_data[unique_key]['data'][FIELD_VALUE]
+            else:
+                opts['uniquename'] = 'FB{}:temp_0'.format(self.fb_code)
             chado, is_new = get_or_create(self.session, self.alchemy_object['general'], **opts)
             self.chado = chado
             self.load_synonym(self.creation_keys['symbol'])
+            if 'add_dbxref' in self.creation_keys and self.creation_keys['add_dbxref']:
+                # create dbxref and connect to self.chado
+                self.add_dbxref()
             if not is_new:
                 log.critical("Old one returned expected a new one")
         else:
+            if 'no_obsolete' in self.creation_keys and self.creation_keys['no_obsolete']:
+                obsolete = None
+            else:
+                obsolete = 'f'
             try:
                 chado = general_symbol_lookup(self.session, self.alchemy_object['general'], self.alchemy_object['synonym'],
                                               type_name,
                                               self.process_data[self.creation_keys['symbol']]['data'][FIELD_VALUE],
                                               organism_id=organism_id, cv_name='synonym type',
-                                              cvterm_name='symbol', check_unique=True, obsolete='f', convert=True)
+                                              cvterm_name='symbol', check_unique=True, obsolete=obsolete, convert=True)
             except NoResultFound:
                 mess = "Could not find '{}' in synonym lookup.".format(self.process_data[self.creation_keys['symbol']]['data'][FIELD_VALUE])
                 self.critical_error(self.process_data[self.creation_keys['symbol']]['data'], mess)
                 return None
 
         return chado
+
+    def add_dbxref(self):
+        """Add dbxref and connect"""
+        db_name, acc_format = self.creation_keys['add_dbxref'].split(':')
+        if 'uniquename' in self.creation_keys['add_dbxref']:
+            acc_format = self.creation_keys['add_dbxref']
+            acc = acc_format.replace('uniquename', self.chado.uniquename)
+        else:
+            mess = "Harv dev problem: dbxref does not have uniquename in specification"
+            log.critical_error(self.process_data[self.creation_keys['symbol']]['data'], mess)
+            exit(-1)
+
+        db = self.session.query(Db).filter(Db.name == db_name).one()
+        dbxref, _ = get_or_create(self.session, Dbxref,
+                                  accession=acc, db_id=db.db_id)
+        # add this to self.chado.
+        opts = {self.primary_key_name(): self.chado.primary_id(),
+                'dbxref_id': dbxref.dbxref_id}
+        get_or_create(self.session, self.alchemy_object['dbxref'], **opts)
 
     def get_unattrib_pub(self):
         """Get the unattributed pub."""
