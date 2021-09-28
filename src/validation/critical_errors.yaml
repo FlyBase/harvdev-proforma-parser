@@ -117,4 +117,6 @@ GA90i:
 GA90j:
   - is required
 GA90k:
-  - is required  
+  - is required
+TC1f: 
+  - null value not allowed  

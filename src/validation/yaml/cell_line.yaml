@@ -9,6 +9,7 @@ TC1a:
     type: string
     required: True
     no_bang: True
+    nullable: True
 
 #     'TC1b', 'symbol',
 TC1b:
