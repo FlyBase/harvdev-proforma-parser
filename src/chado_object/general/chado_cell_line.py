@@ -127,6 +127,7 @@ class ChadoCellLine(ChadoGeneralObject):
         self.delete_dict = {'synonym': self.delete_synonym,
                             'prop': self.delete_prop,
                             'cvterm': self.delete_cvterm,
+                            'cvtermprop': self.delete_cvterm,
                             'relationship': self.delete_relationship,
                             'library': self.delete_library}
 

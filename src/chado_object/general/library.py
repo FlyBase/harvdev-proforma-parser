@@ -33,13 +33,12 @@ def load_library(self, key):
         try:
             library = self.session.query(Library).\
                 join(LibrarySynonym).\
-                join(Synonym).join(Pub).\
+                join(Synonym).\
                 filter(Synonym.name == item[FIELD_VALUE],
-                       # Pub.uniquename == 'unattributed',
                        Synonym.type_id == syn_cvterm.cvterm_id,
-                       self.alchemy_object['synonym'].is_current == 't').one()
+                       LibrarySynonym.is_current == 't').one()
         except NoResultFound:
-            self.critical_error(item, "Could not find '{}' in synonym lookup.".format(item[FIELD_VALUE]))
+            self.critical_error(item, "Could not find '{}' in library_synonym lookup.".format(item[FIELD_VALUE]))
             return
 
         opts = {'{}_id'.format(self.table_name): self.chado.primary_id(),
