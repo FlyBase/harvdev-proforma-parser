@@ -63,7 +63,6 @@ def load_generalprop(self, key):
         else:
             value = self.process_data[key]['data'][FIELD_VALUE]
         if is_new:
-            log.debug("BOB: {} setting value to  '{}'.".format(key, value))
             fp.value = value
         else:  # fp.value:
             message = "Already has a value. Use bangc to change it"
