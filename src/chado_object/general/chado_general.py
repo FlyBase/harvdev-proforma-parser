@@ -360,7 +360,7 @@ class ChadoGeneralObject(ChadoObject):
         if 'new_uniquename' in self.creation_keys and self.creation_keys['new_uniquename']:
             unique_key = self.creation_keys['new_uniquename']
             opts['uniquename'] = self.process_data[unique_key]['data'][FIELD_VALUE]
-        elif 'uniquename' in self.creation_keys:
+        elif 'uniquename' in self.creation_keys and self.creation_keys['uniquename']:
             unique_key = self.creation_keys['uniquename']
             opts['uniquename'] = self.process_data[unique_key]['data'][FIELD_VALUE]
         else:
