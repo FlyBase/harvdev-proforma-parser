@@ -357,7 +357,7 @@ class ChadoGeneralObject(ChadoObject):
         opts = {}
         self.add_type(opts)
         self.add_organism(opts)
-        if 'new_uniquename' in self.creation_keys:
+        if 'new_uniquename' in self.creation_keys and self.creation_keys['new_uniquename']:
             unique_key = self.creation_keys['new_uniquename']
             opts['uniquename'] = self.process_data[unique_key]['data'][FIELD_VALUE]
         elif 'uniquename' in self.creation_keys:
