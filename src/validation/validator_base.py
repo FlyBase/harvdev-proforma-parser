@@ -71,7 +71,7 @@ class ValidatorBase(Validator):
         if field in self.bang_d:
             self._error(field, '{} not allowed with bang d.'.format(field))
 
-    def _validate_no_bang(self, no_bangc, field, value):
+    def _validate_no_bang(self, yml_value, proforma_field, proforma_value):
         """
         Throw error if and bang is set. NOT allowed here.
 
@@ -80,10 +80,11 @@ class ValidatorBase(Validator):
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
-        self._no_bangc(field)
-        self._no_bangd(field)
+        if yml_value:
+            self._no_bangc(proforma_field)
+            self._no_bangd(proforma_field)
 
-    def _validate_no_bangc(self, no_bangc, field, value):
+    def _validate_no_bangc(self, yml_value, proforma_field, proforma_value):
         """
         Throw error if bangc is set. NOT allowed here.
 
@@ -92,9 +93,10 @@ class ValidatorBase(Validator):
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
-        self._no_bangc(field)
+        if yml_value:
+            self._no_bangc(proforma_field)
 
-    def _validate_at_required(self, required, field, value):
+    def _validate_at_required(self, yml_value, proforma_field, proforma_value):
         """
         Throw error if it is required and not there.
 
@@ -103,11 +105,13 @@ class ValidatorBase(Validator):
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
+        if not yml_value:
+            return
         check_arr = []
-        if type(value) is list:
-            check_arr = value
+        if type(proforma_value) is list:
+            check_arr = proforma_value
         else:
-            check_arr.append(value)
+            check_arr.append(proforma_value)
         okay = True
         for line in check_arr:
             if not line or len(line) == 0:
@@ -115,9 +119,9 @@ class ValidatorBase(Validator):
             if re.search(r"@+.*@+", line) is None:
                 okay = False
         if not okay:
-            self._error(field, '{} @...@ is required.'.format(value))
+            self._error(proforma_field, '{} @...@ is required.'.format(proforma_value))
 
-    def _validate_at_forbidden(self, other, field, value):
+    def _validate_at_forbidden(self, yml_value, proforma_field, proforma_value):
         """Make sure we do not have @something@.
 
         Not sure how to negate a regex easily in cerberus, so
@@ -126,18 +130,20 @@ class ValidatorBase(Validator):
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
-        if not value:
+        if not yml_value:
+            return
+        if not proforma_value:
             return
         check_arr = []
-        if type(value) is list:
-            check_arr = value
+        if type(proforma_value) is list:
+            check_arr = proforma_value
         else:
-            check_arr.append(value)
+            check_arr.append(proforma_value)
         for line in check_arr:
             if re.search(r"@+.*@+", line) is not None:
-                self._error(field, 'Error {} @...@ is forbidden here.'.format(line))
+                self._error(proforma_field, 'Error {} @...@ is forbidden here.'.format(line))
 
-    def _validate_if_new_required(self, yml_value, field, value):
+    def _validate_if_new_required(self, yml_value, proforma_field, proforma_value):
         """
         Throws error if required for new.
 
@@ -152,12 +158,12 @@ class ValidatorBase(Validator):
         if yml_value not in self.document:
             return
         if self.document[yml_value] == 'n' or self.document[yml_value] == 'new':
-            if value and len(value):
+            if proforma_value and len(proforma_value):
                 return
             else:
-                self._error(field, 'Error {} Must be set for new.'.format(field))
+                self._error(proforma_field, 'Error {} Must be set for new.'.format(proforma_field))
 
-    def _validate_at_required_in_one(self, other, field, value):
+    def _validate_at_required_in_one(self, yml_value, proforma_field, proforma_value):
         """Make sure we have @something@ on at least one line.
 
         cerberus does test for ech line but we just need one toi have the @..@
@@ -166,21 +172,21 @@ class ValidatorBase(Validator):
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
-        if not value:
+        if not proforma_value or not yml_value:
             return
         check_arr = []
-        if type(value) is list:
-            check_arr = value
+        if type(proforma_value) is list:
+            check_arr = proforma_value
         else:
-            check_arr.append(value)
+            check_arr.append(proforma_value)
         okay = False
         for line in check_arr:
             if re.search(r"@+.*@+", line) is not None:
                 okay = True
         if not okay:
-            self._error(field, '{} @...@ is required on at least one line.'.format(value))
+            self._error(proforma_field, '{} @...@ is required on at least one line.'.format(proforma_value))
 
-    def _validate_wrapping_values(self, field, dict1, comp_fields):
+    def _validate_wrapping_values(self, yml_value, proforma_field, proforma_value):
         """Allow wrapping of values.
 
         This is a "placeholder" validation used to indicate whether a field
@@ -195,19 +201,19 @@ class ValidatorBase(Validator):
     #########################################
     # less frequently used validation methods
     #########################################
-    def _validate_plain_text(self, plain_text, field, value):
+    def _validate_plain_text(self, yml_value, proforma_field, proforma_value):
         """
         The docstring statement below provides a schema to validate the 'plain_text' argument.
 
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
-        log.debug('Plain text validation for field: {} value: {}'.format(field, value))
-        if plain_text and not re.match(r'^[a-zA-Z0-9\-:\s]*$', value):
+        log.debug('Plain text validation for field: {} value: {}'.format(proforma_field, proforma_value))
+        if yml_value and not re.match(r'^[a-zA-Z0-9\-:\s]*$', proforma_value):
             # Must return a self._error, otherwise the validator believes everything passed!
-            self._error(field, '{} did not validate. Only a-z, A-Z, 0-9, -, :, characters permitted.'.format(value))
+            self._error(proforma_field, '{} did not validate. Only a-z, A-Z, 0-9, -, :, characters permitted.'.format(proforma_value))
 
-    def _validate_only_allowed(self, field_keys, field, comp_fields):
+    def _validate_only_allowed(self, yml_value, proforma_field, proforma_value):
         """
         Check only fields in the list are allowed. (including self)
         So IF this field has a value then ONLY the fields listed are allowed.
@@ -218,8 +224,8 @@ class ValidatorBase(Validator):
         {'type': 'string'}
         """
 
-        allowed = field_keys.split()
-        allowed.append(field)  # itself allowed
+        allowed = yml_value.split()
+        allowed.append(proforma_field)  # itself allowed
         bad_fields = []
         log.debug("allowed values are {}".format(allowed))
         for key in (self.document.keys()):
@@ -227,9 +233,9 @@ class ValidatorBase(Validator):
             if key not in allowed:
                 bad_fields.append(key)
         if bad_fields:
-            self._error(field, 'Error {} is set so cannot set {}'.format(field, bad_fields))
+            self._error(proforma_field, 'Error {} is set so cannot set {}'.format(proforma_field, bad_fields))
 
-    def _validate_url_format(self, checkit, field, value):
+    def _validate_url_format(self, yml_value, proforma_field, proforma_value):
         """
         Throw error if check it is set and value is not a valid url.
 
@@ -238,17 +244,17 @@ class ValidatorBase(Validator):
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
-        if checkit and value:
+        if yml_value and proforma_value:
             try:
-                ret = urlparse(value)
+                ret = urlparse(proforma_value)
                 if not ret.scheme or not ret.netloc:
-                    self._error(field, '{} does not match a valid url format'.format(field))
-                    log.debug("{} FAILED url checking".format(value))
+                    self._error(proforma_field, '{} does not match a valid url format'.format(proforma_field))
+                    log.debug("{} FAILED url checking".format(proforma_value))
                     return
-                log.debug("{} PASSED URL checking:".format(value))
+                log.debug("{} PASSED URL checking:".format(proforma_value))
             except URLError:
-                log.debug("{} FAILED url checking".format(value))
-                self._error(field, '{} does not match a valid url format'.format(field))
+                log.debug("{} FAILED url checking".format(proforma_value))
+                self._error(proforma_field, '{} does not match a valid url format'.format(proforma_field))
 
     ###########################################
     # These may be specific to certain proforma.
@@ -256,15 +262,15 @@ class ValidatorBase(Validator):
     ###########################################
 
     # used in DB proforma
-    def _validate_required_if_bangc(self, check, field, value):
+    def _validate_required_if_bangc(self, yml_value, proforma_field, proforma_value):
         """
         Throw error if bangc is set and we have no value. NOT allowed here.
 
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
-        if check and not value:
-            self._error(field, '!c MUST have a value to be replaced with')
+        if yml_value and not proforma_value:
+            self._error(proforma_field, '!c MUST have a value to be replaced with')
 
     # Used in HH Proforma
     def _validate_set(self, value):
@@ -278,7 +284,7 @@ class ValidatorBase(Validator):
         return True
 
     # Used in Allele Proforma
-    def _validate_genomic_location_format(self, required, field, value):
+    def _validate_genomic_location_format(self, yml_value, proforma_field, proforma_value):
         """
         Throw error if it is not in a sequence format.
 
@@ -287,7 +293,7 @@ class ValidatorBase(Validator):
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
-        if not value:
+        if not proforma_value or not yml_value:
             return
 
         pattern = r"""
@@ -298,7 +304,7 @@ class ValidatorBase(Validator):
         [.]{2}        # double dots
         (\d+)         # end pos
         """
-        s_res = re.search(pattern, value, re.VERBOSE)
+        s_res = re.search(pattern, proforma_value, re.VERBOSE)
 
         if s_res:  # matches the pattern above
             return
@@ -311,9 +317,9 @@ class ValidatorBase(Validator):
         /s+           # possible spaces
         $             # end
         """
-        s_res = re.search(pattern, value, re.VERBOSE)
+        s_res = re.search(pattern, proforma_value, re.VERBOSE)
 
         if s_res:  # matches the pattern above
             return
 
-        self._error(field, 'Error {} not in a recognised format'.format(value))
+        self._error(proforma_field, 'Error {} not in a recognised format'.format(proforma_value))

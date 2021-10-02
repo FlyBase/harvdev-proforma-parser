@@ -60,9 +60,11 @@ def load_generalprop(self, key):
             value = self.process_data[self.process_data[key]['value']]['data'][FIELD_VALUE]
         elif 'value' in self.process_data[key]:
             value = datetime.today().strftime('%Y%m%d')
+        else:
+            value = self.process_data[key]['data'][FIELD_VALUE]
         if is_new:
             fp.value = value
-        elif fp.value:
+        else:  # fp.value:
             message = "Already has a value. Use bangc to change it"
             self.critical_error(self.process_data[self.process_data[key]['value']]['data'], message)
     elif ('value' in self.process_data[key] and self.has_data(self.process_data[key]['value'])):

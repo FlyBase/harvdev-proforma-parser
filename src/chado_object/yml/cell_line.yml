@@ -9,7 +9,7 @@ TC1a:
     is_current: True
     cv: synonym type
     cvterm: symbol
-
+    add_unattributed_paper: True
 #     'TC1b', 'symbol',
 TC1b:
     type: synonym

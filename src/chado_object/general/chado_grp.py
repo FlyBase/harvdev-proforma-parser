@@ -99,7 +99,7 @@ class ChadoGrp(ChadoGeneralObject):
                             'cvterm': self.delete_cvterm,
                             'relationship': self.delete_relationship}
 
-        self.chado = self.initialise_object()
+        self.initialise_object()
         if not self.chado:
             return
 

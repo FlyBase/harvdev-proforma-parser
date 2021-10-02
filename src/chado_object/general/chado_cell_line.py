@@ -74,13 +74,14 @@ class ChadoCellLine(ChadoGeneralObject):
             'merge': 'TC1g',
             'dissociate': 'TC1i',
             'id': 'TC1f',
-            'uniquename': 'TC1j',
+            'uniquename': 'TC1f',
+            'new_uniquename': 'TC1j',
             'is_new': 'TC1f',
             'rename': 'TC1e',
-            'type': None,  # 'TC1b',  # where type_cv and type_cvterm are defined
+            'type': None,
             'org': 'TC1d',
             'delete': 'TC1h',
-            'no_obsolete': True,
+            'no_obsolete': True,  # wether the chado object has an obsolete field
             'add_dbxref': 'FlyBase:uniquename',  # db name ':' and what to substitute
         }
 
@@ -126,9 +127,11 @@ class ChadoCellLine(ChadoGeneralObject):
         self.delete_dict = {'synonym': self.delete_synonym,
                             'prop': self.delete_prop,
                             'cvterm': self.delete_cvterm,
-                            'relationship': self.delete_relationship}
+                            'cvtermprop': self.delete_cvterm,
+                            'relationship': self.delete_relationship,
+                            'library': self.delete_library}
 
-        self.chado = self.initialise_object()
+        self.initialise_object()
 
         # add pub if not dissociate from pub
         if not self.creation_keys['dissociate'] or not self.has_data(self.creation_keys['dissociate']):
