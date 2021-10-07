@@ -55,7 +55,7 @@ class ChadoChem(ChadoFeatureObject):
                           'value': self.ignore,
                           'disspub': self.dissociate_from_pub}
 
-        self.delete_dict = {'ignore': self.ignore,
+        self.delete_dict = {'ignore': self.ignore_delete,
                             'synonym': self.rename_synonym,
                             'featureprop': self.delete_featureprop,
                             'value': self.change_featurepropvalue}
@@ -106,6 +106,10 @@ class ChadoChem(ChadoFeatureObject):
             self.new_chemical_entry = False
 
     def ignore(self: ChadoFeatureObject, key: str):
+        """Ignore."""
+        pass
+
+    def ignore_delete(self: ChadoFeatureObject, key: str, bangc: bool = True):
         """Ignore."""
         pass
 
