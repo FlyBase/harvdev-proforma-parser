@@ -11,7 +11,7 @@ from chado_object.utils.feature_synonym import fs_add_by_synonym_name_and_type
 from chado_object.utils.feature_synonym import fs_remove_current_symbol
 from harvdev_utils.char_conversions import sgml_to_plain_text, sgml_to_unicode
 from harvdev_utils.production import (
-    Cvtermprop, Feature, FeatureRelationship, FeatureRelationshipPub, Featureprop,
+    Cvterm, Cvtermprop, Feature, FeatureRelationship, FeatureRelationshipPub, Featureprop,
     FeaturepropPub, FeaturePub, FeatureCvterm, FeatureCvtermprop, FeatureSynonym,
     Pub, Synonym, Library, LibraryFeature, LibraryFeatureprop
 )
@@ -22,6 +22,7 @@ from harvdev_utils.chado_functions import (
 
 from datetime import datetime
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
+from typing import List
 import logging
 import re
 
@@ -46,11 +47,11 @@ class ChadoFeatureObject(ChadoObject):
 
         # Initiate the parent.
         super(ChadoFeatureObject, self).__init__(params)
-        self.feature = None
+        self.feature: Feature = None
         self.unattrib_pub = None
         self.new = None
 
-    def load_lfp(self, key):
+    def load_lfp(self, key: str):
         """Load LibraryFeatureprop.
 
         Args:
@@ -74,7 +75,7 @@ class ChadoFeatureObject(ChadoObject):
         # Look up library given in GA91 or G91
         # May need to do a library synonym lookup at some point.
         try:
-            library = self.session.query(Library).\
+            library: Library = self.session.query(Library).\
                 filter(Library.name == self.process_data[key]['data'][FIELD_VALUE],
                        Library.organism_id == self.feature.organism_id).one()
         except NoResultFound:
@@ -106,7 +107,7 @@ class ChadoFeatureObject(ChadoObject):
             if self.has_data(key) and 'at_symbol_required' in self.process_data[key]:
                 self.at_symbol_check(key)
 
-    def at_symbol_check(self, key):
+    def at_symbol_check(self, key: str):
         """
         Throw warning if it has symbol that cannot be found (and is not of a specific
         type if self.process_data[key]['at_symbol_required'] is not ['ANY'])
@@ -136,7 +137,7 @@ class ChadoFeatureObject(ChadoObject):
                         format(symbol, feat.cvterm.name, self.process_data[key]['at_symbol_required'])
                     self.critical_error(item, message)
 
-    def make_obsolete(self, key):
+    def make_obsolete(self, key: str):
         """Make feature obsolete.
 
         Args:
@@ -144,7 +145,7 @@ class ChadoFeatureObject(ChadoObject):
         """
         self.feature.is_obsolete = True
 
-    def dis_pub(self, key):
+    def dis_pub(self, key: str):
         """Dissociate pub from feature.
 
         Args:
@@ -167,7 +168,7 @@ class ChadoFeatureObject(ChadoObject):
             self.unattrib_pub, _ = get_or_create(self.session, Pub, uniquename='unattributed')
         return self.unattrib_pub
 
-    def _get_feature(self, cvterm_name, symbol_key, unique_bit, cv_name='SO'):
+    def _get_feature(self, cvterm_name: str, symbol_key: str, unique_bit: str, cv_name: str = 'SO'):
         """Get the feature.
 
         Assigns this to self.feature.
@@ -195,7 +196,7 @@ class ChadoFeatureObject(ChadoObject):
         else:
             self.is_new = False
 
-    def load_feature(self, feature_type='gene'):
+    def load_feature(self, feature_type: str = 'gene') -> None:  # noqa
         """Get feature.
 
         from feature type get to the key i.e. 'G' for gene, 'GA' for allele, 'A' for aberation.
@@ -255,7 +256,7 @@ class ChadoFeatureObject(ChadoObject):
             except DataError as e:
                 self.critical_error(self.process_data[id_key]['data'], e.error)
 
-            return self.feature
+            return
 
         if self.process_data[current_key]['data'][FIELD_VALUE] == 'y':  # Should exist already
             #  organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['G1a']['data'][FIELD_VALUE])
@@ -276,7 +277,7 @@ class ChadoFeatureObject(ChadoObject):
             # add default symbol
             self.load_synonym(symbol_key)
 
-    def get_pub_id_for_synonym(self, key):
+    def get_pub_id_for_synonym(self, key: str):
         """Get pub_id for a synonym.
 
         Args:
@@ -297,7 +298,7 @@ class ChadoFeatureObject(ChadoObject):
             return pub_id
         return self.pub.pub_id
 
-    def load_synonym(self, key, unattrib=True, cvterm_name=None, overrule_removeold=False):
+    def load_synonym(self, key: str, unattrib: bool = True, cvterm_name: str = None, overrule_removeold: bool = False) -> None:  # noqa
         """Load Synonym.
 
         yml options:
@@ -344,7 +345,6 @@ class ChadoFeatureObject(ChadoObject):
             synonym_sgml = None
             if 'subscript' in self.process_data[key] and not self.process_data[key]['subscript']:
                 synonym_sgml = sgml_to_unicode(item[FIELD_VALUE])
-            fs = False
             for pub_id in pubs:
                 fs = fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
                                                      item[FIELD_VALUE], cv_name, cvterm_name, pub_id,
@@ -353,7 +353,7 @@ class ChadoFeatureObject(ChadoObject):
                     self.feature.name = sgml_to_plain_text(item[FIELD_VALUE])
                     fs.current = is_current
 
-    def load_feature_cvterm(self, key):
+    def load_feature_cvterm(self, key: str):
         """Add feature cvterm.
 
         Args:
@@ -390,7 +390,7 @@ class ChadoFeatureObject(ChadoObject):
                                         cvterm_id=cvterm.cvterm_id,
                                         pub_id=self.pub.pub_id)
 
-    def load_feature_cvtermprop(self, key):
+    def load_feature_cvtermprop(self, key: str):
         """Add feature_cvtermprop.
 
         If prop_value is False then the value is used as the
@@ -428,7 +428,7 @@ class ChadoFeatureObject(ChadoObject):
                           value=prop_value,
                           type_id=props_cvterm.cvterm_id)
 
-    def get_cvterm_propvalue(self, key, item):
+    def get_cvterm_propvalue(self, key: str, item: List):
         """Get cvterm and prop value.
 
         Also check that if namespace is defined (in the yml) the cvterm belongs to that.
@@ -477,7 +477,7 @@ class ChadoFeatureObject(ChadoObject):
                 return None, None
         return cvterm, prop_value
 
-    def get_feat_type_cvterm(self, key):
+    def get_feat_type_cvterm(self, key: str) -> Cvterm:
         """Get feature type cvterm.
 
         Args:
@@ -643,7 +643,7 @@ class ChadoFeatureObject(ChadoObject):
                                        type_id=prop_cv_id, value=item[FIELD_VALUE])
             get_or_create(self.session, FeaturepropPub, featureprop_id=fp.featureprop_id, pub_id=self.pub.pub_id)
 
-    def load_featureprop(self, key):
+    def load_featureprop(self, key):  # noqa C901
         """Store the feature prop.
 
         If there is a value then it will have a 'value' in the yaml
@@ -672,11 +672,21 @@ class ChadoFeatureObject(ChadoObject):
                 value = self.process_data[self.process_data[key]['value']]['data'][FIELD_VALUE]
             elif 'value' in self.process_data[key]:
                 value = datetime.today().strftime('%Y%m%d')
-        elif ('value' in self.process_data[key] and self.has_data(self.process_data[key]['value'])):
-            value = self.process_data[self.process_data[key]['value']]['data'][FIELD_VALUE]
-            fp, is_new = get_or_create(self.session, Featureprop, feature_id=self.feature.feature_id,
-                                       type_id=prop_cv_id, value=value)
+        elif ('value' in self.process_data[key]):
+            val_key = self.process_data[key]['value']
+            if self.has_data(val_key):
+                value = self.process_data[val_key]['data'][FIELD_VALUE]
+                fp, is_new = get_or_create(self.session, Featureprop, feature_id=self.feature.feature_id,
+                                           type_id=prop_cv_id, value=value)
+            elif 'value_nullable' not in self.process_data[key] and self.process_data[key]['value_nullable']:
+                message = "Coding error. value is specified 'nullable' not set so data is required."
+                self.critical_error(self.process_data[val_key]['data'], message)
+                return
+            else:
+                return
         else:
+            #  ('nullable' not in self.process_data[self.process_data[key]['value']] or
+            #  not self.process_data[self.process_data[key]['value']]['nullable'])):
             message = "Coding error. only_one or value must be specified if not a list."
             self.critical_error(self.process_data[self.process_data[key]['value']]['data'], message)
             return

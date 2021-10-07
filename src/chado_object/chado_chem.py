@@ -105,7 +105,7 @@ class ChadoChem(ChadoFeatureObject):
         else:
             self.new_chemical_entry = False
 
-    def ignore(self, key):
+    def ignore(self: ChadoFeatureObject, key: str):
         """Ignore."""
         pass
 
@@ -150,7 +150,7 @@ class ChadoChem(ChadoFeatureObject):
         log.debug('%s' % curated_by_string)
         return self.feature
 
-    def fetch_by_FBch_and_check(self, chemical_cvterm_id):
+    def fetch_by_FBch_and_check(self: ChadoFeatureObject, chemical_cvterm_id: int) -> None:
         """Fetch by the FBch (CH1f) and check the name is the same if it is given (CH1a).
 
         Args:

@@ -356,7 +356,7 @@ def check_for_valid_fbs(session, end_comment):
 
 def process_GO_line(session, line=None, cv_name=None, allowed_qualifiers=None,
                     qualifier_cv_list=[], allowed_provenances=[], with_evidence_code=None,
-                    allowed_dbs=[]):
+                    allowed_dbs=[]) -> dict:
     """From string generate and validate GO.
 
     Params:
@@ -427,12 +427,12 @@ def process_GO_line(session, line=None, cv_name=None, allowed_qualifiers=None,
     j) involved_in extracellular space ; GO:0016458 | IGI with FLYBASE:symbol-31 ; FB:FBgn0005001
        FLYBASE not allowed use the @@ format.
     """
-    go_dict = {'gocvterm': None,
-               'error': [],
-               'value': None,
-               'provenance': 'FlyBase',
-               'qualifier': None,
-               'is_not': False}
+    go_dict: dict = {'gocvterm': None,
+                     'error': [],
+                     'value': None,
+                     'provenance': 'FlyBase',
+                     'qualifier': None,
+                     'is_not': False}
 
     full_pattern = r"""
                 ^           # start of line

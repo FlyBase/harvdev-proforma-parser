@@ -7,6 +7,7 @@
 NOTE: transfer methods do not transfer but merely copy to the new feature.
       Old features are made obsolete that is all.
 """
+from harvdev_utils.production.production import Organism
 from chado_object.chado_base import FIELD_VALUE
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from harvdev_utils.chado_functions import (
@@ -16,14 +17,15 @@ from harvdev_utils.chado_functions import (
 )
 from harvdev_utils.production import (
     FeatureDbxref, Featureloc, FeatureSynonym, FeatureCvterm, FeatureCvtermprop,
-    FeatureRelationship, FeatureRelationshipPub,
+    FeatureRelationship, FeatureRelationshipPub, Feature,
     FeatureRelationshipprop, FeatureRelationshippropPub
 )
+from typing import List, Tuple
 import logging
 log = logging.getLogger(__name__)
 
 
-def process_feat_relation_dependents(self, old_feat_rela, new_feat_rela):
+def process_feat_relation_dependents(self, old_feat_rela: FeatureRelationship, new_feat_rela: FeatureRelationship) -> None:
     """Add feature relationship (_pub, prop, prop_pub).
 
     Args:
@@ -64,7 +66,7 @@ def process_feat_relation_dependents(self, old_feat_rela, new_feat_rela):
                 pub_id=new_frprop.pub_id)
 
 
-def transfer_feature_relationships(self, feat):
+def transfer_feature_relationships(self, feat: Feature) -> None:
     """Transfer Feature Relationships.
 
     Args:
@@ -98,7 +100,7 @@ def transfer_feature_relationships(self, feat):
             self.process_feat_relation_dependents(old_feat_rela, new_feat_rela)
 
 
-def transfer_cvterms(self, feat):
+def transfer_cvterms(self, feat: Feature) -> None:
     """Transfer feature cvterms.
 
     Args:
@@ -113,7 +115,7 @@ def transfer_cvterms(self, feat):
                           type_id=cvprop.type_id, value=cvprop.value)
 
 
-def transfer_dbxrefs(self, feat):
+def transfer_dbxrefs(self, feat: Feature) -> None:
     """Transfer dbxref from feat to self.feature.
 
     Args:
@@ -134,7 +136,7 @@ def transfer_dbxrefs(self, feat):
             fd.is_current = featdbx.is_current
 
 
-def transfer_synonyms(self, feat):
+def transfer_synonyms(self, feat: Feature) -> None:
     """Create new feature synonyms and make is_current True.
 
     Args:
@@ -148,7 +150,7 @@ def transfer_synonyms(self, feat):
             fs.is_current = False
 
 
-def multiple_check(self, feats, feat_type, merge_feat_symbol, merge_feat_symbol_tuple, organism):
+def multiple_check(self, feats: List[Feature], feat_type: str, merge_feat_symbol: str, merge_feat_symbol_tuple: Tuple, organism: Organism):
     """Check if multiple values is okay.
 
     Make sure the synonym os found only once. It may exist again as a 'temp' but this is okay,
@@ -177,7 +179,7 @@ def multiple_check(self, feats, feat_type, merge_feat_symbol, merge_feat_symbol_
     return feat
 
 
-def get_merge_features(self, key, feat_type='gene'):
+def get_merge_features(self, key: str, feat_type: str = 'gene') -> List[Feature]:
     """Get gene/allele's to be merged.
 
     Get genes/allels to be merged and do some checks.
@@ -193,7 +195,7 @@ def get_merge_features(self, key, feat_type='gene'):
         Non valid symbol.
         More than one featureloc
     """
-    feats = []
+    feats: List[Feature] = []
     found = False
     featloc_count = 0
     # Check gene from G[A]1a (self.feature) is in the list to be merged

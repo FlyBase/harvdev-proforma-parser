@@ -36,8 +36,9 @@ CH3b:
   cv: property type
   cvterm: is_variant
   value: CH3c
+  value_nullable: True
 CH3c: # Processed by CH3b if new
-  type: value
+  type: ignore
 CH3d: # main chebi ref. Done on creation.
   type: ignore
 CH3f:
