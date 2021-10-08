@@ -550,7 +550,7 @@ class ChadoGeneralObject(ChadoObject):
             return
         self.chado.is_obsolete = True
 
-    def dis_pub_table(self, chado_object_table):
+    def dis_pub_table(self, chado_object_table: ChadoObject):
         """Dissociate pub and self.chado from table.
 
         Args:

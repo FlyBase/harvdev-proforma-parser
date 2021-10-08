@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 class ChadoGrp(ChadoGeneralObject):
     """Process the GeneGroup Proforma."""
 
-    def __init__(self, params):
+    def __init__(self: ChadoGeneralObject, params: dict):
         """Initialise the chado object."""
         log.debug('Initializing ChadoGrp object.')
 
@@ -67,7 +67,7 @@ class ChadoGrp(ChadoGeneralObject):
         # Populated self.process_data with all possible keys.
         self.process_data = self.load_reference_yaml(yml_file, params)
 
-    def load_content(self, references):
+    def load_content(self: ChadoGeneralObject, references: dict) -> None:
         """Process the data.
 
         Args:
@@ -80,7 +80,7 @@ class ChadoGrp(ChadoGeneralObject):
         except KeyError:
             message = "Unable to find publication."
             self.critical_error(self.process_data['GG1a']['data'], message)
-            return None
+            return
 
         ##########################################
         # Set up how to process each type of input
@@ -118,3 +118,4 @@ class ChadoGrp(ChadoGeneralObject):
                 self.critical_error(self.process_data[key]['data'],
                                     "No sub to deal type '{}' yet!! Report to HarvDev".format(key))
             self.type_dict[self.process_data[key]['type']](key)
+        return

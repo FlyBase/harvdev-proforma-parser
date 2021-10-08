@@ -55,7 +55,7 @@ class ChadoChem(ChadoFeatureObject):
                           'value': self.ignore,
                           'disspub': self.dissociate_from_pub}
 
-        self.delete_dict = {'ignore': self.ignore,
+        self.delete_dict = {'ignore': self.ignore_delete,
                             'synonym': self.rename_synonym,
                             'featureprop': self.delete_featureprop,
                             'value': self.change_featurepropvalue}
@@ -105,7 +105,11 @@ class ChadoChem(ChadoFeatureObject):
         else:
             self.new_chemical_entry = False
 
-    def ignore(self, key):
+    def ignore(self: ChadoFeatureObject, key: str):
+        """Ignore."""
+        pass
+
+    def ignore_delete(self: ChadoFeatureObject, key: str, bangc: bool = True):
         """Ignore."""
         pass
 
@@ -150,7 +154,7 @@ class ChadoChem(ChadoFeatureObject):
         log.debug('%s' % curated_by_string)
         return self.feature
 
-    def fetch_by_FBch_and_check(self, chemical_cvterm_id):
+    def fetch_by_FBch_and_check(self: ChadoFeatureObject, chemical_cvterm_id: int) -> None:
         """Fetch by the FBch (CH1f) and check the name is the same if it is given (CH1a).
 
         Args:

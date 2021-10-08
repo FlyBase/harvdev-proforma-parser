@@ -13,6 +13,7 @@ from harvdev_utils.char_conversions import sgml_to_plain_text
 from harvdev_utils.char_conversions import sub_sup_to_sgml
 from harvdev_utils.char_conversions import sgml_to_unicode
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+from sqlalchemy.orm.session import Session
 
 import logging
 log = logging.getLogger(__name__)
@@ -44,8 +45,8 @@ def fs_add_by_ids(session, feature_id, synonym_id, pub_id, is_current=True, is_i
     return fs
 
 
-def fs_add_by_synonym_name_and_type(session, feature_id, synonym_name, cv_name, cvterm_name, pub_id,
-                                    synonym_sgml=None, is_current=True, is_internal=False):
+def fs_add_by_synonym_name_and_type(session: Session, feature_id: int, synonym_name: str, cv_name: str, cvterm_name: str, pub_id: int,
+                                    synonym_sgml: str = None, is_current: bool = True, is_internal: bool = False):
     """Create a feature_synoym given a feature_id and an synonym_name and type_name.
 
     Args:
@@ -101,7 +102,7 @@ def fs_add_by_synonym_name_and_type(session, feature_id, synonym_name, cv_name, 
     return fs
 
 
-def fs_remove_current_symbol(session, feature_id, cv_name, cvterm_name):
+def fs_remove_current_symbol(session: Session, feature_id: int, cv_name: str, cvterm_name: str):
     """Remove is_current for this feature_synonym.
 
     Make the current symbol for this feature is_current=False.

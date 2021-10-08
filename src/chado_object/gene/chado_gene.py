@@ -22,7 +22,7 @@ from harvdev_utils.production import (Feature, FeatureCvterm, Cvterm, Cv,
                                       FeatureRelationshipprop,
                                       FeatureGrpmember,
                                       Grp, Grpmember)
-
+from typing import Tuple, Union
 log = logging.getLogger(__name__)
 
 
@@ -101,7 +101,7 @@ class ChadoGene(ChadoFeatureObject):
                                'G31b': self.g31b_check,
                                'G39a': self.g39a_check}
 
-    def load_content(self, references):
+    def load_content(self, references: dict):
         """Process the data.
 
         Args:
@@ -157,7 +157,7 @@ class ChadoGene(ChadoFeatureObject):
         log.debug('%s' % (curated_by_string))
         return self.feature
 
-    def load_grpmember(self, key):
+    def load_grpmember(self, key: str):
         """Load grp member.
 
         Args:
@@ -185,7 +185,7 @@ class ChadoGene(ChadoFeatureObject):
                       feature_id=self.feature.feature_id,
                       grpmember_id=grpmem.grpmember_id)
 
-    def load_gfr(self, key):
+    def load_gfr(self, key: str):
         """Load grp feature relationship.
 
         Args:
@@ -227,7 +227,7 @@ class ChadoGene(ChadoFeatureObject):
                 self.checks_for_key[key](key)
         self.g30_check('G30')
 
-    def ignore(self, key):
+    def ignore(self, key: str):
         """Ignore, done by initial setup.
 
         Args:
@@ -236,7 +236,7 @@ class ChadoGene(ChadoFeatureObject):
         """
         pass
 
-    def process_go_dict(self, key, go_dict, values):
+    def process_go_dict(self, key: str, go_dict: dict, values: dict):
         """Use go_dcit to genereate the chado relationships.
 
         Params:
@@ -266,7 +266,7 @@ class ChadoGene(ChadoFeatureObject):
                           type_id=go_dict['qualifier'].cvterm_id,
                           value=None)
 
-    def load_gocvtermprop(self, key):
+    def load_gocvtermprop(self, key: str):  # noqa
         """Load the cvterm props for GO lines.
 
         Args:
@@ -291,7 +291,7 @@ class ChadoGene(ChadoFeatureObject):
                 quali_cvs[quali] = self.process_data[key][quali]
 
         for item in self.process_data[key]['data']:
-            go_dict = None
+            go_dict: dict = {}
             try:
                 go_dict = process_GO_line(self.session,
                                           line=item[FIELD_VALUE],
@@ -305,12 +305,12 @@ class ChadoGene(ChadoFeatureObject):
                 self.critical_error(item, error)
                 continue
             if go_dict['error']:
-                for error in go_dict['error']:
+                for error in go_dict['error']:  # type: ignore
                     self.critical_error(item, error)
                 continue
             self.process_go_dict(key, go_dict, values)
 
-    def load_bandinfo(self, key):
+    def load_bandinfo(self, key: str):
         """Load the band info.
 
         Args:
@@ -348,7 +348,7 @@ class ChadoGene(ChadoFeatureObject):
                               feature_relationship_id=fr.feature_relationship_id,
                               pub_id=self.pub.pub_id)
 
-    def get_bands(self, key, item):
+    def get_bands(self, key: str, item: Tuple):
         """Get bands form fields.
 
         Args:
@@ -375,7 +375,7 @@ class ChadoGene(ChadoFeatureObject):
             bands.append(band)
         return bands
 
-    def get_band(self, key, name):
+    def get_band(self, key: str, name: str) -> Union[Feature, None]:
         """Look up the band from the name.
 
         Args:

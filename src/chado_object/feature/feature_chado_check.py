@@ -15,7 +15,7 @@ import re
 ##################
 
 
-def check_only_certain_fields_allowed(self, key, allowed):
+def check_only_certain_fields_allowed(self, key: str, allowed: list) -> None:
     """Check only allowed fields exist.
 
     Args:
@@ -31,7 +31,7 @@ def check_only_certain_fields_allowed(self, key, allowed):
         self.critical_error(self.process_data[key]['data'], message)
 
 
-def check_at_symbols_exist(self, key):
+def check_at_symbols_exist(self, key: str) -> None:
     """Check that symbols in @@ exist.
 
     If @..@ found then check that the symbol inbetween these exists.
@@ -57,7 +57,7 @@ def check_at_symbols_exist(self, key):
                 self.critical_error(line, message)
 
 
-def check_bad_starts(self, key, bad_list):
+def check_bad_starts(self, key: str, bad_list: list) -> None:
     """Generate warning if any lines contain bad start.
 
     Args:
