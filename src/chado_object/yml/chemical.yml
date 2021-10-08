@@ -38,7 +38,7 @@ CH3b:
   value: CH3c
   value_nullable: True
 CH3c: # Processed by CH3b if new
-  type: ignore
+  type: value
 CH3d: # main chebi ref. Done on creation.
   type: ignore
 CH3f:
