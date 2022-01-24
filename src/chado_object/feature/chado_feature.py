@@ -523,6 +523,8 @@ class ChadoFeatureObject(ChadoObject):
         feat_type = None
         if 'feat_type' in self.process_data[key]:
             feat_type = self.process_data[key]['feat_type']
+        if key == 'GENE':
+            feat_type = 'gene'
         subscript = True
         if 'subscript' in self.process_data[key]:
             if not self.process_data[key]['subscript']:
