@@ -17,6 +17,7 @@ import logging
 import sys
 import configparser
 import argparse
+import sqlalchemy as sa
 
 # Custom module imports
 from proforma.proforma_operations import process_proforma_file, process_proforma_directory
@@ -65,6 +66,12 @@ config = configparser.ConfigParser()
 config.read(args.config)
 
 
+def table_exists(engine, name):
+    ins = sa.inspect(engine)
+    ret =ins.dialect.has_table(engine.connect(),name)
+    print('Table "{}" exists: {}'.format(name, ret))
+    return ret
+
 def create_postgres_session():
     """Create the db connection/session."""
     USER = config['connection']['USER']
@@ -97,6 +104,24 @@ def create_postgres_session():
 
     Session = sessionmaker(bind=engine)
     session = Session()
+    if not table_exists(engine, 'audit_chado'):
+        ##################
+        # Add audit table
+        ##################
+        sql = """CREATE TABLE public.audit_chado (
+            audit_transaction character(1) NOT NULL,
+            transaction_timestamp timestamp without time zone NOT NULL,
+            userid character varying(255) NOT NULL,
+            audited_table character varying(255) NOT NULL,
+            record_pkey integer NOT NULL,
+            record_ukey_cols character varying NOT NULL,
+            record_ukey_vals text NOT NULL,
+            audited_cols text NOT NULL,
+            audited_vals text NOT NULL);"""
+        try:
+            session.execute(sql)
+        except:
+            exit(-1)
 
     return session
 
@@ -244,24 +269,7 @@ def main(session, list_of_proformae):
 
 if __name__ == '__main__':
     session = create_postgres_session()
-    ##################
-    # Add audit table
-    ##################
-    sql = """CREATE TABLE public.audit_chado (
-        audit_transaction character(1) NOT NULL,
-        transaction_timestamp timestamp without time zone NOT NULL,
-        userid character varying(255) NOT NULL,
-        audited_table character varying(255) NOT NULL,
-        record_pkey integer NOT NULL,
-        record_ukey_cols character varying NOT NULL,
-        record_ukey_vals text NOT NULL,
-        audited_cols text NOT NULL,
-        audited_vals text NOT NULL);"""
-    try:
-        session.execute(sql)
-    except:
-        pass
-
+ 
     if args.file is None:
         list_of_proformae = obtain_list_of_proformae()
     else:
