@@ -23,7 +23,7 @@ from proforma.proforma_operations import process_proforma_file, process_proforma
 from chado_object.conversions.proforma import process_data_input
 from transaction.transaction_operations import process_chado_objects_for_transaction
 from error.error_tracking import ErrorTracking, WARNING_ERROR
-
+from sqlalchemy.orm.exc import NoResultFound
 parser = argparse.ArgumentParser(description='Parse proforma files and load them into Chado.')
 group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument('-d', '--directory', help='Specify the directory of proformae to be loaded.')
@@ -244,6 +244,23 @@ def main(session, list_of_proformae):
 
 if __name__ == '__main__':
     session = create_postgres_session()
+    ##################
+    # Add audit table
+    ##################
+    sql = """CREATE TABLE public.audit_chado (
+        audit_transaction character(1) NOT NULL,
+        transaction_timestamp timestamp without time zone NOT NULL,
+        userid character varying(255) NOT NULL,
+        audited_table character varying(255) NOT NULL,
+        record_pkey integer NOT NULL,
+        record_ukey_cols character varying NOT NULL,
+        record_ukey_vals text NOT NULL,
+        audited_cols text NOT NULL,
+        audited_vals text NOT NULL);"""
+    try:
+        session.execute(sql)
+    except NoResultFound:
+        pass
 
     if args.file is None:
         list_of_proformae = obtain_list_of_proformae()
