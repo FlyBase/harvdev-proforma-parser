@@ -259,8 +259,9 @@ if __name__ == '__main__':
         audited_vals text NOT NULL);"""
     try:
         session.execute(sql)
-    except ProgrammingError:
-        pass
+    except Exception as bob:
+        print(bob)
+        exit(1)
 
     if args.file is None:
         list_of_proformae = obtain_list_of_proformae()
