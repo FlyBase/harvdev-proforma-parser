@@ -68,9 +68,10 @@ config.read(args.config)
 
 def table_exists(engine, name):
     ins = sa.inspect(engine)
-    ret =ins.dialect.has_table(engine.connect(),name)
+    ret = ins.dialect.has_table(engine.connect(),name)
     print('Table "{}" exists: {}'.format(name, ret))
     return ret
+
 
 def create_postgres_session():
     """Create the db connection/session."""
