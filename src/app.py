@@ -271,7 +271,7 @@ def main(session, list_of_proformae):
 
 if __name__ == '__main__':
     session = create_postgres_session()
- 
+
     if args.file is None:
         list_of_proformae = obtain_list_of_proformae()
     else:
