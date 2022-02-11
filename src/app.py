@@ -23,7 +23,7 @@ from proforma.proforma_operations import process_proforma_file, process_proforma
 from chado_object.conversions.proforma import process_data_input
 from transaction.transaction_operations import process_chado_objects_for_transaction
 from error.error_tracking import ErrorTracking, WARNING_ERROR
-from sqlalchemy.orm.exc import ProgrammingError
+# from sqlalchemy.orm.exc import ProgrammingError
 parser = argparse.ArgumentParser(description='Parse proforma files and load them into Chado.')
 group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument('-d', '--directory', help='Specify the directory of proformae to be loaded.')
