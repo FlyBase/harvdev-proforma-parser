@@ -109,6 +109,7 @@ def create_postgres_session():
         ##################
         # Add audit table
         ##################
+        log.info("Creating audit table.")
         sql = """CREATE TABLE public.audit_chado (
             audit_transaction character(1) NOT NULL,
             transaction_timestamp timestamp without time zone NOT NULL,
