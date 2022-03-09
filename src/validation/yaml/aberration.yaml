@@ -9,7 +9,6 @@ A1e:
     type: string
     no_bangc: True
     nullable: True
-    dependencies: [G28b]
 A1f:
     type: [string, list]
     no_bangc: True
@@ -36,9 +35,9 @@ A8a:
     type: [string, list]
     required: False
     nullable: True
-A10:
-   type: string
-   nullable: True
+# A10: OBSOLETE
+#   type: string
+#   nullable: True
 A14:
     type: [string, list]
     nullable: True
