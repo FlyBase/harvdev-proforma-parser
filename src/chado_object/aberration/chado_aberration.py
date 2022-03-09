@@ -9,16 +9,12 @@ import os
 import re
 from datetime import datetime
 
-# from pydantic import NonNegativeFloat
-
-# from sqlalchemy.orm.exc import NoResultFound
-
-from chado_object.chado_base import FIELD_NAME, FIELD_VALUE, LINE_NUMBER
+from chado_object.chado_base import FIELD_VALUE
 from chado_object.feature.chado_feature import ChadoFeatureObject
 # from chado_object.utils.go import process_GO_line
 from chado_object.utils.feature_synonym import fs_add_by_synonym_name_and_type
-from harvdev_utils.chado_functions import (DataError, CodingError, get_or_create, get_cvterm, feature_name_lookup)
-from harvdev_utils.production import (Feature, Featureprop, FeaturepropPub, FeatureCvterm, FeatureDbxref, FeaturePub,
+from harvdev_utils.chado_functions import (get_or_create, get_cvterm, feature_name_lookup)
+from harvdev_utils.production import (Feature, Featureprop, FeaturepropPub, FeaturePub,
                                       FeatureRelationship, FeatureRelationshipPub)
 # from typing import Tuple, Union
 log = logging.getLogger(__name__)
