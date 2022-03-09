@@ -365,6 +365,7 @@ class Proforma(object):
     location = os.getcwd() + '/src/validation/yaml'
     for filename in os.listdir(location):  # noqa: C901
         if filename.endswith('.yaml'):
+            log.debug("Getting list of multi from {}".format(filename))
             with open(os.path.join(location, filename)) as yaml_location:
                 yaml_to_process = yaml.full_load(yaml_location)
                 for field_name in yaml_to_process.keys():
@@ -413,7 +414,7 @@ class Proforma(object):
         log.debug('Proforma type defined as: %s' % proforma_type)
         log.debug('Proforma object begins at line: %s' % line_number)
 
-        log.debug("List set is: {}".format(Proforma.set_of_fields_that_should_be_lists))
+        log.debug("List codes are: {}".format(Proforma.set_of_fields_that_should_be_lists))
 
     def add_field_and_value(self, field, value, type_of_bang, line_number, new_line):
         """Add the field and value from a proforma into a dictionary.
@@ -446,8 +447,11 @@ class Proforma(object):
                 if type(self.fields_values[field]) is list and value is not None:
                     self.fields_values[field].append((field, value, line_number))  # Otherwise, if it is a list already, just append the value.
                     log.debug('Appending field %s : value %s from line %s to the existing list for this field.' % (field, value, line_number))
+                elif not value:
+                    pass
                 else:
                     message = 'Attempted to add an additional value: {} to field: {} from line: {}'.format(value, field, line_number)
+                    message += '\nCRITICAL -- Previous value was "{}"\n'.format(self.fields_values[field])
                     message += '\nCRITICAL -- Unfortunately, this field is not current specified to support multiple values.'
                     message += '\nCRITICAL --Please contact Harvdev if you believe this is a mistake.'
                     ErrorTracking(
@@ -470,9 +474,11 @@ class Proforma(object):
                 log.debug('Adding field %s : value %s from line %s to the Proforma object as a new list.' % (field, value, line_number))
                 self.fields_values[field] = []
                 self.fields_values[field].append((field, value, line_number))
-            elif field not in Proforma.excludes or value:
+            elif value or type_of_bang:
                 self.fields_values[field] = (field, value, line_number)
                 log.debug('Adding field %s : value %s from line %s to the Proforma object.' % (field, value, line_number))
+            else:
+                log.debug("Skipping field %s with value  '%s'" % (field, value))
 
     def process_set(self, field, value, line_number, new_line, type_of_bang):
         """Process set data.

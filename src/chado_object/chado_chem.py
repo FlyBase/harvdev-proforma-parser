@@ -234,9 +234,6 @@ class ChadoChem(ChadoFeatureObject):
     def add_alternative_info(self):
         """Add data from alternative chemical DB.
 
-        Add feature pub to alt pub? Done
-        Add feature dbxref ? Done
-        Add feature Synonym ? Done
         """
         if not self.has_data('CH3d') or not self.alt_chemical_information['PubID']:
             return
@@ -259,6 +256,9 @@ class ChadoChem(ChadoFeatureObject):
                                   db_id=chemical['DBObject'].db_id,
                                   accession=chemical['accession'])
 
+        # set the definition to the name
+        if 'name' in chemical and chemical['name']:
+            dbxref.description = chemical['name']
         log.debug("Updating FBch with dbxref.dbxref_id: {}".format(dbxref.dbxref_id))
         f_dbx, _ = get_or_create(self.session, FeatureDbxref,
                                  feature_id=self.feature.feature_id,
@@ -631,7 +631,7 @@ class ChadoChem(ChadoFeatureObject):
             # Set the identifier name to the result queried from ChEBI.
             self.add_description_from_pubchem(chemical)
         elif chemical['source'] == 'PubChem_SID':
-            chemical['source'] == 'PubChem'
+            chemical['source'] = 'PubChem'
         return True
 
     def check_chebi_for_identifier(self, chemical, process_key):
@@ -668,11 +668,12 @@ class ChadoChem(ChadoFeatureObject):
 
         chemical['name'] = chebi.name
         chemical['inchikey'] = chebi.inchikey
+        chemical['description'] = chebi.description
         chemical['synonyms'] = chebi.synonyms
         chemical['PubID'] = self.chebi_pub_id
         chemical['DBObject'] = self.session.query(Db). \
             filter(Db.name == chemical['source']).one()
-
+        print(chemical)
         return True
 
     def add_alt_synonym(self):
@@ -728,7 +729,8 @@ class ChadoChem(ChadoFeatureObject):
             chemical['source'] = 'PubChem'
         chemical['name'] = pubchem.name
         chemical['inchikey'] = pubchem.inchikey
-        chemical['description'] = pubchem.description
+        if not chemical['description']:
+            chemical['description'] = pubchem.description
         chemical['synonyms'] = pubchem.synonyms[0:10]  # Top 10 will do.
         chemical['PubID'] = self.pubchem_pub_id
         chemical['DBObject'] = self.session.query(Db). \

@@ -199,7 +199,7 @@ class ChadoFeatureObject(ChadoObject):
     def load_feature(self, feature_type: str = 'gene') -> None:  # noqa
         """Get feature.
 
-        from feature type get to the key i.e. 'G' for gene, 'GA' for allele, 'A' for aberation.
+        from feature type get to the key i.e. 'G' for gene, 'GA' for allele, 'A' for aberration.
         So many proforma use similar keys but just differ in the start bit.
         i.e. G1b, GA1b, A1b.
 
@@ -214,7 +214,8 @@ class ChadoFeatureObject(ChadoObject):
         UNIQUE = 1
         SO = 2
         supported_features = {'gene': ['G', 'gn', 'gene'],
-                              'allele': ['GA', 'al', 'allele']}
+                              'allele': ['GA', 'al', 'allele'],
+                              'chromosome_structure_variation': ['A', 'ab', 'chromosome_structure_variation']}
 
         if feature_type not in supported_features:
             message = "Unsupported feature type '{}' used in load_feature call. Coding error.".format(feature_type)

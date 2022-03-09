@@ -119,4 +119,7 @@ GA90j:
 GA90k:
   - is required
 TC1f: 
-  - null value not allowed  
+  - required
+  - null value not allowed
+A8a:
+  - format
