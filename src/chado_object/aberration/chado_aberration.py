@@ -56,7 +56,7 @@ class ChadoAberration(ChadoFeatureObject):
         # Values queried later, placed here for reference purposes.
         ############################################################
         self.pub = None
-        self.type_name = 'abertion'
+        self.type_name = 'aberration'
         ############################################################
         # Get processing info and data to be processed.
         # Please see the yml/publication.yml file for more details

@@ -78,6 +78,7 @@ A22a:
    # starts_with: 'Separable from:'
    nullable: True
    required: False
+   at_required: True
 A22b:
     type: [string, list]
     nullable: True
