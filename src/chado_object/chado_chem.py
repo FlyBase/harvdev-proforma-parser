@@ -674,7 +674,6 @@ class ChadoChem(ChadoFeatureObject):
         chemical['PubID'] = self.chebi_pub_id
         chemical['DBObject'] = self.session.query(Db). \
             filter(Db.name == chemical['source']).one()
-        print(chemical)
         return True
 
     def add_alt_synonym(self):

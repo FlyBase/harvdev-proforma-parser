@@ -42,7 +42,6 @@ def fs_add_by_ids(session, feature_id, synonym_id, pub_id, is_current=True, is_i
                           pub_id=pub_id)
     fs.is_current = is_current
     fs.is_internal = is_internal
-    log.debug("Setting current to  {}. internal to {}".format(is_current, is_internal))
     return fs
 
 
