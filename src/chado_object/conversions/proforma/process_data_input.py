@@ -11,6 +11,7 @@ from chado_object.allele.chado_allele import ChadoAllele
 from chado_object.chado_pub import ChadoPub
 from chado_object.chado_chem import ChadoChem
 from chado_object.chado_div import ChadoDiv
+from chado_object.aberration.chado_aberration import ChadoAberration
 from chado_object.chado_multipub import ChadoMultipub
 from chado_object.humanhealth.chado_humanhealth import ChadoHumanhealth
 from chado_object.chado_species import ChadoSpecies
@@ -92,6 +93,7 @@ def process_data_input(proforma_object):
         'GENE': (ChadoGene),
         'GENEGROUP': (ChadoGrp),
         'ALLELE': (ChadoAllele),
+        'ABERRATION': (ChadoAberration),
         'CHEMICAL': (ChadoChem),
         'DISEASE': (ChadoDiv),
         'HUMAN': (ChadoHumanhealth),

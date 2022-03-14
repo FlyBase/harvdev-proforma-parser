@@ -1,0 +1,103 @@
+A1a:
+    type: string
+    required: True
+    no_bangc: True
+A1b:
+    type: [string, list]
+    nullable: True
+A1e:
+    type: string
+    no_bangc: True
+    nullable: True
+A1f:
+    type: [string, list]
+    no_bangc: True
+    dependencies: [A2a]
+    excludes: [A1e, A2c]
+    nullable: True
+A1g:
+    type: string
+    required: True
+    allowed: [y,n]
+A2a:
+    type: string
+    no_bangc: True
+    nullable: True
+A2b:
+    type: [string, list]
+    nullable: True
+A2c:
+    type: string
+    nullable: True
+    required: False
+A8a:
+    #type: [string, list]
+    type: [string, list]
+    required: False
+    nullable: True
+# A10: OBSOLETE
+#   type: string
+#   nullable: True
+A14:
+    type: [string, list]
+    nullable: True
+    at_required: True
+    required: False
+A15:
+    type: [string, list]
+    nullable: True
+    at_forbidden: True
+    required: False  
+A18:
+    type: [string, list]
+    nullable: True
+    required: False
+
+A19a:
+    type: [string, list]
+    nullable: True
+    required: False
+    at_required: True
+
+A19b:
+# free text field, so whatever is normal for that (checking things in @@ etc.)
+#          Must not start with "Inferred to overlap with:"
+    type: [list, string]
+    nullable: True
+    required: False
+
+# A20a: OBSOLETE
+
+A21:
+    type: string
+    allowed: ['Stated to be lost.']
+    nullable: True
+    required: False
+A22a:
+   type: [string, list]
+   # starts_with: 'Separable from:'
+   nullable: True
+   required: False
+   at_required: True
+A22b:
+    type: [string, list]
+    nullable: True
+    required: False
+A25x:
+    type: [string, list]
+    nullable: True
+    required: False
+A29:
+    type: string
+    nullable: True
+    required: False   
+A91a:
+    type: integer
+    nullable: True
+    required: False
+    no_bangc: True
+A92a:
+    type: integer
+    nullable: True
+    required: False
+    no_bangc: True

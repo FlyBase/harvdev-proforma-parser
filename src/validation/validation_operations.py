@@ -66,6 +66,10 @@ def get_validate_allele_schema(fields_values):
     return "allele.yaml"
 
 
+def get_validate_aberration_schema(fields_values):
+    return "aberration.yaml"
+
+
 def get_validate_chemical_schema(fields_values):
     return "chemical.yaml"
 
@@ -113,6 +117,7 @@ def validation_file_schema_lookup(proforma_type, fields_values):
                        "MULTIPUBLICATION": get_validate_multipub_schema,
                        "GENE": get_validate_gene_schema,
                        "ALLELE": get_validate_allele_schema,
+                       "ABERRATION": get_validate_aberration_schema,
                        "CHEMICAL": get_validate_chemical_schema,
                        "DISEASE": get_validate_div_schema,
                        "HUMAN": get_validate_humanhealth_schema,
@@ -125,6 +130,7 @@ def validation_file_schema_lookup(proforma_type, fields_values):
                        "MULTIPUBLICATION": ValidatorMultipub,
                        "GENE": ValidatorBase,  # ValidatorGene,
                        "ALLELE": ValidatorBase,  # ValidatorAllele,
+                       "ABERRATION": ValidatorBase,
                        "CHEMICAL": ValidatorBase,  # ValidatorChem,
                        "DISEASE": ValidatorBase,  # ValidatorDiv,
                        "HUMAN": ValidatorBase,  # ValidatorHumanhealth,

@@ -1,0 +1,208 @@
+
+#     'A1a',  'symbol',                       #feature_synonym
+A1a:  # Main aberarion symbol to be used. Processed first and seperately
+    type: ignore
+    cv: synonym type
+    cvterm: symbol
+    is_current: True
+    add_unattributed_paper: True
+    remove_old: True
+#     'A1b',  'symbol',                       #feature_synonym
+A1b:
+    type: synonym
+    cv: synonym type
+    cvterm: symbol
+    is_current: False
+#     'A1e',  'symbol',                       #feature_synonym
+A1e:
+    type: synonym
+    cv: synonym type
+    cvterm: symbol
+    is_current: True
+    add_unattributed_paper: True
+#     'A1f',  'merge',                        #merge_function
+A1f:
+    type: merge
+    cv: synonym type
+    cvterm: symbol
+    is_current: True
+    add_unattributed_paper: True   
+#     'A1g',  'new',                          #checking
+A1g:
+    type: ignore # Done as part of initialisation with A1a
+#     'A2a',  'fullname',                     #feature_synonym
+A2a:
+    type: synonym
+    cv: synonym type
+    cvterm: fullname
+    is_current: True
+    add_unattributed_paper: True
+#     'A2b',  'fullname',                     #feature_synonym
+A2b:
+    type: synonym
+    cv: synonym type
+    cvterm: fullname
+    is_current: False 
+#     'A2c', 'fullname',    #feature_synonym
+A2c: # NOT done yet but excluded so needs to exist
+    type: ignore
+
+#     'A4',   'FlyBase miscellaneous CV',    #feature_cvterm
+A4a:
+    type: cvterm
+    cv: 'FlyBase miscellaneous CV'
+#     'A7x',  'complementation',             #featureprop
+A7x:
+    type: featureprop
+    cv: property type
+    cvterm: complementation
+    value: A7x
+#     'A8a',  'break_of',
+A8a:
+    type: break_of
+    # feature relationship
+    fr_cv: relationship type
+    fr_break_cvterm: break_of
+    fr_prog_cvterm: progenitor
+    # new breakpoints
+    feat_cv: SO
+    feat_cvterm: chromosome_breakpoint
+    # P{} lookup
+    lookup_cv: SO
+    lookup_cvterm: transposable_element_insertion_site
+    # band lookup
+    band_cv: SO
+    band_cvterm: chromosome_band
+    # ends
+    end_cv: relationship type
+    left_cvterm: cyto_left_end
+    right_cvterm: cyto_right_end
+    # loc stuff
+    loc_cv: property type
+    loc_cvterm: inferred_cyto
+#     'A14',  'misc',                         #featureprop
+A14:
+    type: featureprop
+    cv: property type
+    cvterm: misc
+    value: A14
+#     'A15',  'internal_notes' ,               #featureprop
+A15:
+    type: featureprop
+    cv: property type
+    cvterm: internal_notes
+    value: A15
+
+#     'A16',  'discoverer',                   #featureprop
+#A16: OBSOLETE ?
+#    type: featureprop
+#    cv: property type
+#    cvterm: discoverer
+#    value: A16
+#     'A18',  'cyto_loc_comment',             #featureprop
+A18:
+    type: featureprop
+    cv: property type
+    cvterm: cyto_loc_comment
+    value: A18
+#     'A19b', 'aberr_relationships',          #featureprop
+A19b:
+    type: featureprop
+    cv: property type
+    cvterm: aberr_relationships
+    value: A19b    
+#     'A20a', 'is_polymorphism_reported',     #featureprop
+#A20a: OBSOLETE
+#    type: featureprop
+#    cv: property type
+#    cvterm: is_polymorphism_reported
+#    value: A20a 
+#     'A21',  'availability',                 #featureprop
+A21:
+    type: featureprop
+    cv: property type
+    cvterm: availability
+    value: A21
+#     'A22a', 'origin_type',                  #featureprop
+A22a:
+    type: featureprop
+    cv: property type
+    cvterm: origin_type
+    value: A22a
+#     'A22b', 'origin_comment',               #featureprop
+A22b: # if new add origin comment featureprop
+    type: featureprop
+    cvterm: origin_comment
+    cv: property type
+    value: A22b
+#     'A25x', 'molecular_info',               #featureprop
+A25x:
+    type: featureprop
+    cv: property type
+    cvterm: molecular_info
+    value: A25x
+#     'A29', 'new_order', #featureprop
+A29:
+    type: featureprop
+    cv: property type
+    cvterm: new_order
+    value: A29
+#     'A91a',  'deleted_segment', #featurepop
+A91a:
+    type: featureprop
+    cv: property type
+    cvterm: deleted_segment
+    value: A91a
+#     'A92a',  'duplicated_segment', #featureprop
+A92a:
+    type: featureprop
+    cv: property type
+    cvterm: duplicated_segment
+    value: A92a
+
+#     'A27a', 'is_obsolete',                  #feature.is_obsolete
+#     'A27b', 'dissociate_pub',               #feature_pub...
+#
+#
+#
+#     'A17',  'aberr_pheno',             #feature_genotype,genotype,phendesc
+
+#     'A19a', 'overlap_inferred',             #feature_relationship]
+A19a:
+    type: featurerelationship
+    cv: relationship type
+    cvterm: overlap_inferred
+    allowed_types: ['chromosome_structure_variation']
+    # starts with 'Inferred to overlap with:''
+
+#     'A9',   'SO',                           #feature_cvterm
+#     'A26',  'SO',                           #feature_cvterm
+
+#     'A24a', 'associated_with',              #feature_relationship
+#     'A24b', 'carried_on',                   #feature_relationship.subject_id
+#     'A6',   'progenitor',                   #feature_relationship
+#     'A23',  'segregant_of',                 #feature_relationship.subject_id
+#     'A7a',  'deletes',                      #feature_relationship
+#     'A7b',  'duplicates',                   #feature_relationship
+#     'A7c',  'nondeletes',                   #feature_relationship
+#     'A7d',  'nonduplicates',                #feature_relationship
+#     'A7e',  'part_deletes',                 #feature_relationship
+#     'A7f',  'part_duplicates',              #feature_relationship
+#     'A25a', 'molec_deletes',                #feature_relationship
+#     'A25b', 'molec_dups',                   #feature_relationship
+#     'A25c', 'molec_nondeletes',             #feature_relationship
+#     'A25d', 'molec_nondups',                 #feature_relationship
+#     'A25e', 'molec_partdeletes',            #feature_relationship
+#     'A25f', 'molec_partdups',               #feature_relationship
+#     'A30', 'library_feature',               #library_feature
+#     'A30a', 'library_featureprop',          #library_featureprop
+#     'A90a',   'break_of',                 #feature_relationship
+#     'A90h',   'linked_to', #GenBank feature qualifier
+#     'A90j',   'gen_loc_comment', #property type
+#     'A28',   'feature_dbxref',
+
+
+# Deprecated.
+#     'A8b',  '', ??
+# #    'A10',  'new_order',                    #featureprop
+# #    'A11',  'new_order',                    # featureprop
