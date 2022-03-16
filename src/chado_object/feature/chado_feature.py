@@ -530,14 +530,19 @@ class ChadoFeatureObject(ChadoObject):
         if 'subscript' in self.process_data[key]:
             if not self.process_data[key]['subscript']:
                 subscript = False
+        # there may be a specified pattern that surrounds the symbol
+        # this is specified in the yml file.
+        pattern = None
+        if 'pattern' in self.process_data[key]:
+            pattern = self.process_data[key]['pattern']
 
         for item in items:
-            other_feat = self.get_other_feature(item, feat_type, subscript)
+            other_feat = self.get_other_feature(item, feat_type, subscript, pattern=pattern)
             if not other_feat:
                 continue
             self.add_relationships(key, other_feat, cvterm)
 
-    def get_other_feature(self, item, feat_type, subscript):
+    def get_other_feature(self, item, feat_type, subscript, pattern=None):
         """Get the other feature.
 
         Args:
@@ -550,8 +555,16 @@ class ChadoFeatureObject(ChadoObject):
 
         """
         name = item[FIELD_VALUE]
+        if pattern:
+            fields = re.search(pattern, name)
+            if fields:
+                name = fields.group(1)
+            else:
+                message = "Does not fit pattern '{}' specified in the yml file".format(pattern)
+                self.critical_error(item, message)
+                return
         if type(feat_type) is list:
-            return self.multi_type_lookup(item, feat_type, subscript)
+            return self.multi_type_lookup(item, feat_type, subscript, pattern)
         try:
             other_feat = feature_symbol_lookup(self.session, feat_type, name, convert=subscript)
         except MultipleResultsFound:
@@ -566,7 +579,7 @@ class ChadoFeatureObject(ChadoObject):
             return
         return other_feat
 
-    def multi_type_lookup(self, item, feat_type_list, subscript):
+    def multi_type_lookup(self, item, feat_type_list, subscript, pattern=None):
         """Get the other feature.
 
         Some lookups can have multiple types that are allowed.
@@ -582,6 +595,14 @@ class ChadoFeatureObject(ChadoObject):
 
         """
         name = item[FIELD_VALUE]
+        if pattern:
+            fields = re.search(pattern, name)
+            if fields:
+                name = fields.group(1)
+            else:
+                message = "Does not fit pattern '{}' specified in the yml file".format(pattern)
+                self.critical_error(item, message)
+                return
         try:
             other_feat = feature_symbol_lookup(self.session, None, name, convert=subscript)
         except MultipleResultsFound:
