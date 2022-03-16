@@ -83,7 +83,7 @@ class ChadoAberration(ChadoFeatureObject):
         Args:
             references: <dict> previous reference proforma
         Returns:
-            <Feature object> Allele feature object.
+            <Feature object> Aberration feature object.
         """
         try:
             self.pub = references['ChadoPub']
@@ -93,7 +93,7 @@ class ChadoAberration(ChadoFeatureObject):
             return None
 
         self.load_feature(feature_type='chromosome_structure_variation')
-        if not self.feature:  # problem getting abertion, lets finish
+        if not self.feature:  # problem getting aberration, lets finish
             return None
         # self.extra_checks()
         # feature pub if not dissociate from pub

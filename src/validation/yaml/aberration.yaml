@@ -30,6 +30,39 @@ A2c:
     type: string
     nullable: True
     required: False
+A6:
+    type: [list, string]
+    nullable: True
+    required: False
+A7a:
+    type: [string, list]
+    required: False
+    nullable: True
+A7b:
+    type: [string, list]
+    required: False
+    nullable: True
+A7c:
+    type: [string, list]
+    required: False
+    nullable: True
+A7d:
+    type: [string, list]
+    required: False
+    nullable: True
+A7e:
+    type: [string, list]
+    required: False
+    nullable: True
+A7f:
+    type: [string, list]
+    required: False
+    nullable: True
+A7x:
+    type: [string, list]
+    required: False
+    nullable: True
+
 A8a:
     #type: [string, list]
     type: [string, list]
@@ -83,6 +116,43 @@ A22b:
     type: [string, list]
     nullable: True
     required: False
+
+A23:
+    type: string
+    nullable: True
+    required: False
+A24a:
+    type: [list, string]
+    nullable: True
+    required: False
+A24b:
+    type: [list, string]
+    nullable: True
+    required: False
+A25a:
+    type: [string, list]
+    required: False
+    nullable: True
+A25b:
+    type: [string, list]
+    required: False
+    nullable: True
+A25c:
+    type: [string, list]
+    required: False
+    nullable: True
+A25d:
+    type: [string, list]
+    required: False
+    nullable: True
+A25e:
+    type: [string, list]
+    required: False
+    nullable: True
+A25f:
+    type: [string, list]
+    required: False
+    nullable: True
 A25x:
     type: [string, list]
     nullable: True

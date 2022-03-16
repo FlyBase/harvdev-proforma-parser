@@ -51,6 +51,66 @@ A2c: # NOT done yet but excluded so needs to exist
 A4a:
     type: cvterm
     cv: 'FlyBase miscellaneous CV'
+
+#     'A6',   'progenitor',                   #feature_relationship
+A6:
+    type: featurerelationship
+    cv: relationship type
+    cvterm: progenitor
+    allowed_types: ['allele', 'chromosome_structure_variation',
+                    'transposable_element_insertion_site',
+                    'transgenic_transposable_element']
+    feat_type: ['allele', 'chromosome_structure_variation',
+                'transposable_element_insertion_site',
+                'transgenic_transposable_element']
+
+#     'A7a',  'deletes',                      #feature_relationship
+A7a:
+    type: featurerelationship
+    cv: relationship type
+    cvterm: deletes
+    allowed_types: ['gene']
+    feat_type: ['gene']
+#     'A7b',  'duplicates',                   #feature_relationship
+A7b:
+    type: featurerelationship
+    cv: relationship type
+    cvterm: duplicates
+    allowed_types: ['gene']
+    feat_type: ['gene']
+
+#     'A7c',  'nondeletes',                   #feature_relationship
+A7c:
+    type: featurerelationship
+    cv: relationship type
+    cvterm: nondeletes
+    allowed_types: ['gene']
+    feat_type: ['gene']
+
+#     'A7d',  'nonduplicates',                #feature_relationship
+A7d:
+    type: featurerelationship
+    cv: relationship type
+    cvterm: nonduplicates
+    allowed_types: ['gene']
+    feat_type: ['gene']
+
+#     'A7e',  'part_deletes',                 #feature_relationship
+A7e:
+    type: featurerelationship
+    cv: relationship type
+    cvterm: part_deletes
+    allowed_types: ['gene']
+    feat_type: ['gene']
+
+#     'A7f',  'part_duplicates',              #feature_relationship
+A7f:
+    type: featurerelationship
+    cv: relationship type
+    cvterm: part_duplicates
+    allowed_types: ['gene']
+    feat_type: ['gene']
+
 #     'A7x',  'complementation',             #featureprop
 A7x:
     type: featureprop
@@ -105,6 +165,17 @@ A18:
     cv: property type
     cvterm: cyto_loc_comment
     value: A18
+
+#     'A19a', 'overlap_inferred',             #feature_relationship]
+A19a:
+    type: featurerelationship
+    cv: relationship type
+    cvterm: overlap_inferred
+    allowed_types: ['chromosome_structure_variation']
+    feat_type: ['chromosome_structure_variation']
+    pattern: "^\\s*Inferred to overlap with:\\s*@(\\S+)@[.]+$"
+    # starts with 'Inferred to overlap with:''
+    # ends in '.'
 #     'A19b', 'aberr_relationships',          #featureprop
 A19b:
     type: featureprop
@@ -135,6 +206,80 @@ A22b: # if new add origin comment featureprop
     cvterm: origin_comment
     cv: property type
     value: A22b
+
+#     'A23',  'segregant_of',                 #feature_relationship.subject_id (NOPE!)
+A23:
+    type: featurerelationship
+    cv: relationship type
+    cvterm: segregant_of
+    allowed_types: ['chromosome_structure_variation']
+    feat_type: ['chromosome_structure_variation']
+
+#     'A24a', 'associated_with',              #feature_relationship
+A24a:
+    type: featurerelationship
+    cv: relationship type
+    cvterm: associated_with
+    allowed_types: ['transposable_element_insertion_site']
+    feat_type: ['transposable_element_insertion_site']
+
+#     'A24b', 'carried_on',                   #feature_relationship.subject_id
+A24b:
+    type: featurerelationship
+    cv: relationship type
+    cvterm: carried_on
+    allowed_types: ['allele']
+    feat_type: ['allele']
+    feature_is_object: True
+
+#     'A25a', 'molec_deletes',                #feature_relationship
+A25a:
+    type: featurerelationship
+    cv: relationship type
+    cvterm: molec_deletes
+    allowed_types: ['gene']
+    feat_type: ['gene']
+
+#     'A25b', 'molec_dups',                   #feature_relationship
+A25b:
+    type: featurerelationship
+    cv: relationship type
+    cvterm: molec_dups
+    allowed_types: ['gene']
+    feat_type: ['gene']
+
+#     'A25c', 'molec_nondeletes',             #feature_relationship
+A25c:
+    type: featurerelationship
+    cv: relationship type
+    cvterm: molec_nondeletes
+    allowed_types: ['gene']
+    feat_type: ['gene']
+
+#     'A25d', 'molec_nondups',                 #feature_relationship
+A25d:
+    type: featurerelationship
+    cv: relationship type
+    cvterm: molec_nondups
+    allowed_types: ['gene']
+    feat_type: ['gene']
+
+#     'A25e', 'molec_partdeletes',            #feature_relationship
+A25e:
+    type: featurerelationship
+    cv: relationship type
+    cvterm: molec_partdeletes
+    allowed_types: ['gene']
+    feat_type: ['gene']
+
+#     'A25f', 'molec_partdups',               #feature_relationship
+A25f:
+    type: featurerelationship
+    cv: relationship type
+    cvterm: molec_partdups
+    allowed_types: ['gene']
+    feat_type: ['gene']
+
 #     'A25x', 'molecular_info',               #featureprop
 A25x:
     type: featureprop
@@ -167,33 +312,15 @@ A92a:
 #
 #     'A17',  'aberr_pheno',             #feature_genotype,genotype,phendesc
 
-#     'A19a', 'overlap_inferred',             #feature_relationship]
-A19a:
-    type: featurerelationship
-    cv: relationship type
-    cvterm: overlap_inferred
-    allowed_types: ['chromosome_structure_variation']
-    # starts with 'Inferred to overlap with:''
+
+
 
 #     'A9',   'SO',                           #feature_cvterm
 #     'A26',  'SO',                           #feature_cvterm
 
-#     'A24a', 'associated_with',              #feature_relationship
-#     'A24b', 'carried_on',                   #feature_relationship.subject_id
-#     'A6',   'progenitor',                   #feature_relationship
-#     'A23',  'segregant_of',                 #feature_relationship.subject_id
-#     'A7a',  'deletes',                      #feature_relationship
-#     'A7b',  'duplicates',                   #feature_relationship
-#     'A7c',  'nondeletes',                   #feature_relationship
-#     'A7d',  'nonduplicates',                #feature_relationship
-#     'A7e',  'part_deletes',                 #feature_relationship
-#     'A7f',  'part_duplicates',              #feature_relationship
-#     'A25a', 'molec_deletes',                #feature_relationship
-#     'A25b', 'molec_dups',                   #feature_relationship
-#     'A25c', 'molec_nondeletes',             #feature_relationship
-#     'A25d', 'molec_nondups',                 #feature_relationship
-#     'A25e', 'molec_partdeletes',            #feature_relationship
-#     'A25f', 'molec_partdups',               #feature_relationship
+
+
+
 #     'A30', 'library_feature',               #library_feature
 #     'A30a', 'library_featureprop',          #library_featureprop
 #     'A90a',   'break_of',                 #feature_relationship
