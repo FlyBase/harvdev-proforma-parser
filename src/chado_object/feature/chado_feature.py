@@ -537,7 +537,10 @@ class ChadoFeatureObject(ChadoObject):
             pattern = self.process_data[key]['pattern']
 
         for item in items:
-            other_feat = self.get_other_feature(item, feat_type, subscript, pattern=pattern)
+            if key == 'GENE':
+                other_feat = self.gene
+            else:
+                other_feat = self.get_other_feature(item, feat_type, subscript, pattern=pattern)
             if not other_feat:
                 continue
             self.add_relationships(key, other_feat, cvterm)
