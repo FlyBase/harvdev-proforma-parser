@@ -30,6 +30,10 @@ A2c:
     type: string
     nullable: True
     required: False
+A4:
+    type: [string, list]
+    nullable: True
+    required: False
 A6:
     type: [list, string]
     nullable: True
@@ -66,6 +70,10 @@ A7x:
 A8a:
     #type: [string, list]
     type: [string, list]
+    required: False
+    nullable: True
+A9:
+    type: string
     required: False
     nullable: True
 # A10: OBSOLETE
@@ -155,6 +163,10 @@ A25f:
     nullable: True
 A25x:
     type: [string, list]
+    nullable: True
+    required: False
+A26:
+    type: string
     nullable: True
     required: False
 A29:

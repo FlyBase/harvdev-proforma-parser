@@ -9,11 +9,12 @@ import os
 import re
 from datetime import datetime
 
-from chado_object.chado_base import FIELD_VALUE
+from chado_object.chado_base import FIELD_VALUE, FIELD_NAME, LINE_NUMBER
 from chado_object.feature.chado_feature import ChadoFeatureObject
 # from chado_object.utils.go import process_GO_line
 from chado_object.utils.feature_synonym import fs_add_by_synonym_name_and_type
-from harvdev_utils.chado_functions import (get_or_create, get_cvterm, feature_name_lookup)
+from harvdev_utils.chado_functions import (get_or_create, get_cvterm, feature_name_lookup, get_dbxref,
+                                           DataError)
 from harvdev_utils.production import (Feature, Featureprop, FeaturepropPub, FeaturePub,
                                       FeatureRelationship, FeatureRelationshipPub)
 # from typing import Tuple, Union
@@ -41,6 +42,7 @@ class ChadoAberration(ChadoFeatureObject):
                           'cvterm': self.load_feature_cvterm,
                           'featureprop': self.load_featureprop,
                           'featurerelationship': self.load_feature_relationship,
+                          'cvtermprop': self.load_feature_cvtermprop,
                           'break_of': self.breaks,
                           # 'merge': self.merge,
                           # 'dis_pub': self.dis_pub,
@@ -69,13 +71,106 @@ class ChadoAberration(ChadoFeatureObject):
         # extra checks that cannit be done with cerberus.
         # Create lookup up to stop a huge if then else statement
         ########################################################
-        # self.checks_for_key = {'G26':  self.g26_check,
-        #                       'G28a': self.g28a_check,
-        #                       'G28b': self.g28b_check,
-        #                       'G30':  self.g30_check,
-        #                       'G31a': self.g31a_check,
-        #                       'G31b': self.g31b_check,
-        #                       'G39a': self.g39a_check}
+        self.checks_for_key = {'A26':  self.so_alter_check,
+                               'A9': self.so_alter_check}
+
+    def so_alter_check(self, key):
+        short_to_name = {
+            'Df':   'chromosomal_deletion',
+            'tDp':  'tandem_duplication',
+            'In':   'chromosomal_inversion',
+            'T':    'chromosomal_translocation',
+            'R':    'ring_chromosome',
+            'AS':   'autosynaptic_chromosome',
+            'DS':   'dexstrosynaptic_chromosome',
+            'LS':   'laevosynaptic_chromosome',
+            'fDp':  'free_duplication',
+            'fR':   'free_ring_duplication',
+            'DfT':  'deficient_translocation',
+            'DfIn': 'deficient_inversion',
+            'InT':  'inversion_cum_translocation',
+            'bDp':  'bipartite_duplication',
+            'cT':   'cyclic_translocation',
+            'cIn':  'bipartite_inversion',
+            'eDp':  'uninverted_insertional_duplication',
+            'iDp':  'inverted_insertional_duplication',
+            'uDp':  'unoriented_insertional_duplication',
+            'eTp1': 'uninverted_intrachromosomal_transposition',
+            'eTp2': 'uninverted_interchromosomal_transposition',
+            'iTp1': 'inverted_intrachromosomal_transposition',
+            'iTp2': 'inverted_interchromosomal_transposition',
+            'uTp1': 'unorientated_intrachromosomal_transposition',
+            'uTp2': 'unoriented_interchromosomal_transposition'}
+
+        okay = True
+
+        pattern = r"""
+                ^           # start of line
+                \s*         # possible leading spaces
+                (\S+)       # anything excluding spaces
+                \s*         # possible spaces
+                ;           # separator
+                \s*         # possible spaces
+                SO:         # dbxref DB must start be SO:
+                (\d{7})  # accession 7 digit number i.e. 0000011
+        """
+        # can be list or single item so make it always a list.
+        if type(self.process_data[key]['data']) is list:
+            items = self.process_data[key]['data']
+        else:
+            items = [self.process_data[key]['data']]
+        new_tuple_array = []
+        for item in items:
+            if item[FIELD_VALUE] in short_to_name:
+                long_name = short_to_name[item[FIELD_VALUE]]
+                new_tuple = (item[FIELD_NAME],
+                             long_name,
+                             item[LINE_NUMBER])
+                new_tuple_array.append(new_tuple)
+                continue
+            fields = re.search(pattern, item[FIELD_VALUE], re.VERBOSE)
+            if not fields:
+                message = 'Wrong format should be "none_spaces_name ; SO:[0-9]*7"'
+                self.critical_error(item, message)
+                continue
+
+            cvterm_name = fields.group(1).strip()
+            db_name = 'SO'
+            db_acc = fields.group(2)
+            cv_name = self.process_data[key]['cv']
+
+            cvterm = get_cvterm(self.session, cv_name, cvterm_name)
+            try:
+                db_xref = get_dbxref(self.session, db_name, db_acc)
+            except DataError:
+                message = "Could not find dbxref for db '{}' and accession '{}'".format(db_name, db_acc)
+                self.critical_error(item, message)
+                okay = False
+                continue
+
+            if cvterm.dbxref.dbxref_id != db_xref.dbxref_id:
+                message = "'{}' Does not match '{}', lookup gave '{}'".\
+                    format(cvterm_name, db_xref.accession, cvterm.dbxref.accession)
+                self.critical_error(item, message)
+                okay = False
+                continue
+
+            new_tuple = (item[FIELD_NAME],
+                         cvterm_name,
+                         item[LINE_NUMBER])
+            new_tuple_array.append(new_tuple)
+        if okay:
+            self.process_data[key]['data'] = new_tuple_array
+        return okay
+
+    def extra_checks(self):
+        """Extra checks.
+
+        Ones that are not easy to do via the validator.
+        """
+        for key in self.process_data:
+            if key in self.checks_for_key:
+                self.checks_for_key[key](key)
 
     def load_content(self, references: dict):
         """Process the data.
@@ -95,7 +190,7 @@ class ChadoAberration(ChadoFeatureObject):
         self.load_feature(feature_type='chromosome_structure_variation')
         if not self.feature:  # problem getting aberration, lets finish
             return None
-        # self.extra_checks()
+        self.extra_checks()
         # feature pub if not dissociate from pub
         if not self.has_data('A27b'):
             get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id, pub_id=self.pub.pub_id)

@@ -48,7 +48,7 @@ A2c: # NOT done yet but excluded so needs to exist
     type: ignore
 
 #     'A4',   'FlyBase miscellaneous CV',    #feature_cvterm
-A4a:
+A4:
     type: cvterm
     cv: 'FlyBase miscellaneous CV'
 
@@ -140,6 +140,14 @@ A8a:
     # loc stuff
     loc_cv: property type
     loc_cvterm: inferred_cyto
+#     'A9',   'SO',                           #feature_cvterm
+A9:
+    type: cvtermprop
+    cv: 'SO'
+    prop_value: False
+    prop_cv: 'feature_cvtermprop type'
+    prop_cvterm: 'aberr_class'
+    
 #     'A14',  'misc',                         #featureprop
 A14:
     type: featureprop
@@ -286,6 +294,13 @@ A25x:
     cv: property type
     cvterm: molecular_info
     value: A25x
+#     'A26',  'SO',                           #feature_cvterm
+A26:
+    type: cvtermprop
+    cv: 'SO'
+    prop_value: False
+    prop_cv: 'feature_cvtermprop type'
+    prop_cvterm: 'wt_class'
 #     'A29', 'new_order', #featureprop
 A29:
     type: featureprop
@@ -311,14 +326,6 @@ A92a:
 #
 #
 #     'A17',  'aberr_pheno',             #feature_genotype,genotype,phendesc
-
-
-
-
-#     'A9',   'SO',                           #feature_cvterm
-#     'A26',  'SO',                           #feature_cvterm
-
-
 
 
 #     'A30', 'library_feature',               #library_feature
