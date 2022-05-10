@@ -28,4 +28,4 @@ Example commands:
 
 ## Testing
 
-WIP, coming soon. Test again  
+WIP, coming soon.
