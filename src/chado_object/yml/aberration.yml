@@ -307,6 +307,13 @@ A29:
     cv: property type
     cvterm: new_order
     value: A29
+#     'A30', 'library_feature',               #library_feature
+A30:
+    type: ignore  # Dealt with by A30a (has to have a prop)
+#     'A30a', 'library_featureprop',          #library_featureprop
+A30a:
+    type: libraryfeatureprop
+    cv: library_featureprop type
 #     'A91a',  'deleted_segment', #featurepop
 A91a:
     type: featureprop
@@ -328,8 +335,7 @@ A92a:
 #     'A17',  'aberr_pheno',             #feature_genotype,genotype,phendesc
 
 
-#     'A30', 'library_feature',               #library_feature
-#     'A30a', 'library_featureprop',          #library_featureprop
+
 #     'A90a',   'break_of',                 #feature_relationship
 #     'A90h',   'linked_to', #GenBank feature qualifier
 #     'A90j',   'gen_loc_comment', #property type

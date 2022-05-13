@@ -172,7 +172,18 @@ A26:
 A29:
     type: string
     nullable: True
-    required: False   
+    required: False
+A30:
+    type: string
+    nullable: True
+    required: False
+    dependencies: ['A30a']
+A30a:
+    type: string
+    nullable: True
+    required: False    
+    allowed: ['member_of_reagent_collection', 'experimental_result']
+    dependencies: ['A30']
 A91a:
     type: integer
     nullable: True

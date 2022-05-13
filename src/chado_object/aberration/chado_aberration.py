@@ -44,6 +44,7 @@ class ChadoAberration(ChadoFeatureObject):
                           'featurerelationship': self.load_feature_relationship,
                           'cvtermprop': self.load_feature_cvtermprop,
                           'break_of': self.breaks,
+                          'libraryfeatureprop': self.load_lfp,
                           # 'merge': self.merge,
                           # 'dis_pub': self.dis_pub,
                           # 'make_obsolete': self.make_obsolete,
