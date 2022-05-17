@@ -9,8 +9,6 @@
 
 import logging
 import os
-import re
-
 
 # from sqlalchemy.sql.functions import ReturnTypeFromArgs
 from harvdev_utils.chado_functions import (
@@ -334,83 +332,6 @@ class ChadoAllele(ChadoFeatureObject):
 
         return feature, is_new
 
-    def get_GA90_position(self):
-        """Get GA90 position data."""
-        position = {'arm': None,
-                    'strand': 0,
-                    'addfeatureloc': True}
-        # check with BEV can we have GA90a without a position?
-
-        key = 'GA90b'
-
-        if not self.has_data(key):
-            # posible error message if not allowed without this.
-            message = r'MUST have a position GA90 b and c'
-            self.critical_error(self.process_data['GA90a']['data'], message)
-            return position
-
-        pattern = r"""
-        ^\s*          # possible spaces
-        (\S+)         # arm
-        :             # chrom separator
-        (\d+)         # start pos
-        [.]{2}        # double dots
-        (\d+)         # end pos
-        """
-        s_res = re.search(pattern, self.process_data[key]['data'][FIELD_VALUE], re.VERBOSE)
-
-        if s_res:  # matches the pattern above
-            arm_name = s_res.group(1)
-            position['start'] = int(s_res.group(2))
-            position['end'] = int(s_res.group(3))
-        else:
-            pattern = r"""
-            ^\s*          # possible spaces
-            (\S+)         # arm
-            :             # chrom separator
-            (\d+)         # start pos
-            /s+           # possible spaces
-            $             # end
-            """
-            s_res = re.search(pattern, self.process_data[key]['data'][FIELD_VALUE], re.VERBOSE)
-            if s_res:  # matches the pattern above
-                arm_name = s_res.group(1)
-                position['start'] = int(s_res.group(2))
-                position['end'] = position['start']
-            else:
-                message = r'Incorrect format should be chrom:\d+..\d+'
-                self.critical_error(self.process_data[key]['data'], message)
-                return position
-
-        # get rel data
-        # If release specified and not equal to current assembly then
-        # flag for the featurelovc to not be created.
-        default_release = os.getenv('ASSEMBLY_RELEASE', '6')
-        if 'GA90c' in self.process_data:
-            position['release'] = self.process_data['GA90c']['data'][FIELD_VALUE]
-        if 'release' not in position:
-            position['release'] = default_release
-        else:
-            if position['release'] != default_release:
-                self.warning_error(self.process_data['GA90c']['data'], "Release {} will not display in Location".format(position['release']))
-                position['addfeatureloc'] = False
-
-        # get the strand
-        if self.has_data('GA90i'):
-            if self.process_data['GA90i']['data'][FIELD_VALUE] == '-':
-                position['strand'] = -1
-            else:
-                position['strand'] = 1
-
-        # convert arm name to feature
-        arm_type_id = self.cvterm_query(self.process_data[key]['arm_cv'], self.process_data[key]['arm_cvterm'])
-        position['arm'], is_new = get_or_create(self.session, Feature, name=arm_name, type_id=arm_type_id)
-        if is_new or not position['arm']:
-            message = "Could not get {} feature with cvterm {} and cv {}".\
-                format(arm_name, self.process_data[key]['arm_cvterm'], self.process_data[key]['arm_cv'])
-            self.critical_error(self.process_data[key]['data'], message)
-        return position
-
     def process_GA90_bci(self, feature, is_new):
         """Process GA90 b, c and i.
 
@@ -418,7 +339,8 @@ class ChadoAllele(ChadoFeatureObject):
             feature: <Feature object> feature defined by GA90a
             is_new: <bool> wether this was new or not.
         """
-        position = self.get_GA90_position()
+        # position = self.get_GA90_position()
+        position = self.get_position(key_prefix='GA90', name_key='a', pos_key='b', rel_key='c', strand_key='i', create=True)
         if not position['arm']:
             return
         #  reported_genomic_loc featureprop

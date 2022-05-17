@@ -184,6 +184,33 @@ A30a:
     required: False    
     allowed: ['member_of_reagent_collection', 'experimental_result']
     dependencies: ['A30']
+A90a:
+    type: string
+    nullable: True
+    required: False
+    dependencies: ['A90b', 'A90c']
+    no_bangc: True
+A90b:
+    type: string
+    nullable: True
+    required: False
+    dependencies: ['A90a', 'A90c']
+A90c:
+    type: string
+    nullable: True
+    required: False
+    dependencies: ['A90a', 'A90b']
+    no_bangc: True
+A90h:
+    type: string
+    nullable: True
+    required: False
+    dependencies: ['A90a']
+A90j:
+    type: string
+    nullable: True
+    required: False
+    dependencies: ['A90a']
 A91a:
     type: integer
     nullable: True
