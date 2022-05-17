@@ -333,12 +333,12 @@ A90b:  # Done in A90 process
     type: ignore
     arm_cvterm: golden_path
     arm_cv: SO
-A90c:  # Done in A90 process
-    type: ignore
     prop_cvterm: reported_genomic_loc
     prop_cv: GenBank feature qualifier
     cvterm: chromosome_breakpoint
     cv: SO
+A90c:  # Done in A90 process
+    type: ignore
 #     'A90h',   'linked_to', #GenBank feature qualifier
 A90h:  # Done in A90 process
     type: ignore

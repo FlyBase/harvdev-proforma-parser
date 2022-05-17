@@ -45,25 +45,28 @@ def add_bk_feat_relationship(self, key, feature):
 
 
 def add_props(self, key, feature, position):
-    for new_key in ['A90h', 'A90j', 'A90c']:
-        if new_key == 'A90c':
+    for new_key in ['A90h', 'A90j', 'A90b']:
+        if new_key == 'A90b':
             value = "{}_r{}:{}..{}".format(position['arm'].name, position['release'], position['start']-1, position['end'])
         elif new_key in self.process_data:
             value = self.process_data[new_key]['data'][FIELD_VALUE]
         else:
             # error
             pass
-        prop_cv_id = self.cvterm_query(self.process_data[new_key]['prop_cv'],
-                                       self.process_data[new_key]['prop_cvterm'])
-        fp, is_new = get_or_create(self.session, Featureprop, feature_id=feature.feature_id,
-                                   type_id=prop_cv_id, value=value)
-        get_or_create(self.session, FeaturepropPub, featureprop_id=fp.featureprop_id, pub_id=self.pub.pub_id)
+        if new_key in self.process_data:
+            prop_cv_id = self.cvterm_query(self.process_data[new_key]['prop_cv'],
+                                           self.process_data[new_key]['prop_cvterm'])
+            fp, is_new = get_or_create(self.session, Featureprop, feature_id=feature.feature_id,
+                                       type_id=prop_cv_id, value=value)
+            get_or_create(self.session, FeaturepropPub, featureprop_id=fp.featureprop_id, pub_id=self.pub.pub_id)
 
 
 def process_A90(self, key):
     # create/get break point
     feature = self.get_breakpoint('A90a')
 
+    if not feature:
+        return
     # get postional data
     position = self.get_position(key_prefix='A90',
                                  name_key='a',
@@ -71,7 +74,7 @@ def process_A90(self, key):
                                  rel_key='c',
                                  strand_key=None,
                                  create=True)
-    if 'arm' not in position:
+    if not position['arm']:
         return
     log.debug("position is {}".format(position))
 
