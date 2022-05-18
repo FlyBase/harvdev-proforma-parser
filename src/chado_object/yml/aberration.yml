@@ -307,7 +307,52 @@ A29:
     cv: property type
     cvterm: new_order
     value: A29
-#     'A91a',  'deleted_segment', #featurepop
+#     'A30', 'library_feature',               #library_feature
+A30:
+    type: ignore  # Dealt with by A30a (has to have a prop)
+#     'A30a', 'library_featureprop',          #library_featureprop
+A30a:
+    type: libraryfeatureprop
+    cv: library_featureprop type
+#     'A90a',   'break_of',                 #feature_relationship
+A90a:
+    type: A90
+    cv: relationship type
+    cvterm: break_of
+    feat_cvterm: chromosome_breakpoint
+    feat_cv: SO
+    create_new_feat: True
+    subscript: False
+#######################################################################
+# NOTE: all GA90x fields are dealt with by the above GA90 function call
+#       So nothing is called invividually for each of the fields BUT
+#       the cvterms definitions etc are used so need to be supplied.
+#######################################################################type
+# 'A90b', 'featureloc',
+A90b:  # Done in A90 process
+    type: ignore
+    arm_cvterm: golden_path
+    arm_cv: SO
+    prop_cvterm: reported_genomic_loc
+    prop_cv: GenBank feature qualifier
+    cvterm: chromosome_breakpoint
+    cv: SO
+A90c:  # Done in A90 process
+    type: ignore
+#     'A90h',   'linked_to', #GenBank feature qualifier
+A90h:  # Done in A90 process
+    type: ignore
+    prop_cvterm: linked_to
+    prop_cv: GenBank feature qualifier
+    cvterm: chromosome_breakpoint
+    cv: SO
+#     'A90j',   'gen_loc_comment', #property type
+A90j:  # Done in A90 process
+    type: ignore
+    prop_cvterm: gen_loc_comment
+    prop_cv: property type
+    cvterm: chromosome_breakpoint
+    cv: SO
 A91a:
     type: featureprop
     cv: property type
@@ -322,19 +367,9 @@ A92a:
 
 #     'A27a', 'is_obsolete',                  #feature.is_obsolete
 #     'A27b', 'dissociate_pub',               #feature_pub...
-#
-#
-#
 #     'A17',  'aberr_pheno',             #feature_genotype,genotype,phendesc
 
-
-#     'A30', 'library_feature',               #library_feature
-#     'A30a', 'library_featureprop',          #library_featureprop
-#     'A90a',   'break_of',                 #feature_relationship
-#     'A90h',   'linked_to', #GenBank feature qualifier
-#     'A90j',   'gen_loc_comment', #property type
 #     'A28',   'feature_dbxref',
-
 
 # Deprecated.
 #     'A8b',  '', ??

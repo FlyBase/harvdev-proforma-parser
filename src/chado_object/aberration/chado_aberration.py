@@ -24,8 +24,8 @@ log = logging.getLogger(__name__)
 class ChadoAberration(ChadoFeatureObject):
     """ChadoAberration object."""
 
-    from chado_object.gene.gene_merge import (
-        merge
+    from chado_object.aberration.break_point import (
+        process_A90, get_breakpoint, add_featloc, add_bk_feat_relationship, add_props
     )
 
     def __init__(self, params):
@@ -44,6 +44,8 @@ class ChadoAberration(ChadoFeatureObject):
                           'featurerelationship': self.load_feature_relationship,
                           'cvtermprop': self.load_feature_cvtermprop,
                           'break_of': self.breaks,
+                          'libraryfeatureprop': self.load_lfp,
+                          'A90': self.process_A90,
                           # 'merge': self.merge,
                           # 'dis_pub': self.dis_pub,
                           # 'make_obsolete': self.make_obsolete,
@@ -171,6 +173,17 @@ class ChadoAberration(ChadoFeatureObject):
         for key in self.process_data:
             if key in self.checks_for_key:
                 self.checks_for_key[key](key)
+
+        # cerburus should be dealing with this but it appears not to be.
+        # so lets check manually if GA90a does not exist then none of the others should
+        okay = True
+        if not self.has_data('A90a'):
+            for postfix in 'bchj':
+                postkey = 'A90{}'.format(postfix)
+                if self.has_data(postkey):
+                    self.critical_error(self.process_data[postkey]['data'], "Cannot set {} without A90a".format(postkey))
+                    okay = False
+        return okay
 
     def load_content(self, references: dict):
         """Process the data.
@@ -408,33 +421,7 @@ class ChadoAberration(ChadoFeatureObject):
     def ignore_bang(self, key, bangc):
         """Ignore."""
         pass
-# my %A9type = (
-#     'Df',   'chromosomal_deletion',
-#     'tDp',  'tandem_duplication',
-#     'In',   'chromosomal_inversion',
-#     'T',    'chromosomal_translocation',
-#     'R',    'ring_chromosome',
-#     'AS',   'autosynaptic_chromosome',
-#     'DS',   'dexstrosynaptic_chromosome',
-#     'LS',   'laevosynaptic_chromosome',
-#     'fDp',  'free_duplication',
-#     'fR',   'free_ring_duplication',
-#     'DfT',  'deficient_translocation',
-#     'DfIn', 'deficient_inversion',
-#     'InT',  'inversion_cum_translocation',
-#     'bDp',  'bipartite_duplication',
-#     'cT',   'cyclic_translocation',
-#     'cIn',  'bipartite_inversion',
-#     'eDp',  'uninverted_insertional_duplication',
-#     'iDp',  'inverted_insertional_duplication',
-#     'uDp',  'unoriented_insertional_duplication',
-#     'eTp1', 'uninverted_intrachromosomal_transposition',
-#     'eTp2', 'uninverted_interchromosomal_transposition',
-#     'iTp1', 'inverted_intrachromosomal_transposition',
-#     'iTp2', 'inverted_interchromosomal_transposition',
-#     'uTp1', 'unorientated_intrachromosomal_transposition',
-#     'uTp2', 'unoriented_interchromosomal_transposition'
-# );
+
 
 # my %a30a_type = ('experimental_result', 1 , 'member_of_reagent_collection', 1);
 

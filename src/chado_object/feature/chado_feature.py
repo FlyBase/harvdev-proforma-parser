@@ -25,6 +25,7 @@ from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from typing import List
 import logging
 import re
+import os
 
 log = logging.getLogger(__name__)
 
@@ -497,7 +498,7 @@ class ChadoFeatureObject(ChadoObject):
             return None
         return get_cvterm(self.session, 'SO', feat_type_name)
 
-    def load_feature_relationship(self, key):
+    def load_feature_relationship(self, key):  # noqa
         """Add Feature Relationship.
 
         yml options:
@@ -726,6 +727,86 @@ class ChadoFeatureObject(ChadoObject):
 
         # create feature prop pub
         get_or_create(self.session, FeaturepropPub, featureprop_id=fp.featureprop_id, pub_id=self.pub.pub_id)
+
+    def get_position(self, key_prefix='GA90', name_key='a', pos_key='b', rel_key='c', strand_key='i', create=True):  # noqa
+        """Get position data."""
+        position = {'arm': None,
+                    'strand': 0,
+                    'addfeatureloc': True}
+        # check with BEV can we have GA90a without a position?
+
+        key = '{}{}'.format(key_prefix, pos_key)
+
+        if not self.has_data(key):
+            # posible error message if not allowed without this.
+            message = r'MUST have a position {} {} and {}'.format(key_prefix, pos_key, rel_key)
+            self.critical_error(self.process_data['{}{}'.format(key_prefix, name_key)]['data'], message)
+            return position
+
+        pattern = r"""
+        ^\s*          # possible spaces
+        (\S+)         # arm
+        :             # chrom separator
+        (\d+)         # start pos
+        [.]{2}        # double dots
+        (\d+)         # end pos
+        """
+        s_res = re.search(pattern, self.process_data[key]['data'][FIELD_VALUE], re.VERBOSE)
+
+        if s_res:  # matches the pattern above
+            arm_name = s_res.group(1)
+            position['start'] = int(s_res.group(2))
+            position['end'] = int(s_res.group(3))
+        else:
+            pattern = r"""
+            ^\s*          # possible spaces
+            (\S+)         # arm
+            :             # chrom separator
+            (\d+)         # start pos
+            /s+           # possible spaces
+            $             # end
+            """
+            s_res = re.search(pattern, self.process_data[key]['data'][FIELD_VALUE], re.VERBOSE)
+            if s_res:  # matches the pattern above
+                arm_name = s_res.group(1)
+                position['start'] = int(s_res.group(2))
+                position['end'] = position['start']
+            else:
+                message = r'Incorrect format should be chrom:\d+..\d+'
+                self.critical_error(self.process_data[key]['data'], message)
+                return position
+
+        # get rel data
+        # If release specified and not equal to current assembly then
+        # flag for the featurelovc to not be created.
+        default_release = os.getenv('ASSEMBLY_RELEASE', '6')
+        release_key = "{}{}".format(key_prefix, rel_key)
+        if release_key in self.process_data:
+            position['release'] = self.process_data[release_key]['data'][FIELD_VALUE]
+        if 'release' not in position:
+            position['release'] = default_release
+        else:
+            if position['release'] != default_release:
+                self.warning_error(self.process_data[release_key]['data'], "Release {} will not display in Location".format(position['release']))
+                position['addfeatureloc'] = False
+
+        # get the strand
+        s_key = "{}{}".format(key_prefix, strand_key)
+        if self.has_data(s_key):
+            if self.process_data[s_key]['data'][FIELD_VALUE] == '-':
+                position['strand'] = -1
+            else:
+                position['strand'] = 1
+
+        # convert arm name to feature
+        if create:
+            arm_type_id = self.cvterm_query(self.process_data[key]['arm_cv'], self.process_data[key]['arm_cvterm'])
+            position['arm'], is_new = get_or_create(self.session, Feature, name=arm_name, type_id=arm_type_id)
+            if is_new or not position['arm']:
+                message = "Could not get {} feature with cvterm {} and cv {}".\
+                    format(arm_name, self.process_data[key]['arm_cvterm'], self.process_data[key]['arm_cv'])
+                self.critical_error(self.process_data[key]['data'], message)
+        return position
 
     def delete_featureprop(self, key, bangc=False):
         """Delete the feature prop and fp pubs.
