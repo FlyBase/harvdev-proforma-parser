@@ -440,6 +440,7 @@ class Proforma(object):
         if field in self.fields_values:  # If we have a previously defined key.
             if field in Proforma.set_of_fields_with_wrapping_values:  # In this case, we want to concantenate the existing and new values.
                 log.debug('Found field %s with wrapping values over multiple lines.' % (field))
+                log.debug(self.fields_values[field])
                 log.debug('Concatenating field %s existing value \'%s\' with new value \'%s\'' % (field, self.fields_values[field][1], value))
                 # This following is currently stored with a newline. Keeping the same system, unfortunately.
                 self.fields_values[field] = (field, self.fields_values[field][1] + '\n' + value, line_number)
