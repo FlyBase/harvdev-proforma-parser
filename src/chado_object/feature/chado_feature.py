@@ -736,6 +736,9 @@ class ChadoFeatureObject(ChadoObject):
         # check with BEV can we have GA90a without a position?
 
         key = '{}{}'.format(key_prefix, pos_key)
+        
+        if 'default_strand' in self.process_data[key]:
+            position['strand'] = int(self.process_data[key]['default_strand'])
 
         if not self.has_data(key):
             # posible error message if not allowed without this.
