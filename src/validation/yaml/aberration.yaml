@@ -203,13 +203,13 @@ A90a:
     type: string
     nullable: True
     required: False
-    dependencies: ['A90b']
+    dependencies: ['A90b', 'A90c']
     no_bangc: True
 A90b:
     type: string
     nullable: True
     required: False
-    dependencies: ['A90a']
+    dependencies: ['A90a', 'A90c']
 A90c:
     type: string
     nullable: True

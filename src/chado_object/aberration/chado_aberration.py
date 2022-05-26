@@ -208,7 +208,7 @@ class ChadoAberration(ChadoFeatureObject):
         # so lets check manually if GA90a does not exist then none of the others should
         okay = True
         if not self.has_data('A90a'):
-            for postfix in 'bchj':
+            for postfix in 'bc':
                 postkey = 'A90{}'.format(postfix)
                 if self.has_data(postkey):
                     self.critical_error(self.process_data[postkey]['data'], "Cannot set {} without A90a".format(postkey))

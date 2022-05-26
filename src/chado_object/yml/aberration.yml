@@ -353,7 +353,6 @@ A90b:  # Done in A90 process
     prop_cv: GenBank feature qualifier
     cvterm: chromosome_breakpoint
     cv: SO
-    default_strand: -1
 A90c:  # Done in A90 process
     type: ignore
 #     'A90h',   'linked_to', #GenBank feature qualifier

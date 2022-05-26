@@ -48,6 +48,9 @@ def add_props(self, key, feature, position):
     for new_key in ['A90h', 'A90j', 'A90b']:
         if new_key == 'A90b':
             value = "{}_r{}:{}..{}".format(position['arm'].name, position['release'], position['start']-1, position['end'])
+            if position['strand']:
+                log.debug("strand is {}".format(position['strand']))
+                value += "-{}".format(position['strand'])
         elif new_key in self.process_data:
             value = self.process_data[new_key]['data'][FIELD_VALUE]
         else:

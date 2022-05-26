@@ -132,6 +132,14 @@ class ChadoAllele(ChadoFeatureObject):
                 if self.has_data(postkey):
                     self.critical_error(self.process_data[postkey]['data'], "Cannot set {} without GA90a".format(postkey))
                     okay = False
+
+        # also of GA90 a is set then b and c are required.
+        if self.has_data('GA90a'):
+            for postfix in 'bc':
+                postkey = 'GA90{}'.format(postfix)
+                if not self.has_data(postkey):
+                    self.critical_error(self.process_data['GA90a']['data'], "Required to set {} with GA90a specified".format(postkey))
+                    okay = False
         return okay
 
     def load_content(self, references):

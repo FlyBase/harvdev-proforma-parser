@@ -25,7 +25,6 @@ from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from typing import List
 import logging
 import re
-import os
 
 log = logging.getLogger(__name__)
 
@@ -731,13 +730,14 @@ class ChadoFeatureObject(ChadoObject):
     def get_position(self, key_prefix='GA90', name_key='a', pos_key='b', rel_key='c', strand_key='i', create=True):  # noqa
         """Get position data."""
         position = {'arm': None,
-                    'strand': 0,
-                    'addfeatureloc': True}
+                    'strand': None,
+                    'addfeatureloc': True,
+                    'release': None}
         # check with BEV can we have GA90a without a position?
 
         key = '{}{}'.format(key_prefix, pos_key)
 
-        if 'default_strand' in self.process_data[key]:
+        if key in self.process_data and 'default_strand' in self.process_data[key]:
             position['strand'] = int(self.process_data[key]['default_strand'])
 
         if not self.has_data(key):
@@ -782,16 +782,12 @@ class ChadoFeatureObject(ChadoObject):
         # get rel data
         # If release specified and not equal to current assembly then
         # flag for the featurelovc to not be created.
-        default_release = os.getenv('ASSEMBLY_RELEASE', '6')
         release_key = "{}{}".format(key_prefix, rel_key)
         if release_key in self.process_data:
             position['release'] = self.process_data[release_key]['data'][FIELD_VALUE]
-        if 'release' not in position:
-            position['release'] = default_release
         else:
-            if position['release'] != default_release:
-                self.warning_error(self.process_data[release_key]['data'], "Release {} will not display in Location".format(position['release']))
-                position['addfeatureloc'] = False
+            self.critical_error(self.process_data['{}{}'.format(key_prefix, name_key)]['data'], "Release {} is required".format(release_key))
+            position['addfeatureloc'] = False
 
         # get the strand
         s_key = "{}{}".format(key_prefix, strand_key)
