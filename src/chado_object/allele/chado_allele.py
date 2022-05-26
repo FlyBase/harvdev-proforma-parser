@@ -126,11 +126,6 @@ class ChadoAllele(ChadoFeatureObject):
 
         # cerburus should be dealing with this but it appears not to be.
         # so lets check manually if GA90a does not exist then none of the others should
-        try:
-            log.debug("BOB: {}".format(self.process_data['GA90k']['data'][FIELD_VALUE]))
-            log.debug("BOB: {}".format(self.process_data['GA90k']['data'][SET_BANG]))
-        except:
-            pass
         if 'GA90k' in self.bang_c:
             return okay
         if not self.has_data('GA90a') and not self.process_data['GA90k']['data'][SET_BANG]:
