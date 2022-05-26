@@ -23,7 +23,7 @@ from harvdev_utils.production import (
     FeaturePub, FeatureCvterm, FeatureCvtermprop,
     Featureprop, FeaturepropPub, Featureloc
 )
-from chado_object.chado_base import FIELD_VALUE
+from chado_object.chado_base import FIELD_VALUE, SET_BANG
 from sqlalchemy.orm.exc import NoResultFound
 
 from harvdev_utils.production.production import Cvterm, FeatureSynonym, Synonym
@@ -90,7 +90,7 @@ class ChadoAllele(ChadoFeatureObject):
         # self.genus = "Drosophila"
         # self.species = "melanogaster"
 
-    def checks(self, references):
+    def checks(self, references):  # noqa
         """Check for Allele required data.
 
         Args:
@@ -126,7 +126,14 @@ class ChadoAllele(ChadoFeatureObject):
 
         # cerburus should be dealing with this but it appears not to be.
         # so lets check manually if GA90a does not exist then none of the others should
-        if not self.has_data('GA90a'):
+        try:
+            log.debug("BOB: {}".format(self.process_data['GA90k']['data'][FIELD_VALUE]))
+            log.debug("BOB: {}".format(self.process_data['GA90k']['data'][SET_BANG]))
+        except:
+            pass
+        if 'GA90k' in self.bang_c:
+            return okay
+        if not self.has_data('GA90a') and not self.process_data['GA90k']['data'][SET_BANG]:
             for postfix in 'bcdefghijk':
                 postkey = 'GA90{}'.format(postfix)
                 if self.has_data(postkey):
