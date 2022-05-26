@@ -351,6 +351,8 @@ class ChadoAllele(ChadoFeatureObject):
         position = self.get_position(key_prefix='GA90', name_key='a', pos_key='b', rel_key='c', strand_key='i', create=True)
         if not position['arm']:
             return
+        if not position['strand']:
+            position['strand'] = 0
         #  reported_genomic_loc featureprop
         log.debug("position is {}".format(position))
         value = "{}_r{}:{}..{}".format(position['arm'].name, position['release'], position['start'], position['end'])

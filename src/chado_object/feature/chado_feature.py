@@ -50,6 +50,7 @@ class ChadoFeatureObject(ChadoObject):
         self.feature: Feature = None
         self.unattrib_pub = None
         self.new = None
+        self.current_release = '6'
 
     def load_lfp(self, key: str):
         """Load LibraryFeatureprop.
@@ -785,6 +786,12 @@ class ChadoFeatureObject(ChadoObject):
         release_key = "{}{}".format(key_prefix, rel_key)
         if release_key in self.process_data:
             position['release'] = self.process_data[release_key]['data'][FIELD_VALUE]
+            if position['release'] != self.current_release:
+                self.warning_error(
+                    self.process_data['{}'.format(release_key)]['data'],
+                    "{} Not the current release. No featureLoc will be created.".format(position['release'])
+                )
+                position['addfeatureloc'] = False
         else:
             self.critical_error(self.process_data['{}{}'.format(key_prefix, name_key)]['data'], "Release {} is required".format(release_key))
             position['addfeatureloc'] = False
