@@ -23,7 +23,7 @@ from harvdev_utils.production import (
     FeaturePub, FeatureCvterm, FeatureCvtermprop,
     Featureprop, FeaturepropPub, Featureloc
 )
-from chado_object.chado_base import FIELD_VALUE, SET_BANG
+from chado_object.chado_base import FIELD_VALUE
 from sqlalchemy.orm.exc import NoResultFound
 
 from harvdev_utils.production.production import Cvterm, FeatureSynonym, Synonym
@@ -128,7 +128,7 @@ class ChadoAllele(ChadoFeatureObject):
         # so lets check manually if GA90a does not exist then none of the others should
         if 'GA90k' in self.bang_c:
             return okay
-        if not self.has_data('GA90a') and not self.process_data['GA90k']['data'][SET_BANG]:
+        if not self.has_data('GA90a'):
             for postfix in 'bcdefghijk':
                 postkey = 'GA90{}'.format(postfix)
                 if self.has_data(postkey):
