@@ -13,6 +13,7 @@ from chado_object.chado_base import FIELD_VALUE, FIELD_NAME, LINE_NUMBER
 from chado_object.feature.chado_feature import ChadoFeatureObject
 # from chado_object.utils.go import process_GO_line
 from chado_object.utils.feature_synonym import fs_add_by_synonym_name_and_type
+from harvdev_utils.char_conversions import sub_sup_to_sgml
 from harvdev_utils.chado_functions import (get_or_create, get_cvterm, feature_name_lookup, get_dbxref,
                                            DataError)
 from harvdev_utils.production import (Feature, Featureprop, FeaturepropPub, FeaturePub,
@@ -81,7 +82,7 @@ class ChadoAberration(ChadoFeatureObject):
     def phen_desc(self, key):
         # get/create the genotype with same name as aberation
         env, _ = get_or_create(self.session, Environment, uniquename=self.process_data[key]['environment'])
-        geno, _ = get_or_create(self.session, Genotype, uniquename=self.feature.name)
+        geno, _ = get_or_create(self.session, Genotype, uniquename=sub_sup_to_sgml(self.feature.name))
         desc_cvterm = get_cvterm(self.session, self.process_data[key]['desc_cv'], self.process_data[key]['desc_cvterm'])
         fg_cvterm = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data[key]['cvterm'])
         chrom_cvterm = get_cvterm(self.session, self.process_data[key]['chrom_cv'], self.process_data[key]['chrom_cvterm'])
@@ -96,6 +97,7 @@ class ChadoAberration(ChadoFeatureObject):
                               cvterm_id=fg_cvterm.cvterm_id,
                               feature_id=self.feature.feature_id,
                               cgroup=0,
+                              rank=0,
                               genotype_id=geno.genotype_id)
 
         # Add phen desc for each line in input

@@ -728,6 +728,29 @@ class ChadoFeatureObject(ChadoObject):
         # create feature prop pub
         get_or_create(self.session, FeaturepropPub, featureprop_id=fp.featureprop_id, pub_id=self.pub.pub_id)
 
+    def check_strand(self, strand_string, position, strand_key, key_prefix, pos_key):
+        if strand_key:
+            self.critical_error(
+                self.process_data['{}{}'.format(key_prefix, pos_key)]['data'],
+                "'{}' found after valid location NOT allowed please use the field {} to define the strand.".format(strand_string, strand_key)
+            )
+        else:
+            if strand_string[0] != ':' and strand_string[0] != '-':
+                self.critical_error(
+                    self.process_data['{}{}'.format(key_prefix, pos_key)]['data'],
+                    "'{}' found after valid location but does not start with  a ':' or a --'?".format(strand_string[0])
+                )
+                return
+            if strand_string[1:] == '-1' or strand_string[1:] == '1':
+                position['strand'] = strand_string[1:]
+            else:
+                message = "'{}' found after valid location but only '1' or '-1' accepted after '{}' Not '{}'.".\
+                    format(strand_string, strand_string[0], strand_string[1:])
+                self.critical_error(
+                    self.process_data['{}{}'.format(key_prefix, pos_key)]['data'],
+                    message
+                )
+
     def get_position(self, key_prefix='GA90', name_key='a', pos_key='b', rel_key='c', strand_key='i', create=True):  # noqa
         """Get position data."""
         position = {'arm': None,
@@ -754,6 +777,8 @@ class ChadoFeatureObject(ChadoObject):
         (\d+)         # start pos
         [.]{2}        # double dots
         (\d+)         # end pos
+        (\S*)         # possible stand info ':-1', '-1', '--1' ? siilare for +ve strand
+        $
         """
         s_res = re.search(pattern, self.process_data[key]['data'][FIELD_VALUE], re.VERBOSE)
 
@@ -761,6 +786,8 @@ class ChadoFeatureObject(ChadoObject):
             arm_name = s_res.group(1)
             position['start'] = int(s_res.group(2))
             position['end'] = int(s_res.group(3))
+            if s_res.group(4):
+                self.check_strand(s_res.group(4), position, strand_key, key_prefix, pos_key)
         else:
             pattern = r"""
             ^\s*          # possible spaces

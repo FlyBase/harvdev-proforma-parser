@@ -29,7 +29,8 @@ def add_featloc(self, key, position, feature):
                                    locgroup=0)
         fl.fmin = position['start'] - 1  # interbase in chado
         fl.fmax = position['end']
-        fl.strand = position['strand']
+        # fl.strand = position['strand'] NO strand info allowed for here.
+        # At least for A17 may need to code better later if some allow it.
 
 
 def add_bk_feat_relationship(self, key, feature):
@@ -48,9 +49,10 @@ def add_props(self, key, feature, position):
     for new_key in ['A90h', 'A90j', 'A90b']:
         if new_key == 'A90b':
             value = "{}_r{}:{}..{}".format(position['arm'].name, position['release'], position['start']-1, position['end'])
+            log.debug("strand is {}".format(position['strand']))
             if position['strand']:
-                log.debug("strand is {}".format(position['strand']))
-                value += "-{}".format(position['strand'])
+                message = "strand is set to {} But will be ignored".format(position['strand'])
+                self.warning_error(self.process_data[new_key]['data'], message)
         elif new_key in self.process_data:
             value = self.process_data[new_key]['data'][FIELD_VALUE]
         else:
