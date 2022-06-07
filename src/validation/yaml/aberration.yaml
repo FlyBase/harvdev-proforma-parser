@@ -88,7 +88,12 @@ A15:
     type: [string, list]
     nullable: True
     at_forbidden: True
-    required: False  
+    required: False
+A17:
+    type: string
+    nullable: True
+    required: False
+    wrapping_values: True
 A18:
     type: [string, list]
     nullable: True
@@ -169,6 +174,16 @@ A26:
     type: string
     nullable: True
     required: False
+A27a:
+    type: string
+    required: False
+    nullable: True
+    allowed: ['y']
+A27b:
+    type: string
+    required: False
+    nullable: True
+    allowed: ['y']
 A29:
     type: string
     nullable: True

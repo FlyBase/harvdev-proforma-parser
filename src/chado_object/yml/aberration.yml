@@ -167,6 +167,16 @@ A15:
 #    cv: property type
 #    cvterm: discoverer
 #    value: A16
+A17:
+    type: phen_desc
+    desc_cvterm: aberr_pheno
+    desc_cv: phendesc type
+    environment: 'unspecified'
+    cvterm: unspecified
+    cv: FlyBase miscellaneous CV
+    chrom: unspecified
+    chrom_cv: SO
+    chrom_cvterm: chromosome 
 #     'A18',  'cyto_loc_comment',             #featureprop
 A18:
     type: featureprop
@@ -301,6 +311,12 @@ A26:
     prop_value: False
     prop_cv: 'feature_cvtermprop type'
     prop_cvterm: 'wt_class'
+#     'A27a', 'is_obsolete',                  #feature.is_obsolete
+A27a:
+    type: make_obsolete
+#     'A27b', 'dissociate_pub',               #feature_pub...
+A27b:
+    type: dis_pub
 #     'A29', 'new_order', #featureprop
 A29:
     type: featureprop
@@ -365,13 +381,11 @@ A92a:
     cvterm: duplicated_segment
     value: A92a
 
-#     'A27a', 'is_obsolete',                  #feature.is_obsolete
-#     'A27b', 'dissociate_pub',               #feature_pub...
 #     'A17',  'aberr_pheno',             #feature_genotype,genotype,phendesc
 
-#     'A28',   'feature_dbxref',
 
 # Deprecated.
 #     'A8b',  '', ??
 # #    'A10',  'new_order',                    #featureprop
 # #    'A11',  'new_order',                    # featureprop
+#     'A28',   'feature_dbxref',

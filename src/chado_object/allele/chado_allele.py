@@ -90,7 +90,7 @@ class ChadoAllele(ChadoFeatureObject):
         # self.genus = "Drosophila"
         # self.species = "melanogaster"
 
-    def checks(self, references):
+    def checks(self, references):  # noqa
         """Check for Allele required data.
 
         Args:
@@ -126,11 +126,21 @@ class ChadoAllele(ChadoFeatureObject):
 
         # cerburus should be dealing with this but it appears not to be.
         # so lets check manually if GA90a does not exist then none of the others should
+        if 'GA90k' in self.bang_c:
+            return okay
         if not self.has_data('GA90a'):
             for postfix in 'bcdefghijk':
                 postkey = 'GA90{}'.format(postfix)
                 if self.has_data(postkey):
                     self.critical_error(self.process_data[postkey]['data'], "Cannot set {} without GA90a".format(postkey))
+                    okay = False
+
+        # also of GA90 a is set then b and c are required.
+        if self.has_data('GA90a'):
+            for postfix in 'bc':
+                postkey = 'GA90{}'.format(postfix)
+                if not self.has_data(postkey):
+                    self.critical_error(self.process_data['GA90a']['data'], "Required to set {} with GA90a specified".format(postkey))
                     okay = False
         return okay
 
@@ -343,6 +353,8 @@ class ChadoAllele(ChadoFeatureObject):
         position = self.get_position(key_prefix='GA90', name_key='a', pos_key='b', rel_key='c', strand_key='i', create=True)
         if not position['arm']:
             return
+        if not position['strand']:
+            position['strand'] = 0
         #  reported_genomic_loc featureprop
         log.debug("position is {}".format(position))
         value = "{}_r{}:{}..{}".format(position['arm'].name, position['release'], position['start'], position['end'])

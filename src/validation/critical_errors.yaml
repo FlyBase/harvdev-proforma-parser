@@ -98,6 +98,8 @@ GA23a:
   - regex
 GA34c:
   - is forbidden
+GA90a:
+  - is required
 GA90b:
   - is required
 GA90c:
@@ -123,3 +125,9 @@ TC1f:
   - null value not allowed
 A8a:
   - format
+A90a:
+  - is required
+A90b:
+  - is required
+A90c:
+  - is required

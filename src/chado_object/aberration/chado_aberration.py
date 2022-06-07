@@ -13,10 +13,12 @@ from chado_object.chado_base import FIELD_VALUE, FIELD_NAME, LINE_NUMBER
 from chado_object.feature.chado_feature import ChadoFeatureObject
 # from chado_object.utils.go import process_GO_line
 from chado_object.utils.feature_synonym import fs_add_by_synonym_name_and_type
+from harvdev_utils.char_conversions import sub_sup_to_sgml
 from harvdev_utils.chado_functions import (get_or_create, get_cvterm, feature_name_lookup, get_dbxref,
                                            DataError)
 from harvdev_utils.production import (Feature, Featureprop, FeaturepropPub, FeaturePub,
-                                      FeatureRelationship, FeatureRelationshipPub)
+                                      FeatureRelationship, FeatureRelationshipPub,
+                                      FeatureGenotype, Environment, Genotype, Phendesc)
 # from typing import Tuple, Union
 log = logging.getLogger(__name__)
 
@@ -47,8 +49,9 @@ class ChadoAberration(ChadoFeatureObject):
                           'libraryfeatureprop': self.load_lfp,
                           'A90': self.process_A90,
                           # 'merge': self.merge,
-                          # 'dis_pub': self.dis_pub,
-                          # 'make_obsolete': self.make_obsolete,
+                          'phen_desc': self.phen_desc,
+                          'dis_pub': self.dis_pub,
+                          'make_obsolete': self.make_obsolete,
                           }
 
         self.delete_dict = {'featureprop': self.delete_featureprop,
@@ -75,6 +78,35 @@ class ChadoAberration(ChadoFeatureObject):
         ########################################################
         self.checks_for_key = {'A26':  self.so_alter_check,
                                'A9': self.so_alter_check}
+
+    def phen_desc(self, key):
+        # get/create the genotype with same name as aberation
+        env, _ = get_or_create(self.session, Environment, uniquename=self.process_data[key]['environment'])
+        geno, _ = get_or_create(self.session, Genotype, uniquename=sub_sup_to_sgml(self.feature.name))
+        desc_cvterm = get_cvterm(self.session, self.process_data[key]['desc_cv'], self.process_data[key]['desc_cvterm'])
+        fg_cvterm = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data[key]['cvterm'])
+        chrom_cvterm = get_cvterm(self.session, self.process_data[key]['chrom_cv'], self.process_data[key]['chrom_cvterm'])
+        chrom, _ = get_or_create(self.session, Feature,
+                                 name=self.process_data[key]['chrom'],
+                                 uniquename=self.process_data[key]['chrom'],
+                                 type_id=chrom_cvterm.cvterm_id)
+
+        # Add feature genotype
+        fg, _ = get_or_create(self.session, FeatureGenotype,
+                              chromosome_id=chrom.feature_id,
+                              cvterm_id=fg_cvterm.cvterm_id,
+                              feature_id=self.feature.feature_id,
+                              cgroup=0,
+                              rank=0,
+                              genotype_id=geno.genotype_id)
+
+        # Add phen desc for each line in input
+        get_or_create(self.session, Phendesc,
+                      genotype_id=geno.genotype_id,
+                      type_id=desc_cvterm.cvterm_id,
+                      environment_id=env.environment_id,
+                      pub_id=self.pub.pub_id,
+                      description=self.process_data[key]['data'][FIELD_VALUE])
 
     def so_alter_check(self, key):
         short_to_name = {
@@ -178,7 +210,7 @@ class ChadoAberration(ChadoFeatureObject):
         # so lets check manually if GA90a does not exist then none of the others should
         okay = True
         if not self.has_data('A90a'):
-            for postfix in 'bchj':
+            for postfix in 'bc':
                 postkey = 'A90{}'.format(postfix)
                 if self.has_data(postkey):
                     self.critical_error(self.process_data[postkey]['data'], "Cannot set {} without A90a".format(postkey))
