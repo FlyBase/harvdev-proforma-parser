@@ -56,6 +56,10 @@ class ChadoAberration(ChadoFeatureObject):
 
         self.delete_dict = {'featureprop': self.delete_featureprop,
                             'synonym': self.delete_synonym,
+                            'featurerelationship': self.delete_feature_relationship,
+                            'libraryfeatureprop': self.delete_lfp,  # need to write
+                            'cvtermprop': self.delete_feature_cvtermprop,
+                            'phen_desc': self.del_phen_desc,
                             'cvterm': self.delete_feature_cvtermprop}
         self.proforma_start_line_number = params.get('proforma_start_line_number')
 
@@ -78,6 +82,33 @@ class ChadoAberration(ChadoFeatureObject):
         ########################################################
         self.checks_for_key = {'A26':  self.so_alter_check,
                                'A9': self.so_alter_check}
+
+    def bangc_error(self, key, lookup_type, item):
+        message = "Bangc cannot be performed as {} could not find existing {}".format(lookup_type, item)
+        self.critical_error(self.process_data[key]['data'], message)
+
+    def del_phen_desc(self, key, bangc=True):
+        # get/create the genotype with same name as aberation
+        env, is_new = get_or_create(self.session, Environment, uniquename=self.process_data[key]['environment'])
+        if is_new:
+            self.bangc_error(key, 'Envirioment', self.process_data[key]['environment'])
+
+        geno, is_new = get_or_create(self.session, Genotype, uniquename=sub_sup_to_sgml(self.feature.name))
+        if is_new:
+            self.bangc_error('Genotype', sub_sup_to_sgml(self.feature.name))
+
+        desc_cvterm = get_cvterm(self.session, self.process_data[key]['desc_cv'], self.process_data[key]['desc_cvterm'])
+
+        # Delete phen desc.
+        pd, is_new = get_or_create(self.session, Phendesc,
+                                   genotype_id=geno.genotype_id,
+                                   type_id=desc_cvterm.cvterm_id,
+                                   environment_id=env.environment_id,
+                                   pub_id=self.pub.pub_id)
+        if is_new:
+            self.bangc_error(key, 'phen desc', "{} with pub {}".format(geno.uniquename, self.pub.uniquename))
+        else:
+            self.session.delete(pd)
 
     def phen_desc(self, key):
         # get/create the genotype with same name as aberation

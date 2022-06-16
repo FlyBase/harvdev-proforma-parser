@@ -161,12 +161,7 @@ A15:
     cvterm: internal_notes
     value: A15
 
-#     'A16',  'discoverer',                   #featureprop
-#A16: OBSOLETE ?
-#    type: featureprop
-#    cv: property type
-#    cvterm: discoverer
-#    value: A16
+#     'A17',  'aberr_pheno',             #feature_genotype,genotype,phendesc
 A17:
     type: phen_desc
     desc_cvterm: aberr_pheno
@@ -381,11 +376,18 @@ A92a:
     cvterm: duplicated_segment
     value: A92a
 
-#     'A17',  'aberr_pheno',             #feature_genotype,genotype,phendesc
-
 
 # Deprecated.
 #     'A8b',  '', ??
 # #    'A10',  'new_order',                    #featureprop
 # #    'A11',  'new_order',                    # featureprop
+
+
+#     'A16',  'discoverer',                   #featureprop
+#A16: OBSOLETE ?
+#    type: featureprop
+#    cv: property type
+#    cvterm: discoverer
+#    value: A16
+
 #     'A28',   'feature_dbxref',

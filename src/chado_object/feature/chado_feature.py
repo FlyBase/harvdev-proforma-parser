@@ -1114,6 +1114,9 @@ class ChadoFeatureObject(ChadoObject):
                     self.critical_error(data, 'Synonym {} Does not exist for this Feature that is not current.'.format(data[FIELD_VALUE]))
                     continue
 
+    def delete_lfp(self, key: str):
+        pass
+
     def dissociate_from_pub(self, key):
         """Dissociate feature from pub"""
         if not self.has_data(key):
