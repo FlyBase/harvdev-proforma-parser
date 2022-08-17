@@ -140,7 +140,6 @@ class ChadoPub(ChadoObject):
 
         """
         if tuple is not None and tuple[FIELD_VALUE] is not None:
-            log.debug("Looking up pub: {}.".format(tuple[FIELD_VALUE]))
             pub = None
             if uniquename:
                 pub = self.session.query(Pub).filter(Pub.uniquename == tuple[FIELD_VALUE]).one_or_none()
