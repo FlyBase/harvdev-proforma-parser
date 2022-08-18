@@ -154,12 +154,14 @@ P40:
 P41:
   nullable: True
   type: list
-  allowed: [RNAi, cell_cult, cell_cult::DONE, cell_line, cell_line::DONE, cis_reg, cis_reg::DONE, dataset, dataset::DONE,
+  allowed: [RNAi,cell_cult, cell_cult::DONE, cell_line, cell_line::DONE, chemical, chemical::DONE, cis_reg, cis_reg::DONE,
+            dataset, dataset::DONE,
             disease, disease::DONE, diseaseF, diseaseHP, diseaseHP::DONE, gene_model, gene_model::DONE, gene_model_nonmel,
             genom_feat, genom_feat::DONE, marker, marker::DONE, micr_arr, n, neur_exp, neur_exp::DONE, neuro, no, no_flag,
             pert-exp, pert_exp, pert_exp::DONE, pert_ext, pert_xep, phys_int, phys_int::DONE, trans_assay, wt_exp, wt_exp::DONE, y]
 #Peeves allowed: [wt_exp, pert_exp, neur_exp, gene_model, gene_model_nomel, phys_int, cis_reg, genom_feat, disease, diseaseHP, dataset, cell_line, no_flag
 #                 wt_exp::DONE, pert_exp::DONE, neur_exp::DONE, gene_model::DONE, gene_model_nomel::DONE, phys_int::DONE, cis_reg::DONE, genom_feat::DONE, disease::DONE, diseaseHP::DONE, dataset::DONE, cell_line::DONE]
+# newly add chemical, chemical::DONE
 P42:
   required: False
   nullable: True
