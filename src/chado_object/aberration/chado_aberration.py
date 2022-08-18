@@ -91,7 +91,7 @@ class ChadoAberration(ChadoFeatureObject):
         # get/create the genotype with same name as aberation
         env, is_new = get_or_create(self.session, Environment, uniquename=self.process_data[key]['environment'])
         if is_new:
-            self.bangc_error(key, 'Envirioment', self.process_data[key]['environment'])
+            self.bangc_error(key, 'Environment', self.process_data[key]['environment'])
 
         geno, is_new = get_or_create(self.session, Genotype, uniquename=sub_sup_to_sgml(self.feature.name))
         if is_new:
