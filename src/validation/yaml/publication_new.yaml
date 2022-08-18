@@ -157,7 +157,7 @@ P40:
 P41:
   nullable: True
   type: list
-  allowed: [RNAi,cell_cult, cell_cult::DONE, cell_line, cell_line::DONE, chemical, chemical::Done, cis_reg, cis_reg::DONE,
+  allowed: [RNAi,cell_cult, cell_cult::DONE, cell_line, cell_line::DONE, chemical, chemical::DONE, cis_reg, cis_reg::DONE,
             dataset, dataset::DONE,
             disease, disease::DONE, diseaseF, diseaseHP, diseaseHP::DONE, gene_model, gene_model::DONE, gene_model_nonmel,
             genom_feat, genom_feat::DONE, marker, marker::DONE, micr_arr, n, neur_exp, neur_exp::DONE, neuro, no, no_flag,
