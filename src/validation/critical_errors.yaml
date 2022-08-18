@@ -26,6 +26,14 @@ P30:
   - listed more than once
 P31:
   - in both P31 and P22. Not allowed
+P40:
+  - unallowed values
+P41:
+  - unallowed values
+P42:
+  - unallowed values
+P43:
+  - unallowed values
 MP2b:
   - Must be set for new pubs.
 MP15:

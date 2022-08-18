@@ -14,7 +14,6 @@ from harvdev_utils.production import (
     Cv, Cvterm, Pub, Pubprop, Pubauthor, PubRelationship, Db, Dbxref, PubDbxref
 )
 from harvdev_utils.chado_functions import get_or_create
-from harvdev_utils.char_conversions.sub_sup_to_sgml import sub_sup_to_sgml
 import logging
 from datetime import datetime
 
@@ -141,7 +140,6 @@ class ChadoPub(ChadoObject):
 
         """
         if tuple is not None and tuple[FIELD_VALUE] is not None:
-            log.debug("Looking up pub: {}.".format(tuple[FIELD_VALUE]))
             pub = None
             if uniquename:
                 pub = self.session.query(Pub).filter(Pub.uniquename == tuple[FIELD_VALUE]).one_or_none()
@@ -582,9 +580,6 @@ class ChadoPub(ChadoObject):
 
         """
         value = value_to_add_tuple[FIELD_VALUE]
-        if cvterm_name == 'pubmed_abstract':
-            # convert '[' to '<up>' etc.
-            value = sub_sup_to_sgml(value)
 
         cv_term_id = super(ChadoPub, self).cvterm_query(cv_name, cvterm_name)
 
