@@ -68,6 +68,7 @@ class ChadoAberration(ChadoFeatureObject):
         ############################################################
         self.pub = None
         self.type_name = 'aberration'
+        self.orig_name = None
         ############################################################
         # Get processing info and data to be processed.
         # Please see the yml/publication.yml file for more details
@@ -264,6 +265,7 @@ class ChadoAberration(ChadoFeatureObject):
             return None
 
         self.load_feature(feature_type='chromosome_structure_variation')
+        self.orig_name = self.process_data['A1a']['data'][FIELD_VALUE]
         if not self.feature:  # problem getting aberration, lets finish
             return None
         self.extra_checks()
@@ -439,7 +441,7 @@ class ChadoAberration(ChadoFeatureObject):
                 right = fields.group(3)
 
             # Create new breakpoint
-            new_break_name = "{}:bk{}".format(self.feature.name, rank)
+            new_break_name = "{}:bk{}".format(self.orig_name, rank)
             bk_cvterm = get_cvterm(self.session, self.process_data[key]['feat_cv'], self.process_data[key]['feat_cvterm'])
             break_point, is_new = get_or_create(self.session, Feature,
                                                 type_id=bk_cvterm.cvterm_id,
