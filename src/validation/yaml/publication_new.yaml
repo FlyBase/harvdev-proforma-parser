@@ -150,21 +150,39 @@ P39:
 P40:
   nullable: True
   type: list
-  allowed: [GO_cur, GOcur, gene_group, gene_group::DONE, merge, n, new_al, new_allele, new_char, new_gene, new_transg,
-            no cur, noGOcur, no_cur, no_flag, nocur, nocur_abs, orthologs, pert_exp, pheno, pheno-chem, pheno_anat,
-            pheno_chem, rename, 'rename, merge', split, y]
-  #Peeves allowed: [merge, split, rename, new_char, new_al, new_transg, pheno, gene_group, noGOcur, pheno_chem, pheno_anat]
+  allowed: [
+    nocur,
+    nocur_abs,
+    merge,
+    split,
+    rename,
+    new_char,
+    new_al,
+    new_transg,
+    pheno,
+    gene_group,
+    noGOcur,
+    pheno_chem,
+    pheno_anat,
+    pathway]
 P41:
   nullable: True
   type: list
-  allowed: [RNAi,cell_cult, cell_cult::DONE, cell_line, cell_line::DONE, chemical, chemical::DONE, cis_reg, cis_reg::DONE,
-            dataset, dataset::DONE,
-            disease, disease::DONE, diseaseF, diseaseHP, diseaseHP::DONE, gene_model, gene_model::DONE, gene_model_nonmel,
-            genom_feat, genom_feat::DONE, marker, marker::DONE, micr_arr, n, neur_exp, neur_exp::DONE, neuro, no, no_flag,
-            pert-exp, pert_exp, pert_exp::DONE, pert_ext, pert_xep, phys_int, phys_int::DONE, trans_assay, wt_exp, wt_exp::DONE, y]
-#Peeves allowed: [wt_exp, pert_exp, neur_exp, gene_model, gene_model_nomel, phys_int, cis_reg, genom_feat, disease, diseaseHP, dataset, cell_line, no_flag
-#                 wt_exp::DONE, pert_exp::DONE, neur_exp::DONE, gene_model::DONE, gene_model_nomel::DONE, phys_int::DONE, cis_reg::DONE, genom_feat::DONE, disease::DONE, diseaseHP::DONE, dataset::DONE, cell_line::DONE]
-# Newly added  chemical, chemical::Done
+  allowed: [
+    wt_exp, wt_exp::DONE,
+    neur_exp, neur_exp::DONE,
+    gene_model, gene_model::DONE
+    phys_int, phys_int::DONE,
+    cis_reg, cis_reg::DONE,
+    genom_feat, genom_feat::DONE,
+    disease, disease::DONE,
+    diseaseHP, diseaseHP::DONE,
+    diseaseF, diseaseF::DONE,
+    dataset, dataset::DONE,
+    cell_line, cell_line::DONE,
+    cell_line(commercial), cell_line(commercial)::DONE,
+    cell_line(stable), cell_line(stable)::DONE,
+    chemical, chemical::DONE]
 P42:
   nullable: True
   type: [list, string]

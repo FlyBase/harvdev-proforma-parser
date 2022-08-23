@@ -72,6 +72,7 @@ A8a:
     type: [string, list]
     required: False
     nullable: True
+    no_bangc: True    # Ought to be, but has not been implemented (see DC-398)
 A9:
     type: string
     required: False
