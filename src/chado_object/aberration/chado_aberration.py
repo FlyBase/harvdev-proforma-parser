@@ -296,7 +296,7 @@ class ChadoAberration(ChadoFeatureObject):
             self.bang_d_it()
 
         # special cases of A90[b,j,h] being bang c'd
-        # Note as njh are set to ignore in the yaml the the above
+        # Note as bjh are set to ignore in the yaml the above
         # bang_c_it will have done nothing.
         self.bang_a90x()
 
