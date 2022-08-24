@@ -290,7 +290,7 @@ class ChadoFeatureObject(ChadoObject):
                 message = "Unable to find {} with symbol {}.".format(feature_type, self.process_data[symbol_key]['data'][FIELD_VALUE])
                 self.critical_error(self.process_data[symbol_key]['data'], message)
                 return
-            self._get_feature(supported_features[feature_type][SO], symbol_key, current_key, supported_features[feature_type][UNIQUE])
+            self._get_feature(supported_features[feature_type][SO], symbol_key, current_key, merge_key, supported_features[feature_type][UNIQUE])
             # add default symbol
             self.load_synonym(symbol_key)
 
