@@ -172,10 +172,10 @@ class ChadoFeatureObject(ChadoObject):
     def create_new(self, cvterm_name, symbol_key, unique_bit):
         cvterm = get_cvterm(self.session, 'SO', cvterm_name)
         organism, plain_name, sgml = synonym_name_details(self.session, self.process_data[symbol_key]['data'][FIELD_VALUE])
-        self.feature, is_new = get_or_create(self.session, Feature, name=plain_name,
-                                             type_id=cvterm.cvterm_id,
-                                             uniquename='FB{}:temp_0'.format(unique_bit),
-                                             organism_id=organism.organism_id)
+        self.feature, self.is_new = get_or_create(self.session, Feature, name=plain_name,
+                                                  type_id=cvterm.cvterm_id,
+                                                  uniquename='FB{}:temp_0'.format(unique_bit),
+                                                  organism_id=organism.organism_id)
 
     def _get_feature(self, cvterm_name: str, symbol_key: str, current_key: str, merge_key: str, unique_bit: str, cv_name: str = 'SO'):
         """Get the feature.
