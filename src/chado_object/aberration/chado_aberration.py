@@ -286,9 +286,11 @@ class ChadoAberration(ChadoFeatureObject):
         if not self.feature:  # problem getting aberration, lets finish
             return None
         self.extra_checks()
+    
         # feature pub if not dissociate from pub
         if not self.has_data('A27b'):
             get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id, pub_id=self.pub.pub_id)
+
         # bang c first as this supersedes all things
         if self.bang_c:
             self.bang_c_it()
