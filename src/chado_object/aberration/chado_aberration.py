@@ -60,6 +60,7 @@ class ChadoAberration(ChadoFeatureObject):
                             'libraryfeatureprop': self.delete_lfp,  # need to write
                             'cvtermprop': self.delete_feature_cvtermprop,
                             'phen_desc': self.del_phen_desc,
+                            'ignore': self.ignore_bang,
                             'cvterm': self.delete_feature_cvtermprop}
         self.proforma_start_line_number = params.get('proforma_start_line_number')
 
@@ -249,6 +250,22 @@ class ChadoAberration(ChadoFeatureObject):
                     okay = False
         return okay
 
+    def bang_a90x(self):
+        for key in self.bang_c:
+            if key[:3] == 'A90':
+                prop_cv_id = self.cvterm_query(self.process_data[key]['prop_cv'],
+                                               self.process_data[key]['prop_cvterm'])
+                break_feature = self.get_breakpoint('A90a', new_allowed=False)
+                if break_feature:
+                    bfp, is_new = get_or_create(self.session, Featureprop,
+                                                feature_id=break_feature.feature_id,
+                                                type_id=prop_cv_id)
+                    if is_new:
+                        self.critical_error(self.process_data[key]['data'],
+                                            f"Bang operation '{key}' failed!! As NO feature prop with cvterm '{self.process_data[key]['prop_cvterm']}' found.")
+                    else:
+                        self.session.delete(bfp)
+
     def load_content(self, references: dict):
         """Process the data.
 
@@ -277,6 +294,11 @@ class ChadoAberration(ChadoFeatureObject):
             self.bang_c_it()
         if self.bang_d:
             self.bang_d_it()
+
+        # special cases of A90[b,j,h] being bang c'd
+        # Note as njh are set to ignore in the yaml the the above
+        # bang_c_it will have done nothing.
+        self.bang_a90x()
 
         for key in self.process_data:
             log.debug("Processing {}".format(self.process_data[key]['data']))

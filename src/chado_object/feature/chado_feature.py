@@ -169,7 +169,15 @@ class ChadoFeatureObject(ChadoObject):
             self.unattrib_pub, _ = get_or_create(self.session, Pub, uniquename='unattributed')
         return self.unattrib_pub
 
-    def _get_feature(self, cvterm_name: str, symbol_key: str, unique_bit: str, cv_name: str = 'SO'):
+    def create_new(self, cvterm_name, symbol_key, unique_bit):
+        cvterm = get_cvterm(self.session, 'SO', cvterm_name)
+        organism, plain_name, sgml = synonym_name_details(self.session, self.process_data[symbol_key]['data'][FIELD_VALUE])
+        self.feature, is_new = get_or_create(self.session, Feature, name=plain_name,
+                                             type_id=cvterm.cvterm_id,
+                                             uniquename='FB{}:temp_0'.format(unique_bit),
+                                             organism_id=organism.organism_id)
+
+    def _get_feature(self, cvterm_name: str, symbol_key: str, current_key: str, merge_key: str, unique_bit: str, cv_name: str = 'SO'):
         """Get the feature.
 
         Assigns this to self.feature.
@@ -189,9 +197,17 @@ class ChadoFeatureObject(ChadoObject):
             self.critical_error(self.process_data[symbol_key]['data'], message)
             return None
         organism, plain_name, sgml = synonym_name_details(self.session, self.process_data[symbol_key]['data'][FIELD_VALUE])
-        self.feature, is_new = get_or_create(self.session, Feature, name=plain_name,
-                                             type_id=cvterm.cvterm_id, uniquename='FB{}:temp_0'.format(unique_bit),
-                                             organism_id=organism.organism_id)
+        if self.process_data[current_key]['data'][FIELD_VALUE] == 'y':
+            self.feature, is_new = get_or_create(self.session, Feature, name=plain_name,
+                                                 type_id=cvterm.cvterm_id,
+                                                 organism_id=organism.organism_id)
+            if is_new:
+                message = f'{symbol_key} NOT found BUT is current {current_key} is set to y'
+                self.critical_error(self.process_data[current_key]['data'], message)
+        else:
+            self.feature, is_new = get_or_create(self.session, Feature, name=plain_name,
+                                                 type_id=cvterm.cvterm_id, uniquename='FB{}:temp_0'.format(unique_bit),
+                                                 organism_id=organism.organism_id)
         if is_new:
             self.is_new = True
         else:
@@ -240,11 +256,12 @@ class ChadoFeatureObject(ChadoObject):
             self.load_synonym(symbol_key, cvterm_name='fullname', overrule_removeold=True)
             self.load_synonym(symbol_key, unattrib=True)
             return
+
         if self.has_data(merge_key):  # if feature merge we want to create a new feature even if one exist already
-            self._get_feature(supported_features[feature_type][SO], symbol_key, supported_features[feature_type][UNIQUE])
+            # self._get_feature(supported_features[feature_type][SO], symbol_key, current_key, supported_features[feature_type][UNIQUE])
+            self.create_new(supported_features[feature_type][SO], symbol_key, supported_features[feature_type][UNIQUE])
             self.load_synonym(symbol_key, cvterm_name='fullname')
             self.load_synonym(symbol_key)
-            # self.load_synonym(merge_key)
             return
 
         if self.has_data(id_key):
@@ -260,24 +277,27 @@ class ChadoFeatureObject(ChadoObject):
 
             return
 
-        if self.process_data[current_key]['data'][FIELD_VALUE] == 'y':  # Should exist already
-            #  organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['G1a']['data'][FIELD_VALUE])
-            try:
-                self.feature = feature_symbol_lookup(self.session, supported_features[feature_type][SO], self.process_data[symbol_key]['data'][FIELD_VALUE])
-                self.is_new = False
-            except MultipleResultsFound:
-                message = "Multiple {}'s with symbol {}.".format(feature_type, self.process_data[symbol_key]['data'][FIELD_VALUE])
-                log.info(message)
-                self.critical_error(self.process_data[symbol_key]['data'], message)
-                return
-            except NoResultFound:
+        try:
+            self.feature = feature_symbol_lookup(self.session, supported_features[feature_type][SO], self.process_data[symbol_key]['data'][FIELD_VALUE])
+            self.is_new = False
+        except MultipleResultsFound:
+            message = "Multiple {}'s with symbol {}.".format(feature_type, self.process_data[symbol_key]['data'][FIELD_VALUE])
+            log.info(message)
+            self.critical_error(self.process_data[symbol_key]['data'], message)
+            return
+        except NoResultFound:
+            if self.process_data[current_key]['data'][FIELD_VALUE] == 'y':
                 message = "Unable to find {} with symbol {}.".format(feature_type, self.process_data[symbol_key]['data'][FIELD_VALUE])
                 self.critical_error(self.process_data[symbol_key]['data'], message)
                 return
-        else:
-            self._get_feature(supported_features[feature_type][SO], symbol_key, supported_features[feature_type][UNIQUE])
+            self._get_feature(supported_features[feature_type][SO], symbol_key, current_key, supported_features[feature_type][UNIQUE])
             # add default symbol
             self.load_synonym(symbol_key)
+
+        if not self.is_new and self.process_data[current_key]['data'][FIELD_VALUE] == 'n':
+            message = f"Symbol {self.process_data[symbol_key]['data'][FIELD_VALUE]} Found but {current_key} set to 'n'"
+            self.critical_error(self.process_data[symbol_key]['data'], message)
+            return
 
     def get_pub_id_for_synonym(self, key: str):
         """Get pub_id for a synonym.
