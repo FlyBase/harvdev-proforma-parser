@@ -6,15 +6,20 @@ from harvdev_utils.production import (Feature, Featureprop, FeaturepropPub, Feat
 log = logging.getLogger(__name__)
 
 
-def get_breakpoint(self, key):
+def get_breakpoint(self, key, new_allowed=True):
     break_name = "{}:bk{}".format(self.feature.name, self.process_data[key]['data'][FIELD_VALUE])
     cvterm_id = self.cvterm_query(self.process_data[key]['feat_cv'],
                                   self.process_data[key]['feat_cvterm'])
-    feature, _ = get_or_create(self.session, Feature,
-                               type_id=cvterm_id,
-                               uniquename=break_name,
-                               organism_id=self.feature.organism.organism_id,
-                               name=break_name)
+    feature, is_new = get_or_create(self.session, Feature,
+                                    type_id=cvterm_id,
+                                    uniquename=break_name,
+                                    organism_id=self.feature.organism.organism_id,
+                                    name=break_name)
+    if not new_allowed and is_new:
+        self.critical_error(self.process_data[key]['data'],
+                            f"Bang operation failed!! As NO feature '{break_name}' found.")
+        return None
+
     # add feature pub
     get_or_create(self.session, FeaturePub, feature_id=feature.feature_id, pub_id=self.pub.pub_id)
     return feature
