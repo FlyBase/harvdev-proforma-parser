@@ -41,6 +41,7 @@ CH3c: # Processed by CH3b if new
   type: value
 CH3d: # main chebi ref. Done on creation.
   type: ignore
+  subscript: False
 CH3f:
   type: featureprop
   cv: property type
