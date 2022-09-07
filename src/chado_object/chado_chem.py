@@ -522,7 +522,7 @@ class ChadoChem(ChadoFeatureObject):
             name = chemical['name'][:255]  # removes .lower()
             sgml = sgml_to_unicode(name)
             name = sgml
- 
+
         new_synonym, _ = get_or_create(self.session, Synonym, type_id=symbol_cv_id,
                                        synonym_sgml=sgml,
                                        name=name)
