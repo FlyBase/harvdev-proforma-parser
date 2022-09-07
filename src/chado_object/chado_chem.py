@@ -516,10 +516,12 @@ class ChadoChem(ChadoFeatureObject):
             return
         if self.has_data('CH1a'):
             name = sgml_to_plain_text(self.process_data['CH1a']['data'][FIELD_VALUE])
-            sgml = sgml_to_unicode(sub_sup_to_sgml(self.process_data['CH1a']['data'][FIELD_VALUE]))
+            sgml = sgml_to_unicode(self.process_data['CH1a']['data'][FIELD_VALUE])
+            name = sgml
         else:
             name = chemical['name'][:255]  # removes .lower()
-            sgml = sgml_to_unicode(sub_sup_to_sgml(name))
+            sgml = sgml_to_unicode(name)
+            name = sgml
 
         new_synonym, _ = get_or_create(self.session, Synonym, type_id=symbol_cv_id,
                                        synonym_sgml=sgml,

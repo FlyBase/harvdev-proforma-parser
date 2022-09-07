@@ -82,6 +82,7 @@ def get_feature(self, key, item, cvterms):
                  'insertion_site': 'ti',
                  'engineered_region': 'tp'
                  }
+
     is_new_feature = False
     name = item[FIELD_VALUE]
     fields = re.search(r"NEW:(\S+)", name)
@@ -91,7 +92,12 @@ def get_feature(self, key, item, cvterms):
             is_new_feature = True
 
     fb_type_name = self.process_data[key]['feat_type']
-    organism, _, _ = synonym_name_details(self.session, name)
+
+    if fb_type_name == 'transgenic_transposable_element':
+        organism = get_organism(self.session, genus='synthetic', species='construct')
+    else:
+        organism, _, _ = synonym_name_details(self.session, name)
+
     if name.startswith('TI'):
         fb_type_name = self.process_data[key]['TI_feat_type']
         if key == 'GA10a':
@@ -108,6 +114,8 @@ def get_feature(self, key, item, cvterms):
             message = "Feature has NEW: but is not"
             self.critical_error(item, message)
             return
+        # add FeaturePub
+        get_or_create(self.session, FeaturePub, feature_id=feature.feature_id, pub_id=self.pub.pub_id)
     else:
         try:
             feature = feature_symbol_lookup(self.session, self.process_data[key]['feat_type'], name)
