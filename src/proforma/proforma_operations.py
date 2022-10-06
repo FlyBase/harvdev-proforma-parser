@@ -346,7 +346,16 @@ class ProformaFile(object):
             elif re.match(r'^! C[0-9]', current_line):  # curator line
                 field = self.process_line(field, line_number, current_line, individual_proforma, file_metadata)
             else:
-                log.debug("Ignoring {}".format(current_line))
+                # log.debug("Ignoring {}".format(current_line))
+                error_message = "NO Proforma title line."
+                ErrorTracking(
+                    file_metadata['filename'],
+                    "Proforma entry starting on line: {}".format(line_number),
+                    "Proforma error around line: {}".format(line_number),
+                    error_message,
+                    "{}: {}".format(current_line, error_message),
+                    "",
+                    CRITICAL_ERROR)
         return list_of_proforma_objects
 
 
