@@ -15,7 +15,7 @@ CH1f:
   no_bangc: True
 CH3a:
   type: string
-  required: True
+  if_new_required: CH1f
   no_bangc: True
 CH3b:
   nullable: True
