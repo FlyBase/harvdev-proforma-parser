@@ -346,7 +346,7 @@ class ProformaFile(object):
             elif re.match(r'^! C[0-9]', current_line):  # curator line
                 field = self.process_line(field, line_number, current_line, individual_proforma, file_metadata)
             else:
-                field = self.process_line(field, line_number, current_line, individual_proforma, file_metadata)
+                field, value, type_of_bang = self.get_proforma_field_and_content(current_line)
                 if not field:
                     log.debug("Ignoring {}".format(current_line))
                     continue
