@@ -16,13 +16,15 @@ from chado_object.feature.chado_feature import ChadoFeatureObject, FIELD_VALUE
 from harvdev_utils.chado_functions import (
     get_or_create, DataError, ExternalLookup,
     feature_synonym_lookup, feature_name_lookup,
-    get_default_organism_id
+    get_default_organism_id, get_cvterm, synonym_name_details
 )
+
 from harvdev_utils.char_conversions import (
     sub_sup_to_sgml, sgml_to_unicode, sgml_to_plain_text
 )
+# from .chado_base import FIELD_VALUE
 
-from datetime import datetime
+# from datetime import datetime
 import os
 import logging
 
@@ -31,9 +33,13 @@ log = logging.getLogger(__name__)
 
 class ChadoChem(ChadoFeatureObject):
     """Process the Chemical Proforma."""
+    from chado_object.chemical.chemical_merge import (
+        merge
+    )
 
     def __init__(self, params):
         """Initialise the chado object."""
+
         # Initiate the parent.
         super(ChadoChem, self).__init__(params)
         log.debug('Initializing ChadoChem object.')
@@ -54,6 +60,7 @@ class ChadoChem(ChadoFeatureObject):
                           'synonym': self.load_synonym_chem,
                           'ignore': self.ignore,
                           'value': self.ignore,
+                          'rename': self.rename,
                           'disspub': self.dissociate_from_pub}
 
         self.delete_dict = {'ignore': self.ignore_delete,
@@ -94,7 +101,7 @@ class ChadoChem(ChadoFeatureObject):
         # Get processing info and data to be processed.
         # Please see the yml/chemical.yml file for more details
         ############################################################
-        yml_file = os.path.join(os.path.dirname(__file__), 'yml/chemical.yml')
+        yml_file = os.path.join(os.path.dirname(__file__), '../yml/chemical.yml')
         # Populated self.process_data with all possible keys.
         self.process_data = self.load_reference_yaml(yml_file, params)
 
@@ -105,6 +112,7 @@ class ChadoChem(ChadoFeatureObject):
             self.new_chemical_entry = True
         else:
             self.new_chemical_entry = False
+        self.log = log
 
     def ignore(self: ChadoFeatureObject, key: str):
         """Ignore."""
@@ -123,6 +131,12 @@ class ChadoChem(ChadoFeatureObject):
             self.critical_error(self.process_data['CH1a']['data'], message)
             return None
 
+        # merging is a whole differnt thing so lets do that seperately.
+        # and then exit.
+        if self.has_data('CH1g'):
+            self.merge()
+            return
+
         self.get_or_create_chemical()
         if not self.feature:
             log.info("CHEM/FEAT NO FEATURE???")
@@ -130,11 +144,7 @@ class ChadoChem(ChadoFeatureObject):
 
         # Dissociate pub ONLY
         if self.has_data('CH3g'):
-            if self.has_data('CH1f') and self.process_data['CH1f']['data'][FIELD_VALUE] == 'new':
-                message = "Cannot dissociate pub with CH1f as 'new'."
-                self.critical_error(self.process_data['CH1f']['data'], message)
-                return None
-            self.dissociate_from_pub('CH3g')
+            self.dissociate_pub()
             return
 
         # bang c first as this supersedes all things
@@ -148,12 +158,19 @@ class ChadoChem(ChadoFeatureObject):
                 log.debug("Processing {}".format(self.process_data[key]['data']))
                 self.type_dict[self.process_data[key]['type']](key)
 
-        timestamp = datetime.now().strftime('%c')
-        curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (
-            self.curator_fullname, self.filename_short, timestamp)
-        log.debug('Curator string assembled as:')
-        log.debug('%s' % curated_by_string)
+        # timestamp = datetime.now().strftime('%c')
+        # curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (
+        #    self.curator_fullname, self.filename_short, timestamp)
+        # log.debug('Curator string assembled as:')
+        # log.debug('%s' % curated_by_string)
         return self.feature
+
+    def dissociate_pub(self):
+        if self.has_data('CH1f') and self.process_data['CH1f']['data'][FIELD_VALUE] == 'new':
+            message = "Cannot dissociate pub with CH1f as 'new'."
+            self.critical_error(self.process_data['CH1f']['data'], message)
+            return None
+        self.dissociate_from_pub('CH3g')
 
     def fetch_by_FBch_and_check(self: ChadoFeatureObject, chemical_cvterm_id: int) -> None:
         """Fetch by the FBch (CH1f) and check the name is the same if it is given (CH1a).
@@ -287,7 +304,10 @@ class ChadoChem(ChadoFeatureObject):
                                                feature_id=self.feature.feature_id,
                                                pub_id=self.pub.pub_id)
             return
-
+        else:  # new check it does NOT exist
+            exists = self.check_existing_already()
+            if exists:
+                return
         # So we have a new chemical, lets get the data for this.
         try:
             identifier_found = self.validate_fetch_identifier_at_external_db('CH3a', self.chemical_information)
@@ -352,18 +372,20 @@ class ChadoChem(ChadoFeatureObject):
         # Add the inchikey as a featureprop.
         self.add_inchikey_to_featureprop()
 
+    def check_for_dbxref(self, key):
+        if self.has_data(key):
+            identifier, name = self.split_identifier_and_name(self.process_data[key]['data'][FIELD_VALUE], key)
+            feat = self.session.query(Feature).\
+                join(Dbxref).\
+                join(Db).filter(Db.name == identifier,
+                                Dbxref.accession == name).one_or_none()
+            if feat:
+                self.critical_error(self.process_data[key]['data'], f"Feature {feat.uniquename} Already has {identifier}:{name}")
+                return True
+
     def check_existing_already(self):
         """Check if we already have an existing entry.
-
-        This needs a little explaining.
-        We check the name and all the synonyms.
-        This is becouse ChEBI and PubChem could be the same and we do not want
-        duplicate entries. Does not matter if it is stored via ChEBI or PubChem
-        but we only really want a chemical in the database once.
-
-        This also sets self.new_chemical_entry to Flase if found even if the curator
-        has set it to new in the proforma, Curators requested no consequences of loading
-        a chemical more than once, apart from it not being duplicated again.
+        Check via name, and also the CH3a (CHEBI, PUBCHEM entry)
         """
         #
         # Look up organism id.
@@ -374,54 +396,47 @@ class ChadoChem(ChadoFeatureObject):
         # check name from lookup
         #
         entry_already_exists = None
-        entry_already_exists = self.chemical_feature_lookup(organism_id, 'CH3a', self.chemical_information['name'], current=True)
-        if entry_already_exists:
-            self.new_chemical_entry = False
-            log.debug('An entry already exists in the database with this name: {}'.format(entry_already_exists.name))
-            return entry_already_exists
 
         #
         # check Flybase name if given
         #
         if self.has_data('CH1a'):
             entry_already_exists = self.chemical_feature_lookup(organism_id, 'CH1a', self.process_data['CH1a']['data'][FIELD_VALUE], current=True)
-
-        # If we already have an entry and we already know it is new then we have a problem.
-        if entry_already_exists:
-            self.new_chemical_entry = False
-            log.debug('An entry already exists in the database with this name: {}'.format(entry_already_exists.name))
-            return entry_already_exists
-
-        #
-        # Check for any symbol synonym can be not current and if found Just give a warning
-        #
-        entry_already_exists = self.chemical_feature_lookup(organism_id, 'CH3a', self.chemical_information['name'], current=False)
-        if entry_already_exists:
-            self.new_chemical_entry = False
-            return entry_already_exists
-
-        if self.has_data('CH1a') and not entry_already_exists:
-            entry_already_exists = self.chemical_feature_lookup(organism_id, 'CH1a', self.process_data['CH1a']['data'][FIELD_VALUE], current=False)
+            if entry_already_exists and self.new_chemical_entry:
+                self.critical_error(self.process_data['CH1a']['data'], "Already exists but specified as new.")
+                return True
             if entry_already_exists:
-                self.new_chemical_entry = False
-                return entry_already_exists
-        return entry_already_exists
+                return True
+
+        # Check for chebi/pubchem entry already in db. If set.
+        if self.has_data('CH3a'):
+            entry_already_exists = self.check_for_dbxref('CH3a')
+            if entry_already_exists and self.new_chemical_entry:
+                self.critical_error(self.process_data['CH3a']['data'], "Already exists (via CH3a lookup but specified as new.")
+                return True
+            if entry_already_exists:
+                return True
+
+        return False
 
     def delete_featureprop(self, key, bangc=True):
         """Delete the featureprop."""
         prop_cv_id = self.cvterm_query(self.process_data[key]['cv'], self.process_data[key]['cvterm'])
 
-        fp, is_new = get_or_create(self.session, Featureprop, feature_id=self.feature.feature_id,
-                                   type_id=prop_cv_id)
-        if is_new:
+        fps = self.session.query(Featureprop).join(Feature).\
+            filter(Feature.feature_id == self.feature.feature_id,
+                   Featureprop.type_id == prop_cv_id).all()
+        count = 0
+        for fp in fps:
+            count += 1
+            log.debug(f"Deleting {fp}.")
+            self.session.delete(fp)
+        if not count:
             message = "No current {} field specified in chado so cannot bangc it".format(key)
             self.critical_error(self.process_data[key]['data'], message)
-        else:
-            self.session.delete(fp)
-        self.process_data[key]['data'] = None
 
     def change_featurepropvalue(self, key, bangc=True):
-        """Change the featureporp value."""
+        """Change the featureprop value."""
         prop_cv_id = self.cvterm_query(self.process_data['CH3b']['cv'], self.process_data['CH3b']['cvterm'])
 
         fp, is_new = get_or_create(self.session, Featureprop, feature_id=self.feature.feature_id,
@@ -744,6 +759,7 @@ class ChadoChem(ChadoFeatureObject):
         """Strip away the name if one is supplied with the identifier."""
         identifier = None
         identifier_name = None
+        identifier_unprocessed = sgml_to_unicode(sub_sup_to_sgml(identifier_unprocessed))
         if ';' in identifier_unprocessed:
             log.debug('Semicolon found, splitting identifier: {}'.format(identifier_unprocessed))
             identifier_split_list = identifier_unprocessed.split(';')
@@ -762,3 +778,20 @@ class ChadoChem(ChadoFeatureObject):
             identifier = identifier_unprocessed.strip()
 
         return identifier, identifier_name
+
+    def rename(self, key):
+        name = sgml_to_plain_text(self.process_data[key]['data'][FIELD_VALUE])
+        self.feature.name = name
+        cvterm = get_cvterm(self.session, 'synonym type', 'fullname')
+        fss = self.session.query(FeatureSynonym).\
+            join(Synonym).\
+            filter(FeatureSynonym.feature_id == self.feature.feature_id,
+                   FeatureSynonym.is_current.is_(True),
+                   Synonym.type_id == cvterm.cvterm_id)
+        for fs in fss:
+            fs.is_current = False
+        _, plain_name, sgml = synonym_name_details(self.session, name)
+        synonym, _ = get_or_create(self.session, Synonym, type_id=cvterm.cvterm_id, name=plain_name, synonym_sgml=sgml)
+
+        fs, _ = get_or_create(self.session, FeatureSynonym, feature_id=self.feature.feature_id, synonym_id=synonym.synonym_id,
+                              pub_id=self.pub.pub_id)

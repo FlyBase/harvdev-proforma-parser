@@ -9,7 +9,7 @@ Multiple ChadoObjects can be created from single Proforma (or other) objects.
 from chado_object.gene.chado_gene import ChadoGene
 from chado_object.allele.chado_allele import ChadoAllele
 from chado_object.chado_pub import ChadoPub
-from chado_object.chado_chem import ChadoChem
+from chado_object.chemical.chado_chem import ChadoChem
 from chado_object.chado_div import ChadoDiv
 from chado_object.aberration.chado_aberration import ChadoAberration
 from chado_object.chado_multipub import ChadoMultipub

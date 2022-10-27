@@ -29,6 +29,14 @@ CH1b:
   is_current: False
   pub: current
   subscript: False
+CH1e:
+  type: rename
+  cv: synonym type
+  cvterm: fullname
+  is_current: True
+  remove_old: True
+CH1g:
+  type: merge
 CH3a: # main chebi ref. Done on creation.
   type: ignore
 CH3b:

@@ -317,7 +317,8 @@ class ChadoFeatureObject(ChadoObject):
             else:
                 # is this chebi or pubchem
                 pub_id = self.get_external_chemical_pub_id()
-            return pub_id
+            if pub_id:
+                return pub_id
         return self.pub.pub_id
 
     def load_synonym(self, key: str, unattrib: bool = True, cvterm_name: str = None, overrule_removeold: bool = False) -> None:  # noqa
