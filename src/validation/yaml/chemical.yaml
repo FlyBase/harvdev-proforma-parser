@@ -1,6 +1,6 @@
 CH1a:
   type: string
-  required: False
+  required: True
   nullable: True
   no_bangc: True
 CH1b:

@@ -37,8 +37,8 @@ CH1e:
   remove_old: True
 CH1g:
   type: merge
-CH3a: # main chebi ref. Done on creation.
-  type: ignore
+CH3a: # main chebi/pubchem lookup and add
+  type: chemical_lookup
 CH3b:
   type: featureprop
   cv: property type
@@ -47,9 +47,9 @@ CH3b:
   value_nullable: True
 CH3c: # Processed by CH3b if new
   type: value
-CH3d: # main chebi ref. Done on creation.
+CH3d: # alternative chebi/pubchem lookup and add
+      # Done in chemical_lookup previously.
   type: ignore
-  subscript: False
 CH3f:
   type: featureprop
   cv: property type
