@@ -19,7 +19,7 @@ from harvdev_utils.chado_functions import (
 )
 
 from harvdev_utils.char_conversions import (
-    sgml_to_unicode, sgml_to_plain_text
+    sgml_to_unicode
 )
 # from .chado_base import FIELD_VALUE
 
@@ -264,8 +264,6 @@ class ChadoChem(ChadoFeatureObject):
         identifier_name = None
         identifier_unprocessed = sgml_to_unicode(identifier_unprocessed)
         if ';' in identifier_unprocessed:
-
-
             self.log.debug('Semicolon found, splitting identifier: {}'.format(identifier_unprocessed))
             identifier_split_list = identifier_unprocessed.split(';')
             try:
