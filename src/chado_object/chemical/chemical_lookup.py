@@ -14,7 +14,7 @@ from harvdev_utils.chado_functions import (
     synonym_name_details
 )
 from harvdev_utils.char_conversions import (
-    sub_sup_to_sgml, sgml_to_unicode, sgml_to_plain_text
+    sgml_to_unicode, sgml_to_plain_text
 )
 from chado_object.feature.chado_feature import FIELD_VALUE
 
@@ -167,7 +167,7 @@ def validate_fetch_identifier_at_external_db(self, process_key, chemical):
     ChEBI does not provide this service.
     """
     identifier_unprocessed = self.process_data[process_key]['data'][FIELD_VALUE]
-    identifier_unprocessed = sgml_to_unicode(sub_sup_to_sgml(identifier_unprocessed))
+    identifier_unprocessed = sgml_to_unicode(identifier_unprocessed)
     chemical['identifier'], chemical['name'] = self.split_identifier_and_name(identifier_unprocessed, process_key)
     if not chemical['name'] or not chemical['name'].strip():
         message = "Wrong format should be 'DBNAME:number ; text'"
@@ -232,6 +232,7 @@ def check_chebi_for_identifier(self, chemical, process_key):
     # the name returned from the database.
     if chemical['name']:
         plain_text = sgml_to_plain_text(chemical['name'])
+        self.log.error(f"BEFORE {chemical['name']} AFTER {plain_text}")
         if chebi.name.lower() != plain_text.lower():
             message = 'ChEBI name does not match name specified in identifier field: {} -> {}'.\
                 format(chebi.name, chemical['name'])

@@ -19,7 +19,7 @@ from harvdev_utils.chado_functions import (
 )
 
 from harvdev_utils.char_conversions import (
-    sub_sup_to_sgml, sgml_to_unicode, sgml_to_plain_text
+    sgml_to_unicode, sgml_to_plain_text
 )
 # from .chado_base import FIELD_VALUE
 
@@ -262,9 +262,11 @@ class ChadoChem(ChadoFeatureObject):
         """Strip away the name if one is supplied with the identifier."""
         identifier = None
         identifier_name = None
-        identifier_unprocessed = sgml_to_unicode(sub_sup_to_sgml(identifier_unprocessed))
+        identifier_unprocessed = sgml_to_unicode(identifier_unprocessed)
         if ';' in identifier_unprocessed:
-            log.debug('Semicolon found, splitting identifier: {}'.format(identifier_unprocessed))
+
+
+            self.log.debug('Semicolon found, splitting identifier: {}'.format(identifier_unprocessed))
             identifier_split_list = identifier_unprocessed.split(';')
             try:
                 identifier = identifier_split_list.pop(0).strip()
@@ -283,7 +285,7 @@ class ChadoChem(ChadoFeatureObject):
         return identifier, identifier_name
 
     def rename(self, key):
-        name = sgml_to_plain_text(self.process_data[key]['data'][FIELD_VALUE])
+        name = sgml_to_unicode(self.process_data[key]['data'][FIELD_VALUE])
         self.feature.name = name
         cvterm = get_cvterm(self.session, 'synonym type', 'fullname')
         fss = self.session.query(FeatureSynonym).\
