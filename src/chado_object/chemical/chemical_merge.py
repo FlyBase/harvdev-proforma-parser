@@ -30,3 +30,5 @@ def merge(self):
         self.transfer_cvterms(feature)
         # Transfer dbxrefs
         self.transfer_dbxrefs(feature)
+        # transfer papers
+        self.transfer_papers(feature)

@@ -6,7 +6,7 @@
                Ian Longden <ianlongden@morgan.harvard.edu>
 
 """
-
+from typing import Union
 from harvdev_utils.production import (
     Feature, Featureprop,
     FeatureSynonym, Synonym
@@ -73,7 +73,7 @@ class ChadoChem(ChadoFeatureObject):
         # Values queried later, placed here for reference purposes.
         ############################################################
         self.pub = None             # All other proforma need a reference to a pub
-        self.feature = None        # The chemical object, to get feature_id use self.chemical.feature_id.
+        self.feature: Union[Feature, None] = None        # The chemical object, to get feature_id use self.chemical.feature_id.
         self.chebi_pub_id = None    # Used for attributing chemical curation.
         self.pubchem_pub_id = None  # Used for attributing chemical curation.
 
@@ -117,7 +117,6 @@ class ChadoChem(ChadoFeatureObject):
             'DBObject': None,
             'PubID': None
         }
-        self.feature = None
         self.type_name = 'chemical entity'
 
         ############################################################

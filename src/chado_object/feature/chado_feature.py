@@ -22,7 +22,7 @@ from harvdev_utils.chado_functions import (
 
 from datetime import datetime
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
-from typing import List
+from typing import List, Union
 import logging
 import re
 
@@ -38,7 +38,7 @@ class ChadoFeatureObject(ChadoObject):
     )
     from chado_object.feature.feature_merge import (
         get_merge_features, multiple_check, transfer_cvterms, transfer_dbxrefs, transfer_synonyms,
-        transfer_feature_relationships, process_feat_relation_dependents
+        transfer_feature_relationships, process_feat_relation_dependents, transfer_papers
     )
 
     def __init__(self, params):
@@ -47,7 +47,7 @@ class ChadoFeatureObject(ChadoObject):
 
         # Initiate the parent.
         super(ChadoFeatureObject, self).__init__(params)
-        self.feature: Feature = None
+        self.feature: Union[Feature, None] = None
         self.unattrib_pub = None
         self.new = None
         self.current_release = '6'
