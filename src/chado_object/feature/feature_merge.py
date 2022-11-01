@@ -18,6 +18,7 @@ from harvdev_utils.chado_functions import (
 from harvdev_utils.production import (
     FeatureDbxref, Featureloc, FeatureSynonym, FeatureCvterm, FeatureCvtermprop,
     FeatureRelationship, FeatureRelationshipPub, Feature, FeaturePub, FeaturePubprop,
+    Featureprop, FeaturepropPub,
     FeatureRelationshipprop, FeatureRelationshippropPub
 )
 from typing import List, Tuple
@@ -100,8 +101,29 @@ def transfer_feature_relationships(self, feat: Feature) -> None:
             self.process_feat_relation_dependents(old_feat_rela, new_feat_rela)
 
 
+def transfer_props(self, feat: Feature):
+    """ Transfer feature props and pubprops.
+    Args:
+        feat: <Feature> old feature to copy from
+    Copied to self.feature (the new feature)
+    """
+    for feat_prop in self.session.query(Featureprop).filter(Featureprop.feature_id == feat.feature_id):
+        newfp, _ = get_or_create(
+            self.session,
+            Featureprop,
+            feature_id=self.feature.feature_id,
+            type_id=feat_prop.type_id,
+            value=feat_prop.value)
+        for fpp in self.session.query(FeaturepropPub).filter(FeaturepropPub.featureprop_id == feat_prop.featureprop_id):
+            get_or_create(
+                self.session,
+                FeaturepropPub,
+                featureprop_id=newfp.featureprop_id,
+                pub_id=fpp.pub_id)
+
+
 def transfer_papers(self, feat: Feature) -> None:
-    """ Transfer feature papersand props.
+    """ Transfer feature pubs and pub props.
     Args:
         feat: <Feature> old feature to copy from
     Copied to self.feature (the new feature)

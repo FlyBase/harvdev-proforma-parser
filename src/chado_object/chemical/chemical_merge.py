@@ -1,6 +1,6 @@
 from sqlalchemy.orm.exc import NoResultFound
 from chado_object.feature.chado_feature import FIELD_VALUE
-from harvdev_utils.production import Feature
+from harvdev_utils.production import Feature, FeaturePub
 from harvdev_utils.chado_functions import get_or_create, get_default_organism_id
 
 
@@ -13,6 +13,10 @@ def merge(self):
                                         type_id=chemical_cvterm_id,
                                         name=self.process_data['CH1a']['data'][FIELD_VALUE],
                                         uniquename='FBch:temp_0')
+        get_or_create(
+            self.session, FeaturePub,
+            feature_id=self.feature.feature_id,
+            pub_id=self.pub.pub_id)
     else:
         self.feature = self.session.query(Feature).filter(Feature.uniquename == self.process_data['CH1f']['data'][FIELD_VALUE]).one()
 
@@ -32,3 +36,5 @@ def merge(self):
         self.transfer_dbxrefs(feature)
         # transfer papers
         self.transfer_papers(feature)
+        # transfer featureprop and featureproppubs
+        self.transfer_props(feature)

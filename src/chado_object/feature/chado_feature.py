@@ -38,7 +38,7 @@ class ChadoFeatureObject(ChadoObject):
     )
     from chado_object.feature.feature_merge import (
         get_merge_features, multiple_check, transfer_cvterms, transfer_dbxrefs, transfer_synonyms,
-        transfer_feature_relationships, process_feat_relation_dependents, transfer_papers
+        transfer_feature_relationships, process_feat_relation_dependents, transfer_papers, transfer_props
     )
 
     def __init__(self, params):

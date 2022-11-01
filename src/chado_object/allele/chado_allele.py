@@ -199,6 +199,8 @@ class ChadoAllele(ChadoFeatureObject):
             self.transfer_feature_relationships(allele)
             # transfer papers
             self.transfer_papers(allele)
+            # transfer featureprop and featureproppubs
+            self.transfer_props(allele)
 
     def get_allele(self):
         """Get initial allele and check."""
