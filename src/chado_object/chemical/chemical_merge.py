@@ -26,7 +26,7 @@ def merge(self):
             feature = self.session.query(Feature).filter(Feature.uniquename == feature_uniquename[FIELD_VALUE]).one()
         except NoResultFound:
             self.critical_error(feature_uniquename[FIELD_VALUE], "Could not find '{}' in uniquename lookup.".format(feature_uniquename[FIELD_VALUE]))
-        # log.debug("Chemical to be merged is {}".format(feature))
+        log.debug("Chemical to be merged is {}".format(feature))
         feature.is_obsolete = True
         # Transfer synonyms
         self.transfer_synonyms(feature)
