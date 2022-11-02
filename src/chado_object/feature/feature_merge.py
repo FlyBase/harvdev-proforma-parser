@@ -7,21 +7,32 @@
 NOTE: transfer methods do not transfer but merely copy to the new feature.
       Old features are made obsolete that is all.
 """
-from harvdev_utils.production.production import Organism
-from chado_object.chado_base import FIELD_VALUE
-from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
-from harvdev_utils.chado_functions import (
-    get_or_create,
-    feature_symbol_lookup,
-    synonym_name_details
-)
-from harvdev_utils.production import (
-    FeatureDbxref, Featureloc, FeatureSynonym, FeatureCvterm, FeatureCvtermprop,
-    FeatureRelationship, FeatureRelationshipPub, Feature,
-    FeatureRelationshipprop, FeatureRelationshippropPub
-)
-from typing import List, Tuple
 import logging
+from typing import List, Tuple
+
+from chado_object.chado_base import FIELD_VALUE
+from harvdev_utils.chado_functions import (
+    feature_symbol_lookup,
+    get_or_create,
+    synonym_name_details)
+from harvdev_utils.production import (
+    Feature,
+    FeatureCvterm,
+    FeatureCvtermprop,
+    FeatureDbxref,
+    Featureloc,
+    Featureprop,
+    FeaturepropPub,
+    FeaturePub,
+    FeaturePubprop,
+    FeatureRelationship,
+    FeatureRelationshipprop,
+    FeatureRelationshippropPub,
+    FeatureRelationshipPub,
+    FeatureSynonym)
+from harvdev_utils.production.production import Organism
+from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
+
 log = logging.getLogger(__name__)
 
 
@@ -63,7 +74,7 @@ def process_feat_relation_dependents(self, old_feat_rela: FeatureRelationship, n
             get_or_create(
                 self.session, FeatureRelationshippropPub,
                 feature_relationshipprop_id=new_frprop.feature_relationshipprop_id,
-                pub_id=new_frprop.pub_id)
+                pub_id=old_frp_pub.pub_id)
 
 
 def transfer_feature_relationships(self, feat: Feature) -> None:
@@ -98,6 +109,40 @@ def transfer_feature_relationships(self, feat: Feature) -> None:
                 subject_id=subject_id, object_id=object_id,
                 value=old_feat_rela.value, type_id=old_feat_rela.type_id)
             self.process_feat_relation_dependents(old_feat_rela, new_feat_rela)
+
+
+def transfer_props(self, feat: Feature):
+    """ Transfer feature props and pubprops.
+    Args:
+        feat: <Feature> old feature to copy from
+    Copied to self.feature (the new feature)
+    """
+    for feat_prop in self.session.query(Featureprop).filter(Featureprop.feature_id == feat.feature_id):
+        newfp, _ = get_or_create(
+            self.session,
+            Featureprop,
+            feature_id=self.feature.feature_id,
+            type_id=feat_prop.type_id,
+            value=feat_prop.value)
+        for fpp in self.session.query(FeaturepropPub).filter(FeaturepropPub.featureprop_id == feat_prop.featureprop_id):
+            get_or_create(
+                self.session,
+                FeaturepropPub,
+                featureprop_id=newfp.featureprop_id,
+                pub_id=fpp.pub_id)
+
+
+def transfer_papers(self, feat: Feature) -> None:
+    """ Transfer feature pubs and pub props.
+    Args:
+        feat: <Feature> old feature to copy from
+    Copied to self.feature (the new feature)
+    """
+    for feat_pub in self.session.query(FeaturePub).filter(FeaturePub.feature_id == feat.feature_id):
+        newfp, _ = get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id, pub_id=feat_pub.pub_id)
+        for fpprop in self.session.query(FeaturePubprop).filter(FeaturePubprop.feature_pub_id == feat_pub.feature_pub_id):
+            get_or_create(self.session, FeaturePubprop, feature_pub_id=newfp.feature_pub_id,
+                          type_id=fpprop.type_id, value=fpprop.value)
 
 
 def transfer_cvterms(self, feat: Feature) -> None:
@@ -167,6 +212,7 @@ def multiple_check(self, feats: List[Feature], feat_type: str, merge_feat_symbol
     features = feature_symbol_lookup(self.session, feat_type, merge_feat_symbol,
                                      organism_id=organism.organism_id, check_unique=False)
     count = -1
+    feat = None
     for feature in features:
         # For merging we have new temp gene/allele and the original with possibly the same synonym
         if 'temp' not in feature.uniquename:

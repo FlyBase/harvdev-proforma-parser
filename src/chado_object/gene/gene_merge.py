@@ -47,3 +47,7 @@ def merge(self, key):
         self.transfer_grpmembers(gene)
         # humanhealth_dbxrefs
         self.transfer_hh_dbxrefs(gene)
+        # transfer papers
+        self.transfer_papers(gene)
+        # transfer featureprop and featureproppubs
+        self.transfer_props(gene)
