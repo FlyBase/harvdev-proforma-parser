@@ -7,22 +7,32 @@
 NOTE: transfer methods do not transfer but merely copy to the new feature.
       Old features are made obsolete that is all.
 """
-from harvdev_utils.production.production import Organism
-from chado_object.chado_base import FIELD_VALUE
-from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
-from harvdev_utils.chado_functions import (
-    get_or_create,
-    feature_symbol_lookup,
-    synonym_name_details
-)
-from harvdev_utils.production import (
-    FeatureDbxref, Featureloc, FeatureSynonym, FeatureCvterm, FeatureCvtermprop,
-    FeatureRelationship, FeatureRelationshipPub, Feature, FeaturePub, FeaturePubprop,
-    Featureprop, FeaturepropPub,
-    FeatureRelationshipprop, FeatureRelationshippropPub
-)
-from typing import List, Tuple
 import logging
+from typing import List, Tuple
+
+from chado_object.chado_base import FIELD_VALUE
+from harvdev_utils.chado_functions import (
+    feature_symbol_lookup,
+    get_or_create,
+    synonym_name_details)
+from harvdev_utils.production import (
+    Feature,
+    FeatureCvterm,
+    FeatureCvtermprop,
+    FeatureDbxref,
+    Featureloc,
+    Featureprop,
+    FeaturepropPub,
+    FeaturePub,
+    FeaturePubprop,
+    FeatureRelationship,
+    FeatureRelationshipprop,
+    FeatureRelationshippropPub,
+    FeatureRelationshipPub,
+    FeatureSynonym)
+from harvdev_utils.production.production import Organism
+from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
+
 log = logging.getLogger(__name__)
 
 

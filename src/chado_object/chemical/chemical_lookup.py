@@ -1,3 +1,10 @@
+"""
+
+:synopsis:  lookup chemical in pubchem or chebi.
+
+:moduleauthor: Ian Longden <ilongden@morgan.harvard.edu>,
+
+"""
 from harvdev_utils.production import (
     FeatureDbxref,
     FeaturePub,
@@ -39,7 +46,6 @@ def process_chemical(self, key):
     feature_pub, _ = get_or_create(self.session, FeaturePub,
                                    feature_id=self.feature.feature_id,
                                    pub_id=self.chemical_information['PubID'])
-    self.log.debug("Created new feature_pub: {}".format(feature_pub.feature_pub_id))
     feature_pub, _ = get_or_create(self.session, FeaturePub,
                                    feature_id=self.feature.feature_id,
                                    pub_id=self.pub.pub_id)
@@ -111,7 +117,6 @@ def add_alternative_info(self):
         self.session, FeaturePub,
         feature_id=self.feature.feature_id,
         pub_id=self.alt_chemical_information['PubID'])
-    self.log.debug("Created new feature_pub for alt chem db: {}".format(feature_pub.feature_pub_id))
 
     self.add_dbxref(self.alt_chemical_information)
 
@@ -177,7 +182,6 @@ def validate_fetch_identifier_at_external_db(self, process_key, chemical):
 
     chemical['source'], chemical['accession'] = chemical['identifier'].split(':')
 
-    self.log.debug("DB is '{}'".format(chemical['source']))
     database_dispatch_dictionary = {
         'CHEBI': self.check_chebi_for_identifier,
         'PubChem': self.check_pubchem_for_identifier,
@@ -331,8 +335,6 @@ def add_inchikey_to_featureprop(self):
     if not self.chemical_information['inchikey']:
         return
 
-    self.log.debug('Adding PubChem description to featureprop.')
-
     description_cvterm_id = self.cvterm_query('property type', 'inchikey')
 
     get_or_create(self.session, Featureprop, feature_id=self.feature.feature_id,
@@ -351,7 +353,6 @@ def process_synonyms_from_external_db(self, chemical, alt=False):
 
     seen_it = set()
     if chemical['synonyms']:
-        self.log.debug("Adding non current synonyms {}".format(chemical['synonyms']))
         for item in chemical['synonyms']:
             for lowercase in [True, False]:
                 name = item[:255]  # Max 255 chars
@@ -359,7 +360,6 @@ def process_synonyms_from_external_db(self, chemical, alt=False):
                     name = name.lower()
                 sgml = sgml_to_unicode(name)[:255]  # MAx 255 chars
                 if name in seen_it:
-                    self.log.debug("Ignoring {} as already seen".format(name))
                     continue
                 self.log.debug("Adding synonym {}".format(name))
 

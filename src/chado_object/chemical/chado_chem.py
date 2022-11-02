@@ -6,58 +6,48 @@
                Ian Longden <ianlongden@morgan.harvard.edu>
 
 """
-from typing import Union
-from harvdev_utils.production import (
-    Feature, Featureprop,
-    FeatureSynonym, Synonym
-)
-from chado_object.feature.chado_feature import ChadoFeatureObject, FIELD_VALUE
-from harvdev_utils.chado_functions import (
-    get_or_create,
-    get_cvterm,
-    synonym_name_details
-)
-
-from harvdev_utils.char_conversions import (
-    sgml_to_unicode
-)
-# from .chado_base import FIELD_VALUE
-
-# from datetime import datetime
-import os
 import logging
+import os
+from typing import Union
+
+from chado_object.feature.chado_feature import FIELD_VALUE, ChadoFeatureObject
+from harvdev_utils.chado_functions import (
+    get_cvterm,
+    get_or_create,
+    synonym_name_details)
+from harvdev_utils.char_conversions import sgml_to_unicode
+from harvdev_utils.production import (
+    Feature,
+    Featureprop,
+    FeatureSynonym,
+    Pub,
+    Synonym)
 
 log = logging.getLogger(__name__)
 
 
 class ChadoChem(ChadoFeatureObject):
     """Process the Chemical Proforma."""
-    from chado_object.chemical.chemical_merge import (
-        merge
-    )
-
     from chado_object.chemical.chado_get_create import (
-        get_or_create_chemical,
-        check_for_dbxref,
         check_existing_already,
+        check_for_dbxref,
+        chemical_feature_lookup,
         fetch_by_FBch_and_check,
-        chemical_feature_lookup
-    )
-
+        get_or_create_chemical)
     from chado_object.chemical.chemical_lookup import (
         add_alt_synonym,
-        process_chemical,
-        alt_comparison,
         add_alternative_info,
         add_dbxref,
+        add_description_from_pubchem,
         add_inchikey_to_featureprop,
-        look_up_static_references,
-        validate_fetch_identifier_at_external_db,
+        alt_comparison,
         check_chebi_for_identifier,
         check_pubchem_for_identifier,
-        add_description_from_pubchem,
-        process_synonyms_from_external_db
-    )
+        look_up_static_references,
+        process_chemical,
+        process_synonyms_from_external_db,
+        validate_fetch_identifier_at_external_db)
+    from chado_object.chemical.chemical_merge import merge
 
     def __init__(self, params):
         """Initialise the chado object."""
@@ -72,10 +62,10 @@ class ChadoChem(ChadoFeatureObject):
         ###########################################################
         # Values queried later, placed here for reference purposes.
         ############################################################
-        self.pub = None             # All other proforma need a reference to a pub
-        self.feature: Union[Feature, None] = None        # The chemical object, to get feature_id use self.chemical.feature_id.
-        self.chebi_pub_id = None    # Used for attributing chemical curation.
-        self.pubchem_pub_id = None  # Used for attributing chemical curation.
+        self.pub: Union[Pub, None] = None             # All other proforma need a reference to a pub
+        self.feature: Union[Feature, None] = None     # The chemical object, to get feature_id use self.chemical.feature_id.
+        self.chebi_pub_id: int = 0                    # Used for attributing chemical curation.
+        self.pubchem_pub_id: int = 0                  # Used for attributing chemical curation.
 
         # yaml file defines what to do with each field. Follow the light
         self.type_dict = {'featureprop': self.load_featureprop,
@@ -153,7 +143,7 @@ class ChadoChem(ChadoFeatureObject):
             self.critical_error(self.process_data['CH1a']['data'], message)
             return None
 
-        # merging is a whole differnt thing so lets do that seperately.
+        # merging is a whole different thing so lets do that seperately.
         # and then exit.
         if self.has_data('CH1g'):
             self.merge()
@@ -180,11 +170,6 @@ class ChadoChem(ChadoFeatureObject):
                 log.debug("Processing {}".format(self.process_data[key]['data']))
                 self.type_dict[self.process_data[key]['type']](key)
 
-        # timestamp = datetime.now().strftime('%c')
-        # curated_by_string = 'Curator: %s;Proforma: %s;timelastmodified: %s' % (
-        #    self.curator_fullname, self.filename_short, timestamp)
-        # log.debug('Curator string assembled as:')
-        # log.debug('%s' % curated_by_string)
         return self.feature
 
     def dissociate_pub(self):
@@ -263,7 +248,6 @@ class ChadoChem(ChadoFeatureObject):
         identifier_name = None
         identifier_unprocessed = sgml_to_unicode(identifier_unprocessed)
         if ';' in identifier_unprocessed:
-            self.log.debug('Semicolon found, splitting identifier: {}'.format(identifier_unprocessed))
             identifier_split_list = identifier_unprocessed.split(';')
             try:
                 identifier = identifier_split_list.pop(0).strip()

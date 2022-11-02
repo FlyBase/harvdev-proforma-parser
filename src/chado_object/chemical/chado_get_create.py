@@ -1,20 +1,16 @@
-from harvdev_utils.production import (
-    Feature,
-    FeaturePub,
-    Dbxref,
-    Db
-)
+from chado_object.feature.chado_feature import FIELD_VALUE, ChadoFeatureObject
 from harvdev_utils.chado_functions import (
-    get_or_create,
-    get_default_organism_id,
-    feature_synonym_lookup,
+    DataError,
     feature_name_lookup,
-    DataError
-)
-from chado_object.feature.chado_feature import ChadoFeatureObject, FIELD_VALUE
-from harvdev_utils.char_conversions import (
-    sgml_to_plain_text
-)
+    feature_synonym_lookup,
+    get_default_organism_id,
+    get_or_create)
+from harvdev_utils.char_conversions import sgml_to_plain_text
+from harvdev_utils.production import (
+    Db,
+    Dbxref,
+    Feature,
+    FeaturePub)
 
 
 def get_or_create_chemical(self):
@@ -61,23 +57,6 @@ def get_or_create_chemical(self):
                                     uniquename='FBch:temp_0')
 
     self.log.debug("New chemical entry created: {}".format(self.feature.name))
-
-
-# def check_existing_dbxref(self, chemical):
-#     """Check for existing dbxref."""
-#     self.log.debug('Querying for existing accession ({}) via feature -> dbx -> db.'.format(chemical['accession']))
-
-#     feature_dbxref_chemical_chebi_result = self.session.query(Feature, Dbxref).\
-#         join(Feature, (Feature.dbxref_id == Dbxref.dbxref_id)).\
-#         filter(Dbxref.accession == chemical['accession'],
-#                Dbxref.db_id == chemical['DBObject'].db_id,
-#                Feature.is_obsolete == 'f').one_or_none()
-
-#     # feature_dbxref_chemical_chebi_result[0] accesses the 'Feature' object from the result.
-#     if feature_dbxref_chemical_chebi_result:
-#         self.critical_error(self.process_data['CH3a']['data'],
-#                             'A feature -> {} association already exists for this ID. Check: {}'
-#                             .format(chemical['source'], feature_dbxref_chemical_chebi_result[0].uniquename))
 
 
 def check_for_dbxref(self, key):
@@ -158,7 +137,6 @@ def fetch_by_FBch_and_check(self: ChadoFeatureObject, chemical_cvterm_id: int) -
 
 def chemical_feature_lookup(self, organism_id, key_name, name, current=True):
     """Lookup the chemical feature."""
-    self.log.debug("chemical feature lookup for {} and current = {}".format(name, current))
     entry = None
     name = sgml_to_plain_text(name)
     if current:
@@ -172,7 +150,6 @@ def chemical_feature_lookup(self, organism_id, key_name, name, current=True):
         except DataError:
             return entry
         if features:
-            self.log.debug("features = {}".format(features))
             message = "Synonym found for this already: Therefore not reloading Chemical Entity but using existing one {}.".format(features[0].name)
             self.log.debug(message)
             return features[0]

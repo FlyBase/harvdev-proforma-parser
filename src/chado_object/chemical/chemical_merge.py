@@ -1,3 +1,10 @@
+"""
+
+:synopsis: Merge 2 or more chemicals. Normally a pubchem and chebi.
+
+:moduleauthor: Ian Longden <ilongden@morgan.harvard.edu>,
+
+"""
 from sqlalchemy.orm.exc import NoResultFound
 from chado_object.feature.chado_feature import FIELD_VALUE
 from harvdev_utils.production import Feature, FeaturePub
@@ -5,6 +12,7 @@ from harvdev_utils.chado_functions import get_or_create, get_default_organism_id
 
 
 def merge(self):
+    """ Merge Chemicals given by CH1g. """
     organism_id = get_default_organism_id(self.session)
     chemical_cvterm_id = self.cvterm_query(self.process_data['CH1f']['cv'], self.process_data['CH1f']['cvterm'])
     if self.process_data['CH1f']['data'][FIELD_VALUE] == "new":
@@ -21,7 +29,6 @@ def merge(self):
         self.feature = self.session.query(Feature).filter(Feature.uniquename == self.process_data['CH1f']['data'][FIELD_VALUE]).one()
 
     for feature_uniquename in self.process_data['CH1g']['data']:
-        self.log.debug(f"Processing {feature_uniquename[FIELD_VALUE]}")
         try:
             feature = self.session.query(Feature).filter(Feature.uniquename == feature_uniquename[FIELD_VALUE]).one()
         except NoResultFound:
