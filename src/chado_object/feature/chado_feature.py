@@ -366,12 +366,9 @@ class ChadoFeatureObject(ChadoObject):
 
         for item in items:
             synonym_sgml = None
-            log.debug(f"###### {key}: {item}")
             if 'subscript' in self.process_data[key] and not self.process_data[key]['subscript']:
                 synonym_sgml = sgml_to_unicode(item[FIELD_VALUE])
-            log.debug(f"###### {key}: {synonym_sgml}")
             for pub_id in pubs:
-                log.debug(f"###### {key}: {synonym_sgml} {pub_id}")
                 fs = fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
                                                      item[FIELD_VALUE], cv_name, cvterm_name, pub_id,
                                                      synonym_sgml=synonym_sgml, is_current=is_current, is_internal=False)

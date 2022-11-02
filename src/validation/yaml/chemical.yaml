@@ -1,7 +1,7 @@
 CH1a:
   type: string
   required: True
-  nullable: True
+  nullable: False
   no_bangc: True
 CH1b:
   # bang_c/d permitted.
