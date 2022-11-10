@@ -1,0 +1,335 @@
+# ! SF1f. Database ID for feature :
+SF1f:
+  type: string
+  regex: ^(FBsf\d{7}|new)$
+  dependencies: [SF1a]
+  no_bangc: True
+  required: True
+  nullable: False
+# ! SF1a. Feature symbol to use in database :
+SF1a:
+  type: string
+  dependencies: [SF1f]
+  no_bangc: True
+  required: True
+  nullable: False
+# ! SF1b. Symbol used in paper/source :
+SF1b:
+  type: [string]
+  if_new_required: SF1f # if new required or new pub
+  nullable: True
+# ! SF2a. Feature macromolecular category [CV] :
+SF2a:
+  type: string
+  nullable: True
+  allowed: ['DNA', 'RNA', 'polypeptide']
+  if_new_required: SF1f
+# ! SF2b. Feature description [CV] :
+SF2b:
+  type: string
+  if_new_required: SF1f
+  nullable: True
+  allowed: ['enhancer', 'exon_junction', 'experimental_result_region',
+            'insulator', 'modified_RNA_base_feature', 'origin_of_replication',
+            'polyA_site', 'polypeptide_region', 'protein_binding_site',
+            'region', 'regulatory_region', 'repeat_region', 'RNAi_reagent',
+            'satellite_DNA', 'sgRNA', 'silencer', 'TF_binding_site', 'TSS']
+# ! SF1c. Action - rename this feature :
+SF1c:
+  type: string
+  required: False
+  nullable: True
+# ! SF1g. Action - merge these features :
+SF1g:
+  type: [string]
+  required: False
+  nullable: True
+# ! SF1h. Action - delete feature record (“y”/blank) :
+SF1g:
+  type: string
+  required: False
+  nullable: True
+  allowed: ['y']
+# ! SF1i. Action - dissociate SF1f from FBrf (“y”/blank):
+SF1g:
+  type: string
+  required: False
+  nullable: True
+  allowed: ['y']
+# ! SF3a. From dataset/collection (symbol) :
+SF3a:
+  type: string
+  required: False
+  nullable: True
+  dependencies: ['SF3c'] 
+# ! SF3b. Species of derivation :
+SF3b:
+  type: string
+  required: False
+  nullable: True
+# ! SF3c. Type of relationship to dataset/collection [member_of_reagent_collection/experimental_result] :
+SF3c:
+  type: string
+  nullable: True
+  required: False
+  allowed: ['member_of_reagent_collection', 'experimental_result']
+  dependencies: ['SF3a']
+# ! SF4a. Genomic location of feature (dupl for multiple) :
+SF4a:
+    type: string
+    required: False
+    nullable: True
+    no_bangc: True
+    genomic_location_format: True
+    set: SF4
+    dependencies: ['SF4b']
+# ! SF4b. Genome release number for entry in SF4a :
+SF4b:
+    type: string
+    required: False
+    nullable: True
+    no_bangc: True
+    set: SF4
+    dependencies: ['SF4a']
+# ! SF4h. Orientation of feature in SF4a relative to the chromosome (“+”/“-”) :
+SF4h:
+    type: string
+    required: False
+    nullable: True
+    no_bangc: True
+    allowed: ['-', '+']
+    set: SF4
+# ! SF4d. Sequence accession (AC no. | gi no. | date)[dupl for multiple):
+SF4d:
+    type: [string]
+    required: False
+    nullable: True
+    dependencies: ['SF4e', 'SF4f']
+    set: SF4
+# ! SF4e. Location of start in accession entry :
+SF4e:
+    type: integer
+    required: False
+    nullable: True
+    no_bangc: True
+    dependencies: ['SF4d', 'SF4f']
+    set: SF4
+# ! SF4f. Location of finish in accession entry :
+SF4f:
+    type: integer
+    required: False
+    nullable: True
+    no_bangc: True
+    dependencies: ['SF4d', 'SF4e']
+    set: SF4
+# ! SF4g. Sequence of feature (nt or aa) :
+SF4g:
+  type: string
+  required: False
+  nullable: True
+# ! SF4c. Comments concerning sequence or sequence location:
+SF4c:
+  type: [string]
+  required: False
+  nullable: True
+# ! SF5a. Associated gene(s) (dupl for multiple) :
+SF5a:
+  type: string
+  nullable: True
+  required: False
+  at_forbidden: True
+  set: SF5
+# ! SF5e. Confidence rating for gene call :
+SF5e:
+  type: string
+  nullable: True
+  required: False
+  at_forbidden: True
+  dependencies: ['SF5a']
+  set: SF5
+# ! SF5f. Comments concerning gene call :
+SF5f:
+  type: string
+  nullable: True
+  required: False
+  at_forbidden: True
+  dependencies: ['SF5a']
+  set: SF5
+# ! SF5b. Associated allele :
+SF5b:
+  type: [string]
+  nullable: True
+  required: False
+# ! SF5g. Associated transcript :
+SF5g:
+  type: [string]
+  nullable: True
+  required: False
+# ! SF5c. Associated FBtp transgenic_transposable_element (symbol) :
+SF5c:
+  type: [string]
+  nullable: True
+  required: False
+# ! SF5h. Associated FBmc engineered_plasmid (symbol) :
+SF5h:
+  type: [string]
+  nullable: True
+  required: False
+# ! SF5d. Corresponding segment :
+SF5d:
+  type: [string]
+  nullable: True
+  required: False
+# ! SF10a. Evidence/assay [CV]:
+SF10a:
+  type: [string]
+  nullable: True
+  required: False
+  allowed: ['DNaseI protection assay', 'mobility shift assay',
+            'coimmunoprecipitation',
+            'coimmunoprecipitation with mutational analysis']
+# ! SF11a. Bound moiety (FB symbol) :
+SF11a:
+  type: string
+  nullable: True
+  required: False
+# ! SF11b. Bound moiety (no FB symbol):
+SF11b:
+  type: string
+  nullable: True
+  required: False
+# ! SF11c. Comment concerning bound moiety:
+SF11c:
+  type: [string]
+  nullable: True
+  required: False
+# ! SF12. Linked to restriction fragment:
+SF12:
+  type: string
+  nullable: True
+  required: False
+# ! SF20a. PCR template [CV] :
+SF20a:
+  type: string
+  nullable: True
+  required: False
+  allowed: ['genomic DNA', 'cDNA']
+# ! SF20b. Primer 1 sequence :
+SF20b:
+  type: string
+  nullable: True
+  required: False
+  no_bangc: True
+# ! SF20c. Primer 2 sequence :
+SF20c:
+  type: string
+  nullable: True
+  required: False
+  no_bangc: True
+# ! SF20d. Additional information, primers:
+SF20d:
+  type: [string]
+  nullable: True
+  required: False 
+# ! SF21a. Genotypic components (whole animal)(dupl for multiple):
+SF21a:
+  type: string
+  nullable: True
+  required: False
+  set: SF21
+# ! SF21b. (GA56) Phenotype class [CV] :
+SF21b:
+  type: string
+  nullable: True
+  required: False
+  set: SF21
+# ! SF21c. (GA17) Phenotype [CV]\(body part(s) where manifest) :
+SF21c:
+  type: string
+  nullable: True
+  required: False
+  set: SF21
+# ! SF21d. (GA7a) Phenotype [free text] :
+SF21d:
+  type: string
+  nullable: True
+  required: False
+  set: SF21
+# ! SF21e. Validation code:
+SF21e:
+  type: [string]
+  nullable: True
+  required: False
+# ! SF22a. Cell culture line or primary culture cell type (dupl for multiple):
+SF22a:
+  type: string
+  nullable: True
+  required: False
+  set: SF22
+# ! SF22b. Genotypic components (cell culture):
+SF22b:
+  type: string
+  nullable: True
+  required: False
+  set: SF22
+# ! SF22c. Phenotype in cell culture, general [CV] :
+SF22c:
+  type: string
+  nullable: True
+  required: False
+  set: SF22
+  allowed: ['cell viability reduced', 'cell shape atypical',
+            'cell size atypical', 'cell density decreased']
+# ! SF22e. Phenotype; subcellular structure affected (GO):
+SF22e:
+  type: string
+  nullable: True
+  required: False
+# ! SF22f. Phenotype; cellular process affected (GO):
+SF22:
+  type: [string]
+  nullable: True
+  required: False
+# ! SF22d. Phenotype in cell culture [free text]:
+SF22d:
+  type: string
+  nullable: True
+  required: False
+  set: SF22
+# ! SF22g. Validation code:
+# Validation codes
+#
+# For dsRNA expts, in vitro (SF21e, SF22g):
+# MRI = multiple RNAi targeted to this gene give same/similar result
+# MRP = multiple replicates give same/similar result
+# EXP = independent experimental data for same/similar process
+# ORT = independent experimental data for orthologous gene
+#
+# Parenthetical
+# “cite” = another ref cited
+# “demo” = demonstrated in this ref
+
+# Examples
+#
+# MRI (demo)
+#  ORT (cite)
+#To be developed?  Protein-protein interaction validation code as part of SF11?
+SF22g:
+  type: [string]
+  nullable: True
+  required: False
+# ! SF6. Comments [free text] :
+SF6:
+  type: [string]
+  nullable: True
+  required: False
+# ! SF7. Information on availability :
+SF7:
+  type: [string]
+  nullable: True
+  required: False
+# ! SF8. Internal notes 
+SF8:
+  type: [string]
+  nullable: True
+  required: False

@@ -1,0 +1,100 @@
+# ! SF1f. Database ID for feature :
+SF1f:
+  type: ignore
+# ! SF1a. Feature symbol to use in database :
+SF1a:
+  type: ignore
+  cv: synonym type
+  cvterm: symbol
+  is_current: True
+  add_unattributed_paper: True
+  remove_old: True
+  feat_cv: SO
+  feat_cvterm: DNA
+# ! SF1b. Symbol used in paper/source :
+SF1b:
+  type: synonym
+  cv: synonym type
+  cvterm: symbol
+  is_current: False
+# ! SF2a. Feature macromolecular category [CV] :
+SF2a:
+  type: ignore
+SF2b:
+  type: ignore
+SF3b:
+  type: ignore
+SF4:
+  type: data_set
+  sub_type: featureprop
+  arm_cvterm: golden_path
+  arm_cv: SO
+  cv: GenBank feature qualifier
+  cvterm: reported_genomic_loc
+SF4a:
+  type: ignore
+SF4b:
+  type: ignore
+
+# Set comprised of a, e, f ONLY
+SF5:
+  type: data_set
+  sub_type: gene_relationship
+  cv: relationship type
+  cvterm: associated_with
+  conf_cv: feature_relationshipprop type
+  conf_cvterm: score
+  comment_cv: feature_relationshipprop type
+  comment_cvterm: comment
+SF5a:
+  type: ignore
+  allowed_types: ['gene']
+SF5e:
+  type: ignore
+SF5f:
+  type: ignore
+
+SF5b:
+  type: featurerelationship
+  cv: relationship type
+  cvterm: associated_with
+  allowed_types: ['allele']
+SF5c:
+  type: featurerelationship
+  cv: relationship type
+  cvterm: associated_with
+  allowed_types: ['transgenic_transposon']
+SF5h:
+  type: featurerelationship
+  cv: relationship type
+  cvterm: associated_with
+  allowed_types: ['engineered_plasmid']
+SF5g:
+  type: featurerelationship
+  cv: relationship type
+  cvterm: associated_with
+  allowed_types: ['transcript']
+SF8:
+  type: featureprop
+  cv: 'property type'
+  cvterm: 'internalnotes'
+  value: SF8 
+SF20a:
+  type: featureprop
+  cv: 'property type'
+  cvterm: 'PCR_template'
+  value: SF20a
+SF20b:
+  type: addprimer
+  cv: relationship type
+  cvterm: primer_progenitor_of
+  new_cv: SO
+  new_cvterm: oligo
+  rank: 1 
+SF20c:
+  type: addprimer
+  cv: relationship type
+  cvterm: primer_progenitor_of
+  new_cv: SO
+  new_cvterm: oligo
+  rank: 2
