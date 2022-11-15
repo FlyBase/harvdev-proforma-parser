@@ -32,7 +32,8 @@ class ChadoSeqFeat(ChadoFeatureObject):
 
     from.seqfeat_process_sets import (
         process_sets,
-        process_sf4,
+        process_sf4_1,
+        process_sf4_2,
         process_sf5
     )
 

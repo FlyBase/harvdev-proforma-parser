@@ -24,7 +24,7 @@ SF2b:
   type: ignore
 SF3b:
   type: ignore
-SF4:
+SF4_1:
   type: data_set
   sub_type: featureprop
   arm_cvterm: golden_path
@@ -35,7 +35,10 @@ SF4a:
   type: ignore
 SF4b:
   type: ignore
-
+SF4_2:
+  type: data_set
+  sub_type: genbank
+  
 # Set comprised of a, e, f ONLY
 SF5:
   type: data_set

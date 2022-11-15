@@ -38,8 +38,10 @@ def process_sets(self):
     """
     for key in self.set_values.keys():
         self.log.debug("SV: {}: {}".format(key, self.set_values[key]))
-        if key == 'SF4':
-            self.process_sf4(self.set_values[key])
+        if key == 'SF4_1':
+            self.process_sf4_1(self.set_values[key])
+        elif key == 'SF4_2':
+            self.process_sf4_2(self.set_values[key])
         elif key == 'SF5':
             self.log.debug("process SF5")
             self.process_sf5(self.set_values[key])
@@ -48,7 +50,7 @@ def process_sets(self):
             return
 
 
-def process_sf4(self, sets: List[Dict]):
+def process_sf4_1(self, sets: List[Dict]):
     self.log.debug(f"{sets}")
     prop_cv_id = self.cvterm_query(self.process_data['SF4']['cv'],
                                    self.process_data['SF4']['cvterm'])
@@ -82,7 +84,7 @@ def process_sf4(self, sets: List[Dict]):
         get_or_create(self.session, FeaturepropPub, featureprop_id=fp.featureprop_id, pub_id=self.pub.pub_id)
 
         # Now create the featureloc
-        key = 'SF4'
+        key = 'SF4_1'
         arm_type_id = self.cvterm_query(self.process_data[key]['arm_cv'], self.process_data[key]['arm_cvterm'])
         featuresrc, is_new = get_or_create(self.session, Feature, name=arm_name, type_id=arm_type_id)
         if is_new or not featuresrc:
@@ -96,6 +98,11 @@ def process_sf4(self, sets: List[Dict]):
                                    locgroup=0)
         fl.fmin = start - 1  # interbase in chado
         fl.fmax = end
+
+
+def process_sf4_2(self, sets: List[Dict]):
+    self.log.debug(f"{sets}")
+    pass
 
 
 def process_sf5(self, sets: Dict):
