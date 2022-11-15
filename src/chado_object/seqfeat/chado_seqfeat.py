@@ -115,7 +115,7 @@ class ChadoSeqFeat(ChadoFeatureObject):
         for key in self.process_data:
             if key not in self.set_values.keys():
                 log.debug(f"Process {key}")
-                log.debug("Processing {}".format(self.process_data[key]['data']))
+                # log.debug("Processing {}".format(self.process_data[key]['data']))
                 if 'type' not in self.process_data[key]:
                     self.critical_error(self.process_data[key]['data'],
                                         "No sub to deal type '{}' yet!! Report to HarvDev".format(key))

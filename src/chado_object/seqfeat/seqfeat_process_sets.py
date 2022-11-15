@@ -52,8 +52,8 @@ def process_sets(self):
 
 def process_sf4_1(self, sets: List[Dict]):
     self.log.debug(f"{sets}")
-    prop_cv_id = self.cvterm_query(self.process_data['SF4']['cv'],
-                                   self.process_data['SF4']['cvterm'])
+    prop_cv_id = self.cvterm_query(self.process_data['SF4_1']['cv'],
+                                   self.process_data['SF4_1']['cvterm'])
 
     for sf4_set in sets:
         release = sf4_set['SF4b'][FIELD_VALUE]

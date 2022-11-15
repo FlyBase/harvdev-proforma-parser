@@ -81,7 +81,7 @@ SF4a:
     nullable: True
     no_bangc: True
     genomic_location_format: True
-    set: SF4
+    set: SF4_1
     dependencies: ['SF4b']
 # ! SF4b. Genome release number for entry in SF4a :
 SF4b:
@@ -89,7 +89,7 @@ SF4b:
     required: False
     nullable: True
     no_bangc: True
-    set: SF4
+    set: SF4_1
     dependencies: ['SF4a']
 # ! SF4h. Orientation of feature in SF4a relative to the chromosome (“+”/“-”) :
 SF4h:
@@ -98,14 +98,14 @@ SF4h:
     nullable: True
     no_bangc: True
     allowed: ['-', '+']
-    set: SF4
+    set: SF4_1
 # ! SF4d. Sequence accession (AC no. | gi no. | date)[dupl for multiple):
 SF4d:
     type: [string]
     required: False
     nullable: True
     dependencies: ['SF4e', 'SF4f']
-    set: SF4
+    set: SF4_2
 # ! SF4e. Location of start in accession entry :
 SF4e:
     type: integer
@@ -113,7 +113,7 @@ SF4e:
     nullable: True
     no_bangc: True
     dependencies: ['SF4d', 'SF4f']
-    set: SF4
+    set: SF4_2
 # ! SF4f. Location of finish in accession entry :
 SF4f:
     type: integer
@@ -121,7 +121,7 @@ SF4f:
     nullable: True
     no_bangc: True
     dependencies: ['SF4d', 'SF4e']
-    set: SF4
+    set: SF4_2
 # ! SF4g. Sequence of feature (nt or aa) :
 SF4g:
   type: string

@@ -22,7 +22,11 @@ SF2a:
   type: ignore
 SF2b:
   type: ignore
+SF3a:
+  type: ignore
 SF3b:
+  type: ignore
+SF3c:
   type: ignore
 SF4_1:
   type: data_set
@@ -38,7 +42,8 @@ SF4b:
 SF4_2:
   type: data_set
   sub_type: genbank
-  
+SF4g:
+  type: ignore
 # Set comprised of a, e, f ONLY
 SF5:
   type: data_set
@@ -81,7 +86,17 @@ SF8:
   type: featureprop
   cv: 'property type'
   cvterm: 'internalnotes'
-  value: SF8 
+  value: SF8
+SF10a:
+  type: ignore
+SF11a:
+  type: ignore
+SF11b:
+  type: ignore
+SF11c:
+  type: ignore
+SF12:
+  type: ignore
 SF20a:
   type: featureprop
   cv: 'property type'
