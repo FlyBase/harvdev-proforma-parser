@@ -41,7 +41,7 @@ def process_sets(self):
         if key == 'SF4_1':
             self.process_sf4_1(self.set_values[key])
         elif key == 'SF4_2':
-            self.process_sf4_2(self.set_values[key])
+            self.log.critical("SF4[def] are not implemented. Please see HarvDev if you would like it.")
         elif key == 'SF5':
             self.log.debug("process SF5")
             self.process_sf5(self.set_values[key])
