@@ -21,7 +21,7 @@ def process_sets(self):
     """Process the set data.
 
     Sets have a specific key, normally the shortened version of the fields
-    that it uses. i.e. For SF4a, SF4bb etc this becomes SF4.
+    that it uses. i.e. For SF4a, SF4bb etc this becomes SF4_1.
     self.set_values is a dictionary of these and points to an list of the
     actual values the curators have added i.e. SF4a, SF4b
     This is an example of what the set_values will look like.
@@ -29,21 +29,19 @@ def process_sets(self):
     .. code-block:: JSON
 
         {
-          SF4: [{'SF4a': ('SF4a', '2L:123..345', 16),
-                 'SF4b': ('SF4b', '6', 17)}],
+          SF4_1: [{'SF4a': ('SF4a', '2L:123..345', 16),
+                   'SF4b': ('SF4b', '6', 17)}],
           SF5: [{'SF5a': ('SF5a', 'symbol-2', 22, None),
                  'SF5f': ('SF5f', "The 'associated gene' call is based solely on genomic location.", 23, None)},
                 {'SF5a': ('SF5a', 'symbol-3', 24, None)}]
         }
     """
     for key in self.set_values.keys():
-        self.log.debug("SV: {}: {}".format(key, self.set_values[key]))
         if key == 'SF4_1':
             self.process_sf4_1(self.set_values[key])
         elif key == 'SF4_2':
             self.log.critical("SF4[def] are not implemented. Please see HarvDev if you would like it.")
         elif key == 'SF5':
-            self.log.debug("process SF5")
             self.process_sf5(self.set_values[key])
         else:
             self.log.critical("Unknown set {}".format(key))
@@ -51,7 +49,6 @@ def process_sets(self):
 
 
 def process_sf4_1(self, sets: List[Dict]):
-    self.log.debug(f"{sets}")
     prop_cv_id = self.cvterm_query(self.process_data['SF4_1']['cv'],
                                    self.process_data['SF4_1']['cvterm'])
 
@@ -100,11 +97,6 @@ def process_sf4_1(self, sets: List[Dict]):
         fl.fmax = end
 
 
-def process_sf4_2(self, sets: List[Dict]):
-    self.log.debug(f"{sets}")
-    pass
-
-
 def process_sf5(self, sets: Dict):
     """
     sets comprise only of a ,e ,f
@@ -112,7 +104,6 @@ def process_sf5(self, sets: Dict):
     e is the confidence rating,
     f is the comment.
     """
-    self.log.debug(f"{sets}")
 
     symbol_key = 'SF5a'
     conf_key = 'SF5e'
@@ -121,7 +112,6 @@ def process_sf5(self, sets: Dict):
                                     self.process_data['SF5']['cvterm'])
 
     for sf5_set in sets:
-        self.log.debug(f"{sf5_set}")
         gene_symbol = sf5_set[symbol_key][FIELD_VALUE]
         try:
             feature = feature_symbol_lookup(self.session, 'gene', gene_symbol)

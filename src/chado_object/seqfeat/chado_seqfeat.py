@@ -33,7 +33,6 @@ class ChadoSeqFeat(ChadoFeatureObject):
     from.seqfeat_process_sets import (
         process_sets,
         process_sf4_1,
-        process_sf4_2,
         process_sf5
     )
 
@@ -96,7 +95,6 @@ class ChadoSeqFeat(ChadoFeatureObject):
             self.critical_error(self.process_data['SF1a']['data'], message)
             return None
 
-        # self.extra_checks()
         self.get_sf()
         if not self.feature:  # problem getting seqfeat, lets finish
             return None
@@ -109,13 +107,9 @@ class ChadoSeqFeat(ChadoFeatureObject):
 
         if self.set_values:
             self.process_sets()
-        else:
-            log.debug("No set values")
 
         for key in self.process_data:
             if key not in self.set_values.keys():
-                log.debug(f"Process {key}")
-                # log.debug("Processing {}".format(self.process_data[key]['data']))
                 if 'type' not in self.process_data[key]:
                     self.critical_error(self.process_data[key]['data'],
                                         "No sub to deal type '{}' yet!! Report to HarvDev".format(key))
