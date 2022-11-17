@@ -82,21 +82,47 @@ SF5g:
   cv: relationship type
   cvterm: associated_with
   allowed_types: ['transcript']
+SF6:
+  type: featureprop
+  cv: 'property type'
+  cvterm: 'comment'
+  value: SF6
+SF7:
+  type: featureprop
+  cv: 'property type'
+  cvterm: 'availability'
+  value: SF7
 SF8:
   type: featureprop
   cv: 'property type'
   cvterm: 'internalnotes'
   value: SF8
+
 SF10a:
-  type: ignore
+  type: featureprop
+  cv: 'property type'
+  cvterm: 'evidence'
+  value: SF10a
 SF11a:
-  type: ignore
+  type: featurerelationship
+  cv: relationship type
+  cvterm: bound_moiety
+  allowed_types: ['engineered_plasmid']
 SF11b:
-  type: ignore
+  type: featureprop
+  cv: 'GenBank feature qualifier'
+  cvterm: 'bound_moiety' 
+  value: SF11b
 SF11c:
-  type: ignore
+  type: featureprop
+  cv: 'property type'
+  cvterm: 'bound_moiety_comment'
+  value: SF11c
 SF12:
-  type: ignore
+  type: featureprop
+  cv: 'GenBank feature qualifier'
+  cvterm: 'linked_to'
+  value: SF12
 SF20a:
   type: featureprop
   cv: 'property type'
