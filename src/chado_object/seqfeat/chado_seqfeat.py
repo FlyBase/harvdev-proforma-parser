@@ -17,7 +17,7 @@ from harvdev_utils.char_conversions import sgml_to_plain_text
 from chado_object.utils.feature_synonym import fs_remove_current_symbol
 
 from harvdev_utils.chado_functions import (
-    get_feature_and_check_uname_symbol,
+    get_feature_and_check_uname_symbol, CodingError,
     DataError, feature_symbol_lookup, get_or_create)
 from harvdev_utils.production import (
     Feature,
@@ -173,7 +173,11 @@ class ChadoSeqFeat(ChadoFeatureObject):
                 message = "Unable to find {} with symbol {}.".format(feature_type, self.process_data[symbol_key]['data'][FIELD_VALUE])
                 self.critical_error(self.process_data[symbol_key]['data'], message)
                 return
-            self._get_feature(type_name, symbol_key, id_key, merge_key, 'sf')
+            try:
+                self._get_feature(type_name, symbol_key, id_key, merge_key, 'sf', organism_key='SF3b')
+            except CodingError as e:
+                self.critical_error(self.process_data['SF3b']['data'], f"{e}")
+                return
 
             # add default symbol
             self.load_synonym(symbol_key)

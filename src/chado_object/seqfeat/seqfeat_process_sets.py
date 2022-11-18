@@ -89,9 +89,16 @@ def process_sf4_1(self, sets: List[Dict]):
                 format(arm_name, self.process_data[key]['arm_cvterm'], self.process_data[key]['arm_cv'])
             self.critical_error(sf4_set['SF4a']['data'], message)
 
+        strand = None
+        if 'SF4h' in sf4_set:
+            if sf4_set['SF4h'][FIELD_VALUE] == '+':
+                strand = 1
+            elif sf4_set['SF4h'][FIELD_VALUE] == '-':
+                strand = -1
         fl, is_new = get_or_create(self.session, Featureloc,
                                    srcfeature_id=featuresrc.feature_id,
                                    feature_id=self.feature.feature_id,
+                                   strand=strand,
                                    locgroup=0)
         fl.fmin = start - 1  # interbase in chado
         fl.fmax = end

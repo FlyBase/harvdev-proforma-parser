@@ -1,7 +1,7 @@
 # ! SF1f. Database ID for feature :
 SF1f:
   type: string
-  regex: ^(FBsf\d{7}|new)$
+  regex: ^(FBsf\d{10}|new)$
   dependencies: [SF1a]
   no_bangc: True
   required: True
@@ -16,7 +16,7 @@ SF1a:
 # ! SF1b. Symbol used in paper/source :
 SF1b:
   type: [string]
-  if_new_required: SF1f # if new required or new pub
+  required: False
   nullable: True
 # ! SF2a. Feature macromolecular category [CV] :
 SF2a:
@@ -45,13 +45,13 @@ SF1g:
   required: False
   nullable: True
 # ! SF1h. Action - delete feature record (“y”/blank) :
-SF1g:
+SF1h:
   type: string
   required: False
   nullable: True
   allowed: ['y']
 # ! SF1i. Action - dissociate SF1f from FBrf (“y”/blank):
-SF1g:
+SF1i:
   type: string
   required: False
   nullable: True
@@ -65,8 +65,8 @@ SF3a:
 # ! SF3b. Species of derivation :
 SF3b:
   type: string
-  required: False
-  nullable: True
+  if_new_required: SF1f
+  nullable: False
 # ! SF3c. Type of relationship to dataset/collection [member_of_reagent_collection/experimental_result] :
 SF3c:
   type: string
@@ -132,6 +132,7 @@ SF4c:
   type: [string]
   required: False
   nullable: True
+
 # ! SF5a. Associated gene(s) (dupl for multiple) :
 SF5a:
   type: string
@@ -177,6 +178,22 @@ SF5h:
   required: False
 # ! SF5d. Corresponding segment :
 SF5d:
+  type: [string]
+  nullable: True
+  required: False
+
+# ! SF6. Comments [free text] :
+SF6:
+  type: [string]
+  nullable: True
+  required: False
+# ! SF7. Information on availability :
+SF7:
+  type: [string]
+  nullable: True
+  required: False
+# ! SF8. Internal notes 
+SF8:
   type: [string]
   nullable: True
   required: False
@@ -231,105 +248,3 @@ SF20d:
   type: [string]
   nullable: True
   required: False 
-# ! SF21a. Genotypic components (whole animal)(dupl for multiple):
-SF21a:
-  type: string
-  nullable: True
-  required: False
-  set: SF21
-# ! SF21b. (GA56) Phenotype class [CV] :
-SF21b:
-  type: string
-  nullable: True
-  required: False
-  set: SF21
-# ! SF21c. (GA17) Phenotype [CV]\(body part(s) where manifest) :
-SF21c:
-  type: string
-  nullable: True
-  required: False
-  set: SF21
-# ! SF21d. (GA7a) Phenotype [free text] :
-SF21d:
-  type: string
-  nullable: True
-  required: False
-  set: SF21
-# ! SF21e. Validation code:
-SF21e:
-  type: [string]
-  nullable: True
-  required: False
-# ! SF22a. Cell culture line or primary culture cell type (dupl for multiple):
-SF22a:
-  type: string
-  nullable: True
-  required: False
-  set: SF22
-# ! SF22b. Genotypic components (cell culture):
-SF22b:
-  type: string
-  nullable: True
-  required: False
-  set: SF22
-# ! SF22c. Phenotype in cell culture, general [CV] :
-SF22c:
-  type: string
-  nullable: True
-  required: False
-  set: SF22
-  allowed: ['cell viability reduced', 'cell shape atypical',
-            'cell size atypical', 'cell density decreased']
-# ! SF22e. Phenotype; subcellular structure affected (GO):
-SF22e:
-  type: string
-  nullable: True
-  required: False
-# ! SF22f. Phenotype; cellular process affected (GO):
-SF22:
-  type: [string]
-  nullable: True
-  required: False
-# ! SF22d. Phenotype in cell culture [free text]:
-SF22d:
-  type: string
-  nullable: True
-  required: False
-  set: SF22
-# ! SF22g. Validation code:
-# Validation codes
-#
-# For dsRNA expts, in vitro (SF21e, SF22g):
-# MRI = multiple RNAi targeted to this gene give same/similar result
-# MRP = multiple replicates give same/similar result
-# EXP = independent experimental data for same/similar process
-# ORT = independent experimental data for orthologous gene
-#
-# Parenthetical
-# “cite” = another ref cited
-# “demo” = demonstrated in this ref
-
-# Examples
-#
-# MRI (demo)
-#  ORT (cite)
-#To be developed?  Protein-protein interaction validation code as part of SF11?
-SF22g:
-  type: [string]
-  nullable: True
-  required: False
-# ! SF6. Comments [free text] :
-SF6:
-  type: [string]
-  nullable: True
-  required: False
-# ! SF7. Information on availability :
-SF7:
-  type: [string]
-  nullable: True
-  required: False
-# ! SF8. Internal notes 
-SF8:
-  type: [string]
-  nullable: True
-  required: False

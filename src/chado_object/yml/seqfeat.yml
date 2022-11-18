@@ -24,6 +24,7 @@ SF2b:
   type: ignore
 SF3a:
   type: ignore
+  allowed_types: ['FBlc']
 SF3b:
   type: ignore
 SF3c:
@@ -39,6 +40,11 @@ SF4a:
   type: ignore
 SF4b:
   type: ignore
+SF4c:
+  type: featureprop
+  cv: property type
+  cvterm: gen_loc_comment
+  value: SF4c
 SF4_2:
   type: data_set
   sub_type: genbank
@@ -56,7 +62,10 @@ SF5:
   comment_cvterm: comment
 SF5a:
   type: ignore
-  allowed_types: ['gene']
+  allowed_types: ['FBgn']
+SF5d:
+  type: ignore
+  allowed_types: ['FBms']
 SF5e:
   type: ignore
 SF5f:
@@ -66,22 +75,22 @@ SF5b:
   type: featurerelationship
   cv: relationship type
   cvterm: associated_with
-  allowed_types: ['allele']
+  allowed_types: ['FBal']
 SF5c:
   type: featurerelationship
   cv: relationship type
   cvterm: associated_with
-  allowed_types: ['transgenic_transposon']
+  allowed_types: ['FBtp']
 SF5h:
   type: featurerelationship
   cv: relationship type
   cvterm: associated_with
-  allowed_types: ['engineered_plasmid']
+  allowed_types: ['FBmc']
 SF5g:
   type: featurerelationship
   cv: relationship type
   cvterm: associated_with
-  allowed_types: ['transcript']
+  allowed_types: ['FBtr']
 SF6:
   type: featureprop
   cv: 'property type'
@@ -107,7 +116,7 @@ SF11a:
   type: featurerelationship
   cv: relationship type
   cvterm: bound_moiety
-  allowed_types: ['engineered_plasmid']
+  allowed_types: ['FBpp']
 SF11b:
   type: featureprop
   cv: 'GenBank feature qualifier'
