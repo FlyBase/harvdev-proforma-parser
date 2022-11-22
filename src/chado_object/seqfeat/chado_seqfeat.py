@@ -148,9 +148,6 @@ class ChadoSeqFeat(ChadoFeatureObject):
                 return
             self.is_new = True
             self.create_new(type_name, symbol_key, 'sf')
-            self.log.debug(f"BOB: new feature is {self.feature}.")
-            # self.load_synonym(symbol_key, cvterm_name='symbol')
-            # self.load_synonym(symbol_key)
 
         if not self.feature and self.has_data(id_key) and self.process_data[id_key]['data'][FIELD_VALUE] != "new":
             self.feature = None
@@ -187,7 +184,6 @@ class ChadoSeqFeat(ChadoFeatureObject):
 
         if self.is_new:
             # add default symbols
-            self.log.debug(f"BOB: adding synonyms for {symbol_key}")
             self.load_synonym(symbol_key)
 
             # Add feature cvterm
