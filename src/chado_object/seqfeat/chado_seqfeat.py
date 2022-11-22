@@ -137,17 +137,22 @@ class ChadoSeqFeat(ChadoFeatureObject):
             # We do not want to reset synonyms etc later so mask
             self.process_data[rename_key]['data'] = None
 
-            self.load_synonym(symbol_key, cvterm_name='fullname', overrule_removeold=True)
+            self.load_synonym(symbol_key, cvterm_name='symbol', overrule_removeold=True)
             self.load_synonym(symbol_key, unattrib=True)
             return
 
         if self.has_data(merge_key):  # if feature merge we want to create a new feature even if one exist already
-            self.create_new(type_name, symbol_key, 'SF')
-            self.load_synonym(symbol_key, cvterm_name='fullname')
-            self.load_synonym(symbol_key)
-            return
+            if self.process_data[id_key]['data'][FIELD_VALUE] != "new":
+                message = f"SF1g has been specified and therefore SF1f HAS to be 'new' but is '{self.process_data[id_key]['data'][FIELD_VALUE]}'."
+                self.critical_error(self.process_data[id_key]['data'], message)
+                return
+            self.is_new = True
+            self.create_new(type_name, symbol_key, 'sf')
+            self.log.debug(f"BOB: new feature is {self.feature}.")
+            # self.load_synonym(symbol_key, cvterm_name='symbol')
+            # self.load_synonym(symbol_key)
 
-        if self.has_data(id_key) and self.process_data[id_key]['data'][FIELD_VALUE] != "new":
+        if not self.feature and self.has_data(id_key) and self.process_data[id_key]['data'][FIELD_VALUE] != "new":
             self.feature = None
             try:
                 self.feature = get_feature_and_check_uname_symbol(self.session,
@@ -160,26 +165,29 @@ class ChadoSeqFeat(ChadoFeatureObject):
 
             return
 
-        try:
-            self.feature = feature_symbol_lookup(self.session, type_name, self.process_data[symbol_key]['data'][FIELD_VALUE])
-            self.is_new = False
-        except MultipleResultsFound:
-            message = "Multiple {}'s with symbol {}.".format(feature_type, self.process_data[symbol_key]['data'][FIELD_VALUE])
-            log.info(message)
-            self.critical_error(self.process_data[symbol_key]['data'], message)
-            return
-        except NoResultFound:
-            if self.process_data[id_key]['data'][FIELD_VALUE] != 'new':
-                message = "Unable to find {} with symbol {}.".format(feature_type, self.process_data[symbol_key]['data'][FIELD_VALUE])
+        if not self.feature:
+            try:
+                self.feature = feature_symbol_lookup(self.session, type_name, self.process_data[symbol_key]['data'][FIELD_VALUE])
+                self.is_new = False
+            except MultipleResultsFound:
+                message = "Multiple {}'s with symbol {}.".format(feature_type, self.process_data[symbol_key]['data'][FIELD_VALUE])
+                log.info(message)
                 self.critical_error(self.process_data[symbol_key]['data'], message)
                 return
-            try:
-                self._get_feature(type_name, symbol_key, id_key, merge_key, 'sf', organism_key='SF3b')
-            except CodingError as e:
-                self.critical_error(self.process_data['SF3b']['data'], f"{e}")
-                return
+            except NoResultFound:
+                if self.process_data[id_key]['data'][FIELD_VALUE] != 'new':
+                    message = "Unable to find {} with symbol {}.".format(feature_type, self.process_data[symbol_key]['data'][FIELD_VALUE])
+                    self.critical_error(self.process_data[symbol_key]['data'], message)
+                    return
+                try:
+                    self._get_feature(type_name, symbol_key, id_key, merge_key, 'sf', organism_key='SF3b')
+                except CodingError as e:
+                    self.critical_error(self.process_data['SF3b']['data'], f"{e}")
+                    return
 
-            # add default symbol
+        if self.is_new:
+            # add default symbols
+            self.log.debug(f"BOB: adding synonyms for {symbol_key}")
             self.load_synonym(symbol_key)
 
             # Add feature cvterm
@@ -236,8 +244,10 @@ class ChadoSeqFeat(ChadoFeatureObject):
         # change the pub
         self.feature.pub_id = self.pub.pub_id
 
-        seqfeats = self.get_merge_features(key, feat_type='seqfeat')
-        for seqfeat in seqfeats:
+        # seqfeats = self.get_merge_features(key, feat_type='seqfeat')
+        for item in self.process_data[key]['data']:
+            seqfeat_id = item[FIELD_VALUE]
+            seqfeat = self.session.query(Feature).filter(Feature.uniquename == seqfeat_id).one()
             log.debug("seqfeat to be merged is {}".format(seqfeat))
             seqfeat.is_obsolete = True
             # Transfer synonyms
@@ -250,3 +260,5 @@ class ChadoSeqFeat(ChadoFeatureObject):
             self.transfer_papers(seqfeat)
             # transfer featureprop and featureproppubs
             self.transfer_props(seqfeat)
+            # transfer feature relationships
+            self.transfer_feature_relationships(seqfeat)

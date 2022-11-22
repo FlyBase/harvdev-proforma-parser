@@ -83,7 +83,7 @@ def process_sf4_1(self, sets: List[Dict]):
         # Now create the featureloc
         key = 'SF4_1'
         arm_type_id = self.cvterm_query(self.process_data[key]['arm_cv'], self.process_data[key]['arm_cvterm'])
-        featuresrc, is_new = get_or_create(self.session, Feature, name=arm_name, type_id=arm_type_id)
+        featuresrc, is_new = get_or_create(self.session, Feature, name=arm_name, type_id=arm_type_id, organism_id=self.feature.organism_id)
         if is_new or not featuresrc:
             message = "Could not get {} feature with cvterm {} and cv {}".\
                 format(arm_name, self.process_data[key]['arm_cvterm'], self.process_data[key]['arm_cv'])

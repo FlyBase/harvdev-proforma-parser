@@ -16,7 +16,9 @@ SF1b:
   type: synonym
   cv: synonym type
   cvterm: symbol
-  is_current: False
+  is_current: True
+SF1g:
+  type: merge
 # ! SF2a. Feature macromolecular category [CV] :
 SF2a:
   type: ignore

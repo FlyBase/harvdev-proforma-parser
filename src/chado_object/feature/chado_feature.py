@@ -386,6 +386,7 @@ class ChadoFeatureObject(ChadoObject):
                 if is_current and cvterm_name == 'symbol':
                     self.feature.name = sgml_to_plain_text(item[FIELD_VALUE])
                     fs.current = is_current
+                self.log.debug(f"BOB: FS. synonym {fs}")
 
     def load_feature_cvterm(self, key: str):
         """Add feature cvterm.

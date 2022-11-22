@@ -15,7 +15,7 @@ SF1a:
   nullable: False
 # ! SF1b. Symbol used in paper/source :
 SF1b:
-  type: [string]
+  type: [string, list]
   required: False
   nullable: True
 # ! SF2a. Feature macromolecular category [CV] :
@@ -41,7 +41,7 @@ SF1c:
   nullable: True
 # ! SF1g. Action - merge these features :
 SF1g:
-  type: [string]
+  type: [string, list]
   required: False
   nullable: True
 # ! SF1h. Action - delete feature record (“y”/blank) :
@@ -91,6 +91,7 @@ SF4b:
     no_bangc: True
     set: SF4_1
     dependencies: ['SF4a']
+    allowed: ['6']
 # ! SF4h. Orientation of feature in SF4a relative to the chromosome (“+”/“-”) :
 SF4h:
     type: string
@@ -101,7 +102,7 @@ SF4h:
     set: SF4_1
 # ! SF4d. Sequence accession (AC no. | gi no. | date)[dupl for multiple):
 SF4d:
-    type: [string]
+    type: [string, list]
     required: False
     nullable: True
     dependencies: ['SF4e', 'SF4f']
@@ -129,7 +130,7 @@ SF4g:
   nullable: True
 # ! SF4c. Comments concerning sequence or sequence location:
 SF4c:
-  type: [string]
+  type: [string, list]
   required: False
   nullable: True
 
@@ -158,48 +159,48 @@ SF5f:
   set: SF5
 # ! SF5b. Associated allele :
 SF5b:
-  type: [string]
+  type: [string, list]
   nullable: True
   required: False
 # ! SF5g. Associated transcript :
 SF5g:
-  type: [string]
+  type: [string, list]
   nullable: True
   required: False
 # ! SF5c. Associated FBtp transgenic_transposable_element (symbol) :
 SF5c:
-  type: [string]
+  type: [string, list]
   nullable: True
   required: False
 # ! SF5h. Associated FBmc engineered_plasmid (symbol) :
 SF5h:
-  type: [string]
+  type: [string, list]
   nullable: True
   required: False
 # ! SF5d. Corresponding segment :
 SF5d:
-  type: [string]
+  type: [string, list]
   nullable: True
   required: False
 
 # ! SF6. Comments [free text] :
 SF6:
-  type: [string]
+  type: [string, list]
   nullable: True
   required: False
 # ! SF7. Information on availability :
 SF7:
-  type: [string]
+  type: [string, list]
   nullable: True
   required: False
 # ! SF8. Internal notes 
 SF8:
-  type: [string]
+  type: [string, list]
   nullable: True
   required: False
 # ! SF10a. Evidence/assay [CV]:
 SF10a:
-  type: [string]
+  type: [string, list]
   nullable: True
   required: False
   allowed: ['DNaseI protection assay', 'mobility shift assay',
@@ -217,7 +218,7 @@ SF11b:
   required: False
 # ! SF11c. Comment concerning bound moiety:
 SF11c:
-  type: [string]
+  type: [string, list]
   nullable: True
   required: False
 # ! SF12. Linked to restriction fragment:
@@ -245,6 +246,6 @@ SF20c:
   no_bangc: True
 # ! SF20d. Additional information, primers:
 SF20d:
-  type: [string]
+  type: [string, list]
   nullable: True
   required: False 
