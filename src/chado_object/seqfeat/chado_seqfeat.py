@@ -45,7 +45,7 @@ class ChadoSeqFeat(ChadoFeatureObject):
         ##########################################
         # Set up how to process each type of input
         ##########################################
-        self.type_dict = {'synonym': self.load_synonym,
+        self.type_dict = {'synonym': self.sf_load_synonym,
                           'data_set': self.ignore,
                           'ignore': self.ignore,
                           'addprimer': self.addprimer,
@@ -178,6 +178,7 @@ class ChadoSeqFeat(ChadoFeatureObject):
                     return
                 try:
                     self._get_feature(type_name, symbol_key, id_key, merge_key, 'sf', organism_key='SF3b')
+                    self.is_new = True
                 except CodingError as e:
                     self.critical_error(self.process_data['SF3b']['data'], f"{e}")
                     return
@@ -202,6 +203,15 @@ class ChadoSeqFeat(ChadoFeatureObject):
             message = f"Symbol {self.process_data[symbol_key]['data'][FIELD_VALUE]} Not found {id_key}  but stated as NOT 'new'"
             self.critical_error(self.process_data[symbol_key]['data'], message)
             return
+
+    def sf_load_synonym(self, key):
+        if self.has_data(key):
+            add_okay = True
+            for item in self.process_data[key]['data']:
+                if item[FIELD_VALUE] == self.process_data['SF1a']['data'][FIELD_VALUE]:
+                    add_okay = False
+            if add_okay:
+                self.load_synonym(key)
 
     def addprimer(self, key):
         """ Add new primer and then add feature relationship.
