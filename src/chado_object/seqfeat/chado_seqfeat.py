@@ -51,6 +51,7 @@ class ChadoSeqFeat(ChadoFeatureObject):
                           'addprimer': self.addprimer,
                           'cvtermprop': self.load_feature_cvtermprop,
                           'merge': self.merge,
+                          'rename': self.ignore,  # done seperately
                           'dis_pub': self.dis_pub,
                           'make_obsolete': self.make_obsolete,
                           'libraryfeatureprop': self.load_lfp,
@@ -129,7 +130,7 @@ class ChadoSeqFeat(ChadoFeatureObject):
             type_name = self.process_data['SF2b']['data'][FIELD_VALUE]
 
         if self.has_data(rename_key):
-            self.feature = feature_symbol_lookup(self.session, type_name, self.process_data[rename_key]['data'][FIELD_VALUE])
+            self.feature = feature_symbol_lookup(self.session, None, self.process_data[rename_key]['data'][FIELD_VALUE])
             self.feature.name = sgml_to_plain_text(self.process_data[symbol_key]['data'][FIELD_VALUE])
             self.is_new = False
             fs_remove_current_symbol(self.session, self.feature.feature_id,
@@ -139,6 +140,8 @@ class ChadoSeqFeat(ChadoFeatureObject):
 
             self.load_synonym(symbol_key, cvterm_name='symbol', overrule_removeold=True)
             self.load_synonym(symbol_key, unattrib=True)
+            feature_pub, _ = get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id,
+                                           pub_id=self.pub.pub_id)
             return
 
         if self.has_data(merge_key):  # if feature merge we want to create a new feature even if one exist already

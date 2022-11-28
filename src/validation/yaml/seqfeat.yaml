@@ -39,11 +39,13 @@ SF1c:
   type: string
   required: False
   nullable: True
+  excludes: ['SF1g']
 # ! SF1g. Action - merge these features :
 SF1g:
   type: [string, list]
   required: False
   nullable: True
+  excludes: ['SF1c']
 # ! SF1h. Action - delete feature record (“y”/blank) :
 SF1h:
   type: string

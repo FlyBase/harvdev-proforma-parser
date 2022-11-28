@@ -17,6 +17,10 @@ SF1b:
   cv: synonym type
   cvterm: symbol
   is_current: False
+SF1c:
+  type: rename
+  cv: synonym type
+  cvterm: symbol
 SF1g:
   type: merge
 # ! SF2a. Feature macromolecular category [CV] :
