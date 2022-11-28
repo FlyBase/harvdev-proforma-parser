@@ -141,3 +141,6 @@ A90b:
   - is required
 A90c:
   - is required
+SF3b:
+  - null value not allowed
+  - is required

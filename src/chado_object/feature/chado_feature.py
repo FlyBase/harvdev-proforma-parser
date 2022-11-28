@@ -7,6 +7,7 @@
 from chado_object.chado_base import ChadoObject, FIELD_VALUE
 from harvdev_utils.chado_functions import get_or_create, get_cvterm
 from chado_object.utils.feature_synonym import fs_add_by_synonym_name_and_type
+from harvdev_utils.chado_functions.organism import get_organism
 
 from chado_object.utils.feature_synonym import fs_remove_current_symbol
 from harvdev_utils.char_conversions import sgml_to_plain_text, sgml_to_unicode
@@ -177,7 +178,7 @@ class ChadoFeatureObject(ChadoObject):
                                                   uniquename='FB{}:temp_0'.format(unique_bit),
                                                   organism_id=organism.organism_id)
 
-    def _get_feature(self, cvterm_name: str, symbol_key: str, current_key: str, merge_key: str, unique_bit: str, cv_name: str = 'SO'):
+    def _get_feature(self, cvterm_name: str, symbol_key: str, current_key: str, merge_key: str, unique_bit: str, cv_name: str = 'SO', organism_key: str = ""):
         """Get the feature.
 
         Assigns this to self.feature.
@@ -196,7 +197,17 @@ class ChadoFeatureObject(ChadoObject):
             message = "Unable to find cvterm '{}' for Cv '{}'.".format(cvterm_name, cv_name)
             self.critical_error(self.process_data[symbol_key]['data'], message)
             return None
+
         organism, plain_name, sgml = synonym_name_details(self.session, self.process_data[symbol_key]['data'][FIELD_VALUE])
+        if organism_key:  # if organism in seperate field get from there
+            if self.has_data(organism_key):
+                org_abbr = self.process_data[organism_key]['data'][FIELD_VALUE]
+                try:
+                    organism = get_organism(self.session, short=org_abbr)
+                except NoResultFound:
+                    message = f'Species abbreviation "{org_abbr}" NOT found.'
+                    self.critical_error(self.process_data[organism_key]['data'], message)
+
         if self.process_data[current_key]['data'][FIELD_VALUE] == 'y':
             self.feature, is_new = get_or_create(self.session, Feature, name=plain_name,
                                                  type_id=cvterm.cvterm_id,
@@ -565,6 +576,14 @@ class ChadoFeatureObject(ChadoObject):
                 other_feat = self.get_other_feature(item, feat_type, subscript, pattern=pattern)
             if not other_feat:
                 continue
+            if 'allowed_types' in self.process_data[key] and self.process_data[key]['allowed_types'][0].startswith("FB"):
+                good = False
+                for allowed_type in self.process_data[key]['allowed_types']:
+                    if other_feat.uniquename.startswith(allowed_type):
+                        good = True
+                if not good:
+                    message = f"{other_feat.type.name} not one of the allowed types {self.process_data[key]['allowed_types']}."
+                    self.critical_error(self.process_data[key]['data'], message)
             self.add_relationships(key, other_feat, cvterm)
 
     def get_other_feature(self, item, feat_type, subscript, pattern=None):

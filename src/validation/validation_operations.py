@@ -90,6 +90,10 @@ def get_validate_grp_schema(fields_values):
     return "grp.yaml"
 
 
+def get_validate_seqfeat_schema(fields_values):
+    return "seqfeat.yaml"
+
+
 def get_validate_cell_line_schema(fields_values):
     return "cell_line.yaml"
 
@@ -124,18 +128,20 @@ def validation_file_schema_lookup(proforma_type, fields_values):
                        "DATABASE": get_validate_db_schema,
                        "SPECIES": get_validate_species_schema,
                        "GENEGROUP": get_validate_grp_schema,
+                       "SEQUENCE": get_validate_seqfeat_schema,
                        "CULTURED": get_validate_cell_line_schema}
     # if we have specific validation stuff set it up here.
     validation_base = {"PUBLICATION": ValidatorPub,
                        "MULTIPUBLICATION": ValidatorMultipub,
-                       "GENE": ValidatorBase,  # ValidatorGene,
-                       "ALLELE": ValidatorBase,  # ValidatorAllele,
+                       "GENE": ValidatorBase,
+                       "ALLELE": ValidatorBase,
                        "ABERRATION": ValidatorBase,
-                       "CHEMICAL": ValidatorBase,  # ValidatorChem,
-                       "DISEASE": ValidatorBase,  # ValidatorDiv,
-                       "HUMAN": ValidatorBase,  # ValidatorHumanhealth,
+                       "CHEMICAL": ValidatorBase,
+                       "DISEASE": ValidatorBase,
+                       "HUMAN": ValidatorBase,
                        "DATABASE": ValidatorBase,
                        "SPECIES": ValidatorBase,
+                       "SEQUENCE": ValidatorBase,
                        "GENEGROUP": ValidatorBase,
                        "CULTURED": ValidatorBase}
     validator = None
@@ -240,6 +246,7 @@ def validate_proforma_object(proforma):
     field_value_validation_dict = validation_field_to_dict(fields_values)
 
     log.debug('Field and values to be used for validation: {}'.format(field_value_validation_dict))
+    log.debug('schema is {}'.format(schema))
     results = validator.validate(field_value_validation_dict, schema)
 
     if results is True:

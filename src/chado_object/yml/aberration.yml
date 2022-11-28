@@ -336,7 +336,7 @@ A90a:
     subscript: False
 #######################################################################
 # NOTE: all GA90x fields are dealt with by the above GA90 function call
-#       So nothing is called invividually for each of the fields BUT
+#       So nothing is called individually for each of the fields BUT
 #       the cvterms definitions etc are used so need to be supplied.
 #######################################################################type
 # 'A90b', 'featureloc',
