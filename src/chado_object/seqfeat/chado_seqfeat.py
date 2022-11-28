@@ -157,8 +157,7 @@ class ChadoSeqFeat(ChadoFeatureObject):
             try:
                 self.feature = get_feature_and_check_uname_symbol(self.session,
                                                                   self.process_data[id_key]['data'][FIELD_VALUE],
-                                                                  self.process_data[symbol_key]['data'][FIELD_VALUE],
-                                                                  type_name=type_name)
+                                                                  self.process_data[symbol_key]['data'][FIELD_VALUE])
                 self.is_new = False
             except DataError as e:
                 self.critical_error(self.process_data[id_key]['data'], e.error)

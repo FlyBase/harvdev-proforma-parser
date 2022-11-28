@@ -23,18 +23,25 @@ SF1c:
   cvterm: symbol
 SF1g:
   type: merge
+SF1h:
+  type: make_obsolete
+SF1i:
+  type: dis_pub
 # ! SF2a. Feature macromolecular category [CV] :
 SF2a:
   type: ignore
 SF2b:
   type: ignore
 SF3a:
-  type: ignore
+  type: libraryfeatureprop
+  prop: SF3c
+  org: SF3b
   allowed_types: ['FBlc']
 SF3b:
   type: ignore
 SF3c:
   type: ignore
+  cv: library_featureprop type
 SF4_1:
   type: data_set
   sub_type: featureprop

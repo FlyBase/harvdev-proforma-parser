@@ -63,7 +63,7 @@ SF3a:
   type: string
   required: False
   nullable: True
-  dependencies: ['SF3c'] 
+  dependencies: ['SF3c']
 # ! SF3b. Species of derivation :
 SF3b:
   type: string

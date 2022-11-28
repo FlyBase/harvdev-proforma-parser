@@ -59,18 +59,23 @@ class ChadoFeatureObject(ChadoObject):
         Args:
             key (string): Proforma field key
         """
-        keya = key
-        key = keya[:-1]  # GA91a -> GA91, G91a -> G91
-        if (not self.has_data(key)) and (not self.has_data(keya)):
+        organism_id = self.feature.organism_id
+        if 'prop' in self.process_data[key]:
+            prop_key = self.process_data[key]['prop']
+        else:
+            prop_key = key
+            key = prop_key[:-1]  # GA91a -> GA91, G91a -> G91
+
+        if (not self.has_data(key)) and (not self.has_data(prop_key)):
             return
 
         # belts and braces check. Should be caught by validation but...
-        if not self.has_data(key) or not self.has_data(keya):
+        if not self.has_data(key) or not self.has_data(prop_key):
             if self.has_data(key):
                 data_key = key
             else:
-                data_key = keya
-            message = "{} cannot exist with out {} and vice versa".format(key, keya)
+                data_key = prop_key
+            message = "{} cannot exist with out {} and vice versa".format(key, prop_key)
             self.critical_error(self.process_data[data_key]['data'], message)
             return
 
@@ -79,7 +84,7 @@ class ChadoFeatureObject(ChadoObject):
         try:
             library: Library = self.session.query(Library).\
                 filter(Library.name == self.process_data[key]['data'][FIELD_VALUE],
-                       Library.organism_id == self.feature.organism_id).one()
+                       Library.organism_id == organism_id).one()
         except NoResultFound:
             message = "No Library exists with the name {}".format(self.process_data[key]['data'][FIELD_VALUE])
             self.critical_error(self.process_data[key]['data'], message)
@@ -91,9 +96,9 @@ class ChadoFeatureObject(ChadoObject):
                                     library_id=library.library_id)
         # get cvterm for LibraryFeatureprop
         try:
-            cvterm = get_cvterm(self.session, self.process_data[keya]['cv'], self.process_data[keya]['data'][FIELD_VALUE])
+            cvterm = get_cvterm(self.session, self.process_data[prop_key]['cv'], self.process_data[prop_key]['data'][FIELD_VALUE])
         except CodingError:
-            message = "Could not find cv '{}' cvterm '{}'".format(self.process_data[keya]['cv'], self.process_data[keya]['data'][FIELD_VALUE])
+            message = "Could not find cv '{}' cvterm '{}'".format(self.process_data[prop_key]['cv'], self.process_data[prop_key]['data'][FIELD_VALUE])
             self.critical_error(self.process_data[key]['data'], message)
             return
 
