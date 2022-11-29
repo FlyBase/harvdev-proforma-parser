@@ -49,6 +49,7 @@ class ChadoSeqFeat(ChadoFeatureObject):
                           'data_set': self.ignore,
                           'ignore': self.ignore,
                           'addprimer': self.addprimer,
+                          'residues': self.add_residues,
                           'cvtermprop': self.load_feature_cvtermprop,
                           'merge': self.merge,
                           'rename': self.ignore,  # done seperately
@@ -205,6 +206,14 @@ class ChadoSeqFeat(ChadoFeatureObject):
             message = f"Symbol {self.process_data[symbol_key]['data'][FIELD_VALUE]} Not found {id_key}  but stated as NOT 'new'"
             self.critical_error(self.process_data[symbol_key]['data'], message)
             return
+
+    def add_residues(self, key):
+        if self.has_data(key):
+            if not self.feature.residues:
+                self.feature.residues = self.process_data[key]['data'][FIELD_VALUE]
+            else:
+                message = f"Residues already set to '{self.feature.residues}'. So can not be changed unless bangc is used."
+                self.critical_error(self.process_data[key]['data'], message)
 
     def sf_load_synonym(self, key):
         if self.has_data(key):

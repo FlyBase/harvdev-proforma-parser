@@ -62,7 +62,7 @@ SF4_2:
   type: data_set
   sub_type: genbank
 SF4g:
-  type: ignore
+  type: residues
 # Set comprised of a, e, f ONLY
 SF5:
   type: data_set
@@ -164,3 +164,8 @@ SF20c:
   new_cv: SO
   new_cvterm: oligo
   rank: 2
+SF20d:  
+  type: featureprop
+  cv: 'property type'
+  cvterm: 'primer_comment'
+  value: SF20d
