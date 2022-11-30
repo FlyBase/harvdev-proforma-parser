@@ -20,9 +20,9 @@ Validation.
     Can be one or more of string, list, dict.
 
   required:
-    wether this field is required. Values True or False
+    whether this field is required. Values True or False
   nullable:
-    wether this field can be blank. True or False
+    whether this field can be blank. True or False
   excludes: 
     wether if this field is used then those in the list are not allowed
     i.e. [GA1e, GA2c]
@@ -34,20 +34,20 @@ Validation.
     The regular expression that the field value MUST match.
     NOTE: This does not work with lists presently!!!
 
-  None standard cerberus fields.
+  Non-standard cerberus fields.
   ------------------------------
   Code for these MUST be put into the proforma file that uses it.
-  NOTE: Bug in cerberus meansa that there is no inheritance so the code
+  NOTE: Bug in cerberus means that there is no inheritance so the code
         needs to be added for each file that uses it.
   Code it in src/validator_xxx.py (xxx is the proforma type)
   i.e. src/validation_allele.py
  
   no_bangc:
-    wether bang_c is NOT allowed. True or False
+    whether bang_c is NOT allowed. True or False
   at_required:
-    wether @symbol@ is required or not (values True or False)
+    whether @symbol@ is required or not (values True or False)
   at_forbidden:
-    wether @symbol@ is fornbidden or not (values True or False)
+    whether @symbol@ is fornbidden or not (values True or False)
   regex:
     The regular expression that the field value MUST match.
   P22_unattributed_allowed: True

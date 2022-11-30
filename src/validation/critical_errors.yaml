@@ -144,3 +144,11 @@ A90c:
 SF3b:
   - null value not allowed
   - is required
+F1f:
+  - is required
+  - null value not allowed
+F1a:
+  - is required
+  - null value not allowed
+F3:
+  - Must be set for new
