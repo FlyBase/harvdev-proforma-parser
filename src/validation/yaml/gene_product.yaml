@@ -1,13 +1,15 @@
 # ! GENEPRODUCT ATTRIBUTES/EXPRESSION PROFORMA
 # ! F1f. Database id (default 'new')  :
 F1f:
-  type: ^(FB(pp|tr)\d{7}|new)$
+  type: string
+  regex: ^(FB(pp|tr)\d{7}|new)$
   required: True
   nullable: False
   no_bangc: True
 # ! F1a. Gene product symbol  :
 F1a:
-  type: (-X(R|P)|RA|PA)$
+  type: string
+  regex: (-X(R|P)|RA|PA)$
   required: True
   nullable: False
   dependencies: [F1f]
