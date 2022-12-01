@@ -14,6 +14,7 @@ F1a:
   nullable: False
   dependencies: [F1f]
   no_bangc: True
+  check_synthetic: F2
 # ! F3.  Gene product type [CV]  :
 # Note - curators supply SO IDs too (intervening space) but perl parser ignores this.
 F3:
@@ -29,7 +30,7 @@ F2:
   required: False
   nullable: True
   allowed: ['synthetic_sequence']    # synthetic? - also has SO IDs
-  if_new_required: F1f
+  only_if_new: F1f
 
 # ! F1b. Action - rename this gene product (symbol)      :
 # ! F1c. Action - merge these products(s) (symbols or FB#s) :

@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 FIELD_NAME = 0
 FIELD_VALUE = 1
 LINE_NUMBER = 2
-SET_BANG = 3  # For 'set' data we hold the wether it is a bangc, bangd or None.
+SET_BANG = 3  # For 'set' data we hold whether it is a bangc, bangd or None.
 SPECIAL_FIELDS = ['GENE', 'DRIVERS']  # Do not delete if no data for these, as we need the meta data.
 
 

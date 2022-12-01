@@ -94,6 +94,10 @@ def get_validate_seqfeat_schema(fields_values):
     return "seqfeat.yaml"
 
 
+def get_validate_gene_product_schema(fields_values):
+    return "gene_product.yaml"
+
+
 def get_validate_cell_line_schema(fields_values):
     return "cell_line.yaml"
 
@@ -129,6 +133,7 @@ def validation_file_schema_lookup(proforma_type, fields_values):
                        "SPECIES": get_validate_species_schema,
                        "GENEGROUP": get_validate_grp_schema,
                        "SEQUENCE": get_validate_seqfeat_schema,
+                       "GENEPRODUCT": get_validate_gene_product_schema,
                        "CULTURED": get_validate_cell_line_schema}
     # if we have specific validation stuff set it up here.
     validation_base = {"PUBLICATION": ValidatorPub,
@@ -141,8 +146,9 @@ def validation_file_schema_lookup(proforma_type, fields_values):
                        "HUMAN": ValidatorBase,
                        "DATABASE": ValidatorBase,
                        "SPECIES": ValidatorBase,
-                       "SEQUENCE": ValidatorBase,
                        "GENEGROUP": ValidatorBase,
+                       "SEQUENCE": ValidatorBase,
+                       "GENEPRODUCT": ValidatorBase,
                        "CULTURED": ValidatorBase}
     validator = None
 
@@ -210,7 +216,7 @@ def validate_proforma_object(proforma):
     Validate a proforma object against a YAML schema using Cerberus.
 
     Args:
-        proforma (proforma pbject): To be validated.
+        proforma (proforma object): To be validated.
 
     Returns:
         errors (dict): A dictionary containing errors from validation.

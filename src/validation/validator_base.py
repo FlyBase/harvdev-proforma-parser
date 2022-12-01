@@ -324,3 +324,33 @@ class ValidatorBase(Validator):
             return
 
         self._error(proforma_field, 'Error {} not in a recognised format'.format(proforma_value))
+
+    # Used in GENEPRODUCT Proforma
+    def _validate_only_if_new(self, yml_value, proforma_field, proforma_value):
+        """Confirm that field is only filled in for a new object."""
+        if not proforma_value or not yml_value:
+            return
+        if self.document[yml_value] != 'new':
+            self._error(proforma_field, f'Error {proforma_value} should only be specified for NEW objects.')
+        return
+
+    # Used in GENEPRODUCT Proforma
+    def _validate_check_synthetic(self, yml_value, proforma_field, proforma_value):
+        """Check that synthetic gene products are correctly flagged."""
+        if not proforma_value or not yml_value:
+            return
+        endogenous_regex = r'-X(R|P)$'
+        synthetic_regex = r'(R|P)A$'
+        if re.match(endogenous_regex, proforma_value):
+            try:
+                if self.document[yml_value].startswith('synthetic_sequence'):
+                    self._error(proforma_field, f'Error {proforma_value} should not be specified as synthetic in {yml_value}.')
+            except KeyError:
+                pass
+        elif re.match(synthetic_regex, proforma_value):
+            try:
+                if not self.document[yml_value].startswith('synthetic_sequence'):
+                    self._error(proforma_field, f'Error {proforma_value} should be specified as synthetic in {yml_value}.')
+            except KeyError:
+                self._error(proforma_field, f'Error {proforma_value} should be specified as synthetic in {yml_value}.')
+        return
