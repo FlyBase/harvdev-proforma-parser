@@ -10,13 +10,14 @@ F1a:
   is_current: True
   add_unattributed_paper: True
   remove_old: True
+  feat_cv: SO
 # ! F3.  Gene product type [CV]  :
 F3:
   type: ignore
   # cv: SO
 # ! F2. Sequence attribute [CV]  :
 F2:
-  cv: SO
+  feat_cv: SO
 # ! F4. Names(s) used in paper [free text] :
 F4:
   type: synonym
