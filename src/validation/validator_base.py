@@ -327,7 +327,7 @@ class ValidatorBase(Validator):
 
     # Used in GENEPRODUCT Proforma
     def _validate_only_if_new(self, yml_value, proforma_field, proforma_value):
-        """Confirm that field is only filled in for a new object."""
+        """Confirm that field is only filled in for a new object; not required for "new", but allowed only if "new"."""
         if not proforma_value or not yml_value:
             return
         if self.document[yml_value] != 'new':

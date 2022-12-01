@@ -29,7 +29,7 @@ F2:
   type: string
   required: False
   nullable: True
-  allowed: ['synthetic_sequence']    # synthetic? - also has SO IDs
+  allowed: ['synthetic_sequence']
   only_if_new: F1f
 
 # ! F1b. Action - rename this gene product (symbol)      :

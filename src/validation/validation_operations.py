@@ -111,7 +111,7 @@ def validation_file_schema_lookup(proforma_type, fields_values):
     Args:
         proforma_type (str): The type of proforma
 
-        field_values (dict): A dictionary of fields and values from the proforma.
+        field_values (dict): Proforma field-keyed tuples (FIELD_NAME, FIELD_VALUE, LINE_NUMBER, SET_BANG).
 
     Returns:
         yaml_file_location (str): The file location of the appropriate yaml files
