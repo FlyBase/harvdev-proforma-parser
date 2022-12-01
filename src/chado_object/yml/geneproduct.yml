@@ -1,46 +1,33 @@
 # ! GENEPRODUCT ATTRIBUTES/EXPRESSION PROFORMA
 # ! F1f. Database id (default 'new')  :
 F1f:
-  type: string
-  regex: ^(FB(pp|tr)\d{7}|new)$
-  required: True
-  nullable: False
-  no_bangc: True
+  type: ignore
 # ! F1a. Gene product symbol  :
 F1a:
-  type: string
-  regex: (-X(R|P)|RA|PA)$
-  required: True
-  nullable: False
-  dependencies: [F1f]
-  no_bangc: True
-  check_synthetic: F2
+  type: ignore
+  cv: synonym type
+  cvterm: symbol
+  is_current: True
+  add_unattributed_paper: True
+  remove_old: True
 # ! F3.  Gene product type [CV]  :
-# Note - curators supply SO IDs too (intervening space) but perl parser ignores this.
 F3:
-  type: string
-  required: False
-  nullable: True
-  allowed: ['mRNA', 'RNA', 'polypeptide']
-  if_new_required: F1f
+  type: ignore
+  # cv: SO
 # ! F2. Sequence attribute [CV]  :
-# Note - parser rejects if F2 is filled in and F1a ends in XR/XP.
 F2:
-  type: string
-  required: False
-  nullable: True
-  allowed: ['synthetic_sequence']
-  only_if_new: F1f
+  cv: SO
+# ! F4. Names(s) used in paper [free text] :
+F4:
+  type: synonym
+  cv: synonym type
+  cvterm: symbol
+  is_current: False
 
 # ! F1b. Action - rename this gene product (symbol)      :
 # ! F1c. Action - merge these products(s) (symbols or FB#s) :
 # ! F1d. Action - delete gene product record ("y"/blank) :
 # ! F1e. Action - dissociate F1f from FBrf ("y"/blank)   :
-# !
-# ! F4. Names(s) used in paper [free text] :
-# ! F6. FlyExpress image number(s) (FBim)  :
-# !
-# ! F5. Molecule size(s) (wb, nb, sa)      :
 # !
 # ! F9. Expression pattern (<e>  <t>  <a>  <s>  <note>) :
 # !
@@ -52,12 +39,15 @@ F2:
 # !     F11b. Is pattern aberrant relative to wild-type (y/n) :n
 # !
 # ! F12. Antibody reported (monoclonal, polyclonal) :
+# ! F17. Alleles or genotypes used :
+# ! F13. Comment  [free text]       :
+# ! F14. Internal note  [free text] :
+
+# Fields below are rarely or never used.
+# ! F5. Molecule size(s) (wb, nb, sa)      :
+# ! F6. FlyExpress image number(s) (FBim)  :
+# ! F91. From dataset/collection (symbol) :
+# ! F91a. Type of relationship to dataset/collection [member_of_reagent_collection/experimental_result] :
 # ! F16a. Nucleotide probe (cDNA, cDNA fragment, genomic fragment, synthetic) :
 # !     F16b. Sequence coordinates for F16a   :
 # !     F16c. Description of F16a [free text] :
-# ! F17. Alleles or genotypes used :
-# !
-# ! F13. Comment  [free text]       :
-# ! F14. Internal note  [free text] :
-# ! F91. From dataset/collection (symbol) :
-# ! F91a. Type of relationship to dataset/collection [member_of_reagent_collection/experimental_result] :

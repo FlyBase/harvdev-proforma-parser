@@ -94,8 +94,8 @@ def get_validate_seqfeat_schema(fields_values):
     return "seqfeat.yaml"
 
 
-def get_validate_gene_product_schema(fields_values):
-    return "gene_product.yaml"
+def get_validate_geneproduct_schema(fields_values):
+    return "geneproduct.yaml"
 
 
 def get_validate_cell_line_schema(fields_values):
@@ -133,7 +133,7 @@ def validation_file_schema_lookup(proforma_type, fields_values):
                        "SPECIES": get_validate_species_schema,
                        "GENEGROUP": get_validate_grp_schema,
                        "SEQUENCE": get_validate_seqfeat_schema,
-                       "GENEPRODUCT": get_validate_gene_product_schema,
+                       "GENEPRODUCT": get_validate_geneproduct_schema,
                        "CULTURED": get_validate_cell_line_schema}
     # if we have specific validation stuff set it up here.
     validation_base = {"PUBLICATION": ValidatorPub,

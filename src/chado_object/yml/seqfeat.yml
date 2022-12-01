@@ -30,6 +30,7 @@ SF1i:
 # ! SF2a. Feature macromolecular category [CV] :
 SF2a:
   type: ignore
+# ! SF2b. Feature description [CV]        :
 SF2b:
   type: ignore
 SF3a:
