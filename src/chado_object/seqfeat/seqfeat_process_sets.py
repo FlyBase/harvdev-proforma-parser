@@ -225,7 +225,6 @@ def process_sf5(self, sets: Dict):
     rel_type_id = self.cvterm_query(self.process_data['SF5']['cv'],
                                     self.process_data['SF5']['cvterm'])
 
-    self.log.debug(f"BOB: {sets}")
     self.check_and_process_bangc_set(sets)
 
     for sf5_set in sets:

@@ -196,15 +196,6 @@ class ChadoSeqFeat(ChadoFeatureObject):
             # add default symbols
             self.load_synonym(symbol_key)
 
-            # Add feature cvterm
-            # type_id = self.cvterm_query(self.process_data['SF1a']['feat_cv'],
-            #                            self.process_data['SF1a']['feat_cvterm'])
-            # fc, _ = get_or_create(
-            #    self.session, FeatureCvterm,
-            #    cvterm_id=type_id,
-            #    feature_id=self.feature.feature_id,
-            #   pub_id=self.get_unattrib_pub().pub_id
-            # )
         feature_pub, _ = get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id,
                                        pub_id=self.pub.pub_id)
 
