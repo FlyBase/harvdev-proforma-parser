@@ -29,7 +29,9 @@ SF1i:
   type: dis_pub
 # ! SF2a. Feature macromolecular category [CV] :
 SF2a:
-  type: ignore
+  type: cvterm
+  cv: SO
+  unattrib_only: True
 SF2b:
   type: ignore
 SF3a:
@@ -100,7 +102,7 @@ SF5h:
   cvterm: associated_with
   allowed_types: ['FBmc']
 SF5g:
-  type: featurerelationship
+  type: not_implemented
   cv: relationship type
   cvterm: associated_with
   allowed_types: ['FBtr']

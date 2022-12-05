@@ -21,7 +21,7 @@ from harvdev_utils.chado_functions import (
     DataError, feature_symbol_lookup, get_or_create)
 from harvdev_utils.production import (
     Feature,
-    FeatureCvterm,
+    # FeatureCvterm,
     FeaturePub,
     FeatureRelationship)
 log = logging.getLogger(__name__)
@@ -33,7 +33,11 @@ class ChadoSeqFeat(ChadoFeatureObject):
     from.seqfeat_process_sets import (
         process_sets,
         process_sf4_1,
-        process_sf5
+        process_sf5,
+        check_and_process_bangc_set,
+        bang_alter_sf5,
+        bang_remove_sf5,
+        get_feat_rel_for_set
     )
 
     def __init__(self, params):
@@ -50,8 +54,10 @@ class ChadoSeqFeat(ChadoFeatureObject):
                           'ignore': self.ignore,
                           'addprimer': self.addprimer,
                           'residues': self.add_residues,
+                          'cvterm': self.load_feature_cvterm,
                           'cvtermprop': self.load_feature_cvtermprop,
                           'merge': self.merge,
+                          'not_implemented': self.not_implemented,
                           'rename': self.ignore,  # done seperately
                           'dis_pub': self.dis_pub,
                           'make_obsolete': self.make_obsolete,
@@ -191,14 +197,14 @@ class ChadoSeqFeat(ChadoFeatureObject):
             self.load_synonym(symbol_key)
 
             # Add feature cvterm
-            type_id = self.cvterm_query(self.process_data['SF1a']['feat_cv'],
-                                        self.process_data['SF1a']['feat_cvterm'])
-            fc, _ = get_or_create(
-                self.session, FeatureCvterm,
-                cvterm_id=type_id,
-                feature_id=self.feature.feature_id,
-                pub_id=self.get_unattrib_pub().pub_id
-            )
+            # type_id = self.cvterm_query(self.process_data['SF1a']['feat_cv'],
+            #                            self.process_data['SF1a']['feat_cvterm'])
+            # fc, _ = get_or_create(
+            #    self.session, FeatureCvterm,
+            #    cvterm_id=type_id,
+            #    feature_id=self.feature.feature_id,
+            #   pub_id=self.get_unattrib_pub().pub_id
+            # )
         feature_pub, _ = get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id,
                                        pub_id=self.pub.pub_id)
 
