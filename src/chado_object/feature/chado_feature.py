@@ -152,6 +152,17 @@ class ChadoFeatureObject(ChadoObject):
         """
         self.feature.is_obsolete = True
 
+    def not_implemented(self, key, bangc=False):
+        """ Give critical error if called """
+        if type(self.process_data[key]['data']) is list:
+            # cerberus can pass a list
+            item = self.process_data[key]['data'][0]
+        else:
+            item = self.process_data[key]['data']
+
+        message = f"{key} Not implemented please see Harvdev if you think you need it"
+        self.critical_error(item, message)
+
     def dis_pub(self, key: str):
         """Dissociate pub from feature.
 
@@ -424,10 +435,13 @@ class ChadoFeatureObject(ChadoObject):
                     self.critical_error(item, message)
 
             # create feature_cvterm
+            pub_id = self.pub.pub_id
+            if 'unattrib_only' in self.process_data[key]:
+                pub_id = self.get_unattrib_pub().pub_id
             feat_cvt, _ = get_or_create(self.session, FeatureCvterm,
                                         feature_id=self.feature.feature_id,
                                         cvterm_id=cvterm.cvterm_id,
-                                        pub_id=self.pub.pub_id)
+                                        pub_id=pub_id)
 
     def load_feature_cvtermprop(self, key: str):
         """Add feature_cvtermprop.
@@ -1068,6 +1082,18 @@ class ChadoFeatureObject(ChadoObject):
                 self.critical_error(item, message)
         self.process_data[key]['data'] = None
 
+    def check_types(self, key: str, fcp: FeatureRelationshipPub, allowed_types=None) -> bool:
+        """ Check if the Feature Relationship object is one of the allowed types """
+        if not allowed_types:
+            allowed_types = self.process_data[key]['allowed_types']
+        okay = False
+        fc = self.session.query(FeatureRelationship).filter(FeatureRelationship.feature_relationship_id == fcp.feature_relationship_id).one()
+        obj_feat = self.session.query(Feature).filter(Feature.feature_id == fc.object_id).one()
+        for allowed_type in allowed_types:
+            if obj_feat.uniquename.startswith(allowed_type):
+                okay = True
+        return okay
+
     def delete_feature_relationship(self, key, bangc=False):
         """Delete the feature relationship.
 
@@ -1097,13 +1123,37 @@ class ChadoFeatureObject(ChadoObject):
                    FeatureRelationshipPub.pub_id == self.pub.pub_id,
                    FeatureRelationship.type_id == cvterm.cvterm_id)
         count = 0
+        del_frs = set()
         for fcp in fcps:
+            if 'allowed_types' in self.process_data[key] and self.process_data[key]['allowed_types'][0].startswith("FB"):
+                okay = self.check_types(key, fcp)
+                if not okay:
+                    continue
             count += 1
-            log.debug("LOOKUP: deleting feat rel {}".format(fcp.feature_relationship))
-            self.session.delete(fcp.feature_relationship)
+            # check type if specified in
+            log.debug("LOOKUP: deleting feat rel pub {}".format(fcp.feature_relationship))
+            # self.session.delete(fcp.feature_relationship)
+            del_frs.add(fcp.feature_relationship)
+            self.session.delete(fcp)
         if not count:
             message = "Bangc failed no feature relationships for this pub and cvterm"
+            if 'allowed_types' in self.process_data[key] and self.process_data[key]['allowed_types'][0].startswith("FB"):
+                for allowed_type in self.process_data[key]['allowed_types']:
+                    message += f" and does not match allowed type of {allowed_type}"
             self.critical_error(items[0], message)
+            return
+
+        # now search for any pub
+        # If none found delete the feat relationship
+        # For each relationship pub removed check if that object feature
+        # has other links. If not delete
+        for del_fr in del_frs:
+            count = self.session.query(FeatureRelationshipPub).join(FeatureRelationship).\
+                filter(FeatureRelationship.subject_id == self.feature.feature_id,
+                       FeatureRelationship.object_id == del_fr.object_id,
+                       FeatureRelationship.type_id == cvterm.cvterm_id).count()
+            if not count:
+                self.session.delete(del_fr)
 
     def delete_synonym(self, key, bangc=False):
         """Delete synonym.

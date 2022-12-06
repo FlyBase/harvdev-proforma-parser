@@ -59,6 +59,7 @@ def load_cvterm(self, key):
         items = [self.process_data[key]['data']]
 
     cvterms = []
+
     for item in items:
         cvterm = self.get_cvterm_by_name(key, item)
         if not cvterm:

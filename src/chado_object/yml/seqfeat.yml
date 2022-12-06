@@ -29,7 +29,9 @@ SF1i:
   type: dis_pub
 # ! SF2a. Feature macromolecular category [CV] :
 SF2a:
-  type: ignore
+  type: cvterm
+  cv: SO
+  unattrib_only: True
 SF2b:
   type: ignore
 SF3a:
@@ -62,7 +64,7 @@ SF4_2:
   type: data_set
   sub_type: genbank
 SF4g:
-  type: ignore
+  type: residues
 # Set comprised of a, e, f ONLY
 SF5:
   type: data_set
@@ -100,7 +102,7 @@ SF5h:
   cvterm: associated_with
   allowed_types: ['FBmc']
 SF5g:
-  type: featurerelationship
+  type: not_implemented
   cv: relationship type
   cvterm: associated_with
   allowed_types: ['FBtr']
@@ -164,3 +166,8 @@ SF20c:
   new_cv: SO
   new_cvterm: oligo
   rank: 2
+SF20d:  
+  type: featureprop
+  cv: 'property type'
+  cvterm: 'primer_comment'
+  value: SF20d

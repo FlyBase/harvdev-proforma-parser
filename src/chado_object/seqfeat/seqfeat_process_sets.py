@@ -2,7 +2,7 @@ import re
 from typing import Dict, List
 from sqlalchemy.orm.exc import NoResultFound
 
-from chado_object.chado_base import FIELD_VALUE
+from chado_object.chado_base import FIELD_VALUE, SET_BANG
 from harvdev_utils.chado_functions import (
     get_or_create,
     feature_symbol_lookup
@@ -13,7 +13,9 @@ from harvdev_utils.production import (
     Featureprop,
     FeaturepropPub,
     FeatureRelationship,
-    FeatureRelationshipprop
+    FeatureRelationshipPub,
+    FeatureRelationshipprop,
+    FeatureRelationshippropPub
 )
 
 
@@ -104,6 +106,111 @@ def process_sf4_1(self, sets: List[Dict]):
         fl.fmax = end
 
 
+def get_feat_rel_for_set(self, sf5_set):
+    # look up feature first
+    try:
+        feature = feature_symbol_lookup(self.session, 'gene', sf5_set['SF5a'][FIELD_VALUE])
+    except NoResultFound:
+        message = f"Lookup of symbol {sf5_set['SF5a'][FIELD_VALUE]} failed."
+        self.critical_error(sf5_set['SF5a'], message)
+        return None
+    # get feature relationship
+    try:
+        fr = self.session.query(FeatureRelationship).join(FeatureRelationshipPub).\
+            filter(FeatureRelationshipPub.pub_id == self.pub.pub_id,
+                   FeatureRelationship.subject_id == self.feature.feature_id,
+                   FeatureRelationship.object_id == feature.feature_id).one()
+    except NoResultFound:
+        message = f"Lookup of relationship between {self.feature.name} and {sf5_set['SF5a'][FIELD_VALUE]} for pub {self.pub.uniquename} failed."
+        self.critical_error(sf5_set['SF5a'], message)
+        return None
+    return fr
+
+
+def bang_remove_sf5(self, sets):
+    """ props props for a specific feat_rel defined in set """
+    for sf5_set in sets:
+        # get feature relationships
+        frs = self.session.query(FeatureRelationshipPub).join(FeatureRelationship).\
+            filter(FeatureRelationshipPub.pub_id == self.pub.pub_id,
+                   FeatureRelationship.subject_id == self.feature.feature_id)
+        okay = False
+        key = 'SF5a'
+        for fr in frs:
+            if not self.check_types(key, fr, ['FBgn']):
+                continue
+            else:
+                okay = True
+                self.session.delete(fr)
+        if not okay:
+            message = f"Lookup of relationship between {self.feature.name} and pub {self.pub.uniquename} failed."
+            self.critical_error(sf5_set['SF5a'], message)
+
+
+def bang_alter_sf5(self, sets):
+    """ Alter props for a specific feat_rel defined in set """
+    for sf5_set in sets:
+        fr = self.get_feat_rel_for_set(sf5_set)
+        if not fr:
+            return
+        set_key = 'SF5'
+        for key_name in ['SF5e', 'SF5f']:
+            if key_name == 'SF5e':
+                prop_cv = 'conf_cv'
+                prop_cvterm = 'conf_cvterm'
+            else:
+                prop_cv = 'comment_cv'
+                prop_cvterm = 'comment_cvterm'
+            if key_name in sf5_set and sf5_set[key_name][SET_BANG]:
+                # get the type for the prop
+                rel_type_id = self.cvterm_query(self.process_data[set_key][prop_cv],
+                                                self.process_data[set_key][prop_cvterm])
+
+                # get feat rel prop
+                frs = self.session.query(FeatureRelationshipprop).join(FeatureRelationshippropPub).\
+                    filter(FeatureRelationshippropPub.pub_id == self.pub.pub_id,
+                           FeatureRelationshipprop.type_id == rel_type_id,
+                           FeatureRelationshipprop.feature_relationship_id == fr.feature_relationship_id).all()
+                found = False
+                for fr in frs:
+                    found = True
+                    self.session.delete(fr)
+                if not found:
+                    message = f"No feature relationship prop found for {self.feature.name} and {sf5_set[key_name][FIELD_VALUE]} "
+                    message += f"with type {self.process_data[set_key][prop_cvterm]}"
+                    self.critical_error(sf5_set['SF5a'], message)
+
+
+def check_and_process_bangc_set(self, sets: Dict) -> bool:
+    """ Check if we have bang operations and if so process them
+        and return True to indicate it is done.
+        If no bang operations then return False. """
+    bang = False
+    remove = False  # remove the relationship
+    alter = False   # alter prop for relationship
+    for sf5_set in sets:
+        if sf5_set['SF5a'][SET_BANG]:
+            bang = True
+            remove = True
+        if 'SF5e' in sf5_set and sf5_set['SF5e'][SET_BANG]:
+            bang = True
+            alter = True
+        if 'SF5f' in sf5_set and sf5_set['SF5f'][SET_BANG]:
+            bang = True
+            alter = True
+    if not bang:
+        return False
+    if remove and alter:
+        message = "Cannot bang SF5a and SF5e or SF5f at the same time."
+        self.critical_error(sets[0]['SF5a'], message)
+        return True
+    if alter:
+        self.bang_alter_sf5(sets)
+        return True
+    self.bang_remove_sf5(sets)
+    return True
+
+
 def process_sf5(self, sets: Dict):
     """
     sets comprise only of a ,e ,f
@@ -118,6 +225,8 @@ def process_sf5(self, sets: Dict):
     rel_type_id = self.cvterm_query(self.process_data['SF5']['cv'],
                                     self.process_data['SF5']['cvterm'])
 
+    self.check_and_process_bangc_set(sets)
+
     for sf5_set in sets:
         gene_symbol = sf5_set[symbol_key][FIELD_VALUE]
         try:
@@ -131,6 +240,10 @@ def process_sf5(self, sets: Dict):
                               object_id=feature.feature_id,
                               subject_id=self.feature.feature_id,
                               type_id=rel_type_id)
+        # add the fr pub
+        frp, _ = get_or_create(self.session, FeatureRelationshipPub,
+                               feature_relationship_id=fr.feature_relationship_id,
+                               pub_id=self.pub.pub_id)
 
         # add props for this if specified.
         if conf_key in sf5_set and sf5_set[conf_key][FIELD_VALUE]:
@@ -143,6 +256,8 @@ def process_sf5(self, sets: Dict):
                 feature_relationship_id=fr.feature_relationship_id,
                 type_id=conf_prop_id,
                 value=sf5_set[conf_key][FIELD_VALUE])
+            # Add feature_relationshippropPub ????
+
         if comment_key in sf5_set and sf5_set[comment_key][FIELD_VALUE]:
             # add feature_relationshipprop
             comm_prop_id = self.cvterm_query(self.process_data['SF5']['comment_cv'],
