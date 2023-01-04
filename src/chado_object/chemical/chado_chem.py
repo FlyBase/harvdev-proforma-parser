@@ -67,7 +67,6 @@ class ChadoChem(ChadoFeatureObject):
         self.chebi_pub_id: int = 0                    # Used for attributing chemical curation.
         self.pubchem_pub_id: int = 0                  # Used for attributing chemical curation.
 
-
         # yaml file defines what to do with each field. Follow the light
         self.type_dict = {'featureprop': self.load_featureprop,
                           'synonym': self.load_synonym_chem,
