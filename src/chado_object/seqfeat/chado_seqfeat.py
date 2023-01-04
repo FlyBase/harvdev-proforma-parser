@@ -30,7 +30,7 @@ log = logging.getLogger(__name__)
 class ChadoSeqFeat(ChadoFeatureObject):
     """ChadoSeqFeat object."""
 
-    from.seqfeat_process_sets import (
+    from .seqfeat_process_sets import (
         process_sets,
         process_sf4_1,
         process_sf5,

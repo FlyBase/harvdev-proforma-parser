@@ -195,7 +195,7 @@ class ProformaFile(object):
             if fields.group(1):
                 result_bang = fields.group(1)
 
-        return(result_field, result_value, result_bang)
+        return (result_field, result_value, result_bang)
 
     def next_and_current_item(self, proforma_content):
         """Show the current and next item in an array.

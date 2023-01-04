@@ -259,12 +259,12 @@ def add_alt_synonym(self):
     either pubchem or chebi.
     """
     if self.new_chemical_entry:
-        organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['CH1a']['data'][FIELD_VALUE])
+        organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['CH1a']['data'][FIELD_VALUE], nosup=True)
         cvterm = self.cvterm_query('synonym type', 'fullname')
         pub_id = self.chemical_information['PubID']
 
         new_synonym, _ = get_or_create(self.session, Synonym, type_id=cvterm,
-                                       synonym_sgml=plain_name,
+                                       synonym_sgml=sgml,
                                        name=plain_name)
         fs, _ = get_or_create(self.session, FeatureSynonym, feature_id=self.feature.feature_id,
                               pub_id=pub_id, synonym_id=new_synonym.synonym_id)

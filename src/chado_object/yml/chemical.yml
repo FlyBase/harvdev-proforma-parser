@@ -18,10 +18,11 @@ CH1a:
   type: synonym
   cv: synonym type
   cvterm: fullname
-  is_current: True
+  is_current: False
   remove_old: True
   propname:
   subscript: False
+
 CH1b:
   type: synonym
   cv: synonym type

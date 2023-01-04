@@ -276,7 +276,7 @@ class ChadoChem(ChadoFeatureObject):
                    Synonym.type_id == cvterm.cvterm_id)
         for fs in fss:
             fs.is_current = False
-        _, plain_name, sgml = synonym_name_details(self.session, name)
+        _, plain_name, sgml = synonym_name_details(self.session, name, nosup=True)
         synonym, _ = get_or_create(self.session, Synonym, type_id=cvterm.cvterm_id, name=plain_name, synonym_sgml=sgml)
 
         fs, _ = get_or_create(self.session, FeatureSynonym, feature_id=self.feature.feature_id, synonym_id=synonym.synonym_id,
