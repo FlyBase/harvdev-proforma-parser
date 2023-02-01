@@ -226,7 +226,7 @@ class ProformaFile(object):
 
         cam_pattern = r"""
             ^            # match from the start
-            (\w+)        # The user initials
+            (\D+)        # The user initials
             \d+          # string of integers
             \.           # a dot
             (\w+)        # type of proforma
