@@ -90,7 +90,7 @@ P18:
   type: string
 P19:
   nullable: True
-  type: [string, list]
+  type: string
   wrapping_values: True
 P22:
   required: True

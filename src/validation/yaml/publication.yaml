@@ -82,7 +82,7 @@ P18:
   type: string
   nullable: True
 P19:
-  type: [string, list]
+  type: string
   nullable: True
   wrapping_values: True
 P22:
