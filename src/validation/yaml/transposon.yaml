@@ -1,0 +1,250 @@
+# ! MA1f. Database ID for insertion (FBti) :
+MA1f:
+  required: False
+  nullable: True
+  type: string
+# ! MA1a. Insertion symbol to use in database :
+MA1a:
+  required: False
+  nullable: True
+  type: string
+# ! MA1b. Symbol used in reference :
+MA1b:
+  required: False
+  nullable: True
+  type: string
+# ! MA27. Insertion category [CV] :
+MA27:
+  required: False
+  nullable: True
+  type: string
+# ! MA4. Symbol of inserted transposon :
+MA4:
+  required: False
+  nullable: True
+  type: string
+# ! MA20. Species of host genome :
+MA20:
+  required: False
+  nullable: True
+  type: string
+# ! MA1c. Action - rename this insertion symbol :
+MA1c:
+  required: False
+  nullable: True
+  type: string
+# ! MA1g. Action - merge these insertion(s) (FBti) :
+MA1g:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MA1h. Action - delete insertion record (“y”/blank) :
+MA1h:
+  required: False
+  nullable: True
+  type: string
+# ! MA1i. Action - dissociate MA1f from FBrf (“y”/blank) :
+MA1i:
+  required: False
+  nullable: True
+  type: string
+# ! MA1d. Other synonym(s) for insertion symbol :
+MA1d:
+  required: False
+  nullable: True
+  type: string
+# ! MA1e. Silent synonym(s) for insertion symbol :
+MA1e:
+  required: False
+  nullable: True
+  type: string
+# ! MA22. Line id associated with insertion :
+MA22:
+  required: False
+  nullable: True
+  type: string
+# ! MA5a. Chromosomal location of insert :
+MA5a:
+  required: False
+  nullable: True
+  type: string
+# ! MA5c. Cytological location of insert (in situ) :
+MA5c:
+  required: False
+  nullable: True
+  type: string
+# ! MA5e. Cytological location (inferred from sequence) :
+MA5e:
+  required: False
+  nullable: True
+  type: string
+# ! MA5f. Genomic release number for data reported in MA5e :
+MA5f:
+  required: False
+  nullable: True
+  type: string
+# ! MA5d. Insertion maps to/near gene :
+MA5d:
+  required: False
+  nullable: True
+  type: string
+# ! MA7. Associated chromosomal aberration :
+MA7:
+  required: False
+  nullable: True
+  type: string
+# ! MA14. Associated balancer :
+MA14:
+  required: False
+  nullable: True
+  type: string
+# ! MA12. Consequent allele(s) :
+MA12:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MA8. Phenotype (viable, fertile) :
+MA8:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MA21a. Genomic location of insertion :
+MA21a:
+  required: False
+  nullable: True
+  type: string
+# ! MA21b. Genome release number for entry in MA21a :
+MA21b:
+  required: False
+  nullable: True
+  type: string
+# ! MA21e. Comments concerning genomic location :
+MA21e:
+  required: False
+  nullable: True
+  type: string
+# ! MA6. Orientation of insert relative to chromosome :
+MA6:
+  required: False
+  nullable: True
+  type: string
+# ! MA21c. Insertion into natTE (identified, in FB) :
+MA21c:
+  required: False
+  nullable: True
+  type: string
+# ! MA21f. Insertion into other TE or repeat region (“y”/blank) :
+MA21f:
+  required: False
+  nullable: True
+  type: string
+# ! MA21d. Distance from insertion site to end of natTE/repeat :
+MA21d:
+  required: False
+  nullable: True
+  type: string
+# ! MA19a. Accession for insertion flanking sequence (dupl for multiple) :
+MA19a:
+  required: False
+  nullable: True
+  type: string
+# ! MA19b. Insertion site accession type (5’, 3’, b) :
+MA19b:
+  required: False
+  nullable: True
+  type: string
+# ! MA19c. Position of first base of target sequence in accession :
+MA19c:
+  required: False
+  nullable: True
+  type: string
+# ! MA19d. First base of unique sequence in accession if in natTE :
+MA19d:
+  required: False
+  nullable: True
+  type: string
+# ! MA19e. Accession invalidation or assessment :
+MA19e:
+  required: False
+  nullable: True
+  type: string
+# ! MA26. Accession for this instance of natTE :
+MA26:
+  required: False
+  nullable: True
+  type: string
+# ! MA23a. Insertion-affected gene reported (dupl for multiple) :
+MA23a:
+  required: False
+  nullable: True
+  type: string
+# ! MA23b. Affected gene criteria [CV] :
+MA23b:
+  required: False
+  nullable: True
+  type: string
+# ! MA23c. Comment, affected gene criteria [free text] :
+MA23c:
+  required: False
+  nullable: True
+  type: string
+# ! MA23g. Orientation relative to affected gene :
+MA23g:
+  required: False
+  nullable: True
+  type: string
+# ! MA15a. FBti progenitor (via transposition) at distinct location :
+MA15a:
+  required: False
+  nullable: True
+  type: string
+# ! MA15b. FBti progenitor (via recombination) at distinct location :
+MA15b:
+  required: False
+  nullable: True
+  type: string
+# ! MA15c. Replaced FBti progenitor, recombination substrate :
+MA15c:
+  required: False
+  nullable: True
+  type: string
+# ! MA15d. Modified FBti progenitor (in situ) :
+MA15d:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MA24. Arose in multiple insertion line (“y”/“p”/blank) :
+MA24:
+  required: False
+  nullable: True
+  type: string
+# ! MA18. Co-isolated insertion(s) :
+MA18:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MA9. Comments [free text] :
+MA9:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MA16. Information on availability :
+MA16:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MA30. From dataset/collection (symbol) :
+MA30:
+  required: False
+  nullable: True
+  type: string
+# ! MA30a. Type of relationship to dataset/collection [member_of_reagent_collection/experimental_result] :
+MA30a:
+  required: False
+  nullable: True
+  type: string
+# ! MA10. Internal notes :
+MA10:
+  required: False
+  nullable: True
+  type: [list, string]
