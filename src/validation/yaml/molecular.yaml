@@ -1,0 +1,235 @@
+# ! MS1f. Database ID for segment (FBid or “new”) :
+MS1f:
+  required: False
+  nullable: True
+  type: string
+# ! MS1a. Segment symbol to use in database :
+MS1a:
+  required: False
+  nullable: True
+  type: string
+# ! MS1b. Symbol used in paper :
+MS1b:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MS16. Segment category (type of entity) [CV] :transgenic_transposable_element
+MS16:
+  required: False
+  nullable: True
+  type: string
+# ! MS4a. Description [CV] :transposon
+MS4a:
+  required: False
+  nullable: True
+  type: string
+# ! MS21. Transposon class (generic) :
+MS21:
+  required: False
+  nullable: True
+  type: string
+# ! MS14. Uses [CV] :
+MS14:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MS22. Localized function [CV] :
+MS22:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MS1c. Action - replace this segment symbol :
+MS1c:
+  required: False
+  nullable: True
+  type: string
+# ! MS1g. Action - merge these segment(s) :
+MS1g:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MS1h. Action - delete segment record (“y”/blank) :
+MS1h:
+  required: False
+  nullable: True
+  type: string
+# ! MS1i. Action - dissociate MS1f from FBrf (“y”/blank) :
+MS1i:
+  required: False
+  nullable: True
+  type: string
+# ! MS3b. Other synonym(s) for segment symbol :
+MS3b:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MS3d. Silent synonym(s) for segment symbol :
+MS3d:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MS24. Marker allele(s) carried (symbol) :
+MS24:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MS14a. Tagged with experimental tool (FBto symbol) :
+MS14a:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MS14b. Other experimental tools carried (FBto symbol) :
+MS14b:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MS14c. Encoded experimental tool (FBto symbol) :
+MS14c:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MS14d. Encoded experimental tool [CV] :
+MS14d:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MS14e. Regulatory region(s) present (symbol) :
+MS14e:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MS15. Moseg description [free text] :
+MS15:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MS19a. Progenitor construct (symbol) :
+MS19a:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MS19d. Progenitor genomic or cDNA clone (symbol) :
+MS19d:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MS19b. Progenitor(s) (other - free text) :
+MS19b:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MS19c. Isolate of (generic natTE) :
+MS19c:
+  required: False
+  nullable: True
+  type: string
+# ! MS19e. Associated gene (symbol) :
+MS19e:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MS20. Related constructs :
+MS20:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MS18a. Cloning sites [CV] :
+MS18a:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MS4b. Length in kb :
+MS4b:
+  required: False
+  nullable: True
+  type: string
+# ! MS4h. Component allele(s) :
+MS4h:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MS4g. Component features [CV] :
+MS4g:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MS17. Transcript (expression data) :
+MS17:
+  required: False
+  nullable: True
+  type: string
+# ! MS1e. Type of cloned_region [CV] :
+MS1e:
+  required: False
+  nullable: True
+  type: string
+# ! MS4e. Component segment source (species) :
+MS4e:
+  required: False
+  nullable: True
+  type: string
+# ! MS5a. Original left end (in + orientation) :
+MS5a:
+  required: False
+  nullable: True
+  type: string
+# ! MS5b. Original right end (in + orientation) :
+MS5b:
+  required: False
+  nullable: True
+  type: string
+# ! MS7a. AC no. | gi no. | date | D or ND :
+MS7a:
+  required: False
+  nullable: True
+  type: string
+# ! MS7b. Location of MS5a in database entry :
+MS7b:
+  required: False
+  nullable: True
+  type: string
+# ! MS7c. Location of MS5b in database entry :
+MS7c:
+  required: False
+  nullable: True
+  type: string
+# ! MS7e. Comparable segment, sequenced strain :
+MS7e:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MS12. Sequence :
+MS12:
+  required: False
+  nullable: True
+  type: string
+# ! MS9. Segments in order | orientation :
+MS9:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MS18b. Junction restriction sites | position :
+MS18b:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MS30. From dataset/collection (symbol) :
+MS30:
+  required: False
+  nullable: True
+  type: string
+# ! MS30a. Type of relationship to dataset/collection [member_of_reagent_collection/experimental_result] :
+MS30a:
+  required: False
+  nullable: True
+  type: string
+# ! MS10b. General comments :
+MS10b:
+  required: False
+  nullable: True
+  type: [list, string]
+# ! MS11. Internal notes :
+MS11:
+  required: False
+  nullable: True
+  type: [list, string]
