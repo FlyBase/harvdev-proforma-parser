@@ -236,6 +236,11 @@ GA34c:
     required: False
     nullable: True
     at_forbidden: True
+GA35:  # Not programmed yet
+    type: [list, string]
+    required: False
+    nullable: True
+    at_forbidden: True
 GA36:
     type: string
     required: False

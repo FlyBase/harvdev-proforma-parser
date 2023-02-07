@@ -280,6 +280,8 @@ GA34c:
     cv: property type
     cvterm: hdm_internal_notes
     value: GA34c
+GA35:
+    type: notdone
 # 'GA36', 'disease_associated',    #cv property type -- featureprop y/blank
 GA36:
     type: featureprop

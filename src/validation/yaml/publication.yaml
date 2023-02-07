@@ -179,7 +179,8 @@ P41:
     cell_line, cell_line::DONE,
     cell_line(commercial), cell_line(commercial)::DONE,
     cell_line(stable), cell_line(stable)::DONE,
-    chemical, chemical::DONE]
+    chemical, chemical::DONE,
+    no_flag]
 P42:
   required: False
   nullable: True

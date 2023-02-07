@@ -64,7 +64,8 @@ class ChadoAllele(ChadoFeatureObject):
                           'libraryfeatureprop': self.load_lfp,
                           'rename': self.rename,
                           'dis_pub': self.dis_pub,
-                          'make_obsolete': self.make_obsolete}
+                          'make_obsolete': self.make_obsolete,
+                          'notdone': self.not_done}
         self.delete_dict = {'featureprop': self.delete_featureprop,
                             'GA12a_featureprop': self.GA12a_featureprop_delete,
                             'synonym': self.delete_synonym,
@@ -89,6 +90,11 @@ class ChadoAllele(ChadoFeatureObject):
         self.process_data = self.load_reference_yaml(yml_file, params)
         # self.genus = "Drosophila"
         # self.species = "melanogaster"
+
+    def not_done(self, key):
+        # Remove once GA35 done.
+        # Will be done once transposon have been sorted out.
+        self.critical_error(self.process_data['GA35']['data'], "Not programmed yet")
 
     def checks(self, references):  # noqa
         """Check for Allele required data.

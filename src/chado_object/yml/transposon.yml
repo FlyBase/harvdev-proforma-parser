@@ -1,0 +1,151 @@
+
+# ! MA1f. Database ID for insertion (FBti) :
+MA1f:
+  type: ignore
+# ! MA1a. Insertion symbol to use in database :
+MA1a:
+  type: ignore
+# ! MA1b. Symbol used in reference :
+MA1b:
+  type: ignore
+# ! MA27. Insertion category [CV] :
+MA27:
+  type: ignore
+# ! MA4. Symbol of inserted transposon :
+MA4:
+  type: ignore
+# ! MA20. Species of host genome :
+MA20:
+  type: ignore
+# ! MA1c. Action - rename this insertion symbol :
+MA1c:
+  type: ignore
+# ! MA1g. Action - merge these insertion(s) (FBti) :
+MA1g:
+  type: ignore
+# ! MA1h. Action - delete insertion record (“y”/blank) :
+MA1h:
+  type: ignore
+# ! MA1i. Action - dissociate MA1f from FBrf (“y”/blank) :
+MA1i:
+  type: ignore
+# ! MA1d. Other synonym(s) for insertion symbol :
+MA1d:
+  type: ignore
+# ! MA1e. Silent synonym(s) for insertion symbol :
+MA1e:
+  type: ignore
+# ! MA22. Line id associated with insertion :
+MA22:
+  type: ignore
+# ! MA5a. Chromosomal location of insert :
+MA5a:
+  type: ignore
+# ! MA5c. Cytological location of insert (in situ) :
+MA5c:
+  type: ignore
+# ! MA5e. Cytological location (inferred from sequence) :
+MA5e:
+  type: ignore
+# ! MA5f. Genomic release number for data reported in MA5e :
+MA5f:
+  type: ignore
+# ! MA5d. Insertion maps to/near gene :
+MA5d:
+  type: ignore
+# ! MA7. Associated chromosomal aberration :
+MA7:
+  type: ignore
+# ! MA14. Associated balancer :
+MA14:
+  type: ignore
+# ! MA12. Consequent allele(s) :
+MA12:
+  type: ignore
+# ! MA8. Phenotype (viable, fertile) :
+MA8:
+  type: ignore
+# ! MA21a. Genomic location of insertion :
+MA21a:
+  type: ignore
+# ! MA21b. Genome release number for entry in MA21a :
+MA21b:
+  type: ignore
+# ! MA21e. Comments concerning genomic location :
+MA21e:
+  type: ignore
+# ! MA6. Orientation of insert relative to chromosome :
+MA6:
+  type: ignore
+# ! MA21c. Insertion into natTE (identified, in FB) :
+MA21c:
+  type: ignore
+# ! MA21f. Insertion into other TE or repeat region (“y”/blank) :
+MA21f:
+  type: ignore
+# ! MA21d. Distance from insertion site to end of natTE/repeat :
+MA21d:
+  type: ignore
+# ! MA19a. Accession for insertion flanking sequence (dupl for multiple) :
+MA19a:
+  type: ignore
+# ! MA19b. Insertion site accession type (5’, 3’, b) :
+MA19b:
+  type: ignore
+# ! MA19c. Position of first base of target sequence in accession :
+MA19c:
+  type: ignore
+# ! MA19d. First base of unique sequence in accession if in natTE :
+MA19d:
+  type: ignore
+# ! MA19e. Accession invalidation or assessment :
+MA19e:
+  type: ignore
+# ! MA26. Accession for this instance of natTE :
+MA26:
+  type: ignore
+# ! MA23a. Insertion-affected gene reported (dupl for multiple) :
+MA23a:
+  type: ignore
+# ! MA23b. Affected gene criteria [CV] :
+MA23b:
+  type: ignore
+# ! MA23c. Comment, affected gene criteria [free text] :
+MA23c:
+  type: ignore
+# ! MA23g. Orientation relative to affected gene :
+MA23g:
+  type: ignore
+# ! MA15a. FBti progenitor (via transposition) at distinct location :
+MA15a:
+  type: ignore
+# ! MA15b. FBti progenitor (via recombination) at distinct location :
+MA15b:
+  type: ignore
+# ! MA15c. Replaced FBti progenitor, recombination substrate :
+MA15c:
+  type: ignore
+# ! MA15d. Modified FBti progenitor (in situ) :
+MA15d:
+  type: ignore
+# ! MA24. Arose in multiple insertion line (“y”/“p”/blank) :
+MA24:
+  type: ignore
+# ! MA18. Co-isolated insertion(s) :
+MA18:
+  type: ignore
+# ! MA9. Comments [free text] :
+MA9:
+  type: ignore
+# ! MA16. Information on availability :
+MA16:
+  type: ignore
+# ! MA30. From dataset/collection (symbol) :
+MA30:
+  type: ignore
+# ! MA30a. Type of relationship to dataset/collection [member_of_reagent_collection/experimental_result] :
+MA30a:
+  type: ignore
+# ! MA10. Internal notes :
+MA10:
+  type: ignore

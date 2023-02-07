@@ -19,6 +19,7 @@ from chado_object.chado_db import ChadoDb
 from chado_object.general.chado_grp import ChadoGrp
 from chado_object.general.chado_cell_line import ChadoCellLine
 from chado_object.seqfeat.chado_seqfeat import ChadoSeqFeat
+from chado_object.chado_transposon import ChadoTransposon
 
 import logging
 import sys
@@ -104,6 +105,7 @@ def process_data_input(proforma_object):
         'DATABASE': (ChadoDb),
         'SEQUENCE': (ChadoSeqFeat),
         'CULTURED': (ChadoCellLine),
+        'TRANSPOSON': (ChadoTransposon),
     }
 
     try:
