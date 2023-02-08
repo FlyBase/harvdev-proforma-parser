@@ -12,3 +12,4 @@ from .chado_exceptions import ValidationError
 from .general.chado_grp import ChadoGrp
 from .seqfeat.chado_seqfeat import ChadoSeqFeat
 from .chado_transposon import ChadoTransposon
+from .chado_molecular import ChadoMolecular

@@ -191,6 +191,8 @@ GA20:
     cv: property type
     cvterm: availability
     value: GA20
+GA21:
+    type: notdone
 # 'GA23a', 'origin_type',
 GA23a:
     type: featureprop

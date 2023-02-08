@@ -159,6 +159,7 @@ P40:
     pheno,
     gene_group,
     noGOcur,
+    GOcur,
     pheno_chem,
     pheno_anat,
     pathway]
@@ -180,7 +181,7 @@ P41:
     cell_line(commercial), cell_line(commercial)::DONE,
     cell_line(stable), cell_line(stable)::DONE,
     chemical, chemical::DONE,
-    no_flag]
+    no_flag, phys_int]
 P42:
   required: False
   nullable: True
