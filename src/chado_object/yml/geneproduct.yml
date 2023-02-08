@@ -1,0 +1,80 @@
+# ! F1f. Database id (default ‘new’) :
+F1f:
+  type: ignore
+# ! F1a. Gene product symbol :
+F1a:
+  type: ignore
+
+# ! F3. Gene product type [CV] :
+F3:
+  type: ignore
+
+# ! F2. Sequence attribute [CV] :
+F2:
+  type: ignore
+# ! F1b. Action - rename this gene product (symbol) :
+F1b:
+  type: ignore
+# ! F1c. Action - merge these products(s) (symbols or FB#s) :
+F1c:
+  type: ignore
+# ! F1d. Action - delete gene product record (“y”/blank) :
+F1d:
+  type: ignore
+# ! F1e. Action - dissociate F1f from FBrf (“y”/blank) :
+F1e:
+  type: ignore
+# ! F4. Names(s) used in paper [free text] :
+F4:
+  type: ignore
+# ! F6. FlyExpress image number(s) (FBim) :
+F6:
+  type: ignore
+# ! F5. Molecule size(s) (wb, nb, sa) :
+F5:
+  type: ignore
+# ! F9. Expression pattern (<e>  <t>  <a>  <s>  <note>) :
+F9:
+  type: ignore
+# ! F15. General expression comment [free text] :
+F15:
+  type: ignore
+# ! F10. Used as bodypart marker for (term ; ID) [CV] :
+F10:
+  type: ignore
+# ! F11. Expression pattern ascribed to (gene symbol) :
+F11:
+  type: ignore
+# ! F11a. Is subset of wild-type gene expression pattern (y/n) :
+F11a:
+  type: ignore
+# ! F11b. Is pattern aberrant relative to wild-type (y/n) :
+F11b:
+  type: ignore
+# ! F12. Antibody reported (monoclonal, polyclonal) :
+F12:
+  type: ignore
+# ! F16a. Nucleotide probe (cDNA, cDNA fragment, genomic fragment, synthetic) :
+F16a:
+  type: ignore
+# ! F16b. Sequence coordinates for F16a :
+F16b:
+  type: ignore
+# ! F16c. Description of F16a [free text] :
+F16c:
+  type: ignore
+# ! F17. Alleles or genotypes used :
+F17:
+  type: ignore
+# ! F13. Comment [free text] :
+F13:
+  type: ignore
+# ! F14. Internal note [free text] :
+F14:
+  type: ignore
+# ! F91. From dataset/collection (symbol) :
+F91:
+  type: ignore
+# ! F91a. Type of relationship to dataset/collection [member_of_reagent_collection/experimental_result] :
+F91a:
+  type: ignore
