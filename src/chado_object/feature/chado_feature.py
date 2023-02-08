@@ -281,7 +281,7 @@ class ChadoFeatureObject(ChadoObject):
                 return
             except NoResultFound:
                 message = "Unable to find {} with symbol {}.".format(feature_type, self.process_data[symbol_key]['data'][FIELD_VALUE])
-                self.critical_error(self.process_data[symbol_key]['data'], message)
+                self.critical_error(self.process_data[rename_key]['data'], message)
                 return
 
             self.feature.name = sgml_to_plain_text(self.process_data[symbol_key]['data'][FIELD_VALUE])
