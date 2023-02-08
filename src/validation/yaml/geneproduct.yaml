@@ -57,7 +57,7 @@ F5:
 F9:
   required: False
   nullable: True
-  type: [lits, string]
+  type: [list, string]
 # ! F15. General expression comment [free text] :
 F15:
   required: False
