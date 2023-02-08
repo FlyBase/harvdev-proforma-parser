@@ -272,7 +272,18 @@ class ChadoFeatureObject(ChadoObject):
         rename_key = '{}1e'.format(supported_features[feature_type][CODE])
 
         if self.has_data(rename_key):
-            self.feature = feature_symbol_lookup(self.session, supported_features[feature_type][SO], self.process_data[rename_key]['data'][FIELD_VALUE])
+            try:
+                self.feature = feature_symbol_lookup(self.session, supported_features[feature_type][SO], self.process_data[rename_key]['data'][FIELD_VALUE])
+            except MultipleResultsFound:
+                message = "Multiple {}'s with symbol {}.".format(feature_type, self.process_data[rename_key]['data'][FIELD_VALUE])
+                log.info(message)
+                self.critical_error(self.process_data[rename_key]['data'], message)
+                return
+            except NoResultFound:
+                message = "Unable to find {} with symbol {}.".format(feature_type, self.process_data[symbol_key]['data'][FIELD_VALUE])
+                self.critical_error(self.process_data[symbol_key]['data'], message)
+                return
+
             self.feature.name = sgml_to_plain_text(self.process_data[symbol_key]['data'][FIELD_VALUE])
             self.is_new = False
             fs_remove_current_symbol(self.session, self.feature.feature_id,
