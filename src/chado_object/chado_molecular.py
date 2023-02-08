@@ -14,5 +14,5 @@ class ChadoMolecular(ChadoFeatureObject):
         super(ChadoMolecular, self).__init__(params)
 
     def load_content(self, references):
-        log.warning("Molecular NOT coded yet")
+        log.critical("Molecular NOT coded yet")
         return None
