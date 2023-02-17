@@ -4,7 +4,7 @@ F1f:
   nullable: True
   type: string
 # ! F1a. Gene product symbol :
-F11:
+F1a:
   required: False
   nullable: True
   type: string
