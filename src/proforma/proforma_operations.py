@@ -206,43 +206,46 @@ class ProformaFile(object):
         nxt = chain(islice(nxt, 1, None), [None])
         return zip(current, nxt)
 
-    def extract_curator_initials_and_filename_short(self):
-        """Get curator name info."""
+    def extract_curator_initials(self):
+        r"""Get curator name info.
+
+        Examples of files:-
+        Cambridge
+          uu74053
+          uu15571.user
+          uu187279.bibl
+
+          so ([a-z]{2})\d+
+        Harvard
+          222195.uuuu.edit.230201
+          255209.uu.hds_multiple.230202
+          FBhh0001495.uuuu.hh_2.230207
+          al_div.uu.edit7.230117
+
+          so .*\.(\w+)\..*
+
+
+        So if we split on '.'
+        check [0] if is (\w{2})\d+ the cam and we have the cur
+        if not the lookup up [1]
+        """
         # Grab the filename after the last slash.
         filename_short = self.filename.rsplit('/', 1)[-1]
 
-        curator_initials = None
-        record_type = None
-        harv_pattern = r"""
-            ^            # match from the start
-            \d+          # string of integers
-            \.           # a dot
-            (\w+)        # The user initials
-            \.           # a dot
-            (\w+)        # type of proforma
-            \.           # a dot
-            \d+          # string of integers
-            $            # end of the string"""
+        dot_elements = filename_short.split('.')
 
-        cam_pattern = r"""
-            ^            # match from the start
-            (\D+)        # The user initials
-            \d+          # string of integers
-            \.           # a dot
-            (\w+)        # type of proforma
-            $            # end of the string"""
-
-        fields = re.search(harv_pattern, filename_short, re.VERBOSE)
+        # Cambridge format
+        log.debug(f"dot elelements {dot_elements}")
+        fields = re.search(r"^([a-z]{2})\d+$", dot_elements[0])
         if fields:
-            curator_initials = fields.group(1)
-            record_type = fields.group(2)
-        else:
-            fields = re.search(cam_pattern, filename_short, re.VERBOSE)
-            if fields:
-                curator_initials = fields.group(1)
-                record_type = fields.group(2)
+            return fields.group(1), "Cambridge", filename_short
 
-        return curator_initials, record_type, filename_short
+        # Harvard format
+        if len(dot_elements) >= 2:
+            fields = re.search(r"^(\w+)$", dot_elements[1])
+            if fields:
+                return fields.group(1), "Harvard", filename_short
+        return None, None, filename_short
 
     def extract_curator_fullname(self, curator_initials):
         """Get curator fullname."""
@@ -297,7 +300,7 @@ class ProformaFile(object):
         list_of_proforma_objects = []
 
         # Obtain curator information from the filename and the curator dictionary from the config file.
-        curator_initials, record_type, filename_short = self.extract_curator_initials_and_filename_short()
+        curator_initials, record_type, filename_short = self.extract_curator_initials()
         log.debug('Initials are %s' % (curator_initials))
         if curator_initials:
             curator_fullname = self.extract_curator_fullname(curator_initials)
