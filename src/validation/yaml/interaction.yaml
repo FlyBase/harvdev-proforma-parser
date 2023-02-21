@@ -1,0 +1,80 @@
+IN1f:
+  required: True
+  nullable: False
+  type: string
+IN1d:
+  required: True
+  nullable: False
+  type: string
+IN1h:
+  required: False
+  nullable: True
+  type: string
+IN1c:
+  required: False
+  nullable: True
+  type: string
+IN1g:
+  required: False
+  nullable: True
+  type: string
+IN1i:
+  required: False
+  nullable: True
+  type: string
+IN2a:
+  required: True
+  nullable: False
+  type: string
+IN2b:
+  required: True
+  nullable: False
+  type: string
+IN3:
+  required: True
+  nullable: True
+  type: [list, string]
+IN5a:
+  required: False
+  nullable: True
+  type: string
+IN5b:
+  required: False
+  nullable: True
+  type: [list, string]
+IN5d:
+  required: False
+  nullable: True
+  type: [list, string]
+IN5e:
+  required: False
+  nullable: True
+  type: [list, string]
+IN6:
+  required: True
+  nullable: True
+  type: [list, string]
+IN7a:
+  required: False
+  nullable: True
+  type: [list, string]
+IN7c:
+  required: False
+  nullable: True
+  type: [list, string]
+IN7d:
+  required: False
+  nullable: True
+  type: [list, string]
+IN7b:
+  required: False
+  nullable: True
+  type: [list, string]
+IN8a:
+  required: False
+  nullable: True
+  type: [list, string]
+IN8b:
+  required: False
+  nullable: True
+  type: [list, string]

@@ -22,6 +22,7 @@ from chado_object.seqfeat.chado_seqfeat import ChadoSeqFeat
 from chado_object.chado_transposon import ChadoTransposon
 from chado_object.chado_molecular import ChadoMolecular
 from chado_object.chado_geneproduct import ChadoGeneproduct
+from chado_object.chado_interaction import ChadoInteraction
 
 import logging
 import sys
@@ -110,6 +111,7 @@ def process_data_input(proforma_object):
         'TRANSPOSON': (ChadoTransposon),
         'MOLECULAR': (ChadoMolecular),
         'GENEPRODUCT': (ChadoGeneproduct),
+        'INTERACTION': (ChadoInteraction),
     }
 
     try:
