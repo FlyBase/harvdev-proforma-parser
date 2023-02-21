@@ -113,6 +113,11 @@ def get_validate_geneproduct_schema(fields_values):
     return "geneproduct.yaml"
 
 
+def get_validate_interaction_schema(fields_values):
+    log.critical("INTERACTION Not coded yet.")
+    return "interaction.yaml"
+
+
 def validation_file_schema_lookup(proforma_type, fields_values):
     """Lookup the file schema.
 
@@ -147,7 +152,8 @@ def validation_file_schema_lookup(proforma_type, fields_values):
                        "CULTURED": get_validate_cell_line_schema,
                        "TRANSPOSON": get_validate_transposon_schema,
                        "MOLECULAR": get_validate_molecular_schema,
-                       "GENEPRODUCT": get_validate_geneproduct_schema}
+                       "GENEPRODUCT": get_validate_geneproduct_schema,
+                       "INTERACTION": get_validate_interaction_schema}
     # if we have specific validation stuff set it up here.
     validation_base = {"PUBLICATION": ValidatorPub,
                        "MULTIPUBLICATION": ValidatorMultipub,
@@ -164,7 +170,8 @@ def validation_file_schema_lookup(proforma_type, fields_values):
                        "CULTURED": ValidatorBase,
                        "TRANSPOSON": ValidatorBase,
                        "MOLECULAR": ValidatorBase,
-                       "GENEPRODUCT": ValidatorBase}
+                       "GENEPRODUCT": ValidatorBase,
+                       "INTERACTION": ValidatorBase}
     validator = None
 
     pattern = r"""
