@@ -242,11 +242,20 @@ class ChadoAllele(ChadoFeatureObject):
                 self.critical_error((1, 2, 3), message)
                 return None
 
-            # create feature_cvtermprop
-            get_or_create(self.session, FeatureCvtermprop,
-                          feature_cvterm_id=feat_cvt.feature_cvterm_id,
-                          value=do_dict[prop_key],
-                          type_id=cvtermprop.cvterm_id)
+            # Get max rank 0 if there are none.
+            rank = 0
+            fcps = self.session.query(FeatureCvtermprop).\
+                filter(FeatureCvtermprop.feature_cvterm_id == feat_cvt.feature_cvterm_id,
+                       FeatureCvtermprop.type_id == cvtermprop.cvterm_id)
+            for fcp in fcps:
+                if fcp.rank > rank:
+                    rank = fcp.rank
+            rank += 1
+            fcp = FeatureCvtermprop(feature_cvterm_id=feat_cvt.feature_cvterm_id,
+                                    value=do_dict[prop_key],
+                                    rank=rank,
+                                    type_id=cvtermprop.cvterm_id)
+            self.session.add(fcp)
 
     def rename(self, key):
         """Rename 'fullname' synonym.
