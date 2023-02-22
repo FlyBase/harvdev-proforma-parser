@@ -167,13 +167,22 @@ class ChadoObject(object):
             error_message (string): Error message.
             level (int): Level of error message. Usually one of CRITICAL/WARNING/DEBUG _ERROR
         """
-        ErrorTracking(self.filename,
-                      "Proforma entry starting on line: {}".format(self.proforma_start_line_number),
-                      "Proforma error around line: {}".format(tuple[LINE_NUMBER]),
-                      'Validation Error.',
-                      "{}: {}".format(tuple[FIELD_NAME], error_message),
-                      "Field value: {}".format(tuple[FIELD_VALUE]),
-                      level)
+        try:
+            ErrorTracking(self.filename,
+                          "Proforma entry starting on line: {}".format(self.proforma_start_line_number),
+                          "Proforma error around line: {}".format(tuple[LINE_NUMBER]),
+                          'Validation Error.',
+                          "{}: {}".format(tuple[FIELD_NAME], error_message),
+                          "Field value: {}".format(tuple[FIELD_VALUE]),
+                          level)
+        except IndexError as e:
+            ErrorTracking(self.filename,
+                          "Proforma entry starting on line: {}".format(self.proforma_start_line_number),
+                          "Proforma error around line: NOT sure see field value",
+                          'Validation Error.',
+                          f"Index error on generating error message: {e}",
+                          f"Field value: {tuple}",
+                          level)
 
     def critical_error(self, tuple, error_message):
         """Add critical errror.

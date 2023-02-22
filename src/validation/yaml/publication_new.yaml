@@ -196,7 +196,7 @@ P43:
             dm_other, dm_other::DONE, noDOcur]
   nullable: True
 P44:
-  type: string
+  type: [list, string]
   nullable: True
 P45:
   required: False
