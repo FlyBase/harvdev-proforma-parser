@@ -118,7 +118,7 @@ def get_feature(self, key, item, cvterms):
         get_or_create(self.session, FeaturePub, feature_id=feature.feature_id, pub_id=self.pub.pub_id)
     else:
         try:
-            feature = feature_symbol_lookup(self.session, self.process_data[key]['feat_type'], name)
+            feature = feature_symbol_lookup(self.session, self.process_data[key]['feat_type'], name, organism_id=organism.organism_id)
         except NoResultFound:
             message = "Unable to find Feature with symbol {} Add 'NEW:' if it is to be created.".format(name)
             self.critical_error(item, message)
@@ -271,12 +271,35 @@ def GA10_feat_rel(self, key):
                                pub_id=self.pub.pub_id)
 
         # add feature relationshipproppub to allele
-        frprop, _ = get_or_create(self.session, FeatureRelationshipprop,
-                                  feature_relationship_id=ti_allele.feature_relationship_id,
-                                  value=self.process_data[key]['prop_value'],
-                                  type_id=cvterms['prop_cvterm'].cvterm_id)
+        rank = 0
+        seen = None
+        frps = self.session.query(FeatureRelationshipprop).\
+            filter(FeatureRelationshipprop.feature_relationship_id == ti_allele.feature_relationship_id,
+                   FeatureRelationshipprop.type_id == cvterms['prop_cvterm'].cvterm_id)
+        for frp in frps:
+            if frp.value == self.process_data[key]['prop_value']:
+                seen = frp
+            if frp.rank > rank:
+                rank = frp.rank
+        rank += 1
+
+        if not seen:
+            frp = FeatureRelationshipprop(feature_relationship_id=ti_allele.feature_relationship_id,
+                                          rank=rank,
+                                          value=self.process_data[key]['prop_value'],
+                                          type_id=cvterms['prop_cvterm'].cvterm_id)
+            self.session.add(frp)
+            # Now get it to update the _id for this
+            frp = self.session.query(FeatureRelationshipprop).\
+                filter(FeatureRelationshipprop.feature_relationship_id == ti_allele.feature_relationship_id,
+                       FeatureRelationshipprop.rank == rank,
+                       FeatureRelationshipprop.type_id == cvterms['prop_cvterm'].cvterm_id).one()
+        else:
+            self.warning_error(item, f"Feature relationshipprop with value {self.process_data[key]['prop_value']} already exists ignoring.")
+            frp = seen
+
         frp_proppub, _ = get_or_create(self.session, FeatureRelationshippropPub,
-                                       feature_relationshipprop_id=frprop.feature_relationshipprop_id,
+                                       feature_relationshipprop_id=frp.feature_relationshipprop_id,
                                        pub_id=self.pub.pub_id)
 
         # Add feat relationship for new_feat to gene
