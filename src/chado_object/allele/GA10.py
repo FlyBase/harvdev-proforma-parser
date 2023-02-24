@@ -249,7 +249,7 @@ def GA10_feat_rel(self, key):
         items = [self.process_data[key]['data']]
 
     for item in items:
-        tx_feature = self.get_feature(key, item, cvterms) 
+        tx_feature = self.get_feature(key, item, cvterms)
         if not tx_feature:
             continue
 
