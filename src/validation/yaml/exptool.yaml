@@ -1,0 +1,130 @@
+#! TO1f. Database ID for experimental tool (FBto) :
+TO1f:
+  required: False
+  nullable: False
+  type: string
+#! TO1a. Experimental tool symbol to use in database :
+TO1a:
+  required: False
+  nullable: False
+  type: string
+
+#! TO1b. Experimental tool symbol synonym(s) :
+TO1b:
+  required: False
+  nullable: False
+  type: string
+
+#! TO10. Species of tool (organism.abbreviation) :
+TO10:
+  required: False
+  nullable: False
+  type: string
+
+#! TO1c. Action - rename this experimental tool symbol :
+TO1c:
+  required: False
+  nullable: False
+  type: string
+
+#! TO1g. Action - merge these experimental tools (FBto) :
+TO1g:
+  required: False
+  nullable: False
+  type: [list, string]
+
+#! TO1h. Action - obsolete TO1a in FlyBase (y/blank) :
+TO1h:
+  required: False
+  nullable: False
+  type: string
+
+#! TO1i. Action - dissociate TO1a from reference (y/blank) :
+TO1i:
+  required: False
+  nullable: False
+  type: string
+
+#! TO2a. Action - experimental tool name to use in FlyBase :
+TO2a:
+  required: False
+  nullable: False
+  type: string
+
+#! TO2b. Experimental tool name synonym(s) :
+TO2b:
+  required: False
+  nullable: False
+  type: [list, string]
+
+#! TO2c. Action - rename this experimental tool name :
+TO2c:
+  required: False
+  nullable: False
+  type: string
+
+#! TO4. Experimental tool uses [CV] :
+TO4:
+  required: False
+  nullable: False
+  type: [list, string]
+
+#! TO5. Description of experimental tool [free text] :
+TO5:
+  required: False
+  nullable: False
+  type: [list, string]
+
+#! TO6a. Accession number for tool (dupl section for multiple) :
+TO6a:
+  required: False
+  nullable: False
+  type: string
+
+#! TO6b. FlyBase database symbol (DB1a) for accession in TO6a :
+TO6b:
+  required: False
+  nullable: False
+  type: string
+
+#! TO6c. Title for TO6a (if desired) [free text] :
+TO6c:
+  required: False
+  nullable: False
+  type: string
+
+#! TO6d. Action - dissociate accession in TO6a/TO6b from tool in TO1a? (blank/y) :
+TO6d:
+  required: False
+  nullable: False
+  type: string
+
+#! TO7a. Compatible tools(s) (symbol) :
+TO7a:
+  required: False
+  nullable: False
+  type: [list, string]
+
+#! TO7b. Other related tools(s) (symbol) :
+TO7b:
+  required: False
+  nullable: False
+  type: [list, string]
+
+#! TO7c. Gene of origin (symbol) :
+TO7c:
+  required: False
+  nullable: False
+  type: string
+
+#! TO8. Comments [free text] :
+TO8:
+  required: False
+  nullable: False
+  type: [list, string]
+
+#! TO9. Internal notes :
+TO9:
+  required: False
+  nullable: False
+  type: [list, string]
