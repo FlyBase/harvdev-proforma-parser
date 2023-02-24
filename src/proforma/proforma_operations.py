@@ -242,6 +242,9 @@ class ProformaFile(object):
 
         # Harvard format
         if len(dot_elements) >= 2:
+            fields = re.search(r"^([a-z]{2})\d+$", dot_elements[1])
+            if fields:
+                return fields.group(1), "Harvard", filename_short
             fields = re.search(r"^(\w+)$", dot_elements[1])
             if fields:
                 return fields.group(1), "Harvard", filename_short
