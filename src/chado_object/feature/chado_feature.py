@@ -285,7 +285,7 @@ class ChadoFeatureObject(ChadoObject):
                 self.critical_error(self.process_data[rename_key]['data'], message)
                 return
             except NoResultFound:
-                message = "Unable to find {} with symbol {}.".format(feature_type, self.process_data[symbol_key]['data'][FIELD_VALUE])
+                message = "Unable to find {} with symbol {}.".format(feature_type, self.process_data[rename_key]['data'][FIELD_VALUE])
                 self.critical_error(self.process_data[rename_key]['data'], message)
                 return
 

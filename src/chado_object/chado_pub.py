@@ -7,6 +7,8 @@
 import re
 import os
 
+from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
+
 from harvdev_utils.chado_functions.cvterm import get_cvterm
 from .chado_base import ChadoObject, FIELD_VALUE, FIELD_NAME
 
@@ -216,13 +218,16 @@ class ChadoPub(ChadoObject):
             None
 
         """
-        p2_pub = self.session.query(Pub).filter(Pub.miniref == tuple[FIELD_VALUE]).one()
+        p2_pubs = self.session.query(Pub).filter(Pub.miniref == tuple[FIELD_VALUE])
+        p2_list = []
+        for p2 in p2_pubs:
+            p2_list.append(p2.pub_id)
 
         if not self.newpub and old_parents:
             found = False
             old_name = ""
             for old_parent in old_parents:
-                if p2_pub.pub_id == old_parent.pub_id:
+                if old_parent.pub_id in p2_list:
                     found = True
                 if old_parent.miniref:
                     old_name += old_parent.miniref
