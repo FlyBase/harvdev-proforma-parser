@@ -7,8 +7,6 @@
 import re
 import os
 
-from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
-
 from harvdev_utils.chado_functions.cvterm import get_cvterm
 from .chado_base import ChadoObject, FIELD_VALUE, FIELD_NAME
 
