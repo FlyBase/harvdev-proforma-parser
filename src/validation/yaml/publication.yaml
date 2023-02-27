@@ -176,6 +176,7 @@ P41:
     disease, disease::DONE,
     diseaseHP, diseaseHP::DONE,
     diseaseF, diseaseF::DONE,
+    disease::Inappropriate use of flag,
     dataset, dataset::DONE,
     cell_line, cell_line::DONE,
     cell_line(commercial), cell_line(commercial)::DONE,

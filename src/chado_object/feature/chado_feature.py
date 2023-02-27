@@ -129,11 +129,16 @@ class ChadoFeatureObject(ChadoObject):
             list_of_vals = self.process_data[key]['data']
         else:
             list_of_vals = [self.process_data[key]['data']]
+        org_id = None
+        ignore_org = True
+        if 'organism' in self.process_data[key]:
+            org_id = get_organism(self.session, short=self.process_data[key]['organism']).organism_id
+            ignore_org = False
         pattern = re.compile(r"@([^@]+)@")
         for item in list_of_vals:
             for symbol in pattern.findall(item[FIELD_VALUE]):
                 try:
-                    feat = feature_symbol_lookup(self.session, None, symbol)
+                    feat = feature_symbol_lookup(self.session, None, symbol, organism_id=org_id, ignore_org=ignore_org)
                 except NoResultFound:
                     self.critical_error(item, "symbol '{}' lookup failed".format(symbol))
                     continue
@@ -640,7 +645,7 @@ class ChadoFeatureObject(ChadoObject):
         if type(feat_type) is list:
             return self.multi_type_lookup(item, feat_type, subscript, pattern)
         try:
-            other_feat = feature_symbol_lookup(self.session, feat_type, name, convert=subscript)
+            other_feat = feature_symbol_lookup(self.session, feat_type, name, convert=subscript, ignore_org=True)
         except MultipleResultsFound:
             message = "Multiple results found for type: '{}' name: '{}'".format(feat_type, name)
             features = feature_symbol_lookup(self.session, feat_type, name, check_unique=False, convert=subscript)
@@ -678,7 +683,7 @@ class ChadoFeatureObject(ChadoObject):
                 self.critical_error(item, message)
                 return
         try:
-            other_feat = feature_symbol_lookup(self.session, None, name, convert=subscript)
+            other_feat = feature_symbol_lookup(self.session, None, name, convert=subscript, ignore_org=True)
         except MultipleResultsFound:
             message = "Multiple results found for type: '{}' name: '{}'".format(feat_type_list, name)
             features = feature_symbol_lookup(self.session, None, name, check_unique=False, convert=subscript)

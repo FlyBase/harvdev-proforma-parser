@@ -118,6 +118,11 @@ def get_validate_interaction_schema(fields_values):
     return "interaction.yaml"
 
 
+def get_validate_exptool_schema(fields_values):
+    log.critical("EXPERIMENTAL TOOL Not coded yet.")
+    return "exptool.yaml"
+
+
 def validation_file_schema_lookup(proforma_type, fields_values):
     """Lookup the file schema.
 
@@ -153,7 +158,8 @@ def validation_file_schema_lookup(proforma_type, fields_values):
                        "TRANSPOSON": get_validate_transposon_schema,
                        "MOLECULAR": get_validate_molecular_schema,
                        "GENEPRODUCT": get_validate_geneproduct_schema,
-                       "INTERACTION": get_validate_interaction_schema}
+                       "INTERACTION": get_validate_interaction_schema,
+                       "EXPERIMENTAL": get_validate_exptool_schema}
     # if we have specific validation stuff set it up here.
     validation_base = {"PUBLICATION": ValidatorPub,
                        "MULTIPUBLICATION": ValidatorMultipub,
@@ -171,7 +177,8 @@ def validation_file_schema_lookup(proforma_type, fields_values):
                        "TRANSPOSON": ValidatorBase,
                        "MOLECULAR": ValidatorBase,
                        "GENEPRODUCT": ValidatorBase,
-                       "INTERACTION": ValidatorBase}
+                       "INTERACTION": ValidatorBase,
+                       "EXPERIMENTAL": ValidatorBase}
     validator = None
 
     pattern = r"""

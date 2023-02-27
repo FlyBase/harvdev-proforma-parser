@@ -224,13 +224,7 @@ class ChadoChem(ChadoFeatureObject):
 
     def load_synonym_chem(self, key):
         """Load the synonym.
-
-        Chemicals can be listed more than once
-        But are only loaded once. We do not allow synoym changes
-        for these repeated chemicals. !c Should be used in this case
         """
-        if not self.new_chemical_entry and key not in self.bang_c:
-            return
         self.load_synonym(key, unattrib=False)
 
     def add_description_to_featureprop(self):

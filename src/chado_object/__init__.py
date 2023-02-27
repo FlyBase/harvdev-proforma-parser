@@ -15,3 +15,4 @@ from .chado_transposon import ChadoTransposon
 from .chado_molecular import ChadoMolecular
 from .chado_geneproduct import ChadoGeneproduct
 from .chado_interaction import ChadoInteraction
+from .chado_exptool import ChadoExpTool

@@ -118,7 +118,7 @@ def get_feature(self, key, item, cvterms):
         get_or_create(self.session, FeaturePub, feature_id=feature.feature_id, pub_id=self.pub.pub_id)
     else:
         try:
-            feature = feature_symbol_lookup(self.session, self.process_data[key]['feat_type'], name, organism_id=organism.organism_id)
+            feature = feature_symbol_lookup(self.session, self.process_data[key]['feat_type'], name, ignore_org=True)
         except NoResultFound:
             message = "Unable to find Feature with symbol {} Add 'NEW:' if it is to be created.".format(name)
             self.critical_error(item, message)
