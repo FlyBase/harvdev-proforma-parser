@@ -409,14 +409,26 @@ GA888:  # made up to test GA888 missing in other yaml file (src/validation/yaml/
 # Being revisited, so wait for new format tables etc
 ####################################################
     # 'GA28a', 'phenotype_comparison',
+GA28a:
+    type: ignore
     # 'GA28b', 'phenotype_comparison',
+GA28c:
+    type: ignore
     # 'GA28c', 'genetic_interaction_pheno',
+GA28c:
+    type: ignore
     # 'GA29a', 'phenotype_comparison',
+GA29a:
+    type: ignore
     # 'GA29b', 'phenotype_comparison',
+GA29c:
+    type: ignore
     # 'GA29c', 'xeno_interaction_pheno',
-
+GA29c:
+    type: ignore
     # 'GA21',  'phenotype_comparison',
-
+GA21:
+    type: ignore
 #########################################################
 # Implemented but never used. DIV came in to affect then.
 #########################################################

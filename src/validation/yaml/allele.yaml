@@ -3,7 +3,7 @@ GA1a:
     required: True
     no_bangc: True
 GA1b:
-    type: string
+    type: [list, string]
     required: False
     nullable: True
 GA1e:

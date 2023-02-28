@@ -65,6 +65,7 @@ class ChadoAllele(ChadoFeatureObject):
                           'rename': self.rename,
                           'dis_pub': self.dis_pub,
                           'make_obsolete': self.make_obsolete,
+                          'pheno_cvterm': self.not_done,
                           'notdone': self.not_done}
         self.delete_dict = {'featureprop': self.delete_featureprop,
                             'GA12a_featureprop': self.GA12a_featureprop_delete,

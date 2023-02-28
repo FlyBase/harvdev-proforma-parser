@@ -216,20 +216,23 @@ class ChadoPub(ChadoObject):
             None
 
         """
-        p2_pub = self.session.query(Pub).filter(Pub.miniref == tuple[FIELD_VALUE]).one()
+        p2_pubs = self.session.query(Pub).filter(Pub.miniref == tuple[FIELD_VALUE])
+        p2_list = []
+        for p2 in p2_pubs:
+            p2_list.append(p2.pub_id)
 
         if not self.newpub and old_parents:
             found = False
             old_name = ""
             for old_parent in old_parents:
-                if p2_pub.pub_id == old_parent.pub_id:
+                if old_parent.pub_id in p2_list:
                     found = True
                 if old_parent.miniref:
                     old_name += old_parent.miniref
                 else:
                     old_name += old_parent.uniquename
             if not found:
-                message = 'P22 has a different parent "{}" than the one listed "{}" "{}"\n'.format(old_name, p2_pub.miniref, p2_pub.uniquename)
+                message = 'P22 has a different parent "{}" than the one listed\n'.format(old_name)
                 message += 'Not allowed to change P2 if it already has one. without !c'
                 self.critical_error(self.process_data['P22']['data'], message)
                 return

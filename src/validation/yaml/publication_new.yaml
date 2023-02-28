@@ -35,23 +35,19 @@ P11a:
   required: False
   nullable: True
   type: string
-  excludes_other_P11: True
 P11b:
   required: False
   nullable: True
   type: string
-  excludes_other_P11: True
 P11c:
   pages_format: True
   required: False
   nullable: True
   type: string
-  excludes_other_P11: True
 P11d:
   required: False
   nullable: True
   type: string
-  excludes_other_P11: True
 P12:
   required: True
   type: [string, list]
