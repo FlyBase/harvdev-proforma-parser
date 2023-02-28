@@ -232,7 +232,7 @@ class ChadoPub(ChadoObject):
                 else:
                     old_name += old_parent.uniquename
             if not found:
-                message = 'P22 has a different parent "{}" than the one listed "{}" "{}"\n'.format(old_name, p2_pub.miniref, p2_pub.uniquename)
+                message = 'P22 has a different parent "{}" than the one listed\n'.format(old_name)
                 message += 'Not allowed to change P2 if it already has one. without !c'
                 self.critical_error(self.process_data['P22']['data'], message)
                 return
