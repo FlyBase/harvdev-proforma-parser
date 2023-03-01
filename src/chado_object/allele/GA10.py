@@ -121,7 +121,8 @@ def get_feature(self, key, item, cvterms):
             feature = feature_symbol_lookup(self.session, fb_type_name, name, ignore_org=True)
         except NoResultFound:
             message = "Unable to find Feature with symbol {} Add 'NEW:' if it is to be created.".format(name)
-            message += f" Using type='{fb_type_name}' name='{name}' ignore_org=True"            self.critical_error(item, message)
+            message += f" Using type='{fb_type_name}' name='{name}' ignore_org=True"
+            self.critical_error(item, message)
             return
         except MultipleResultsFound:
             message = "Found more than feature with this symbol {}.".format(name)
