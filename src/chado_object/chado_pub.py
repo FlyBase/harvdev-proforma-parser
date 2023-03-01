@@ -148,7 +148,8 @@ class ChadoPub(ChadoObject):
                     return
             else:
                 if tuple[FIELD_VALUE]:
-                    pub = self.session.query(Pub).filter(Pub.miniref == tuple[FIELD_VALUE]).one()
+                    pub = self.session.query(Pub).filter(Pub.miniref == tuple[FIELD_VALUE],
+                                                         Pub.is_obsolete == 'f').one()
             return pub
         else:
             return

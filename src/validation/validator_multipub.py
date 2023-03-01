@@ -80,7 +80,6 @@ class ValidatorMultipub(Validator):
         The rule's arguments are validated against this schema:
         {'type': 'boolean'}
         """
-        log.debug("if_new_required test: {} {}".format(field, value))
         if self.document['MP1'] == 'new':
             if value and len(value):
                 return

@@ -412,7 +412,7 @@ GA888:  # made up to test GA888 missing in other yaml file (src/validation/yaml/
 GA28a:
     type: ignore
     # 'GA28b', 'phenotype_comparison',
-GA28c:
+GA28b:
     type: ignore
     # 'GA28c', 'genetic_interaction_pheno',
 GA28c:

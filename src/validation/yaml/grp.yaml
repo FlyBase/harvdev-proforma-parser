@@ -90,7 +90,7 @@ GG4:
 #! GG5. Description of gene group [free text] *D :
 GG5:
     type: [list, string]
-    at_required: True
+    at_required_in_one: True
     nullable: True
 
 #! GG6a. Key GO term(s) - Cellular Component (term ; ID) *f :
@@ -163,7 +163,7 @@ GG9:
 #! GG10. Comments [free text] *u :
 GG10:
     type: [list, string]
-    at_required: True
+    at_required_in_one: True
 
 #! GG11. Date gene group last reviewed (YYYYMMDD) *y :
 GG11:

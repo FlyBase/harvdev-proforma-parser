@@ -155,7 +155,6 @@ class ValidatorBase(Validator):
         The rule's arguments are validated against this schema:
         {'type': 'string'}
         """
-        print(f"if_new_required {yml_value}, {proforma_field}, {proforma_value}")
         if yml_value not in self.document:
             return
         if self.document[yml_value] == 'n' or self.document[yml_value] == 'new':
