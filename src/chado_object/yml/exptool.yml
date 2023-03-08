@@ -93,7 +93,7 @@ TO7a:
     type: featurerelationship
     cv: relationship type
     cvterm: compatible_tool
-    allowed_types: ['engineered_region']
+    allowed_types: ['FBto']
     feat_type: ['engineered_region']
 
 #! TO7b. Other related tools(s) (symbol) :
@@ -101,7 +101,7 @@ TO7b:
     type: featurerelationship
     cv: relationship type
     cvterm: related_tool
-    allowed_types: ['engineered_region']
+    allowed_types: ['FBto']
     feat_type: ['engineered_region']
 
 #! TO7c. Gene of origin (symbol) :
