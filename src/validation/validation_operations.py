@@ -119,7 +119,6 @@ def get_validate_interaction_schema(fields_values):
 
 
 def get_validate_exptool_schema(fields_values):
-    log.critical("EXPERIMENTAL TOOL Not coded yet.")
     return "exptool.yaml"
 
 

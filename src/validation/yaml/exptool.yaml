@@ -13,7 +13,7 @@ TO1a:
 TO1b:
   required: False
   nullable: False
-  type: string
+  type: [list, string]
 
 #! TO10. Species of tool (organism.abbreviation) :
 TO10:
