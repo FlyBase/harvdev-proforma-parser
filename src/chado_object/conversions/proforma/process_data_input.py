@@ -23,7 +23,7 @@ from chado_object.chado_transposon import ChadoTransposon
 from chado_object.chado_molecular import ChadoMolecular
 from chado_object.chado_geneproduct import ChadoGeneproduct
 from chado_object.chado_interaction import ChadoInteraction
-from chado_object.chado_exptool import ChadoExpTool
+from chado_object.exptool.chado_exptool import ChadoExpTool
 
 import logging
 import sys
