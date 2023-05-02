@@ -134,14 +134,35 @@ class ChadoChem(ChadoFeatureObject):
         """Ignore."""
         pass
 
-    def load_content(self, references):
-        """Process the proforma fields."""
+    def sanity_checks(self, references):
+        """Sanity checks that are not easily done in cerberos"""
+
+        # Must have a reference.
         try:
             self.pub = references['ChadoPub']
         except KeyError:
             message = "Unable to find publication."
             self.critical_error(self.process_data['CH1a']['data'], message)
-            return None
+
+        # Can only have an alternative if if we have an orig one.
+        if self.has_data('CH3d') and not self.has_data('CH3a'):
+            self.critical_error(self.process_data['CH3d']['data'], "CH3d is an alternative ID therefore ID must be specified in CH3a")
+
+        # Sometimes FBch are accidentally input here, so give error if found.
+        for field_key in ['CH1a', 'CH1b']:
+            if self.has_data(field_key):
+                if type(self.process_data[field_key]['data']) == list:
+                    for item in self.process_data[field_key]['data']:
+                        if item[FIELD_VALUE].startswith('FBch'):
+                            self.critical_error(self.process_data[field_key]['data'][0], "Cannot start with FBch")
+                else:
+                    if self.process_data[field_key]['data'][FIELD_VALUE].startswith('FBch'):
+                        self.critical_error(self.process_data[field_key]['data'], "Cannot start with FBch")
+
+    def load_content(self, references):
+        """Process the proforma fields."""
+
+        self.sanity_checks(references)
 
         # merging is a whole different thing so lets do that seperately.
         # and then exit.
