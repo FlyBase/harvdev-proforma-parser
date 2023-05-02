@@ -86,9 +86,12 @@ def check_existing_already(self):
     # check Flybase name if given
     #
     if self.has_data('CH1a'):
+
         entry_already_exists = self.chemical_feature_lookup(organism_id, 'CH1a', self.process_data['CH1a']['data'][FIELD_VALUE], current=True)
         if entry_already_exists and self.new_chemical_entry:
-            self.critical_error(self.process_data['CH1a']['data'], "Already exists but specified as new.")
+            message = f"CH1a claims '{self.process_data['CH1a']['data'][FIELD_VALUE]}' is new"
+            message += f" but '{self.process_data['CH1a']['data'][FIELD_VALUE]}' is already known to Chado as {entry_already_exists.uniquename}"
+            self.critical_error(self.process_data['CH1a']['data'], message)
             return True
         if entry_already_exists:
             return True
@@ -119,7 +122,7 @@ def fetch_by_FBch_and_check(self: ChadoFeatureObject, chemical_cvterm_id: int) -
     self.feature, is_new = get_or_create(self.session, Feature, type_id=chemical_cvterm_id,
                                          organism_id=organism_id,
                                          uniquename=self.process_data['CH1f']['data'][FIELD_VALUE])
-    if self.feature.is_obsolete:
+    if self.feature and self.feature.is_obsolete:
         message = "{} is obsolete set CH1a to 'new' to re-add it.".format(self.process_data['CH1f']['data'][FIELD_VALUE])
         self.critical_error(self.process_data['CH1f']['data'], message)
         return
@@ -127,7 +130,7 @@ def fetch_by_FBch_and_check(self: ChadoFeatureObject, chemical_cvterm_id: int) -
     if is_new:
         message = "Could not find {} in the database. Please check it exists.".format(self.process_data['CH1f']['data'][FIELD_VALUE])
         self.critical_error(self.process_data['CH1f']['data'], message)
-    if self.has_data('CH1a'):
+    if self.feature and self.has_data('CH1a'):
         if sgml_to_plain_text(self.process_data['CH1a']['data'][FIELD_VALUE]) != self.feature.name:
             message = "Name given does not match that in database. {} does not equal {}".\
                 format(self.process_data['CH1f']['data'][FIELD_VALUE],
