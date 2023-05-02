@@ -144,7 +144,7 @@ class ChadoChem(ChadoFeatureObject):
             message = "Unable to find publication."
             self.critical_error(self.process_data['CH1a']['data'], message)
 
-        # Can only have an alternative if if we have an orig one.
+        # Can only have an alternative ID if we have an orig one.
         if self.has_data('CH3d') and not self.has_data('CH3a'):
             self.critical_error(self.process_data['CH3d']['data'], "CH3d is an alternative ID therefore ID must be specified in CH3a")
 
