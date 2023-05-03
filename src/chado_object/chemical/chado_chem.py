@@ -144,6 +144,11 @@ class ChadoChem(ChadoFeatureObject):
             message = "Unable to find publication."
             self.critical_error(self.process_data['CH1a']['data'], message)
 
+        # If new chemical,  CH3a MUST be set
+        if self.has_data('CH1f') and self.process_data['CH1f']['data'][FIELD_VALUE] == 'new':
+            if not self.has_data('CH3a'):
+                self.critical_error(self.process_data['CH1f']['data'], "CH3a MUST be set for new chemicals")
+
         # Can only have an alternative ID if we have an orig one.
         if self.has_data('CH3d') and not self.has_data('CH3a'):
             self.critical_error(self.process_data['CH3d']['data'], "CH3d is an alternative ID therefore ID must be specified in CH3a")
