@@ -129,9 +129,9 @@ def fetch_by_FBch_and_check(self: ChadoFeatureObject, chemical_cvterm_id: int) -
         self.critical_error(self.process_data['CH1f']['data'], message)
     if self.has_data('CH1a'):
         if sgml_to_plain_text(self.process_data['CH1a']['data'][FIELD_VALUE]) != self.feature.name:
-            message = "Name given does not match that in database. {} does not equal {}".\
-                format(self.process_data['CH1f']['data'][FIELD_VALUE],
-                       self.feature.name)
+            message = f"Name given does not match that in database. {self.process_data['CH1f']['data'][FIELD_VALUE]} "
+            message += f"is {self.feature.name} in chado, but the CH1a value given in the proforma "
+            message += f"is {self.process_data['CH1f']['data'][FIELD_VALUE]}"
             self.critical_error(self.process_data['CH1a']['data'], message)
 
 
