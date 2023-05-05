@@ -17,8 +17,7 @@ from harvdev_utils.production import (
 )
 from harvdev_utils.chado_functions import (
     get_or_create,
-    ExternalLookup,
-    synonym_name_details
+    ExternalLookup
 )
 from harvdev_utils.char_conversions import (
     sgml_to_unicode, sgml_to_plain_text
@@ -39,7 +38,6 @@ def process_chemical(self, key):
         return
 
     self.alt_comparison()
-    self.add_alt_synonym()
     self.add_dbxref(self.chemical_information)
 
     # Add pub link to Chebi or pubchem amd current pub
@@ -228,7 +226,7 @@ def check_chebi_for_identifier(self, chemical, process_key):
     if self.has_data('CH1a'):
         plain_text = sgml_to_plain_text(self.process_data['CH1a']['data'][FIELD_VALUE])
         if chebi.name.lower() != plain_text.lower():
-            self.log.debug('ChEBI name does not match name specified for FlyBase: {} -> {}'.format(chebi.name, plain_text))
+            self.log.warning('ChEBI name does not match name specified for FlyBase: {} -> {}'.format(chebi.name, plain_text))
         else:
             self.log.debug('Queried name \'{}\' matches name used in proforma \'{}\''.format(chebi.name, self.process_data['CH1a']['data'][FIELD_VALUE]))
 
@@ -250,24 +248,6 @@ def check_chebi_for_identifier(self, chemical, process_key):
     chemical['DBObject'] = self.session.query(Db). \
         filter(Db.name == chemical['source']).one()
     return True
-
-
-def add_alt_synonym(self):
-    """Add synonym of the alternative chemical id.
-
-    Use the current feature/name and the paper it belongs to
-    either pubchem or chebi.
-    """
-    if self.new_chemical_entry:
-        organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['CH1a']['data'][FIELD_VALUE], nosup=True)
-        cvterm = self.cvterm_query('synonym type', 'fullname')
-        pub_id = self.chemical_information['PubID']
-
-        new_synonym, _ = get_or_create(self.session, Synonym, type_id=cvterm,
-                                       synonym_sgml=sgml,
-                                       name=plain_name)
-        fs, _ = get_or_create(self.session, FeatureSynonym, feature_id=self.feature.feature_id,
-                              pub_id=pub_id, synonym_id=new_synonym.synonym_id)
 
 
 def add_description_from_pubchem(self, chemical):
@@ -301,7 +281,7 @@ def check_pubchem_for_identifier(self, chemical, process_key):
         plain_text = sgml_to_plain_text(self.process_data['CH1a']['data'][FIELD_VALUE])
         pubchem.name = str(pubchem.name)
         if pubchem.name.lower() != plain_text.lower():
-            self.log.debug('PubChem name does not match name specified for FlyBase: {} -> {}'.format(pubchem.name, plain_text))
+            self.log.warning('PubChem name does not match name specified for FlyBase: {} -> {}'.format(pubchem.name, plain_text))
         else:
             self.log.debug('Queried name \'{}\' matches name used in proforma \'{}\''.format(pubchem.name, plain_text))
 

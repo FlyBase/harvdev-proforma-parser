@@ -35,7 +35,6 @@ class ChadoChem(ChadoFeatureObject):
         fetch_by_FBch_and_check,
         get_or_create_chemical)
     from chado_object.chemical.chemical_lookup import (
-        add_alt_synonym,
         add_alternative_info,
         add_dbxref,
         add_description_from_pubchem,
@@ -198,7 +197,26 @@ class ChadoChem(ChadoFeatureObject):
                 log.debug("Processing {}".format(self.process_data[key]['data']))
                 self.type_dict[self.process_data[key]['type']](key)
 
+        # Add fullname synonym
+        self.add_full_name_for_chem_paper()
         return self.feature
+
+    def add_full_name_for_chem_paper(self):
+        """Add synonym of the alternative chemical id.
+
+        Use the current feature/name and the paper it belongs to
+        either pubchem or chebi.
+        """
+        if self.new_chemical_entry and self.chemical_information['PubID']:
+            organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['CH1a']['data'][FIELD_VALUE], nosup=True)
+            cvterm = self.cvterm_query('synonym type', 'fullname')
+            pub_id = self.chemical_information['PubID']
+
+            new_synonym, _ = get_or_create(self.session, Synonym, type_id=cvterm,
+                                           synonym_sgml=sgml,
+                                           name=plain_name)
+            fs, _ = get_or_create(self.session, FeatureSynonym, feature_id=self.feature.feature_id,
+                                  pub_id=pub_id, synonym_id=new_synonym.synonym_id)
 
     def dissociate_pub(self):
         if self.has_data('CH1f') and self.process_data['CH1f']['data'][FIELD_VALUE] == 'new':
@@ -254,6 +272,12 @@ class ChadoChem(ChadoFeatureObject):
         """Load the synonym.
         """
         self.load_synonym(key, unattrib=False)
+
+    def process_synonym(self, key):
+        """ Load the synonym IF it is new
+        """
+        if self.new_chemical_entry:
+            self.load_synonym(key, unattrib=False)
 
     def add_description_to_featureprop(self):
         """Associate the description from PubChem to a feature via featureprop."""
