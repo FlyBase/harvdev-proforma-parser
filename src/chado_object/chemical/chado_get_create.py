@@ -55,7 +55,6 @@ def get_or_create_chemical(self):
                                     name=name,
                                     type_id=chemical_cvterm_id,
                                     uniquename='FBch:temp_0')
-
     self.log.debug("New chemical entry created: {}".format(self.feature.name))
 
 

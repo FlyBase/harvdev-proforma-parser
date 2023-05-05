@@ -15,10 +15,10 @@ CH1f:
   cv: FlyBase miscellaneous CV
   cvterm: chemical entity
 CH1a:
-  type: synonym
+  type: ignore
   cv: synonym type
   cvterm: fullname
-  is_current: False
+  is_current: True
   remove_old: True
   propname:
   subscript: False
