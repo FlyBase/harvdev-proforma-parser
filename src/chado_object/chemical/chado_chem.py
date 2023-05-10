@@ -73,7 +73,8 @@ class ChadoChem(ChadoFeatureObject):
                           'value': self.ignore,
                           'rename': self.rename,
                           'chemical_lookup': self.process_chemical,
-                          'disspub': self.dissociate_from_pub}
+                          'disspub': self.dissociate_from_pub,
+                          'obsolete': self.make_obsolete}
 
         self.delete_dict = {'ignore': self.ignore_delete,
                             'synonym': self.rename_synonym,
@@ -229,21 +230,21 @@ class ChadoChem(ChadoFeatureObject):
         """Get pub id for Chemical."""
         return self.chemical_information['PubID']
 
-    def delete_featureprop(self, key, bangc=True):
-        """Delete the featureprop."""
-        prop_cv_id = self.cvterm_query(self.process_data[key]['cv'], self.process_data[key]['cvterm'])
-
-        fps = self.session.query(Featureprop).join(Feature).\
-            filter(Feature.feature_id == self.feature.feature_id,
-                   Featureprop.type_id == prop_cv_id).all()
-        count = 0
-        for fp in fps:
-            count += 1
-            log.debug(f"Deleting {fp}.")
-            self.session.delete(fp)
-        if not count:
-            message = "No current {} field specified in chado so cannot bangc it".format(key)
-            self.critical_error(self.process_data[key]['data'], message)
+#    def delete_featureprop(self, key, bangc=True):
+#        """Delete the featureprop."""
+#        prop_cv_id = self.cvterm_query(self.process_data[key]['cv'], self.process_data[key]['cvterm'])
+#
+#        fps = self.session.query(Featureprop).join(Feature).\
+#            filter(Feature.feature_id == self.feature.feature_id,
+#                   Featureprop.type_id == prop_cv_id).all()
+#        count = 0
+#        for fp in fps:
+#            count += 1
+#            log.debug(f"Deleting {fp}.")
+#            self.session.delete(fp)
+#        if not count:
+#            message = "No current {} field specified in chado so cannot bangc it".format(key)
+#            self.critical_error(self.process_data[key]['data'], message)
 
     def change_featurepropvalue(self, key, bangc=True):
         """Change the featureprop value."""
@@ -327,3 +328,11 @@ class ChadoChem(ChadoFeatureObject):
 
         fs, _ = get_or_create(self.session, FeatureSynonym, feature_id=self.feature.feature_id, synonym_id=synonym.synonym_id,
                               pub_id=self.pub.pub_id)
+
+    def make_obsolete(self, key):
+        """Make the chemical record obsolete.
+
+        Args:
+            key (string): Proforma field key
+        """
+        self.feature.is_obsolete = True

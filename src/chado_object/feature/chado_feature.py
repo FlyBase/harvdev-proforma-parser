@@ -942,10 +942,16 @@ class ChadoFeatureObject(ChadoObject):
             filter(FeaturepropPub.pub_id == self.pub.pub_id,
                    Featureprop.feature_id == self.feature.feature_id,
                    Featureprop.type_id == prop_cv_id)
+        count = 0
         for fpp in fpps:
+            count += 1
             fp = fpp.featureprop
             self.session.delete(fp)
             # self.session.delete(fpp)
+        if not count:
+            message = "Bangc failed no feature prop pub "
+            message += f"cv:{self.process_data[key]['cv']} cvterm:{self.process_data[key]['cvterm']} for pub {self.pub.uniquename}"
+            self.critical_error(self.process_data[key]['data'], message)
 
     def delete_specific_fp(self, key, bangc=False):
         """Delete specific featureprop.
