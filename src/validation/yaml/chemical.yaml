@@ -58,3 +58,8 @@ CH5a:
   required: False
   type: string
   wrapping_values: True
+CH6:
+  nullable: True
+  required: False
+  type: string
+  allowed: ['y']

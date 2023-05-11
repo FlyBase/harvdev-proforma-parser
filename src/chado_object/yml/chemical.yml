@@ -61,18 +61,10 @@ CH3f:
 CH3g:
   type: disspub
   obsolete_feature_on_last_ref: True
-# CH4a:
-#   type: feature_relationship
-#   cv: relationship type
-#   cvterm: derived_from
-#   prop: CH4b
-# CH4b: # processed by CH4a
-#   type: ignore
-#   # feature_relationshipprop
-#   cv: property type
-#   cvterm: comment
 CH5a:
     type: featureprop
     cv: property type
     cvterm: comment
     value: CH5a
+CH6:
+    type: obsolete  
