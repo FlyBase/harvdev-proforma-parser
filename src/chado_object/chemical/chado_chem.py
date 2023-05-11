@@ -230,22 +230,6 @@ class ChadoChem(ChadoFeatureObject):
         """Get pub id for Chemical."""
         return self.chemical_information['PubID']
 
-#    def delete_featureprop(self, key, bangc=True):
-#        """Delete the featureprop."""
-#        prop_cv_id = self.cvterm_query(self.process_data[key]['cv'], self.process_data[key]['cvterm'])
-#
-#        fps = self.session.query(Featureprop).join(Feature).\
-#            filter(Feature.feature_id == self.feature.feature_id,
-#                   Featureprop.type_id == prop_cv_id).all()
-#        count = 0
-#        for fp in fps:
-#            count += 1
-#            log.debug(f"Deleting {fp}.")
-#            self.session.delete(fp)
-#        if not count:
-#            message = "No current {} field specified in chado so cannot bangc it".format(key)
-#            self.critical_error(self.process_data[key]['data'], message)
-
     def change_featurepropvalue(self, key, bangc=True):
         """Change the featureprop value."""
         prop_cv_id = self.cvterm_query(self.process_data['CH3b']['cv'], self.process_data['CH3b']['cvterm'])
