@@ -35,10 +35,7 @@ def get_or_create_chemical(self):
                                            feature_id=self.feature.feature_id,
                                            pub_id=self.pub.pub_id)
         return
-    else:  # new check it does not exists already
-        exists = self.check_existing_already()
-        if exists:
-            return
+
     exists_already = self.check_existing_already()
     if exists_already:
         self.feature = exists_already
@@ -60,14 +57,18 @@ def get_or_create_chemical(self):
 
 def check_for_dbxref(self, key):
     if self.has_data(key):
-        identifier, name = self.split_identifier_and_name(self.process_data[key]['data'][FIELD_VALUE], key)
-        feat = self.session.query(Feature).\
-            join(Dbxref).\
-            join(Db).filter(Db.name == identifier,
-                            Dbxref.accession == name).one_or_none()
-        if feat:
-            self.critical_error(self.process_data[key]['data'], f"Feature {feat.uniquename} Already has {identifier}:{name}")
-            return True
+        for index, item in enumerate(self.process_data[key]['data']):
+            identifier, name, error_msg = self.split_identifier_and_name(item[FIELD_VALUE], key)
+            if error_msg:
+                self.critical_error(self.process_data[key]['data'][index], error_msg)
+                continue
+            feat = self.session.query(Feature).\
+                join(Dbxref).\
+                join(Db).filter(Db.name == identifier,
+                                Dbxref.accession == name).one_or_none()
+            if feat:
+                self.critical_error(self.process_data[key]['data'][index], f"Feature {feat.uniquename} Already has {identifier}:{name}")
+                return True
 
 
 def check_existing_already(self):
@@ -96,14 +97,13 @@ def check_existing_already(self):
             return True
 
     # Check for chebi/pubchem entry already in db. If set.
-    for key in ('CH3a', 'CH3d'):
-        if self.has_data(key):
-            entry_already_exists = self.check_for_dbxref(key)
-            if entry_already_exists and self.new_chemical_entry:
-                self.critical_error(self.process_data[key]['data'], f"Already exists (via {key} lookup but specified as new.")
-                return True
-            if entry_already_exists:
-                return True
+    if self.has_data('CH3a'):
+        entry_already_exists = self.check_for_dbxref('CH3a')
+        if entry_already_exists and self.new_chemical_entry:
+            self.critical_error(self.process_data['CH3a']['data'][0], f"Already exists (via {'CH3a'} lookup but specified as new.")
+            return True
+        if entry_already_exists:
+            return True
 
     return False
 

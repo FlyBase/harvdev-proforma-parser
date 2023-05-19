@@ -35,15 +35,14 @@ class ChadoChem(ChadoFeatureObject):
         fetch_by_FBch_and_check,
         get_or_create_chemical)
     from chado_object.chemical.chemical_lookup import (
-        add_alternative_info,
         add_dbxref,
         add_description_from_pubchem,
         add_inchikey_to_featureprop,
-        alt_comparison,
         check_chebi_for_identifier,
         check_pubchem_for_identifier,
         look_up_static_references,
         process_chemical,
+        run_checks,
         process_synonyms_from_external_db,
         validate_fetch_identifier_at_external_db)
     from chado_object.chemical.chemical_merge import merge
@@ -80,33 +79,11 @@ class ChadoChem(ChadoFeatureObject):
                             'synonym': self.rename_synonym,
                             'featureprop': self.delete_featureprop,
                             'value': self.change_featurepropvalue}
-        # Chemical storage dictionary.
-        # This dictionary contains all the information required to create a new FBch.
 
-        self.chemical_information = {
-            'identifier': None,
-            'accession': None,
-            'source': None,
-            'name': None,
-            'description': None,
-            'inchikey': None,
-            'synonyms': None,
-            'DBObject': None,
-            'PubID': None
-        }
-        # if above is for chebi, then store equivalent pubchem data here
-        # if it can be found. And vice versa.
-        self.alt_chemical_information = {
-            'identifier': None,
-            'accession': None,
-            'source': None,
-            'name': None,
-            'description': None,
-            'inchikey': None,
-            'synonyms': None,
-            'DBObject': None,
-            'PubID': None
-        }
+        # Chemical storage dictionary.
+        # This array of dictionarys contains all the information required to create a new FBch.
+        self.chemical_id_data = []
+
         self.type_name = 'chemical entity'
 
         ############################################################
@@ -114,6 +91,7 @@ class ChadoChem(ChadoFeatureObject):
         # Please see the yml/chemical.yml file for more details
         ############################################################
         yml_file = os.path.join(os.path.dirname(__file__), '../yml/chemical.yml')
+
         # Populated self.process_data with all possible keys.
         self.process_data = self.load_reference_yaml(yml_file, params)
 
@@ -150,10 +128,6 @@ class ChadoChem(ChadoFeatureObject):
             if self.has_data('CH1f') and self.process_data['CH1f']['data'][FIELD_VALUE] == 'new':  # Its new
                 if not self.has_data('CH3a'):  # CH3a NOT defined
                     self.critical_error(self.process_data['CH1f']['data'], "CH3a MUST be set for new chemicals")
-
-        # Can only have an alternative ID if we have an orig one.
-        if self.has_data('CH3d') and not self.has_data('CH3a'):
-            self.critical_error(self.process_data['CH3d']['data'], "CH3d is an alternative ID therefore ID must be specified in CH3a")
 
         # Sometimes FBch are accidentally input here, so give error if found.
         for field_key in ['CH1a', 'CH1b']:
@@ -198,20 +172,20 @@ class ChadoChem(ChadoFeatureObject):
                 log.debug("Processing {}".format(self.process_data[key]['data']))
                 self.type_dict[self.process_data[key]['type']](key)
 
-        # Add fullname synonym
-        self.add_full_name_for_chem_paper()
+        if self.new_chemical_entry and self.chemical_id_data:
+            self.add_full_name_for_chem_paper(self.chemical_id_data[0])
         return self.feature
 
-    def add_full_name_for_chem_paper(self):
+    def add_full_name_for_chem_paper(self, chemical_information):
         """Add synonym of the alternative chemical id.
 
         Use the current feature/name and the paper it belongs to
         either pubchem or chebi.
         """
-        if self.new_chemical_entry and self.chemical_information['PubID']:
+        if self.new_chemical_entry and chemical_information['PubID']:
             organism, plain_name, sgml = synonym_name_details(self.session, self.process_data['CH1a']['data'][FIELD_VALUE], nosup=True)
             cvterm = self.cvterm_query('synonym type', 'fullname')
-            pub_id = self.chemical_information['PubID']
+            pub_id = chemical_information['PubID']
 
             new_synonym, _ = get_or_create(self.session, Synonym, type_id=cvterm,
                                            synonym_sgml=sgml,
@@ -264,19 +238,20 @@ class ChadoChem(ChadoFeatureObject):
         if self.new_chemical_entry:
             self.load_synonym(key, unattrib=False)
 
-    def add_description_to_featureprop(self):
+    def add_description_to_featureprop(self, chemical_information):
         """Associate the description from PubChem to a feature via featureprop."""
         log.debug('Adding PubChem description to featureprop.')
 
         description_cvterm_id = self.cvterm_query('property type', 'description')
 
         get_or_create(self.session, Featureprop, feature_id=self.feature.feature_id,
-                      type_id=description_cvterm_id, value=self.chemical_information['description'])
+                      type_id=description_cvterm_id, value=chemical_information['description'])
 
     def split_identifier_and_name(self, identifier_unprocessed, process_key):
         """Strip away the name if one is supplied with the identifier."""
         identifier = None
         identifier_name = None
+        error_msg = ''
         identifier_unprocessed = sgml_to_unicode(identifier_unprocessed)
         if ';' in identifier_unprocessed:
             identifier_split_list = identifier_unprocessed.split(';')
@@ -284,17 +259,15 @@ class ChadoChem(ChadoFeatureObject):
                 identifier = identifier_split_list.pop(0).strip()
                 identifier_name = identifier_split_list.pop(0).strip()
             except IndexError:
-                self.critical_error(self.process_data[process_key]['data'],
-                                    "Error splitting identifier and name using semicolon. {}".format(identifier_unprocessed))
+                error_msg = "Error splitting identifier and name using semicolon. {}".format(identifier_unprocessed)
             if identifier_split_list:  # If the list is not empty by this point, raise an error.
-                self.critical_error(self.process_data[process_key]['data'],
-                                    "Error splitting identifier and name using semicolon. {}".format(identifier_unprocessed))
+                error_msg = "Error splitting identifier and name using semicolon. {}".format(identifier_unprocessed)
                 identifier_name = None  # Set name to None before returning. It might be wrong otherwise.
-                return identifier, identifier_name
+                return None, None, error_msg
         else:
             identifier = identifier_unprocessed.strip()
 
-        return identifier, identifier_name
+        return identifier, identifier_name, error_msg
 
     def rename(self, key):
         name = sgml_to_unicode(self.process_data[key]['data'][FIELD_VALUE])

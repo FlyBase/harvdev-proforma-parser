@@ -10,7 +10,7 @@ from chado_object.utils.feature_synonym import fs_add_by_synonym_name_and_type
 from harvdev_utils.chado_functions.organism import get_organism
 
 from chado_object.utils.feature_synonym import fs_remove_current_symbol
-from harvdev_utils.char_conversions import sgml_to_plain_text, sgml_to_unicode
+from harvdev_utils.char_conversions import sgml_to_plain_text, sgml_to_unicode, greek_to_sgml
 from harvdev_utils.production import (
     Cvterm, Cvtermprop, Feature, FeatureRelationship, FeatureRelationshipPub, Featureprop,
     FeaturepropPub, FeaturePub, FeatureCvterm, FeatureCvtermprop, FeatureSynonym,
@@ -409,11 +409,12 @@ class ChadoFeatureObject(ChadoObject):
 
         for item in items:
             synonym_sgml = None
+            name = sgml_to_plain_text(greek_to_sgml(item[FIELD_VALUE]))
             if 'subscript' in self.process_data[key] and not self.process_data[key]['subscript']:
                 synonym_sgml = sgml_to_unicode(item[FIELD_VALUE])
             for pub_id in pubs:
                 fs = fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
-                                                     item[FIELD_VALUE], cv_name, cvterm_name, pub_id,
+                                                     name, cv_name, cvterm_name, pub_id,
                                                      synonym_sgml=synonym_sgml, is_current=is_current, is_internal=False)
                 if is_current and cvterm_name == 'symbol':
                     self.feature.name = sgml_to_plain_text(item[FIELD_VALUE])

@@ -6,6 +6,7 @@
 
 """
 from harvdev_utils.production import (
+    Feature,
     FeatureDbxref,
     FeaturePub,
     Featureprop,
@@ -20,107 +21,87 @@ from harvdev_utils.chado_functions import (
     ExternalLookup
 )
 from harvdev_utils.char_conversions import (
-    sgml_to_unicode, sgml_to_plain_text
+    sgml_to_unicode, sgml_to_plain_text, greek_to_sgml
 )
 from chado_object.feature.chado_feature import FIELD_VALUE
 
 
+def run_checks(self):
+    # Run various checks, some will give critical errors.
+    # others will give warnings.
+    for index, chemical in enumerate(self.chemical_id_data):
+        # Check that chemical ids have not been used before
+        feat = self.session.query(Feature).\
+            join(FeatureDbxref).\
+            join(Dbxref).\
+            join(Db).filter(Feature.is_obsolete.is_(False),
+                            Db.name == chemical['source'],
+                            Dbxref.accession == chemical['accession']).one_or_none()
+        if feat:
+            message = f"{chemical['identifier']} has already been applied to {feat.uniquename} '{feat.name}'"
+            self.critical_error(self.process_data['CH3a']['data'][index], message)
+
+        # If not new
+        if not self.new_chemical_entry:
+            # check if we already have an entry in the database
+            dbxref = self.session.query(Dbxref).\
+                join(Db).\
+                join(FeatureDbxref).filter(Db.name == chemical['source'],
+                                           FeatureDbxref.feature_id == self.feature.feature_id).one_or_none()
+            if dbxref:  # already has an entry ?
+                chemical['exists_already'] = True
+                if chemical['accession'] == dbxref.accession:
+                    self.warning_error(self.process_data['CH3a']['data'][index], "Already in the database, No need to re add it")
+                else:
+                    message = f"Already has a {chemical['source']} attached and has a different value of {dbxref.accession}"
+                    message += f" to the one stated here {chemical['accession']}"
+                    self.critical_error(self.process_data['CH3a']['data'][index], message)
+
+        # check CH1a is a known synonym or give a warning
+        found = False
+        check_name = self.feature.name.lower()
+        if check_name == chemical['name']:
+            return
+        for syn in chemical['synonyms']:
+            if syn.lower() == check_name:
+                found = True
+        if not found:
+            message = f"{self.process_data['CH3a']['data'][index][FIELD_VALUE]} synonyms list, Does not contain {self.feature.name}. Possible typo?"
+            self.warning_error(self.process_data['CH1a']['data'], message)
+
+
 def process_chemical(self, key):
     # So we have a new chemical, lets get the data for this.
-    try:
-        identifier_found = self.validate_fetch_identifier_at_external_db('CH3a', self.chemical_information)
-    except Exception as e:
-        message = "Lookup failed and generated the error {}.".format(e)
-        self.critical_error(self.process_data['CH3a']['data'], message)
-        return
 
+    # data is stored in self.chemical_id_data.
+    identifier_found = self.validate_fetch_identifier_at_external_db('CH3a')
     if not identifier_found:
         return
 
-    self.alt_comparison()
-    self.add_dbxref(self.chemical_information)
+    # So we have the chemical ids now. So we want to do various checks.
+    self.run_checks()
 
-    # Add pub link to Chebi or pubchem amd current pub
+    for chemical_information in self.chemical_id_data:
+        # self.alt_comparison()  # TODO
+        self.add_dbxref(chemical_information)
+
+        # Add the identifier as a synonym and other synonyms
+        chemical_information['synonyms'].append(chemical_information['identifier'])
+        self.process_synonyms_from_external_db(chemical_information)
+
+        # Add the description as a featureprop.
+        self.add_description_to_featureprop(chemical_information)
+
+        # Add the inchikey as a featureprop.
+        self.add_inchikey_to_featureprop(chemical_information)
+
+        # Add pub link to Chebi or pubchem amd current pub
+        feature_pub, _ = get_or_create(self.session, FeaturePub,
+                                       feature_id=self.feature.feature_id,
+                                       pub_id=chemical_information['PubID'])
+
     feature_pub, _ = get_or_create(self.session, FeaturePub,
-                                   feature_id=self.feature.feature_id,
-                                   pub_id=self.chemical_information['PubID'])
-    feature_pub, _ = get_or_create(self.session, FeaturePub,
-                                   feature_id=self.feature.feature_id,
-                                   pub_id=self.pub.pub_id)
-
-    self.add_alternative_info()
-
-    # Add the identifier as a synonym and other synonyms
-    self.process_synonyms_from_external_db(self.chemical_information)
-
-    # Add the description as a featureprop.
-    self.add_description_to_featureprop()
-
-    # Add the inchikey as a featureprop.
-    self.add_inchikey_to_featureprop()
-
-def alt_comparison(self):  # noqa
-    """Compare with Alternative Chemical ID."""
-    if not self.has_data('CH3d'):
-        return
-
-    alt_identifier_found = self.validate_fetch_identifier_at_external_db('CH3d', self.alt_chemical_information)
-    if not alt_identifier_found:
-        message = "Unable to find alternative chemical db entry."
-        self.warning_error(self.process_data['CH3d']['data'], message)
-        return
-
-    # If they both have equal inchikeys and it is not None they match.
-    if self.chemical_information['inchikey'] == self.alt_chemical_information['inchikey']:
-        # Same and not None
-        if self.chemical_information['inchikey']:
-            return
-    # different and both are not None
-    elif self.chemical_information['inchikey'] and self.alt_chemical_information['inchikey']:
-        message = "Inchikeys do not match\n{}->{} and\n{}->{}".format(
-            self.chemical_information['identifier'],
-            self.chemical_information['inchikey'],
-            self.alt_chemical_information['identifier'],
-            self.alt_chemical_information['inchikey']
-        )
-        self.warning_error(self.process_data['CH3d']['data'], message)
-        return
-
-    # So at least one does not have an inchikey so lets try names.
-    if self.chemical_information['name'].upper() == self.alt_chemical_information['name'].upper():
-        return
-
-    found = False
-    for name in self.chemical_information['synonyms']:
-        for alt_name in self.alt_chemical_information['synonyms']:
-            if name.upper() == alt_name.upper():
-                found = True
-                break
-    if not found:
-        # Not found so give a warning
-        message = "No synonyms match for CH3d and CH3a!!!\n"
-        message += "{} synonyms are: {}\n".format(self.chemical_information['identifier'], self.chemical_information['synonyms'])
-        message += "{} synonyms are: {}\n".format(self.alt_chemical_information['identifier'], self.alt_chemical_information['synonyms'])
-        self.warning_error(self.process_data['CH3a']['data'], message)
-
-
-def add_alternative_info(self):
-    """Add data from alternative chemical DB.
-
-    """
-    if not self.has_data('CH3d') or not self.alt_chemical_information['PubID']:
-        return
-    # Add pub link to Chebi or pubchem depending on type
-    feature_pub, _ = get_or_create(
-        self.session, FeaturePub,
-        feature_id=self.feature.feature_id,
-        pub_id=self.alt_chemical_information['PubID'])
-
-    self.add_dbxref(self.alt_chemical_information)
-
-    # Add synonym including Pubchem/CHEBI bit
-    self.alt_chemical_information['synonyms'].append(self.alt_chemical_information['identifier'])
-    self.process_synonyms_from_external_db(self.alt_chemical_information, alt=True)
+                                   feature_id=self.feature.feature_id,                                   pub_id=self.pub.pub_id)
 
 
 def add_dbxref(self, chemical):
@@ -157,7 +138,7 @@ def look_up_static_references(self):
     self.log.debug('Returned PubChem FBrf pub id as {}'.format(self.pubchem_pub_id))
 
 
-def validate_fetch_identifier_at_external_db(self, process_key, chemical):
+def validate_fetch_identifier_at_external_db(self, process_key):
     """Fetch and validate externaldb.
 
     process_key: Key to use to get data , should be CH3a or CH3d
@@ -169,16 +150,6 @@ def validate_fetch_identifier_at_external_db(self, process_key, chemical):
     This is because PubChem cites ChEBI (as well as other external definitions) whereas
     ChEBI does not provide this service.
     """
-    identifier_unprocessed = self.process_data[process_key]['data'][FIELD_VALUE]
-    identifier_unprocessed = sgml_to_unicode(identifier_unprocessed)
-    chemical['identifier'], chemical['name'] = self.split_identifier_and_name(identifier_unprocessed, process_key)
-    if not chemical['name'] or not chemical['name'].strip():
-        message = "Wrong format should be 'DBNAME:number ; text'"
-        self.critical_error(self.process_data[process_key]['data'], message)
-        return False
-    self.log.debug('Found identifier: {} and identifier_name: {}'.format(chemical['identifier'], chemical['name']))
-
-    chemical['source'], chemical['accession'] = chemical['identifier'].split(':')
 
     database_dispatch_dictionary = {
         'CHEBI': self.check_chebi_for_identifier,
@@ -186,28 +157,57 @@ def validate_fetch_identifier_at_external_db(self, process_key, chemical):
         'PubChem_SID': self.check_pubchem_for_identifier
     }
 
-    # Obtain our identifier, name, definition, and InChIKey from ChEBI / PubChem.
-    try:
-        identifier_and_data = database_dispatch_dictionary[chemical['source']](chemical, process_key)
-        self.log.debug("identifier_and_data is {}".format(identifier_and_data))
-    except KeyError as e:
-        self.critical_error(self.process_data[process_key]['data'],
-                            'Database name not recognized from identifier: {}. {}'.format(chemical['source'], e))
-        return False
-    if identifier_and_data is False:  # Errors are already declared in the sub-functions.
-        return False
+    all_okay = True
+    for index, item in enumerate(self.process_data[process_key]['data']):
+        chemical = {
+            'identifier': None,
+            'accession': None,
+            'source': None,
+            'name': None,
+            'description': None,
+            'inchikey': None,
+            'synonyms': None,
+            'DBObject': None,
+            'PubID': None,
+            'exists_already': False
+        }
+        identifier_unprocessed = item[FIELD_VALUE]
+        identifier_unprocessed = sgml_to_unicode(identifier_unprocessed)
+        chemical['identifier'], chemical['name'], error_msg = self.split_identifier_and_name(identifier_unprocessed, process_key)
+        if error_msg:
+            message = "Wrong format should be 'DBNAME:number ; text'"
+            self.critical_error(self.process_data[process_key]['data'][index], message)
+            all_okay = False
+            continue
 
-    # If we're at this stage, we have all our data for PubChem BUT
-    # for a ChEBI query we need to go to PubChem for the definition.
-    if chemical['source'] != 'PubChem':
-        # Set the identifier name to the result queried from ChEBI.
-        self.add_description_from_pubchem(chemical)
-    elif chemical['source'] == 'PubChem_SID':
-        chemical['source'] = 'PubChem'
-    return True
+        self.log.debug('Found identifier: {} and identifier_name: {}'.format(chemical['identifier'], chemical['name']))
+
+        chemical['source'], chemical['accession'] = chemical['identifier'].split(':')
+
+        # Obtain our identifier, name, definition, and InChIKey from ChEBI / PubChem.
+        try:
+            identifier_and_data = database_dispatch_dictionary[chemical['source']](chemical, process_key, index)
+            self.log.debug("identifier_and_data is {}".format(identifier_and_data))
+        except KeyError as e:
+            self.critical_error(self.process_data[process_key]['data'][index],
+                                'Database name not recognized from identifier: {}. {}'.format(chemical['source'], e))
+            all_okay = False
+            continue
+        if identifier_and_data is False:  # Errors are already declared in the sub-functions.
+            all_okay = False
+            continue
+        # If we're at this stage, we have all our data for PubChem BUT
+        # for a ChEBI query we need to go to PubChem for the definition.
+        if chemical['source'] != 'PubChem':
+            # Set the identifier name to the result queried from ChEBI.
+            self.add_description_from_pubchem(chemical)
+        elif chemical['source'] == 'PubChem_SID':
+            chemical['source'] = 'PubChem'
+        self.chemical_id_data.append(chemical)
+    return all_okay
 
 
-def check_chebi_for_identifier(self, chemical, process_key):
+def check_chebi_for_identifier(self, chemical, process_key, index):
     """Check for chebi identifier.
 
     Returns: True if data is successfully found.
@@ -215,7 +215,7 @@ def check_chebi_for_identifier(self, chemical, process_key):
     """
     chebi = ExternalLookup.lookup_chebi(chemical['identifier'], synonyms=True)
     if not chebi:
-        self.critical_error(self.process_data[process_key]['data'], chebi.error)
+        self.critical_error(self.process_data[process_key]['data'][index], chebi.error)
         return False
 
     if not chebi.inchikey:
@@ -233,12 +233,12 @@ def check_chebi_for_identifier(self, chemical, process_key):
     # Check whether the identifier_name supplied by the curator matches
     # the name returned from the database.
     if chemical['name']:
-        plain_text = sgml_to_plain_text(chemical['name'])
+        plain_text = sgml_to_plain_text(greek_to_sgml(chemical['name']))
         self.log.error(f"BEFORE {chemical['name']} AFTER {plain_text}")
-        if chebi.name.lower() != plain_text.lower():
-            message = 'ChEBI name does not match name specified in identifier field: {} -> {}'.\
-                format(chebi.name, chemical['name'])
-            self.log.debug(message)
+        if sgml_to_plain_text(chebi.name.lower()) != plain_text.lower():
+            message = 'ChEBI name does not match name specified in identifier field: {} != {}'.\
+                format(chebi.name, plain_text)
+            self.warning_error(self.process_data[process_key]['data'][index], message)
 
     chemical['name'] = chebi.name
     chemical['inchikey'] = chebi.inchikey
@@ -261,7 +261,7 @@ def add_description_from_pubchem(self, chemical):
             chemical['description'] = pubchem.description
 
 
-def check_pubchem_for_identifier(self, chemical, process_key):
+def check_pubchem_for_identifier(self, chemical, process_key, index):
     """Check identifier is in pubchem.
 
     Get data from pubchem.
@@ -274,22 +274,14 @@ def check_pubchem_for_identifier(self, chemical, process_key):
         self.log.error(pubchem.error)
         message = "Error looking up {} for {}. Error is {}".\
             format(chemical['source'], chemical['accession'], pubchem.error)
-        self.critical_error(self.process_data[process_key]['data'], message)
+        self.critical_error(self.process_data[process_key]['data'][index], message)
         return False
-
-    if self.has_data('CH1a'):
-        plain_text = sgml_to_plain_text(self.process_data['CH1a']['data'][FIELD_VALUE])
-        pubchem.name = str(pubchem.name)
-        if pubchem.name.lower() != plain_text.lower():
-            self.log.warning('PubChem name does not match name specified for FlyBase: {} -> {}'.format(pubchem.name, plain_text))
-        else:
-            self.log.debug('Queried name \'{}\' matches name used in proforma \'{}\''.format(pubchem.name, plain_text))
 
     # Check whether the identifier_name supplied by the curator matches
     # the name returned from the database.
     if chemical['name']:
         plain_text = sgml_to_plain_text(self.process_data['CH1a']['data'][FIELD_VALUE])
-        if pubchem.name.lower() != plain_text.lower():
+        if chemical['source'] != 'PubChem_SID' and pubchem.name.lower() != plain_text.lower():
             message = 'PubChem name does not match name specified in identifier field: {} -> {}'.\
                 format(pubchem.name, chemical['name'])
             self.log.debug(message)
@@ -307,18 +299,18 @@ def check_pubchem_for_identifier(self, chemical, process_key):
     return True
 
 
-def add_inchikey_to_featureprop(self):
+def add_inchikey_to_featureprop(self, chemical_information):
     """Associates the inchikey from PubChem to a feature via featureprop.
 
     :return:
     """
-    if not self.chemical_information['inchikey']:
+    if not chemical_information['inchikey']:
         return
 
     description_cvterm_id = self.cvterm_query('property type', 'inchikey')
 
     get_or_create(self.session, Featureprop, feature_id=self.feature.feature_id,
-                  type_id=description_cvterm_id, value=self.chemical_information['inchikey'])
+                  type_id=description_cvterm_id, value=chemical_information['inchikey'])
 
 
 def process_synonyms_from_external_db(self, chemical, alt=False):
@@ -336,12 +328,14 @@ def process_synonyms_from_external_db(self, chemical, alt=False):
         for item in chemical['synonyms']:
             for lowercase in [True, False]:
                 name = item[:255]  # Max 255 chars
+                sgml = sgml_to_unicode(name)
+                # select s.* from synonym s, feature_synonym fs where fs.synonym_id = s.synonym_id and fs.feature_id = 595;
+                name = sgml_to_plain_text(greek_to_sgml(name))
                 if lowercase:
                     name = name.lower()
-                sgml = sgml_to_unicode(name)[:255]  # MAx 255 chars
                 if name in seen_it:
                     continue
-                self.log.debug("Adding synonym {}".format(name))
+                self.log.debug(f"Adding synonym '{name}' '{sgml}'")
 
                 new_synonym, _ = get_or_create(self.session, Synonym, type_id=symbol_cv_id,
                                                synonym_sgml=sgml,
@@ -358,11 +352,6 @@ def process_synonyms_from_external_db(self, chemical, alt=False):
     if self.has_data('CH1a'):
         name = sgml_to_plain_text(self.process_data['CH1a']['data'][FIELD_VALUE])
         sgml = sgml_to_unicode(self.process_data['CH1a']['data'][FIELD_VALUE])
-        name = sgml
-    else:
-        name = chemical['name'][:255]  # removes .lower()
-        sgml = sgml_to_unicode(name)
-        name = sgml
 
     new_synonym, _ = get_or_create(self.session, Synonym, type_id=symbol_cv_id,
                                    synonym_sgml=sgml,
