@@ -409,9 +409,10 @@ class ChadoFeatureObject(ChadoObject):
 
         for item in items:
             synonym_sgml = None
-            name = sgml_to_plain_text(greek_to_sgml(item[FIELD_VALUE]))
+            name = item[FIELD_VALUE]
             if 'subscript' in self.process_data[key] and not self.process_data[key]['subscript']:
                 synonym_sgml = sgml_to_unicode(item[FIELD_VALUE])
+                name = sgml_to_plain_text(greek_to_sgml(item[FIELD_VALUE]))
             for pub_id in pubs:
                 fs = fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
                                                      name, cv_name, cvterm_name, pub_id,
