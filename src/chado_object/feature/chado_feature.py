@@ -365,6 +365,16 @@ class ChadoFeatureObject(ChadoObject):
                 return pub_id
         return self.pub.pub_id
 
+    def is_subscript_convert(self, key):
+        """ By default we presume that the subscript conversion is True.
+        Only set to "subscript: False" in the .yml file will it be false.
+        """
+        subscript = True
+        if 'subscript' in self.process_data[key].keys():
+            if self.process_data[key]['subscript'] is False:
+                subscript = False
+        return subscript
+
     def load_synonym(self, key: str, unattrib: bool = True, cvterm_name: str = None, overrule_removeold: bool = False) -> None:  # noqa
         """Load Synonym.
 
@@ -411,7 +421,7 @@ class ChadoFeatureObject(ChadoObject):
         for item in items:
             synonym_sgml = None
             name = item[FIELD_VALUE]
-            if self.subscript_convert(key):
+            if self.is_subscript_convert(key):
                 synonym_sgml = sgml_to_unicode(item[FIELD_VALUE])
                 name = sgml_to_plain_text(greek_to_sgml(item[FIELD_VALUE]))
             for pub_id in pubs:
@@ -549,16 +559,6 @@ class ChadoFeatureObject(ChadoObject):
                 return None, None
         return cvterm, prop_value
 
-    def subscript_convert(self, key):
-        """ By default we presume that the subscript conversion is True.
-        Only set to "subscript: False" in the .yml file will it be false.
-        """
-        subscript = True
-        if 'subscript' in self.process_data[key].keys():
-            if self.process_data[key]['subscript'] is False:
-                subscript = False
-        return subscript
-
     def get_feat_type_cvterm(self, key: str) -> Cvterm:
         """Get feature type cvterm.
 
@@ -607,7 +607,7 @@ class ChadoFeatureObject(ChadoObject):
             feat_type = self.process_data[key]['feat_type']
         if key == 'GENE':
             feat_type = 'gene'
-        subscript = self.subscript_convert(key)
+        subscript = self.is_subscript_convert(key)
         # there may be a specified pattern that surrounds the symbol
         # this is specified in the yml file.
         pattern = None
