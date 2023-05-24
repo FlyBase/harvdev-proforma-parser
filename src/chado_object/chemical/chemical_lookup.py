@@ -5,6 +5,9 @@
 :moduleauthor: Ian Longden <ilongden@morgan.harvard.edu>,
 
 """
+from urllib.error import HTTPError
+from chado_object.feature.chado_feature import ChadoFeatureObject
+
 from harvdev_utils.production import (
     Feature,
     FeatureDbxref,
@@ -26,7 +29,7 @@ from harvdev_utils.char_conversions import (
 from chado_object.feature.chado_feature import FIELD_VALUE
 
 
-def run_checks(self):
+def run_checks(self: ChadoFeatureObject) -> None:
     # Run various checks, some will give critical errors.
     # others will give warnings.
     for index, chemical in enumerate(self.chemical_id_data):
@@ -38,7 +41,7 @@ def run_checks(self):
                             Db.name == chemical['source'],
                             Dbxref.accession == chemical['accession']).one_or_none()
         if feat:
-            message = f"{chemical['identifier']} has already been applied to {feat.uniquename} '{feat.name}'"
+            message = f"{chemical['source']}:{chemical['accession']} has already been applied to {feat.uniquename} '{feat.name}'"
             self.critical_error(self.process_data['CH3a']['data'][index], message)
 
         # If not new
@@ -70,11 +73,20 @@ def run_checks(self):
             self.warning_error(self.process_data['CH1a']['data'], message)
 
 
-def process_chemical(self, key):
+def process_chemical(self: ChadoFeatureObject, key: str) -> None:
     # So we have a new chemical, lets get the data for this.
 
     # data is stored in self.chemical_id_data.
-    identifier_found = self.validate_fetch_identifier_at_external_db('CH3a')
+    identifier_found = False
+    try:
+        identifier_found = self.validate_fetch_identifier_at_external_db('CH3a')
+    except HTTPError as e:
+        message = f"Problem looking up identifier: {e}"
+        self.critical_error(self.process_data[key]['data'][0], message)
+    except Exception as error:
+        message = f"Gen error: Problem looking up identifier: {error} {type(error)}"
+        self.critical_error(self.process_data[key]['data'][0], message)
+
     if not identifier_found:
         return
 
@@ -86,7 +98,7 @@ def process_chemical(self, key):
         self.add_dbxref(chemical_information)
 
         # Add the identifier as a synonym and other synonyms
-        chemical_information['synonyms'].append(chemical_information['identifier'])
+        chemical_information['synonyms'].append(f"{chemical_information['source']}:{chemical_information['accession']}")
         self.process_synonyms_from_external_db(chemical_information)
 
         # Add the description as a featureprop.
@@ -104,7 +116,7 @@ def process_chemical(self, key):
                                    feature_id=self.feature.feature_id,                                   pub_id=self.pub.pub_id)
 
 
-def add_dbxref(self, chemical):
+def add_dbxref(self: ChadoFeatureObject, chemical: dict) -> None:
     """Add dbxref."""
     dbxref, _ = get_or_create(self.session, Dbxref,
                               db_id=chemical['DBObject'].db_id,
@@ -119,7 +131,7 @@ def add_dbxref(self, chemical):
                              dbxref_id=dbxref.dbxref_id)
 
 
-def look_up_static_references(self):
+def look_up_static_references(self: ChadoFeatureObject) -> None:
     """Lookup pub id for chebi and pubchem."""
     self.log.debug('Retrieving ChEBI / PubChem FBrfs for association.')
 
@@ -138,12 +150,10 @@ def look_up_static_references(self):
     self.log.debug('Returned PubChem FBrf pub id as {}'.format(self.pubchem_pub_id))
 
 
-def validate_fetch_identifier_at_external_db(self, process_key):
+def validate_fetch_identifier_at_external_db(self: ChadoFeatureObject, process_key: str) -> bool:
     """Fetch and validate externaldb.
 
-    process_key: Key to use to get data , should be CH3a or CH3d
-    chemical: Chemical entity to store in should be either self.chemical_information
-              or self.alt_chemical_information
+    process_key: Key to use to get data , should be CH3a.
 
     Identifiers and names for ChEBI / PubChem entries are processed at their respective db.
     However, InChIKey entries and definitions always come from PubChem.
@@ -160,7 +170,6 @@ def validate_fetch_identifier_at_external_db(self, process_key):
     all_okay = True
     for index, item in enumerate(self.process_data[process_key]['data']):
         chemical = {
-            'identifier': None,
             'accession': None,
             'source': None,
             'name': None,
@@ -173,16 +182,14 @@ def validate_fetch_identifier_at_external_db(self, process_key):
         }
         identifier_unprocessed = item[FIELD_VALUE]
         identifier_unprocessed = sgml_to_unicode(identifier_unprocessed)
-        chemical['identifier'], chemical['name'], error_msg = self.split_identifier_and_name(identifier_unprocessed, process_key)
+        chemical['source'], chemical['accession'], chemical['name'], error_msg = self.split_identifier_and_name(identifier_unprocessed, process_key)
         if error_msg:
             message = "Wrong format should be 'DBNAME:number ; text'"
             self.critical_error(self.process_data[process_key]['data'][index], message)
             all_okay = False
             continue
 
-        self.log.debug('Found identifier: {} and identifier_name: {}'.format(chemical['identifier'], chemical['name']))
-
-        chemical['source'], chemical['accession'] = chemical['identifier'].split(':')
+        self.log.debug(f"Found db {chemical['source']}: {chemical['accession']} and identifier_name: {chemical['name']}")
 
         # Obtain our identifier, name, definition, and InChIKey from ChEBI / PubChem.
         try:
@@ -193,6 +200,12 @@ def validate_fetch_identifier_at_external_db(self, process_key):
                                 'Database name not recognized from identifier: {}. {}'.format(chemical['source'], e))
             all_okay = False
             continue
+        except HTTPError as e:
+            self.critical_error(self.process_data[process_key]['data'][index],
+                                'Server side Error : {}. {}'.format(chemical['source'], e))
+            all_okay = False
+            continue
+
         if identifier_and_data is False:  # Errors are already declared in the sub-functions.
             all_okay = False
             continue
@@ -207,19 +220,24 @@ def validate_fetch_identifier_at_external_db(self, process_key):
     return all_okay
 
 
-def check_chebi_for_identifier(self, chemical, process_key, index):
+def check_chebi_for_identifier(self: ChadoFeatureObject, chemical: dict, process_key: str, index: int) -> bool:
     """Check for chebi identifier.
 
     Returns: True if data is successfully found.
              False if there are any issues.
     """
-    chebi = ExternalLookup.lookup_chebi(chemical['identifier'], synonyms=True)
+    try:
+        chebi = ExternalLookup.lookup_chebi(chemical['accession'], synonyms=True)
+    except HTTPError as e:
+        message = f"Problem ChEBI lookup, server problems? {e}"
+        self.critical_error(self.process_data[process_key]['data'][index], message)
+        return False
     if not chebi:
         self.critical_error(self.process_data[process_key]['data'][index], chebi.error)
         return False
 
     if not chebi.inchikey:
-        self.log.debug('No InChIKey found for entry: {}'.format(chemical['identifier']))
+        self.log.debug(f"No InChIKey found for entry: {chemical['source']}:{chemical['accession']}")
 
     # Check whether the name intended to be used in FlyBase matches
     # the name returned from the database.
@@ -234,7 +252,6 @@ def check_chebi_for_identifier(self, chemical, process_key, index):
     # the name returned from the database.
     if chemical['name']:
         plain_text = sgml_to_plain_text(greek_to_sgml(chemical['name']))
-        self.log.error(f"BEFORE {chemical['name']} AFTER {plain_text}")
         if sgml_to_plain_text(chebi.name.lower()) != plain_text.lower():
             message = 'ChEBI name does not match name specified in identifier field: {} != {}'.\
                 format(chebi.name, plain_text)
@@ -250,18 +267,17 @@ def check_chebi_for_identifier(self, chemical, process_key, index):
     return True
 
 
-def add_description_from_pubchem(self, chemical):
+def add_description_from_pubchem(self: ChadoFeatureObject, chemical: dict) -> None:
     """Add description from pubchem."""
     if not chemical['description']:
         pubchem = ExternalLookup.lookup_by_name('pubchem', chemical['name'])
         if pubchem.error:
-            self.log.error(pubchem.error)
-            return False
+            self.critical_error(pubchem.error)
         else:
             chemical['description'] = pubchem.description
 
 
-def check_pubchem_for_identifier(self, chemical, process_key, index):
+def check_pubchem_for_identifier(self: ChadoFeatureObject, chemical: dict, process_key: str, index: int) -> bool:
     """Check identifier is in pubchem.
 
     Get data from pubchem.
@@ -299,7 +315,7 @@ def check_pubchem_for_identifier(self, chemical, process_key, index):
     return True
 
 
-def add_inchikey_to_featureprop(self, chemical_information):
+def add_inchikey_to_featureprop(self: ChadoFeatureObject, chemical_information: dict) -> None:
     """Associates the inchikey from PubChem to a feature via featureprop.
 
     :return:
@@ -313,7 +329,7 @@ def add_inchikey_to_featureprop(self, chemical_information):
                   type_id=description_cvterm_id, value=chemical_information['inchikey'])
 
 
-def process_synonyms_from_external_db(self, chemical, alt=False):
+def process_synonyms_from_external_db(self: ChadoFeatureObject, chemical: dict, alt: bool = False) -> None:
     """
     Add the synonyms obtained from the external db for the chemical.
 
@@ -345,7 +361,7 @@ def process_synonyms_from_external_db(self, chemical, alt=False):
                                       pub_id=pub_id, synonym_id=new_synonym.synonym_id)
                 fs.is_current = False
 
-    self.log.debug("Adding new synonym entry for {}.".format(chemical['identifier']))
+    self.log.debug(f"Adding new synonym entry for {chemical['source']}:{chemical['accession']}.")
 
     if alt:  # If alternative then already done.
         return

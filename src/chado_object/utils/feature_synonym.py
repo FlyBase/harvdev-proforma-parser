@@ -10,8 +10,10 @@ from harvdev_utils.production import (
     Synonym, FeatureSynonym
 )
 from harvdev_utils.char_conversions import sgml_to_plain_text
-from harvdev_utils.char_conversions import sub_sup_to_sgml
-from harvdev_utils.char_conversions import sgml_to_unicode
+from harvdev_utils.char_conversions import (
+    sub_sup_to_sgml,
+    greek_to_sgml,
+    sgml_to_unicode)
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from sqlalchemy.orm.session import Session
 
@@ -92,7 +94,7 @@ def fs_add_by_synonym_name_and_type(session: Session, feature_id: int, synonym_n
     # Then get_create the synonym
     if not synonym_sgml:
         synonym_sgml = sgml_to_unicode(sub_sup_to_sgml(synonym_name))
-    synonym_name = sgml_to_plain_text(synonym_name)
+    synonym_name = sgml_to_plain_text(greek_to_sgml(synonym_name))
     synonym, _ = get_or_create(session, Synonym, type_id=cvterm.cvterm_id, name=synonym_name, synonym_sgml=synonym_sgml)
     if not synonym:
         raise CodingError("HarvdevError: Could not create synonym")

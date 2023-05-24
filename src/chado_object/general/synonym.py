@@ -90,7 +90,7 @@ def add_by_synonym_name_and_type(self, key, synonym_name, cv_name, cvterm_name, 
     if not cvterm:
         raise CodingError("HarvdevError: Could not find cvterm '{}' for cv {}".format(cvterm_name, cv_name))
     synonym_sgml = None
-    if 'subscript' in self.process_data[key] and not self.process_data[key]['subscript']:
+    if self.subscript_convert(key):
         synonym_sgml = sgml_to_unicode(synonym_name)
 
     # Then get_create the synonym
