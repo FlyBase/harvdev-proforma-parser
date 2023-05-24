@@ -75,6 +75,17 @@ def load_synonym(self, key):
             fs.is_current = is_current
 
 
+def is_subscript_convert(self, key):
+    """ By default we presume that the subscript conversion is True.
+    Only set to "subscript: False" in the .yml file will it be false.
+    """
+    subscript = True
+    if 'subscript' in self.process_data[key].keys():
+        if self.process_data[key]['subscript'] is False:
+            subscript = False
+    return subscript
+
+
 def add_by_synonym_name_and_type(self, key, synonym_name, cv_name, cvterm_name, pub_id):
     """Add synonym.
 

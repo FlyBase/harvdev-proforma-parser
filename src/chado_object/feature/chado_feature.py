@@ -365,15 +365,6 @@ class ChadoFeatureObject(ChadoObject):
                 return pub_id
         return self.pub.pub_id
 
-    def is_subscript_convert(self, key):
-        """ By default we presume that the subscript conversion is True.
-        Only set to "subscript: False" in the .yml file will it be false.
-        """
-        subscript = True
-        if 'subscript' in self.process_data[key].keys():
-            if self.process_data[key]['subscript'] is False:
-                subscript = False
-        return subscript
 
     def load_synonym(self, key: str, unattrib: bool = True, cvterm_name: str = None, overrule_removeold: bool = False) -> None:  # noqa
         """Load Synonym.

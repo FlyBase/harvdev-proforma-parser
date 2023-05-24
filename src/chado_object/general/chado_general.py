@@ -206,7 +206,7 @@ class ChadoGeneralObject(ChadoObject):
     """ChadoGeneral object."""
     from chado_object.general.synonym import (
         synonym_lookup, load_synonym, add_by_synonym_name_and_type, check_old_synonym,
-        remove_current_symbol, delete_synonym
+        remove_current_symbol, delete_synonym, is_subscript_convert
     )
     from chado_object.general.prop import (
         load_generalproplist, load_generalprop, delete_prop, proppubs_exist,
