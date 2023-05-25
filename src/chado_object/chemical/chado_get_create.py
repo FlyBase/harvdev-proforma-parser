@@ -1,3 +1,4 @@
+from typing import Union
 from chado_object.feature.chado_feature import FIELD_VALUE, ChadoFeatureObject
 from harvdev_utils.chado_functions import (
     DataError,
@@ -10,10 +11,11 @@ from harvdev_utils.production import (
     Db,
     Dbxref,
     Feature,
+    FeatureDbxref,
     FeaturePub)
 
 
-def get_or_create_chemical(self):
+def get_or_create_chemical(self: ChadoFeatureObject) -> None:
     """Validate the identifier in an external database.
 
     Also looks for conflicts between the external name and
@@ -30,21 +32,14 @@ def get_or_create_chemical(self):
 
     if not self.new_chemical_entry:  # Fetch by FBch and check CH1a ONLY
         self.fetch_by_FBch_and_check(chemical_cvterm_id)
-        if not self.has_data('CH3g'):
+        if not self.has_data('CH3g') and 'CH3a' not in self.bang_c:
             feature_pub, _ = get_or_create(self.session, FeaturePub,
                                            feature_id=self.feature.feature_id,
                                            pub_id=self.pub.pub_id)
         return
-    else:  # new check it does not exists already
-        exists = self.check_existing_already()
-        if exists:
-            return
+
     exists_already = self.check_existing_already()
     if exists_already:
-        self.feature = exists_already
-        if not self.has_data('CH3g'):
-            feature_pub, _ = get_or_create(self.session, FeaturePub, feature_id=self.feature.feature_id,
-                                           pub_id=self.pub.pub_id)
         return
 
     # Look up organism id.
@@ -58,19 +53,31 @@ def get_or_create_chemical(self):
     self.log.debug("New chemical entry created: {}".format(self.feature.name))
 
 
-def check_for_dbxref(self, key):
+def check_for_dbxref(self: ChadoFeatureObject, key: str) -> bool:
     if self.has_data(key):
-        identifier, name = self.split_identifier_and_name(self.process_data[key]['data'][FIELD_VALUE], key)
-        feat = self.session.query(Feature).\
-            join(Dbxref).\
-            join(Db).filter(Db.name == identifier,
-                            Dbxref.accession == name).one_or_none()
-        if feat:
-            self.critical_error(self.process_data[key]['data'], f"Feature {feat.uniquename} Already has {identifier}:{name}")
-            return True
+        for index, item in enumerate(self.process_data[key]['data']):
+            db_name, acc, name, error_msg = self.split_identifier_and_name(item[FIELD_VALUE], key)
+            self.log.debug(f"BOB: {db_name} {acc}, {name}, {error_msg}")
+            if error_msg:
+                self.critical_error(self.process_data[key]['data'][index], error_msg)
+                continue
+            if not acc:
+                self.critical_error(self.process_data[key]['data'][index], "Wrong format should be DBNAME:acc ; name")
+                continue
+            feat = self.session.query(Feature).\
+                join(FeatureDbxref).\
+                join(Dbxref).\
+                join(Db).filter(Db.name == db_name,
+                                Dbxref.accession == acc,
+                                Feature.is_obsolete.is_(False),
+                                FeatureDbxref.is_current.is_(True)).one_or_none()
+            if feat:
+                self.critical_error(self.process_data[key]['data'][index], f"Feature {feat.uniquename} already has {db_name}:{acc} as an dbxref.")
+                return True
+    return False
 
 
-def check_existing_already(self):
+def check_existing_already(self: ChadoFeatureObject) -> bool:
     """Check if we already have an existing entry.
     Check via name, and also the CH3a (CHEBI, PUBCHEM entry)
     """
@@ -96,14 +103,13 @@ def check_existing_already(self):
             return True
 
     # Check for chebi/pubchem entry already in db. If set.
-    for key in ('CH3a', 'CH3d'):
-        if self.has_data(key):
-            entry_already_exists = self.check_for_dbxref(key)
-            if entry_already_exists and self.new_chemical_entry:
-                self.critical_error(self.process_data[key]['data'], f"Already exists (via {key} lookup but specified as new.")
-                return True
-            if entry_already_exists:
-                return True
+    if self.has_data('CH3a'):
+        entry_already_exists = self.check_for_dbxref('CH3a')
+        if entry_already_exists and self.new_chemical_entry:
+            self.critical_error(self.process_data['CH3a']['data'][0], f"Already exists (via {'CH3a'} lookup but specified as new.)")
+            return True
+        if entry_already_exists:
+            return True
 
     return False
 
@@ -137,7 +143,7 @@ def fetch_by_FBch_and_check(self: ChadoFeatureObject, chemical_cvterm_id: int) -
             self.critical_error(self.process_data['CH1a']['data'], message)
 
 
-def chemical_feature_lookup(self, organism_id, key_name, name, current=True):
+def chemical_feature_lookup(self: ChadoFeatureObject, organism_id: int, key_name: str, name: str, current: bool = True) -> Union[None, Feature]:
     """Lookup the chemical feature."""
     entry = None
     name = sgml_to_plain_text(name)

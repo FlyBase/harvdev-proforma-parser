@@ -49,10 +49,6 @@ CH3b:
   value_nullable: True
 CH3c: # Processed by CH3b if new
   type: value
-CH3d: # alternative chebi/pubchem lookup and add
-      # Done in chemical_lookup previously.
-  type: ignore
-  subscript: False
 CH3f:
   type: featureprop
   cv: property type
