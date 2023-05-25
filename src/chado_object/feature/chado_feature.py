@@ -54,6 +54,16 @@ class ChadoFeatureObject(ChadoObject):
         self.new = None
         self.current_release = '6'
 
+    def is_subscript_convert(self, key):
+        """ By default we presume that the subscript conversion is True.
+        Only set to "subscript: False" in the .yml file will it be false.
+        """
+        subscript = True
+        if 'subscript' in self.process_data[key].keys():
+            if self.process_data[key]['subscript'] is False:
+                subscript = False
+        return subscript
+
     def load_lfp(self, key: str):
         """Load LibraryFeatureprop.
 
@@ -365,7 +375,6 @@ class ChadoFeatureObject(ChadoObject):
                 return pub_id
         return self.pub.pub_id
 
-
     def load_synonym(self, key: str, unattrib: bool = True, cvterm_name: str = None, overrule_removeold: bool = False) -> None:  # noqa
         """Load Synonym.
 
@@ -410,12 +419,17 @@ class ChadoFeatureObject(ChadoObject):
             items = [self.process_data[key]['data']]
 
         for item in items:
-            synonym_sgml = None
+            synonym_sgml = ''
             name = item[FIELD_VALUE]
-            if self.is_subscript_convert(key):
+            if not self.is_subscript_convert(key):
                 synonym_sgml = sgml_to_unicode(item[FIELD_VALUE])
                 name = sgml_to_plain_text(greek_to_sgml(item[FIELD_VALUE]))
+                log.debug(f"BOB: load_synonym NOT CONVERT {name} {synonym_sgml}")
+            else:
+                log.debug(f"BOB: load_synonym CONVERT {name} {synonym_sgml}")
+
             for pub_id in pubs:
+                log.debug(f"BOB: in pub synonym_sgml={synonym_sgml}")
                 fs = fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
                                                      name, cv_name, cvterm_name, pub_id,
                                                      synonym_sgml=synonym_sgml, is_current=is_current, is_internal=False)

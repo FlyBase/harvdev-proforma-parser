@@ -5,6 +5,7 @@
 :moduleauthor: Ian Longden <ilongden@morgan.harvard.edu>,
 
 """
+import traceback
 from urllib.error import HTTPError
 from chado_object.feature.chado_feature import ChadoFeatureObject
 
@@ -86,6 +87,7 @@ def process_chemical(self: ChadoFeatureObject, key: str) -> None:
     except Exception as error:
         message = f"Gen error: Problem looking up identifier: {error} {type(error)}"
         self.critical_error(self.process_data[key]['data'][0], message)
+        self.critical_error(self.process_data[key]['data'][0], traceback.print_exc())
 
     if not identifier_found:
         return
@@ -213,7 +215,9 @@ def validate_fetch_identifier_at_external_db(self: ChadoFeatureObject, process_k
         # for a ChEBI query we need to go to PubChem for the definition.
         if chemical['source'] != 'PubChem':
             # Set the identifier name to the result queried from ChEBI.
-            self.add_description_from_pubchem(chemical)
+            err = self.add_description_from_pubchem(chemical)
+            if err:
+                self.warning_error(self.process_data[process_key]['data'][index], err)
         elif chemical['source'] == 'PubChem_SID':
             chemical['source'] = 'PubChem'
         self.chemical_id_data.append(chemical)
@@ -267,14 +271,16 @@ def check_chebi_for_identifier(self: ChadoFeatureObject, chemical: dict, process
     return True
 
 
-def add_description_from_pubchem(self: ChadoFeatureObject, chemical: dict) -> None:
+def add_description_from_pubchem(self: ChadoFeatureObject, chemical: dict) -> bool:
     """Add description from pubchem."""
+    mess = ''
     if not chemical['description']:
         pubchem = ExternalLookup.lookup_by_name('pubchem', chemical['name'])
         if pubchem.error:
-            self.critical_error(pubchem.error)
+            mess = pubchem.error
         else:
             chemical['description'] = pubchem.description
+    return mess
 
 
 def check_pubchem_for_identifier(self: ChadoFeatureObject, chemical: dict, process_key: str, index: int) -> bool:

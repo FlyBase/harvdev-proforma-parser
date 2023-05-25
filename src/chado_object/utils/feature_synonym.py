@@ -48,7 +48,7 @@ def fs_add_by_ids(session, feature_id, synonym_id, pub_id, is_current=True, is_i
 
 
 def fs_add_by_synonym_name_and_type(session: Session, feature_id: int, synonym_name: str, cv_name: str, cvterm_name: str, pub_id: int,
-                                    synonym_sgml: str = None, is_current: bool = True, is_internal: bool = False):
+                                    synonym_sgml: str = '', is_current: bool = True, is_internal: bool = False):
     """Create a feature_synoym given a feature_id and an synonym_name and type_name.
 
     Args:
@@ -91,10 +91,13 @@ def fs_add_by_synonym_name_and_type(session: Session, feature_id: int, synonym_n
     if not cvterm:
         raise CodingError("HarvdevError: Could not find cvterm '{}' for cv {}".format(cvterm_name, cv_name))
 
+    log.debug(f"BOB: pretest fs_add_by_synonym_name_and_type {synonym_name} {synonym_sgml}")
     # Then get_create the synonym
     if not synonym_sgml:
         synonym_sgml = sgml_to_unicode(sub_sup_to_sgml(synonym_name))
     synonym_name = sgml_to_plain_text(greek_to_sgml(synonym_name))
+    log.debug(f"BOB: fs_add_by_synonym_name_and_type {synonym_name} {synonym_sgml}")
+
     synonym, _ = get_or_create(session, Synonym, type_id=cvterm.cvterm_id, name=synonym_name, synonym_sgml=synonym_sgml)
     if not synonym:
         raise CodingError("HarvdevError: Could not create synonym")
