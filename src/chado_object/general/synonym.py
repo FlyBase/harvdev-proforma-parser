@@ -5,9 +5,11 @@
 """
 from chado_object.chado_base import FIELD_VALUE
 from harvdev_utils.chado_functions import get_or_create, get_cvterm
-from harvdev_utils.char_conversions import sgml_to_plain_text
-from harvdev_utils.char_conversions import sub_sup_to_sgml
-from harvdev_utils.char_conversions import sgml_to_unicode
+from harvdev_utils.char_conversions import (
+    sgml_to_plain_text,
+    greek_to_sgml,
+    sub_sup_to_sgml,
+    sgml_to_unicode)
 from harvdev_utils.chado_functions import CodingError
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 import logging
@@ -90,12 +92,17 @@ def add_by_synonym_name_and_type(self, key, synonym_name, cv_name, cvterm_name, 
     if not cvterm:
         raise CodingError("HarvdevError: Could not find cvterm '{}' for cv {}".format(cvterm_name, cv_name))
     synonym_sgml = None
-    if 'subscript' in self.process_data[key] and not self.process_data[key]['subscript']:
-        synonym_sgml = sgml_to_unicode(synonym_name)
 
+    log.debug(f"BOB: GEN pretest fs_add_by_synonym_name_and_type {synonym_name} {synonym_sgml}")
     # Then get_create the synonym
     if not synonym_sgml:
         synonym_sgml = sgml_to_unicode(sub_sup_to_sgml(synonym_name))
+    synonym_name = sgml_to_plain_text(greek_to_sgml(synonym_name))
+    log.debug(f"BOB: GEN fs_add_by_synonym_name_and_type {synonym_name} {synonym_sgml}")
+
+    # Then get_create the synonym
+    # if not synonym_sgml:
+    #    synonym_sgml = sgml_to_unicode(sub_sup_to_sgml(synonym_name))
     synonym_name = sgml_to_plain_text(synonym_name)
     synonym, _ = get_or_create(self.session, Synonym, type_id=cvterm.cvterm_id, name=synonym_name, synonym_sgml=synonym_sgml)
     if not synonym:

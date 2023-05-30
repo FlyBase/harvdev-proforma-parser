@@ -10,7 +10,7 @@ from chado_object.utils.feature_synonym import fs_add_by_synonym_name_and_type
 from harvdev_utils.chado_functions.organism import get_organism
 
 from chado_object.utils.feature_synonym import fs_remove_current_symbol
-from harvdev_utils.char_conversions import sgml_to_plain_text, sgml_to_unicode
+from harvdev_utils.char_conversions import sgml_to_plain_text, sgml_to_unicode, greek_to_sgml
 from harvdev_utils.production import (
     Cvterm, Cvtermprop, Feature, FeatureRelationship, FeatureRelationshipPub, Featureprop,
     FeaturepropPub, FeaturePub, FeatureCvterm, FeatureCvtermprop, FeatureSynonym,
@@ -50,8 +50,19 @@ class ChadoFeatureObject(ChadoObject):
         super(ChadoFeatureObject, self).__init__(params)
         self.feature: Union[Feature, None] = None
         self.unattrib_pub = None
+        self.pub = None
         self.new = None
         self.current_release = '6'
+
+    def is_subscript_convert(self, key):
+        """ By default we presume that the subscript conversion is True.
+        Only set to "subscript: False" in the .yml file will it be false.
+        """
+        subscript = True
+        if 'subscript' in self.process_data[key].keys():
+            if self.process_data[key]['subscript'] is False:
+                subscript = False
+        return subscript
 
     def load_lfp(self, key: str):
         """Load LibraryFeatureprop.
@@ -408,12 +419,19 @@ class ChadoFeatureObject(ChadoObject):
             items = [self.process_data[key]['data']]
 
         for item in items:
-            synonym_sgml = None
-            if 'subscript' in self.process_data[key] and not self.process_data[key]['subscript']:
+            synonym_sgml = ''
+            name = item[FIELD_VALUE]
+            if not self.is_subscript_convert(key):
                 synonym_sgml = sgml_to_unicode(item[FIELD_VALUE])
+                name = sgml_to_plain_text(greek_to_sgml(item[FIELD_VALUE]))
+                log.debug(f"BOB: load_synonym NOT CONVERT {name} {synonym_sgml}")
+            else:
+                log.debug(f"BOB: load_synonym CONVERT {name} {synonym_sgml}")
+
             for pub_id in pubs:
+                log.debug(f"BOB: in pub synonym_sgml={synonym_sgml}")
                 fs = fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
-                                                     item[FIELD_VALUE], cv_name, cvterm_name, pub_id,
+                                                     name, cv_name, cvterm_name, pub_id,
                                                      synonym_sgml=synonym_sgml, is_current=is_current, is_internal=False)
                 if is_current and cvterm_name == 'symbol':
                     self.feature.name = sgml_to_plain_text(item[FIELD_VALUE])
@@ -594,10 +612,7 @@ class ChadoFeatureObject(ChadoObject):
             feat_type = self.process_data[key]['feat_type']
         if key == 'GENE':
             feat_type = 'gene'
-        subscript = True
-        if 'subscript' in self.process_data[key]:
-            if not self.process_data[key]['subscript']:
-                subscript = False
+        subscript = self.is_subscript_convert(key)
         # there may be a specified pattern that surrounds the symbol
         # this is specified in the yml file.
         pattern = None
