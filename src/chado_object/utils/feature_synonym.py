@@ -91,12 +91,10 @@ def fs_add_by_synonym_name_and_type(session: Session, feature_id: int, synonym_n
     if not cvterm:
         raise CodingError("HarvdevError: Could not find cvterm '{}' for cv {}".format(cvterm_name, cv_name))
 
-    log.debug(f"BOB: pretest fs_add_by_synonym_name_and_type {synonym_name} {synonym_sgml}")
     # Then get_create the synonym
     if not synonym_sgml:
         synonym_sgml = sgml_to_unicode(sub_sup_to_sgml(synonym_name))
     synonym_name = sgml_to_plain_text(greek_to_sgml(synonym_name))
-    log.debug(f"BOB: fs_add_by_synonym_name_and_type {synonym_name} {synonym_sgml}")
 
     synonym, _ = get_or_create(session, Synonym, type_id=cvterm.cvterm_id, name=synonym_name, synonym_sgml=synonym_sgml)
     if not synonym:

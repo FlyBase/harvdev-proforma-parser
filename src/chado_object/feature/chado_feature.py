@@ -424,12 +424,8 @@ class ChadoFeatureObject(ChadoObject):
             if not self.is_subscript_convert(key):
                 synonym_sgml = sgml_to_unicode(item[FIELD_VALUE])
                 name = sgml_to_plain_text(greek_to_sgml(item[FIELD_VALUE]))
-                log.debug(f"BOB: load_synonym NOT CONVERT {name} {synonym_sgml}")
-            else:
-                log.debug(f"BOB: load_synonym CONVERT {name} {synonym_sgml}")
 
             for pub_id in pubs:
-                log.debug(f"BOB: in pub synonym_sgml={synonym_sgml}")
                 fs = fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
                                                      name, cv_name, cvterm_name, pub_id,
                                                      synonym_sgml=synonym_sgml, is_current=is_current, is_internal=False)

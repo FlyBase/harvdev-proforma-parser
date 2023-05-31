@@ -64,7 +64,7 @@ def run_checks(self: ChadoFeatureObject) -> None:
         # check CH1a is a known synonym or give a warning
         found = False
         check_name = self.feature.name.lower()
-        if check_name == chemical['name']:
+        if check_name == str(chemical['name']).lower():
             return
         for syn in chemical['synonyms']:
             if syn.lower() == check_name:

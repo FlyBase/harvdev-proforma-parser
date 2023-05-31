@@ -93,12 +93,10 @@ def add_by_synonym_name_and_type(self, key, synonym_name, cv_name, cvterm_name, 
         raise CodingError("HarvdevError: Could not find cvterm '{}' for cv {}".format(cvterm_name, cv_name))
     synonym_sgml = None
 
-    log.debug(f"BOB: GEN pretest fs_add_by_synonym_name_and_type {synonym_name} {synonym_sgml}")
     # Then get_create the synonym
     if not synonym_sgml:
         synonym_sgml = sgml_to_unicode(sub_sup_to_sgml(synonym_name))
     synonym_name = sgml_to_plain_text(greek_to_sgml(synonym_name))
-    log.debug(f"BOB: GEN fs_add_by_synonym_name_and_type {synonym_name} {synonym_sgml}")
 
     # Then get_create the synonym
     # if not synonym_sgml:
