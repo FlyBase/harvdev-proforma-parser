@@ -57,7 +57,6 @@ def check_for_dbxref(self: ChadoFeatureObject, key: str) -> bool:
     if self.has_data(key):
         for index, item in enumerate(self.process_data[key]['data']):
             db_name, acc, name, error_msg = self.split_identifier_and_name(item[FIELD_VALUE], key)
-            self.log.debug(f"BOB: {db_name} {acc}, {name}, {error_msg}")
             if error_msg:
                 self.critical_error(self.process_data[key]['data'][index], error_msg)
                 continue

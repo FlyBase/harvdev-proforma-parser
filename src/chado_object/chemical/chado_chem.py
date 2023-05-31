@@ -285,9 +285,13 @@ class ChadoChem(ChadoFeatureObject):
             identifier_name = identifier_split_list.pop(0).strip()
         except IndexError:
             error_msg = "Error splitting identifier and name using semicolon. {}".format(identifier_unprocessed)
-        if identifier_split_list:  # If the list is not empty by this point, raise an error.
-            error_msg = "Error splitting identifier and name using semicolon. {}".format(identifier_unprocessed)
-            return '', '', '', error_msg
+
+        # If the list is not empty by this point, then the name must have a ';' in it
+        # so add it back.
+        # Example PubChem:5351330 ; 1,5-Bis[3-(2-hydroxyethylamino)propylamino]anthracene-9,10-dione;hydrochloride
+        # name should be 1,5-Bis[3-(2-hydroxyethylamino)propylamino]anthracene-9,10-dione;hydrochloride
+        if identifier_split_list:
+            identifier_name += ';' + ';'.join(identifier_split_list)
 
         identifier_split_list = identifier.split(':')
         try:
