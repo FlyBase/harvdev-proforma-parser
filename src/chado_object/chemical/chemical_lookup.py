@@ -52,7 +52,7 @@ def run_checks(self: ChadoFeatureObject) -> None:
                 join(Db).\
                 join(FeatureDbxref).filter(Db.name == chemical['source'],
                                            FeatureDbxref.feature_id == self.feature.feature_id).one_or_none()
-            if dbxref:  # already has an entry ?
+            if dbxref and 'CH3a' not in self.bang_c:  # already has an entry ?
                 chemical['exists_already'] = True
                 if chemical['accession'] == dbxref.accession:
                     self.warning_error(self.process_data['CH3a']['data'][index], "Already in the database, No need to re add it")
