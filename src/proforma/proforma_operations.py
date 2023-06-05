@@ -461,7 +461,8 @@ class Proforma(object):
         if type_of_bang and field not in Proforma.set_fields_to_key:
             self.add_bang(field, value, type_of_bang, line_number)
 
-        if value is not None:
+        # P12 author names are allowed special chars.
+        if value is not None and field != 'P12':
             # remove spaces from start and end of string
             value = value.strip()
             pattern = '^[\\x00-\\x7F]+$'
