@@ -22,7 +22,7 @@ from error.error_tracking import ErrorTracking, CRITICAL_ERROR
 log = logging.getLogger(__name__)
 
 
-def check_for_special_chars(value, field, line_number, filename):
+def check_for_special_chars(value, field, line_number, filename, line):
     pattern = '^[\\x00-\\x7F]+$'
     # P12 allowed special chars.
     if value and field != 'P12':
@@ -34,7 +34,7 @@ def check_for_special_chars(value, field, line_number, filename):
                 "Proforma entry starting on line: {}".format(line_number),
                 "Proforma error around line: {}".format(line_number),
                 message,
-                "{}:".format(line_number),
+                "{}:".format(line or value),
                 value,
                 CRITICAL_ERROR)
 
@@ -213,7 +213,7 @@ class ProformaFile(object):
             if fields.group(1):
                 result_bang = fields.group(1)
 
-        check_for_special_chars(result_value, result_field, line_number, self.filename)
+        check_for_special_chars(result_value, result_field, line_number, self.filename, individual_proforma_line)
 
         return (result_field, result_value, result_bang)
 
@@ -467,7 +467,7 @@ class Proforma(object):
             self.add_bang(field, value, type_of_bang, line_number)
 
         # P12 author names are allowed special chars.
-        check_for_special_chars(value, field, line_number, self.file_metadata['filename'])
+        check_for_special_chars(value, field, line_number, self.file_metadata['filename'], "")
 
         # Field values are stored in tuples of (field, value, line number).
         # The field value key name is the same as the first part of this tuple.
