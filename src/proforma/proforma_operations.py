@@ -197,7 +197,8 @@ class ProformaFile(object):
                 result_bang = fields.group(1)
 
         pattern = '^[\\x00-\\x7F]+$'
-        if result_value:
+        # P12 allowed special chars.
+        if result_value and result_field != 'P12':
             fields = re.search(pattern, result_value)
             if not fields:
                 message = "Special character found. Not allowed"
