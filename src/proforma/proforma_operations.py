@@ -148,9 +148,28 @@ class ProformaFile(object):
         # Alternatively, you could process the file line-by-line.
         # However, these files are small and memory is plentiful, so we're reading everything for now.
         # The code can always be refactored if this becomes a problem.
+        pattern = '^[\\x00-\\x7F]+$'
+        count = 0
         with open(self.filename, encoding='utf-8') as the_file:  # We only <3 utf-8!
             for each_line in the_file:
-                if each_line.strip():  # If the line isn't blank.
+                count += 1
+                each_line = each_line.strip()
+                if not each_line:  # If the line is blank.
+                    continue
+                # test for any "special" chars
+                fields = re.search(pattern, each_line)
+                if not fields:
+                    message = "Special character found. Not allowed"
+                    ErrorTracking(
+                        self.filename,
+                        "Proforma entry starting on line: {}".format(count),
+                        "Proforma error around line: {}".format(count),
+                        message,
+                        "{}:".format(each_line),
+                        each_line,
+                        CRITICAL_ERROR)
+
+                if each_line:  # If the line isn't blank.
                     self.proforma_file_data.append(each_line.strip())  # Add to array and remove newlines.
 
         if len(self.proforma_file_data) == 0:
