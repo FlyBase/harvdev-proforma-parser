@@ -148,36 +148,18 @@ class ProformaFile(object):
         # Alternatively, you could process the file line-by-line.
         # However, these files are small and memory is plentiful, so we're reading everything for now.
         # The code can always be refactored if this becomes a problem.
-        pattern = '^[\\x00-\\x7F]+$'
-        count = 0
         with open(self.filename, encoding='utf-8') as the_file:  # We only <3 utf-8!
             for each_line in the_file:
-                count += 1
                 each_line = each_line.strip()
-                if not each_line:  # If the line is blank.
-                    continue
-                # test for any "special" chars
-                fields = re.search(pattern, each_line)
-                if not fields:
-                    message = "Special character found. Not allowed"
-                    ErrorTracking(
-                        self.filename,
-                        "Proforma entry starting on line: {}".format(count),
-                        "Proforma error around line: {}".format(count),
-                        message,
-                        "{}:".format(each_line),
-                        each_line,
-                        CRITICAL_ERROR)
-
                 if each_line:  # If the line isn't blank.
-                    self.proforma_file_data.append(each_line.strip())  # Add to array and remove newlines.
+                    self.proforma_file_data.append(each_line)  # Add to array and remove newlines.
 
         if len(self.proforma_file_data) == 0:
             log.error("Empty Proforma file found: %s" % (the_file))
 
         log.debug("Processed %s lines." % (len(self.proforma_file_data)))
 
-    def get_proforma_field_and_content(self, individual_proforma_line):
+    def get_proforma_field_and_content(self, individual_proforma_line, line_number):
         """Extract the value after a colon from a line of proforma data.
 
         Args:
@@ -213,6 +195,20 @@ class ProformaFile(object):
                 result_value = fields.group(3)
             if fields.group(1):
                 result_bang = fields.group(1)
+
+        pattern = '^[\\x00-\\x7F]+$'
+        if result_value:
+            fields = re.search(pattern, result_value)
+            if not fields:
+                message = "Special character found. Not allowed"
+                ErrorTracking(
+                    self.filename,
+                    "Proforma entry starting on line: {}".format(line_number),
+                    "Proforma error around line: {}".format(line_number),
+                    message,
+                    "{}:".format(individual_proforma_line),
+                    result_value,
+                    CRITICAL_ERROR)
 
         return (result_field, result_value, result_bang)
 
@@ -287,7 +283,7 @@ class ProformaFile(object):
         """Process the line and store in the data in the proforma object."""
         # Can't use startswith ('! C') due to CHEMICAL proforma.
         if re.match(r'^! C[0-9]', current_line):
-            field, value, type_of_bang = self.get_proforma_field_and_content(current_line)
+            field, value, type_of_bang = self.get_proforma_field_and_content(current_line, line_number)
             if field == 'C1':
                 file_metadata['curator_initials'] = value
                 file_metadata['curator_fullname'] = self.extract_curator_fullname(file_metadata['curator_initials'])
@@ -296,7 +292,7 @@ class ProformaFile(object):
                 file_metadata['record_type'] = value
             return
         elif current_line.startswith('!c') or current_line.startswith('!d') or current_line.startswith('! '):
-            field, value, type_of_bang = self.get_proforma_field_and_content(current_line)
+            field, value, type_of_bang = self.get_proforma_field_and_content(current_line, line_number)
             individual_proforma.add_field_and_value(field, value, type_of_bang, line_number, True)
         else:
             # We're in a line which contains a value for the previously defined field.
@@ -371,7 +367,7 @@ class ProformaFile(object):
             elif re.match(r'^! C[0-9]', current_line):  # curator line
                 field = self.process_line(field, line_number, current_line, individual_proforma, file_metadata)
             else:
-                field, value, type_of_bang = self.get_proforma_field_and_content(current_line)
+                field, value, type_of_bang = self.get_proforma_field_and_content(current_line, line_number)
                 if not field:
                     log.debug("Ignoring {}".format(current_line))
                     continue
@@ -468,6 +464,19 @@ class Proforma(object):
         if value is not None:
             # remove spaces from start and end of string
             value = value.strip()
+            pattern = '^[\\x00-\\x7F]+$'
+            if value:
+                fields = re.search(pattern, value)
+                if not fields:
+                    message = "Special character found. Not allowed"
+                    ErrorTracking(
+                        self.filename,
+                        "Proforma entry starting on line: {}".format(line_number),
+                        "Proforma error around line: {}".format(line_number),
+                        message,
+                        "{}:".format(value),
+                        value,
+                        CRITICAL_ERROR)
 
         # Field values are stored in tuples of (field, value, line number).
         # The field value key name is the same as the first part of this tuple.
