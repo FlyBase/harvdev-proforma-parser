@@ -22,6 +22,23 @@ from error.error_tracking import ErrorTracking, CRITICAL_ERROR
 log = logging.getLogger(__name__)
 
 
+def check_for_special_chars(value, field, line_number, filename):
+    pattern = '^[\\x00-\\x7F]+$'
+    # P12 allowed special chars.
+    if value and field != 'P12':
+        fields = re.search(pattern, value)
+        if not fields:
+            message = "Special character found. Not allowed"
+            ErrorTracking(
+                filename,
+                "Proforma entry starting on line: {}".format(line_number),
+                "Proforma error around line: {}".format(line_number),
+                message,
+                "{}:".format(line_number),
+                value,
+                CRITICAL_ERROR)
+
+
 def process_proforma_directory(location):
     """Create a list of proformae from a given directory.
 
@@ -196,20 +213,7 @@ class ProformaFile(object):
             if fields.group(1):
                 result_bang = fields.group(1)
 
-        pattern = '^[\\x00-\\x7F]+$'
-        # P12 allowed special chars.
-        if result_value and result_field != 'P12':
-            fields = re.search(pattern, result_value)
-            if not fields:
-                message = "Special character found. Not allowed"
-                ErrorTracking(
-                    self.filename,
-                    "Proforma entry starting on line: {}".format(line_number),
-                    "Proforma error around line: {}".format(line_number),
-                    message,
-                    "{}:".format(individual_proforma_line),
-                    result_value,
-                    CRITICAL_ERROR)
+        check_for_special_chars(result_value, result_field, line_number, self.filename)
 
         return (result_field, result_value, result_bang)
 
@@ -463,22 +467,7 @@ class Proforma(object):
             self.add_bang(field, value, type_of_bang, line_number)
 
         # P12 author names are allowed special chars.
-        if value is not None and field != 'P12':
-            # remove spaces from start and end of string
-            value = value.strip()
-            pattern = '^[\\x00-\\x7F]+$'
-            if value:
-                fields = re.search(pattern, value)
-                if not fields:
-                    message = "Special character found. Not allowed"
-                    ErrorTracking(
-                        self.filename,
-                        "Proforma entry starting on line: {}".format(line_number),
-                        "Proforma error around line: {}".format(line_number),
-                        message,
-                        "{}:".format(value),
-                        value,
-                        CRITICAL_ERROR)
+        check_for_special_chars(value, field, line_number, self.file_metadata['filename'])
 
         # Field values are stored in tuples of (field, value, line number).
         # The field value key name is the same as the first part of this tuple.
