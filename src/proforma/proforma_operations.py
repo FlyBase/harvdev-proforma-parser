@@ -192,7 +192,7 @@ class ProformaFile(object):
             if fields.group(2):
                 result_field = fields.group(2)
             if fields.group(3):
-                result_value = fields.group(3)
+                result_value = fields.group(3).strip()
             if fields.group(1):
                 result_bang = fields.group(1)
 
