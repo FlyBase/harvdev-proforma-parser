@@ -17,7 +17,10 @@ from harvdev_utils.chado_functions import (
     synonym_name_details)
 from harvdev_utils.char_conversions import sgml_to_unicode, sgml_to_plain_text
 from harvdev_utils.production import (
+    Db,
+    Dbxref,
     Feature,
+    FeatureDbxref,
     Featureprop,
     FeatureSynonym,
     Pub,
@@ -105,16 +108,6 @@ class ChadoChem(ChadoFeatureObject):
 
         self.log = log
 
-    # def is_subscript_convert(self, key):
-    #     """ By default we presume that the subscript conversion is True.
-    #     Only set to "subscript: False" in the .yml file will it be false.
-    #     """
-    #     subscript = True
-    #     if 'subscript' in self.process_data[key].keys():
-    #         if self.process_data[key]['subscript'] is False:
-    #             subscript = False
-    #     return subscript
-
     def ignore(self: ChadoFeatureObject, key: str) -> str:
         """Ignore."""
         pass
@@ -125,11 +118,36 @@ class ChadoChem(ChadoFeatureObject):
 
     def delete_chem_ids(self: ChadoFeatureObject, key: str, bangc: bool = True) -> None:
         """ Delete the chemical chebi/pubchem entries for this entry
-        So we want to remove ALL dbxrefs for ChEBI and Pubchem for this feature.
+        So we want to remove ALL dbxrefs for ChEBI and PubChem for this feature.
         Remove the synonyms wrt to the "Chemical" papers for those.
         Remove feature props inchikey, is_variant.
         """
-        pass  # TODO
+        self.look_up_static_references()
+        syn_count = 0
+        for pub_id in (self.chebi_pub_id, self.pubchem_pub_id):
+            # Delete feature_synoyms
+            fss = self.session.query(FeatureSynonym).\
+                join(Pub).\
+                filter(Pub.pub_id == pub_id,
+                       FeatureSynonym.feature_id == self.feature.feature_id)
+            for fs in fss:
+                syn_count += 1
+                self.session.delete(fs)
+
+        dbxref_count = 0
+        for dbname in ('CHEBI', 'PubChem'):
+            # Delete the dbxrefs
+            fds = self.session.query(FeatureDbxref).\
+                join(Dbxref).\
+                join(Db).\
+                filter(FeatureDbxref.feature_id == self.feature.feature_id,
+                       Db.name == dbname)
+            for fd in fds:
+                dbxref_count += 1
+                self.session.delete(fd)
+
+        self.log.debug(f"Deleted {syn_count} feature synonyms")
+        self.log.debug(f"Deleted {dbxref_count} feature dbxrefs")
 
     def sanity_checks(self: ChadoFeatureObject, references: dict) -> None:
         """Sanity checks that are not easily done in cerberos"""
