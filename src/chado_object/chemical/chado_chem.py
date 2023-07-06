@@ -198,6 +198,11 @@ class ChadoChem(ChadoFeatureObject):
             self.dissociate_pub()
             return
 
+        # rename and then exit
+        if self.has_data('CH1e'):
+            self.rename('CH1e')
+            return
+
         # bang c first as this supersedes all things
         if self.bang_c:
             self.bang_c_it()
@@ -327,20 +332,29 @@ class ChadoChem(ChadoFeatureObject):
         if not self.feature:
             return
         name = sgml_to_unicode(self.process_data[key]['data'][FIELD_VALUE])
+        # set new feature name
         self.feature.name = name
-        cvterm = get_cvterm(self.session, 'synonym type', 'fullname')
-        fss = self.session.query(FeatureSynonym).\
-            join(Synonym).\
-            filter(FeatureSynonym.feature_id == self.feature.feature_id,
-                   FeatureSynonym.is_current.is_(True),
-                   Synonym.type_id == cvterm.cvterm_id)
-        for fs in fss:
-            fs.is_current = False
-        _, plain_name, sgml = synonym_name_details(self.session, name, nosup=True)
-        synonym, _ = get_or_create(self.session, Synonym, type_id=cvterm.cvterm_id, name=plain_name, synonym_sgml=sgml)
 
-        fs, _ = get_or_create(self.session, FeatureSynonym, feature_id=self.feature.feature_id, synonym_id=synonym.synonym_id,
-                              pub_id=self.pub.pub_id)
+        # set old fullname synonym to is current false
+        for cv_type in ('fullname', 'symbol'):
+            cvterm = get_cvterm(self.session, 'synonym type', cv_type)
+            fss = self.session.query(FeatureSynonym).\
+                join(Synonym).\
+                filter(FeatureSynonym.feature_id == self.feature.feature_id,
+                       FeatureSynonym.is_current.is_(True),
+                       Synonym.type_id == cvterm.cvterm_id)
+            for fs in fss:
+                fs.is_current = False
+
+        # add new fullname and symbol synonym
+        for cv_type in ('fullname', 'symbol'):
+            cvterm = get_cvterm(self.session, 'synonym type', cv_type)
+            _, plain_name, sgml = synonym_name_details(self.session, name, nosup=True)
+            synonym, _ = get_or_create(self.session, Synonym, type_id=cvterm.cvterm_id, name=plain_name, synonym_sgml=sgml)
+
+            fs, _ = get_or_create(self.session, FeatureSynonym, feature_id=self.feature.feature_id, synonym_id=synonym.synonym_id,
+                                  pub_id=self.pub.pub_id)
+            fs.is_current = True
 
     def make_obsolete(self: ChadoFeatureObject, key: str) -> None:
         """Make the chemical record obsolete.
