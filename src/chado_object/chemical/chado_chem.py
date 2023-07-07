@@ -15,7 +15,7 @@ from harvdev_utils.chado_functions import (
     get_cvterm,
     get_or_create,
     synonym_name_details)
-from harvdev_utils.char_conversions import sgml_to_unicode, sgml_to_plain_text
+from harvdev_utils.char_conversions import sgml_to_plain_text
 from harvdev_utils.production import (
     Db,
     Dbxref,
@@ -331,9 +331,10 @@ class ChadoChem(ChadoFeatureObject):
     def rename(self: ChadoFeatureObject, key: str):
         if not self.feature:
             return
-        name = sgml_to_unicode(self.process_data[key]['data'][FIELD_VALUE])
+        _, plain_name, sgml = synonym_name_details(self.session, self.process_data['CH1e']['data'][FIELD_VALUE], nosup=True)
+        log.debug(f"BOB: {plain_name}, {sgml}")
         # set new feature name
-        self.feature.name = name
+        self.feature.name = plain_name
 
         # set old fullname synonym to is current false
         for cv_type in ('fullname', 'symbol'):
@@ -349,7 +350,6 @@ class ChadoChem(ChadoFeatureObject):
         # add new fullname and symbol synonym
         for cv_type in ('fullname', 'symbol'):
             cvterm = get_cvterm(self.session, 'synonym type', cv_type)
-            _, plain_name, sgml = synonym_name_details(self.session, name, nosup=True)
             synonym, _ = get_or_create(self.session, Synonym, type_id=cvterm.cvterm_id, name=plain_name, synonym_sgml=sgml)
 
             fs, _ = get_or_create(self.session, FeatureSynonym, feature_id=self.feature.feature_id, synonym_id=synonym.synonym_id,
