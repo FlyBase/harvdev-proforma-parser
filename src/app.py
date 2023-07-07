@@ -100,7 +100,7 @@ def create_postgres_session():
 
     # Create our SQL Alchemy engine from our environmental variables.
     engine_var = 'postgresql://' + USER + ":" + PASSWORD + '@' + SERVER + ':' + PORT + '/' + DB
-    log.debug("PORT engine_var = {}: thread is {}".format(engine_var, thread_num))
+    log.debug(f"DB:{DB} PORT:{PORT} SERVER:{SERVER} USER:{USER}, thread is {thread_num}")
     engine = create_engine(engine_var)
 
     Session = sessionmaker(bind=engine)
