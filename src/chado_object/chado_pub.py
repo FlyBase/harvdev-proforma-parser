@@ -14,6 +14,8 @@ from harvdev_utils.production import (
     Cv, Cvterm, Pub, Pubprop, Pubauthor, PubRelationship, Db, Dbxref, PubDbxref
 )
 from harvdev_utils.chado_functions import get_or_create
+from sqlalchemy.orm.exc import MultipleResultsFound
+
 import logging
 from datetime import datetime
 
@@ -475,12 +477,12 @@ class ChadoPub(ChadoObject):
                 for row in self.process_data[key]['data']:
                     if row[FIELD_VALUE] is not None:
                         log.debug("loading {} {}".format(self.process_data[key]['cvterm'], row[FIELD_VALUE]))
-                        self.load_single_pubprop('pubprop type', self.process_data[key]['cvterm'], row)
+                        self.load_single_pubprop(key, 'pubprop type', self.process_data[key]['cvterm'], row)
             else:
                 if self.process_data[key]['data'][FIELD_VALUE] is not None:
                     log.debug("loading {} {}".format(self.process_data[key]['cvterm'],
                                                      self.process_data[key]['data'][FIELD_VALUE]))
-                    self.load_single_pubprop('pubprop type', self.process_data[key]['cvterm'],
+                    self.load_single_pubprop(key, 'pubprop type', self.process_data[key]['cvterm'],
                                              self.process_data[key]['data'])
 
     def load_content(self, references):
@@ -493,7 +495,6 @@ class ChadoPub(ChadoObject):
             self.newpub = True
 
         self.get_pub()
-
         if self.pub:  # Only proceed if we have a pub. Otherwise we had an error.
             self.parent_pub = self.get_parent_pub()
 
@@ -566,7 +567,7 @@ class ChadoPub(ChadoObject):
                     givennames=givennames
                 )
 
-    def load_single_pubprop(self, cv_name, cvterm_name, value_to_add_tuple):
+    def load_single_pubprop(self, key, cv_name, cvterm_name, value_to_add_tuple):
         """Load a single pup prop.
 
         From a given cv and cvterm name add the pubprop with value in tuple.
@@ -589,12 +590,20 @@ class ChadoPub(ChadoObject):
 
         log.debug('Querying for FBrf \'%s\'.' % (value))
 
-        pub_prop, _ = get_or_create(
-            self.session, Pubprop,
-            pub_id=self.pub.pub_id,
-            value=value,
-            type_id=cv_term_id
-        )
+        try:
+            pub_prop, _ = get_or_create(
+                self.session, Pubprop,
+                pub_id=self.pub.pub_id,
+                value=value,
+                type_id=cv_term_id
+            )
+        except MultipleResultsFound:
+            if type(self.process_data[key]['data']) is list:
+                item = self.process_data[key]['data'][0]
+            else:
+                item = self.process_data[key]['data']
+            self.critical_error(item, f"More then one pub prop found for {key} {cv_term_id}")
+            return None
         return pub_prop
 
     def load_pubdbxref(self, db_name, value_to_add_tuple):
