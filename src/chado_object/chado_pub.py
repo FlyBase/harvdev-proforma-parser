@@ -499,7 +499,11 @@ class ChadoPub(ChadoObject):
             elif flag_found:
                 flag_found.value = item[FIELD_VALUE]
         else:
-            if not flag_found:
+            if flag_done_found:
+                self.warning_error(item,
+                                   f'{item[FIELD_VALUE]} being set but {item[FIELD_VALUE]}::DONE already exist for {self.pub.uniquename}. Removing DONE')
+                flag_done_found.value = item[FIELD_VALUE]
+            elif not flag_found:
                 pub_prop, _ = get_or_create(
                     self.session, Pubprop,
                     pub_id=self.pub.pub_id,
@@ -508,7 +512,7 @@ class ChadoPub(ChadoObject):
                 )
             else:
                 # already set message
-                self.warning_error(item, f'{item[FIELD_VALUE]} Already set for {self.pub.uniquename}. Will ignore.')
+                self.warning_error(item, f'Please contact Harvdev, something has gone wqrong with pub flags')
 
     def load_pubprop_flag(self, key):
         """Load the pubprop or change value by splitting term by '::' and searching for start bit.
