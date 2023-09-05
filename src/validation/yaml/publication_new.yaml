@@ -164,7 +164,7 @@ P40:
     pathway]
 P41:
   nullable: True
-  type: list
+  type: [list, string]
   allowed: [
     wt_exp, wt_exp::DONE,
     neur_exp, neur_exp::DONE,
@@ -188,7 +188,7 @@ P42:
   allowed: ['novel_anat', 'novel_anat::DONE', None]
 P43:
   disease_name: True
-  type: list
+  type: [list, string]
   allowed: [disease, disease::Done, diseaseF, diseaseF::DONE, diseaseHP, diseaseHP::DONE, dm_gen, dm_gen::DONE,
             dm_other, dm_other::DONE, noDOcur]
   nullable: True

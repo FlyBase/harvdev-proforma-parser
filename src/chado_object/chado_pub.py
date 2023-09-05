@@ -14,6 +14,7 @@ from harvdev_utils.production import (
     Cv, Cvterm, Pub, Pubprop, Pubauthor, PubRelationship, Db, Dbxref, PubDbxref
 )
 from harvdev_utils.chado_functions import get_or_create
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 import logging
 from datetime import datetime
 
@@ -33,6 +34,7 @@ class ChadoPub(ChadoObject):
                           'pubauthor': self.load_author,
                           'relationship': self.load_relationship,
                           'pubprop': self.load_pubprop,
+                          'pubprop_flag': self.load_pubprop_flag,
                           'dbxref': self.load_dbxref,
                           'ignore': self.ignore,
                           'obsolete': self.make_obsolete}
@@ -41,6 +43,7 @@ class ChadoPub(ChadoObject):
                             'pubauthor': self.delete_author,
                             'relationship': self.delete_relationships,
                             'pubprop': self.delete_pubprops,
+                            'pubprop_flag': self.delete_obsolete,
                             'dbxref': self.delete_dbxref,
                             'ignore': self.delete_ignore,
                             'obsolete': self.delete_obsolete}
@@ -455,6 +458,79 @@ class ChadoPub(ChadoObject):
                 log.debug("Make obsolete {}".format(fbrf))
                 pub = self.get_related_pub(fbrf)
                 pub.is_obsolete = True
+
+    def process_flag(self, key, item, cvterm):
+        flag_found = None
+        flag_done_found = None
+        flag_status = item[FIELD_VALUE].split('::')
+        done_being_set = False
+        if len(flag_status) > 1:
+            done_being_set = True
+
+        pubprops = self.session.query(Pubprop).\
+            filter(Pubprop.pub_id == self.pub.pub_id,
+                   Pubprop.type_id == cvterm.cvterm_id,
+                   Pubprop.value.like(f'{flag_status[0]}%')).all()
+        print(f"BOB: {item[FIELD_VALUE]}: search on value like '{flag_status[0]}%', pub_id = '{self.pub.pub_id}' and cvterm '{cvterm.cvterm_id}'")
+        print(f"BOB: {pubprops}")
+        for pp in pubprops:
+            if pp.value == flag_status[0]:
+                flag_found = pp
+            elif flag_done_found:
+                # temp fix for multiple values (mostly in chemicals)
+                self.session.delete(pp)
+            elif pp.value == f'{flag_status[0]}::DONE':
+                flag_done_found = pp
+
+        if done_being_set:
+            if flag_done_found:
+                # already set message
+                self.warning_error(item, f'{item[FIELD_VALUE]} Already set for {self.pub.uniquename}. Will ignore.')
+                return
+            elif not flag_found:
+                self.warning_error(item,
+                                   f'{flag_status[0]}::DONE being set for {self.pub.uniquename} but {flag_status[0]} NOT found. Setting flag anyway')
+                pub_prop, _ = get_or_create(
+                    self.session, Pubprop,
+                    pub_id=self.pub.pub_id,
+                    value=item[FIELD_VALUE],
+                    type_id=cvterm.cvterm_id
+                )
+            elif flag_found:
+                flag_found.value = item[FIELD_VALUE]
+        else:
+            if not flag_found:
+                pub_prop, _ = get_or_create(
+                    self.session, Pubprop,
+                    pub_id=self.pub.pub_id,
+                    value=item[FIELD_VALUE],
+                    type_id=cvterm.cvterm_id
+                )
+            else:
+                # already set message
+                self.warning_error(item, f'{item[FIELD_VALUE]} Already set for {self.pub.uniquename}. Will ignore.')
+
+    def load_pubprop_flag(self, key):
+        """Load the pubprop or change value by splitting term by '::' and searching for start bit.
+
+        self.process_data[key]['cvterm'] contains the cvterm to be used in the pupprob.
+        self.process_data[key]['data'] contains the value(s) to be added.
+
+        Args:
+            key (str): proforma key name.
+
+        Returns:
+            None
+
+        """
+        if self.has_data(key):
+            log.debug("loading pubprop flags")
+            cvterm = self.session.query(Cvterm).filter(Cvterm.name == self.process_data[key]['cvterm']).one()
+            for row in self.process_data[key]['data']:
+                if row[FIELD_VALUE] is not None:
+                    self.process_flag(key, row, cvterm)
+
+
 
     def load_pubprop(self, key):
         """Load the pubprop.

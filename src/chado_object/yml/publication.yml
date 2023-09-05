@@ -140,15 +140,15 @@ P40:
   cvterm: cam_flag 
   description: flag cambridge
 P41:
-  type: pubprop
-  cvterm: harv_flag 
+  type: pubprop_flag
+  cvterm: harv_flag
   description: flag harvard
 P42:
-  type: pubprop
+  type: pubprop_flag
   cvterm: onto_flag 
   description: flag ontologists
 P43:
-  type: pubprop
+  type: pubprop_flag
   cvterm: dis_flag 
   description: flag disease
 P44:
