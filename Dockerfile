@@ -1,4 +1,4 @@
-FROM flybase/harvdev-docker:alpine_3.10.2
+FROM flybase/harvdev-docker:latest
 
 RUN mkdir -p /.cache && chmod 777 /.cache && mkdir -p /.cache/bioservices && chmod 777 /.cache/bioservices
 
