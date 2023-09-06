@@ -511,7 +511,7 @@ class ChadoPub(ChadoObject):
                 )
             else:
                 # already set message
-                self.warning_error(item, f'Please contact Harvdev, something has gone wqrong with pub flags')
+                self.warning_error(item, 'Please contact Harvdev, something has gone wrong with pub flags')
 
     def load_pubprop_flag(self, key):
         """Load the pubprop or change value by splitting term by '::' and searching for start bit.
@@ -532,8 +532,6 @@ class ChadoPub(ChadoObject):
             for row in self.process_data[key]['data']:
                 if row[FIELD_VALUE] is not None:
                     self.process_flag(key, row, cvterm)
-
-
 
     def load_pubprop(self, key):
         """Load the pubprop.
