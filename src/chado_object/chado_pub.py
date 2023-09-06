@@ -14,7 +14,7 @@ from harvdev_utils.production import (
     Cv, Cvterm, Pub, Pubprop, Pubauthor, PubRelationship, Db, Dbxref, PubDbxref
 )
 from harvdev_utils.chado_functions import get_or_create
-from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+# from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 import logging
 from datetime import datetime
 
