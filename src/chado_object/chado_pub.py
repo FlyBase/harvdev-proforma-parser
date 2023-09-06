@@ -471,8 +471,6 @@ class ChadoPub(ChadoObject):
             filter(Pubprop.pub_id == self.pub.pub_id,
                    Pubprop.type_id == cvterm.cvterm_id,
                    Pubprop.value.like(f'{flag_status[0]}%')).all()
-        print(f"BOB: {item[FIELD_VALUE]}: search on value like '{flag_status[0]}%', pub_id = '{self.pub.pub_id}' and cvterm '{cvterm.cvterm_id}'")
-        print(f"BOB: {pubprops}")
         for pp in pubprops:
             if pp.value == flag_status[0]:
                 flag_found = pp
