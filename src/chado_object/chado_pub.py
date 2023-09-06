@@ -476,6 +476,7 @@ class ChadoPub(ChadoObject):
                 flag_found = pp
             elif flag_done_found:
                 # temp fix for multiple values (mostly in chemicals)
+                self.warning_error(item, f'Multiple values for {pp.value}, deleting duplicate.')
                 self.session.delete(pp)
             elif pp.value == f'{flag_status[0]}::DONE':
                 flag_done_found = pp
