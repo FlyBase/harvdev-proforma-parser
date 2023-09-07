@@ -95,7 +95,7 @@ class ChadoAllele(ChadoFeatureObject):
     def not_done(self, key):
         # Remove once GA35 done.
         # Will be done once transposon have been sorted out.
-        if type(self.process_data[key]['data']) == list:
+        if type(self.process_data[key]['data']) is list:
             self.critical_error(self.process_data[key]['data'][0], "Not programmed yet")
         else:
             self.critical_error(self.process_data[key]['data'], "Not programmed yet")

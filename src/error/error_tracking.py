@@ -29,7 +29,7 @@ class ErrorTracking(object):
         try:
             stack = inspect.stack()[1]
             # depending on python version, stack gives different structure, so test for this.
-            if type(stack) != tuple:
+            if type(stack) is tuple:
                 error_called_from = (os.path.basename(os.path.normpath(inspect.stack()[1].filename)))
             else:
                 error_called_from = (os.path.basename(os.path.normpath(stack[1])))
