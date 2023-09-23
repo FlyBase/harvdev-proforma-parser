@@ -109,7 +109,6 @@ def get_validate_molecular_schema(fields_values):
 
 
 def get_validate_geneproduct_schema(fields_values):
-    log.critical("GENEPRODUCT Not coded yet.")
     return "geneproduct.yaml"
 
 

@@ -15,15 +15,15 @@ F1a:
 
 # ! F3. Gene product type [CV] :
 F3:
-  if_new_required: True
-  regex: ^([a-zA-Z0-9_ ]*FB[cS][vO][:]\d+)$
+  if_new_required: F1f
+  regex: ^([a-zA-Z0-9_ ]*[cS][vO][:]\d+)$
   no_bangc: True
 
 # ! F2. Sequence attribute [CV] :
 F2:
-  if_new_required: False   #NOTE:  Only required if F1f is new and expression is from a transgene.
+  if_new_required: F1f   #NOTE:  Only required if F1f is new and expression is from a transgene.
   type: string
-  allowed: 'synthetic_sequence SO:0000351'
+  allowed: ['synthetic_sequence SO:0000351']
 
 # ! F1b. Action - rename this gene product (symbol) :
 F1b:
@@ -37,12 +37,12 @@ F1c:
 # ! F1d. Action - delete gene product record (“y”/blank) :
 F1d:
   type: string
-  allowed: 'y'
+  allowed: ['y']
 
 # ! F1e. Action - dissociate F1f from FBrf (“y”/blank) :
 F1e:
   type: string
-  allowed: 'y'
+  allowed: ['y']
 
 # ! F4. Names(s) used in paper [free text] :
 F4:
@@ -56,7 +56,7 @@ F6:
 # ! F5. Molecule size(s) (wb, nb, sa) :
 F5:
   type: [string]
-  allowed: [?]
+  allowed: ['?']
 
 # ! F9. Expression pattern (<e>  <t>  <a>  <s>  <note>) :
 F9:

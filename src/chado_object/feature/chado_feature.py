@@ -405,7 +405,8 @@ class ChadoFeatureObject(ChadoObject):
             unattrib_pub_id = self.get_unattrib_pub().pub_id
             if pub_id != unattrib_pub_id:
                 pubs.append(unattrib_pub_id)
-
+        if 'add_unattributed_paper_only' in self.process_data[key]:
+            pubs = [self.get_unattrib_pub().pub_id]
         # remove the current symbol if is_current is set and yaml says remove old is_current
         # ecxcept if over rule is passed.
         if not overrule_removeold:

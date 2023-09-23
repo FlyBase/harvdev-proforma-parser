@@ -6,13 +6,15 @@
 
 import os
 import re
-from chado_object.chado_base import FIELD_VALUE, ChadoFeatureObject
+from chado_object.chado_base import FIELD_VALUE
+from chado_object.feature.chado_feature import ChadoFeatureObject
 from harvdev_utils.production import (
     Feature, FeaturePub, Featureprop, FeatureCvterm, FeatureCvtermprop,
     Organism, Cvterm, Cv, Synonym, Db, Dbxref, Pub
 )
-from harvdev_utils.chado_functions import get_or_create
-from error.error_tracking import CRITICAL_ERROR
+from harvdev_utils.chado_functions import get_or_create, get_cvterm
+from harvdev_utils.chado_functions.organism import get_organism
+# from error.error_tracking import CRITICAL_ERROR
 import logging
 from datetime import datetime
 
@@ -42,26 +44,24 @@ class ChadoGeneProduct(ChadoFeatureObject):
         #
         # This is set in the Feature.yml file.
         ##########################################
-        self.type_dict = {'direct': self.load_direct,
-                          'relationship': self.load_relationship,
-                          'prop': self.load_prop,
-                          'cvterm': self.load_cvterm,
+        self.type_dict = {#'prop': self.load_prop,
+                          # 'cvterm': self.load_cvterm,
                           'synonym': self.load_synonym,
-                          'dissociate_pub': self.dissociate_pub,
-                          'obsolete': self.make_obsolete,
-                          'ignore': self.ignore,
-                          'data_set': self.ignore,  # Done separately
-                          'dbxrefprop': self.load_dbxrefprop,
-                          'featureprop': self.load_featureprop}
+                          #'dissociate_pub': self.dissociate_pub,
+                          #'obsolete': self.make_obsolete,
+                          'ignore': self.ignore
+                          #'dbxrefprop': self.load_dbxrefprop,
+                          #'featureprop': self.load_featureprop
+        }
 
-        self.delete_dict = {'direct': self.delete_direct,
-                            'dbxrefprop': self.delete_dbxref,
-                            'ignore': self.delete_ignore,
-                            'prop': self.delete_prop,
-                            'cvterm': self.delete_cvterm,
-                            'synonym': self.delete_synonym,
-                            'featureprop': self.delete_featureprop,
-                            'relationship': self.delete_relationship}
+        self.delete_dict = {#'dbxrefprop': self.delete_dbxref,
+                            'ignore': self.delete_ignore
+                            #'prop': self.delete_prop,
+                            #'cvterm': self.delete_cvterm,
+                            #'synonym': self.delete_synonym,
+                            #'featureprop': self.delete_featureprop,
+                            #'relationship': self.delete_relationship
+        }
 
         self.proforma_start_line_number = params.get('proforma_start_line_number')
         self.reference = params.get('reference')
@@ -83,6 +83,12 @@ class ChadoGeneProduct(ChadoFeatureObject):
         # Populated self.process_data with all possible keys.
         self.process_data = self.load_reference_yaml(yml_file, params)
         self.log = log
+
+    def ignore(self, key):
+        pass
+
+    def delete_ignore(self, key, bangc):
+        pass
 
     def load_content(self, references):
         """Process the proforma data."""
@@ -128,7 +134,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
                 message = f"Require F2 value if {name} is transgenic (not -XR or -XP)"
                 self.critical_error(self.process_data['F1a']['data'], message)
             format_okay = True
-        elif name.contains('&cap;'):
+        elif '&cap;' in name:
             if not self.has_data('F2'):
                 message = f"Require F2 value if {name} is transgenic (not -XR or -XP)"
                 self.critical_error(self.process_data['F1a']['data'], message)
@@ -141,10 +147,12 @@ class ChadoGeneProduct(ChadoFeatureObject):
         pattern = r'(.*) (\w+):(\d+)'
         s_res = re.search(pattern, self.process_data['F3']['data'][FIELD_VALUE])
         type_name = ""
+        feat_type = None
         if s_res:
             type_name = s_res.group(1)
             cv_name = s_res.group(2)
-            end_name = s_res.group(3)
+            # end_name = s_res.group(3)
+            feat_type = get_cvterm(self.session, cv_name, type_name)
         else:
             message = "Does not fit format, expected the format (.*) (\w+):(\d+)"
             self.critical_error(self.process_data['F3']['data'], message)
@@ -155,7 +163,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
             self.critical_error(self.process_data['F3']['data'], message)
             return
         if type_name != 'split system combination':
-            if name.contains('INTERSECTION') or name.contains('&cap;'):
+            if 'INTERSECTION' in name or '&cap;' in name:
                 message = f"split system combination feature {name} must have type 'split system combination FBcv:0009026' in F3."
                 self.critical_error(self.process_data['F3']['data'], message)
                 return
@@ -163,7 +171,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
         fb_prefix = "FB"
         if type_name == 'split system combination':
             fb_prefix += "co"
-            if not name.contains('&cap;'):
+            if '&cap;' not in name:
                 message = f"new split system combination feature {name} must have '&cap;' in its name"
                 self.critical_error(self.process_data['F1a']['data'], message)
                 return
@@ -201,53 +209,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
             message = f"unexpected F3 value: {type_name}"
             self.critical_error(self.process_data['F3']['data'], message)
             return
-        return fb_prefix
-
-"""
-    $type
-    eq
-    'polypeptide' ) {
-      if (!($ph{F1a}=~ / -XP$ /) & & !($ph{F1a}=~ /]P[A-Z]$ /)){
-        print
-      STDERR
-      "ERROR: polypeptide $ph{F1a} should be ended with -XP or PA\n";
-      }
-      ($unique, $flag) = get_tempid('pp', $ph{F1a} );
-    }
-    elsif( $type = ~ / RNA$ / ) {
-      if (!($ph{F1a}=~ / -XR$ /) & & !($ph{F1a}=~ /]R[A-Z]$ / )){
-      print
-      STDERR
-       "ERROR: transcript $ph{F1a} should be ended with -XR or RA\n";
-
-      }
-      ($unique, $flag) = get_tempid('tr', $ph{F1a} );
-    }
-else {
-    print
-STDERR
-"ERROR: unexpected F3 value: $type\n";
-}
-if (exists($ph{F1c}) & & $ph{F1f} eq 'new' & & $unique !~ / temp / ){
-print STDERR "ERROR: merge feature should have a FB..:temp id not $unique\n";
-}
-
-#      $fbids{convers($ph{F1a})}=$unique;
-#      $fbids{$ph{F1a}}=$unique;
-# print STDERR "get temp id for $ph{F1a} $unique\n";
-if ( $ph{F1a} =~ / ^ (.{2, 14}?)\\(.* ) / ) {
-my $org=$1;
-( $genus, $species ) = get_organism_by_abbrev( $self->{db}, $org);
-}
-if ( $ph{F1a} =~ / ^ T:(.{2, 14}?)\\(.*) / ) {
-    my $org =$1;
-($genus, $species) = get_organism_by_abbrev( $self->{db}, $org);
-}
-if ($genus eq '0'){
-$genus='Drosophila';
-$species='melanogaster';
-
-}"""
+        return fb_prefix, feat_type
 
     def get_org(self):
         pattern = r'^(.{2,14}?)\\'
@@ -255,17 +217,18 @@ $species='melanogaster';
         abbr = 'Dmel'
         if s_res:
             abbr = s_res[1]
-        org = self.get_organism(abbr)
+        org = get_organism(self.session, short=abbr)
         return org
 
     def get_geneproduct(self):
         if self.new:
 
             # get type/uniquename from F3.
-            uniquename_prefix = self.get_uniquename_and_checks()
-            organism = self.get_organism()
+            uniquename_prefix, feat_type = self.get_uniquename_and_checks()
+            organism = self.get_org()
             gp, _ = get_or_create(self.session, Feature, name=self.process_data['F1a']['data'][FIELD_VALUE],
-                                  organism_id=organism.organism_id, uniquename=f'{uniquename_prefix}:temp_0')
+                                  organism_id=organism.organism_id, uniquename=f'{uniquename_prefix}:temp_0',
+                                  type_id=feat_type.cvterm_id)
 
             # db has correct FBhh0000000x in it but here still has 'FBhh:temp_0'. ???
             # presume triggers start after hh is returned. Maybe worth getting form db again
@@ -275,18 +238,18 @@ $species='melanogaster';
             self.load_synonym('HH1b')                       # add fullname
         else:
             not_obsolete = False
-            hh = self.session.query(Feature).\
+            gp = self.session.query(Feature).\
                 filter(Feature.uniquename == self.process_data['F1f']['data'][FIELD_VALUE],
                        Feature.is_obsolete == not_obsolete).\
                 one_or_none()
-            if not hh:
+            if not gp:
                 self.critical_error(self.process_data['F1f']['data'], 'Feature does not exist in the database or is obsolete.')
                 return
             # Check synonym name is the same as HH1b
             name = self.process_data['HH1b']['data'][FIELD_VALUE]
-            if hh.name != name:
+            if gp.name != name:
                 self.critical_error(self.process_data['HH1b']['data'], 'HH1b field "{}" does NOT match the one in the database "{}"'.format(name, hh.name))
 
         # Add to pub to hh if it does not already exist.
-        get_or_create(self.session, HumanhealthPub, pub_id=self.pub.pub_id, humanhealth_id=hh.humanhealth_id)
-        return hh
+        get_or_create(self.session, FeaturePub, pub_id=self.pub.pub_id, feature_id=gp.feature_id)
+        return gp
