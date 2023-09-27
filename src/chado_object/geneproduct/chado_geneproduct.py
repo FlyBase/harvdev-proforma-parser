@@ -46,23 +46,13 @@ class ChadoGeneProduct(ChadoFeatureObject):
         #
         # This is set in the Feature.yml file.
         ##########################################
-        self.type_dict = {# 'prop': self.load_prop,
-                          'cvterm': self.load_cvterm,
+        self.type_dict = {'cvterm': self.load_cvterm,
                           'synonym': self.load_synonym,
-                          # 'dissociate_pub': self.dissociate_pub,
-                          # 'obsolete': self.make_obsolete,
                           'ignore': self.ignore
-                          # 'dbxrefprop': self.load_dbxrefprop,
-                          # 'featureprop': self.load_featureprop
         }
 
-        self.delete_dict = {# 'dbxrefprop': self.delete_dbxref,
-                            'ignore': self.delete_ignore,
-                            # 'prop': self.delete_prop,
+        self.delete_dict = {'ignore': self.delete_ignore,
                             'cvterm': self.delete_cvterm
-                            # 'synonym': self.delete_synonym,
-                            # 'featureprop': self.delete_featureprop,
-                            # 'relationship': self.delete_relationship
         }
 
         self.proforma_start_line_number = params.get('proforma_start_line_number')
