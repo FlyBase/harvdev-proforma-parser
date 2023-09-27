@@ -76,13 +76,13 @@ class ChadoGeneProduct(ChadoFeatureObject):
         self.process_data = self.load_reference_yaml(yml_file, params)
         self.log = log
 
-    def ignore(self: ChadoFeatureObject, key: str) -> None:
+    def ignore(self, key: str) -> None:
         pass
 
-    def delete_ignore(self: ChadoFeatureObject, key: str, bangc: str) -> None:
+    def delete_ignore(self, key: str, bangc: str) -> None:
         pass
 
-    def load_content(self: ChadoFeatureObject, references: dict) -> None:
+    def load_content(self, references: dict) -> None:
         """Process the proforma data."""
         self.pub = references['ChadoPub']
 
@@ -109,7 +109,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
         log.debug('Curator string assembled as:')
         log.debug(curated_by_string)
 
-    def load_cvterm(self: ChadoFeatureObject, key: str) -> None:
+    def load_cvterm(self, key: str) -> None:
         if self.has_data(key):
             cvterm = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data[key]['cvterm'])
             if not cvterm:
@@ -122,10 +122,10 @@ class ChadoGeneProduct(ChadoFeatureObject):
                           cvterm_id=cvterm.cvterm_id,
                           pub_id=self.pub.pub_id)
 
-    def delete_cvterm(self: ChadoFeatureObject, key: str, bangc: str) -> None:
+    def delete_cvterm(self, key: str, bangc: str) -> None:
         pass
 
-    def check_format(self: ChadoFeatureObject, status: dict) -> None:
+    def check_format(self, status: dict) -> None:
         format_okay = False
 
         name = status['name']
@@ -152,7 +152,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
             self.critical_error(self.process_data['F1a']['data'], message)
             status["error"] = True
 
-    def check_type(self: ChadoFeatureObject, status: dict) -> None:
+    def check_type(self, status: dict) -> None:
         pattern = r'(.*) (\w+):(\d+)'
         s_res = re.search(pattern, self.process_data['F3']['data'][FIELD_VALUE])
         if s_res:
@@ -178,7 +178,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
                 self.critical_error(self.process_data['F3']['data'], message)
                 status["error"] = True
 
-    def check_type_name(self: ChadoFeatureObject, status: dict) -> None:
+    def check_type_name(self, status: dict) -> None:
         if 'type_name' not in status:
             return
 
@@ -227,7 +227,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
             self.critical_error(self.process_data['F3']['data'], message)
             status["error"] = True
 
-    def get_feats(self: ChadoFeatureObject, status: dict) -> None:
+    def get_feats(self, status: dict) -> None:
         """Lookup the features from the base name/s"""
         status['features'] = []
         feats = []
@@ -254,7 +254,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
                 self.critical_error(self.process_data['F1a']['data'], message)
                 status["error"] = True
 
-    def get_uniquename_and_checks(self: ChadoGeneProduct) -> dict:
+    def get_uniquename_and_checks(self) -> dict:
         # Need to return string based on F3 content.
         # return dict of :-
         #
@@ -272,7 +272,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
 
         return status
 
-    def add_relationships(self: ChadoFeatureObject, status: dict) -> None:
+    def add_feat_relationships(self, status: dict) -> None:
 
         cvterm_name = 'associated_with'
         cv_name = 'relationship type'
@@ -304,7 +304,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
         org = get_organism(self.session, short=abbr)
         return org
 
-    def get_geneproduct(self: ChadoFeatureObject) -> Union[Feature, None]:
+    def get_geneproduct(self) -> Union[Feature, None]:
         if self.new:
 
             # get type/uniquename from F3.
@@ -321,7 +321,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
             log.debug(f"New gene product created {gp.uniquename} id={gp.feature_id}.")
 
             self.feature = gp
-            self.add_relationships(status)
+            self.add_feat_relationships(status)
             self.load_synonym('F1a')  # add symbol
             # self.load_synonym('F1a')                       # add fullname HAS NONE
         else:
@@ -331,7 +331,8 @@ class ChadoGeneProduct(ChadoFeatureObject):
                        Feature.is_obsolete == not_obsolete).\
                 one_or_none()
             if not gp:
-                self.critical_error(self.process_data['F1f']['data'], 'Feature does not exist in the database or is obsolete.')
+                self.critical_error(self.process_data['F1f']['data'],
+                                    'Feature does not exist in the database or is obsolete.')
                 return
 
         # Add to pub to hh if it does not already exist.
