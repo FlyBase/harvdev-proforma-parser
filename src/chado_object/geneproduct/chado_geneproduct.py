@@ -6,19 +6,22 @@
 
 import os
 import re
+import logging
+from datetime import datetime
+from typing import Union
+
 from chado_object.chado_base import FIELD_VALUE
 from chado_object.feature.chado_feature import ChadoFeatureObject
 from harvdev_utils.production import (
     Feature, FeaturePub, FeatureRelationshipPub, FeatureRelationship,
-    FeatureCvterm
+    FeatureCvterm, Organism, Pub
     # Featureprop, FeatureCvtermprop,
-    # Organism, Cvterm, Cv, Synonym, Db, Dbxref, Pub
+    # Cvterm, Cv, Synonym, Db, Dbxref
 )
 from harvdev_utils.chado_functions import get_or_create, get_cvterm, feature_name_lookup
 from harvdev_utils.chado_functions.organism import get_organism
 # from error.error_tracking import CRITICAL_ERROR
-import logging
-from datetime import datetime
+
 
 log = logging.getLogger(__name__)
 
@@ -59,11 +62,10 @@ class ChadoGeneProduct(ChadoFeatureObject):
         ###########################################################
         # Values queried later, placed here for reference purposes.
         ############################################################
-        self.pub = None   # All other proforma need a reference to a pub
+        self.pub: Union[Pub, None] = None   # All other proforma need a reference to a pub
 
-        self.type = None  # Gene products can be of many types so store that here.
-        self.new = False
-        self.feature = None
+        self.new: bool = False
+        self.feature: Union[Feature, None] = None
 
         ############################################################
         # Get processing info and data to be processed.
@@ -74,21 +76,21 @@ class ChadoGeneProduct(ChadoFeatureObject):
         self.process_data = self.load_reference_yaml(yml_file, params)
         self.log = log
 
-    def ignore(self, key):
+    def ignore(self: ChadoFeatureObject, key: str) -> None:
         pass
 
-    def delete_ignore(self, key, bangc):
+    def delete_ignore(self: ChadoFeatureObject, key: str, bangc: str) -> None:
         pass
 
-    def load_content(self, references):
+    def load_content(self: ChadoFeatureObject, references: dict) -> None:
         """Process the proforma data."""
         self.pub = references['ChadoPub']
 
         if self.process_data['F1f']['data'][FIELD_VALUE] == "new":
             self.new = True
-        self.feature = self.get_geneproduct()
+        self.feature: Union[Feature, None] = self.get_geneproduct()
 
-        # if self.Feature:  # Only proceed if we have a hh. Otherwise we had an error.
+        # if self.Feature:  # Only proceed if we have a gp, Otherwise we had an error.
         #    self.extra_checks()
         # else:
         #    return
@@ -107,7 +109,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
         log.debug('Curator string assembled as:')
         log.debug(curated_by_string)
 
-    def load_cvterm(self, key):
+    def load_cvterm(self: ChadoFeatureObject, key: str) -> None:
         if self.has_data(key):
             cvterm = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data[key]['cvterm'])
             if not cvterm:
@@ -120,10 +122,10 @@ class ChadoGeneProduct(ChadoFeatureObject):
                           cvterm_id=cvterm.cvterm_id,
                           pub_id=self.pub.pub_id)
 
-    def delete_cvterm(self, key, bangc):
+    def delete_cvterm(self: ChadoFeatureObject, key: str, bangc: str) -> None:
         pass
 
-    def check_format(self, status):
+    def check_format(self: ChadoFeatureObject, status: dict) -> None:
         format_okay = False
 
         name = status['name']
@@ -150,7 +152,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
             self.critical_error(self.process_data['F1a']['data'], message)
             status["error"] = True
 
-    def check_type(self, status):
+    def check_type(self: ChadoFeatureObject, status: dict) -> None:
         pattern = r'(.*) (\w+):(\d+)'
         s_res = re.search(pattern, self.process_data['F3']['data'][FIELD_VALUE])
         if s_res:
@@ -176,7 +178,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
                 self.critical_error(self.process_data['F3']['data'], message)
                 status["error"] = True
 
-    def check_type_name(self, status):
+    def check_type_name(self: ChadoFeatureObject, status: dict) -> None:
         if 'type_name' not in status:
             return
 
@@ -225,7 +227,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
             self.critical_error(self.process_data['F3']['data'], message)
             status["error"] = True
 
-    def get_feats(self, status):
+    def get_feats(self: ChadoFeatureObject, status: dict) -> None:
         """Lookup the features from the base name/s"""
         status['features'] = []
         feats = []
@@ -252,7 +254,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
                 self.critical_error(self.process_data['F1a']['data'], message)
                 status["error"] = True
 
-    def get_uniquename_and_checks(self):
+    def get_uniquename_and_checks(self: ChadoGeneProduct) -> dict:
         # Need to return string based on F3 content.
         # return dict of :-
         #
@@ -270,7 +272,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
 
         return status
 
-    def add_relationships(self, status):
+    def add_relationships(self: ChadoFeatureObject, status: dict) -> None:
 
         cvterm_name = 'associated_with'
         cv_name = 'relationship type'
@@ -289,7 +291,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
                                    feature_relationship_id=fr.feature_relationship_id,
                                    pub_id=pub_id)
 
-    def get_org(self, status):
+    def get_org(self: ChadoFeatureObject, status: dict) -> Organism:
         abbr = 'Dmel'
 
         if status['type_name'] == 'split system combination':
@@ -302,7 +304,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
         org = get_organism(self.session, short=abbr)
         return org
 
-    def get_geneproduct(self):
+    def get_geneproduct(self: ChadoFeatureObject) -> Union[Feature, None]:
         if self.new:
 
             # get type/uniquename from F3.
