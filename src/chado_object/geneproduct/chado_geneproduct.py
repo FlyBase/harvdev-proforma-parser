@@ -46,23 +46,23 @@ class ChadoGeneProduct(ChadoFeatureObject):
         #
         # This is set in the Feature.yml file.
         ##########################################
-        self.type_dict = {#'prop': self.load_prop,
+        self.type_dict = {# 'prop': self.load_prop,
                           'cvterm': self.load_cvterm,
                           'synonym': self.load_synonym,
-                          #'dissociate_pub': self.dissociate_pub,
-                          #'obsolete': self.make_obsolete,
+                          # 'dissociate_pub': self.dissociate_pub,
+                          # 'obsolete': self.make_obsolete,
                           'ignore': self.ignore
-                          #'dbxrefprop': self.load_dbxrefprop,
-                          #'featureprop': self.load_featureprop
+                          # 'dbxrefprop': self.load_dbxrefprop,
+                          # 'featureprop': self.load_featureprop
         }
 
-        self.delete_dict = {#'dbxrefprop': self.delete_dbxref,
+        self.delete_dict = {# 'dbxrefprop': self.delete_dbxref,
                             'ignore': self.delete_ignore,
-                            #'prop': self.delete_prop,
+                            # 'prop': self.delete_prop,
                             'cvterm': self.delete_cvterm
-                            #'synonym': self.delete_synonym,
-                            #'featureprop': self.delete_featureprop,
-                            #'relationship': self.delete_relationship
+                            # 'synonym': self.delete_synonym,
+                            # 'featureprop': self.delete_featureprop,
+                            # 'relationship': self.delete_relationship
         }
 
         self.proforma_start_line_number = params.get('proforma_start_line_number')
@@ -249,7 +249,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
             if res:
                 feats.append(res.group(1))
             else:
-                message = f"Could not find existing feature in the name."
+                message = "Could not find existing feature in the name."
                 self.critical_error(self.process_data['F1a']['data'], message)
                 status["error"] = True
                 return
@@ -343,10 +343,6 @@ class ChadoGeneProduct(ChadoFeatureObject):
             if not gp:
                 self.critical_error(self.process_data['F1f']['data'], 'Feature does not exist in the database or is obsolete.')
                 return
-            # Check synonym name is the same as HH1b
-            name = self.process_data['HH1b']['data'][FIELD_VALUE]
-            if gp.name != name:
-                self.critical_error(self.process_data['HH1b']['data'], 'HH1b field "{}" does NOT match the one in the database "{}"'.format(name, hh.name))
 
         # Add to pub to hh if it does not already exist.
         get_or_create(self.session, FeaturePub, pub_id=self.pub.pub_id, feature_id=gp.feature_id)
