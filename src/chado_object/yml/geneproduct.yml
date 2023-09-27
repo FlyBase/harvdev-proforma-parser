@@ -9,15 +9,17 @@ F1a:
   cv: synonym type
   cvterm: symbol
   is_current: True
-  subscript: False
+  subscript: True
   add_unattributed_paper_only: True
 # ! F3. Gene product type [CV] :
 F3:  # process on creation of feature
   type: ignore
 
 # ! F2. Sequence attribute [CV] :
-F2:  # may need to add back
-  type: ignore
+F2:
+  type: cvterm
+  cv: SO
+  cvterm: synthetic_sequence
 # ! F1b. Action - rename this gene product (symbol) :
 F1b:
   type: rename
