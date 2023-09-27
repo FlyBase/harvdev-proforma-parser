@@ -48,12 +48,10 @@ class ChadoGeneProduct(ChadoFeatureObject):
         ##########################################
         self.type_dict = {'cvterm': self.load_cvterm,
                           'synonym': self.load_synonym,
-                          'ignore': self.ignore
-        }
+                          'ignore': self.ignore}
 
         self.delete_dict = {'ignore': self.delete_ignore,
-                            'cvterm': self.delete_cvterm
-        }
+                            'cvterm': self.delete_cvterm}
 
         self.proforma_start_line_number = params.get('proforma_start_line_number')
         self.reference = params.get('reference')
