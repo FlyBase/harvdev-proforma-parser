@@ -110,6 +110,9 @@ class ChadoGeneProduct(ChadoFeatureObject):
         log.debug(curated_by_string)
 
     def load_cvterm(self, key: str) -> None:
+        """
+        Load the cvterm.
+        """
         if self.has_data(key):
             cvterm = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data[key]['cvterm'])
             if not cvterm:
@@ -126,6 +129,11 @@ class ChadoGeneProduct(ChadoFeatureObject):
         pass
 
     def check_format(self, status: dict) -> None:
+        """
+        Check the format of the new geneproduct name.
+        Create critical error  message on error and set the dict status['error'] to True.
+        Code should check this at the end.
+        """
         format_okay = False
 
         name = status['name']
@@ -153,6 +161,11 @@ class ChadoGeneProduct(ChadoFeatureObject):
             status["error"] = True
 
     def check_type(self, status: dict) -> None:
+        """
+        Check the type given by F3 of the new geneproduct name.
+        Create critical error  message on error and set the dict status['error'] to True.
+        Code should check this at the end.
+        """
         pattern = r'(.*) (\w+):(\d+)'
         s_res = re.search(pattern, self.process_data['F3']['data'][FIELD_VALUE])
         if s_res:
@@ -179,6 +192,11 @@ class ChadoGeneProduct(ChadoFeatureObject):
                 status["error"] = True
 
     def check_type_name(self, status: dict) -> None:
+        """
+        Check the type name of the new geneproduct name.
+        Create critical error  message on error and set the dict status['error'] to True.
+        Code should check this at the end.
+        """
         if 'type_name' not in status:
             return
 
@@ -228,7 +246,21 @@ class ChadoGeneProduct(ChadoFeatureObject):
             status["error"] = True
 
     def get_feats(self, status: dict) -> None:
-        """Lookup the features from the base name/s"""
+        r"""
+        Lookup the features from the base name/s and store the feature_id's in the array
+        status['features'].
+
+        example 1) for gpt1[Clk1]RA
+            gpt1[Clk1] is looked up in the database and status['features'] will have a one element array
+            with its feature_id in it.
+
+        example 2) for Scer\GAL4[DBD.hb2]&cap;Hsap\RELA[AD.pxn2]
+            Scer\GAL4[DBD.hb2] and Hsap\RELA[AD.pxn2] are looked up in the database and both feature_id's
+            will be stored in the status['features'].
+
+        Create critical error  message on error and set the dict status['error'] to True.
+        Code should check this at the end.
+        """
         status['features'] = []
         feats = []
         if status['type_name'] == 'split system combination':
@@ -247,7 +279,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
         for feat in feats:
             feat = feature_name_lookup(self.session, name=feat, obsolete='f')
             if feat:
-                log.debug(f"BOB: Feature lookup found: {feat}")
+                log.debug(f"Feature lookup found: {feat}")
                 status['features'].append(feat.feature_id)
             else:
                 message = f"Could not find feature {feat} in the database to add the feature relationship"
@@ -255,14 +287,15 @@ class ChadoGeneProduct(ChadoFeatureObject):
                 status["error"] = True
 
     def get_uniquename_and_checks(self) -> dict:
-        # Need to return string based on F3 content.
-        # return dict of :-
-        #
-        # error: [True/False]
-        # features : [features producing this new product]  # NOTE 2 of these for splits
-        # fb_prefix: string (FBxx)
-        # feat_type: cvterm object
+        """ Lots of checks
+          return dict of :-
 
+          error: [True/False]
+          features : [features producing this new product]  # NOTE 2 of these for splits
+          fb_prefix: string (FBxx)
+          feat_type: cvterm object
+          type_name: string (type of geneproduct)
+        """
         status = {'error': False,
                   'name': self.process_data['F1a']['data'][FIELD_VALUE]}
         self.check_format(status)
@@ -273,7 +306,10 @@ class ChadoGeneProduct(ChadoFeatureObject):
         return status
 
     def add_feat_relationships(self, status: dict) -> None:
-
+        """
+        Add the feature relationship(s) between the new geneproduct and its component(s)
+        status['features'] has the list of feature_id's for this.
+        """
         cvterm_name = 'associated_with'
         cv_name = 'relationship type'
         if status['type_name'] == 'split system combination':
@@ -292,6 +328,10 @@ class ChadoGeneProduct(ChadoFeatureObject):
                                    pub_id=pub_id)
 
     def get_org(self: ChadoFeatureObject, status: dict) -> Organism:
+        """
+        Find the organism for the new geneproduct.
+        NOTE: For 'split system combination' this is always 'Ssss'
+        """
         abbr = 'Dmel'
 
         if status['type_name'] == 'split system combination':
@@ -305,6 +345,11 @@ class ChadoGeneProduct(ChadoFeatureObject):
         return org
 
     def get_geneproduct(self) -> Union[Feature, None]:
+        """
+        Lookup or create the gene product.
+        On error give critical error message and return None.
+        On success return the Feature object.
+        """
         if self.new:
 
             # get type/uniquename from F3.
