@@ -355,7 +355,7 @@ def process_synonyms_from_external_db(self: ChadoFeatureObject, chemical: dict, 
                     name = sgml_to_plain_text(greek_to_sgml(name))
                 except KeyError:
                     # So got special char we do not know what to do with,
-                    # So we will ignore it for now and just give a warning.
+                    # so we will ignore it for now and just give a warning.
                     self.log.warning(f"Problem doing conversion, unknown char being ignored from external db: name = {name}")
                     continue
                 if lowercase:
