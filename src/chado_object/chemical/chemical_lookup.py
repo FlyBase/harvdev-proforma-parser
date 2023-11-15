@@ -356,7 +356,7 @@ def process_synonyms_from_external_db(self: ChadoFeatureObject, chemical: dict, 
                 except KeyError:
                     # So got special char we do not know what to do with,
                     # so we will ignore it for now and just give a warning.
-                    self.log.warning(f"Problem doing conversion, unknown char being ignored from external db: name = {name}")
+                    self.log.warning(f"Problem doing conversion, unknown char being ignored from external synonyms: name = {name}")
                     continue
                 if lowercase:
                     name = name.lower()
