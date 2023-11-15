@@ -371,7 +371,6 @@ def process_synonyms_from_external_db(self: ChadoFeatureObject, chemical: dict, 
                                       pub_id=pub_id, synonym_id=new_synonym.synonym_id)
                 fs.is_current = False
 
-
     if alt:  # If alternative then already done.
         return
     if self.has_data('CH1a'):
