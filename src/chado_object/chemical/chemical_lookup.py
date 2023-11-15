@@ -350,14 +350,18 @@ def process_synonyms_from_external_db(self: ChadoFeatureObject, chemical: dict, 
         for item in chemical['synonyms']:
             for lowercase in [True, False]:
                 name = item[:255]  # Max 255 chars
-                sgml = sgml_to_unicode(name)
-                # select s.* from synonym s, feature_synonym fs where fs.synonym_id = s.synonym_id and fs.feature_id = 595;
-                name = sgml_to_plain_text(greek_to_sgml(name))
+                try:
+                    sgml = sgml_to_unicode(name)
+                    name = sgml_to_plain_text(greek_to_sgml(name))
+                except KeyError:
+                    # So got special char we do not know what to do with,
+                    # so we will ignore it for now and just give a warning.
+                    self.log.warning(f"Problem doing conversion, unknown char being ignored from external synonyms: name = {name}")
+                    continue
                 if lowercase:
                     name = name.lower()
                 if name in seen_it:
                     continue
-                self.log.debug(f"Adding synonym '{name}' '{sgml}'")
 
                 new_synonym, _ = get_or_create(self.session, Synonym, type_id=symbol_cv_id,
                                                synonym_sgml=sgml,
@@ -366,8 +370,6 @@ def process_synonyms_from_external_db(self: ChadoFeatureObject, chemical: dict, 
                 fs, _ = get_or_create(self.session, FeatureSynonym, feature_id=self.feature.feature_id,
                                       pub_id=pub_id, synonym_id=new_synonym.synonym_id)
                 fs.is_current = False
-
-    self.log.debug(f"Adding new synonym entry for {chemical['source']}:{chemical['accession']}.")
 
     if alt:  # If alternative then already done.
         return
