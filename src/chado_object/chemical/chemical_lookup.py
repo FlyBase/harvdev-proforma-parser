@@ -275,6 +275,12 @@ def add_description_from_pubchem(self: ChadoFeatureObject, chemical: dict) -> bo
     """Add description from pubchem."""
     mess = ''
     if not chemical['description']:
+        # try inchikey first
+        if chemical['inchikey']:
+            pubchem = ExternalLookup.lookup_by_inchikey('pubchem', chemical['inchikey'])
+            if not pubchem.error:
+                chemical['description'] = pubchem.description
+                return
         pubchem = ExternalLookup.lookup_by_name('pubchem', chemical['name'])
         if pubchem.error:
             mess = pubchem.error
