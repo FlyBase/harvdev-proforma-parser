@@ -169,7 +169,7 @@ class ChadoChem(ChadoFeatureObject):
         # Sometimes FBch are accidentally input here, so give error if found.
         for field_key in ['CH1a', 'CH1b']:
             if self.has_data(field_key):
-                if type(self.process_data[field_key]['data']) == list:
+                if type(self.process_data[field_key]['data']) is list:
                     for item in self.process_data[field_key]['data']:
                         if item[FIELD_VALUE].startswith('FBch'):
                             self.critical_error(self.process_data[field_key]['data'][0], "Cannot start with FBch")
@@ -332,7 +332,6 @@ class ChadoChem(ChadoFeatureObject):
         if not self.feature:
             return
         _, plain_name, sgml = synonym_name_details(self.session, self.process_data['CH1e']['data'][FIELD_VALUE], nosup=True)
-        log.debug(f"BOB: {plain_name}, {sgml}")
         # set new feature name
         self.feature.name = plain_name
 
