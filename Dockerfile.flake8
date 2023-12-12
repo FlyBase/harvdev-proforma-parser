@@ -1,4 +1,4 @@
-FROM flybase/harvdev-docker:alpine_3.10.2
+FROM flybase/harvdev-docker:latest
 
 WORKDIR /usr/src/app
 

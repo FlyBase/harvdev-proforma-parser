@@ -405,7 +405,7 @@ class Proforma(object):
         if filename.endswith('.yaml'):
             log.debug("Getting list of multi from {}".format(filename))
             with open(os.path.join(location, filename)) as yaml_location:
-                yaml_to_process = yaml.full_load(yaml_location)
+                yaml_to_process = yaml.load(yaml_location)
                 for field_name in yaml_to_process.keys():
                     # Check whether field_type is list.
                     field_type = None
