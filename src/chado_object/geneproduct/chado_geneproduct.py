@@ -102,10 +102,10 @@ class ChadoGeneProduct(ChadoFeatureObject):
 
     def create_exp(self):
         exp, _ = get_or_create(self.session, Expression, uniquename='FBex:temp')
-        f_e = get_or_create(self.session, FeatureExpression,
-                            feature_id=self.feature.feature_id,
-                            expression_id=exp.expression_id,
-                            pub_id=self.pub.pub_id)
+        get_or_create(self.session, FeatureExpression,
+                      feature_id=self.feature.feature_id,
+                      expression_id=exp.expression_id,
+                      pub_id=self.pub.pub_id)
         return exp.expression_id
 
     def expression(self, key):
