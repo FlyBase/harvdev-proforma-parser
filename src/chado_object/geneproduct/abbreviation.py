@@ -1,5 +1,6 @@
 # stripped from perl version and converted.
 assays = {
+
     'is': 'in situ',
     'rs': 'RNA-seq',
     'scrs': 'single cell RNA-seq',
@@ -65,3 +66,15 @@ assays = {
     'rca': 'reporter complementation assay',
     'imem': 'immuno-electron microscopy',
     'isrp': 'in situ RT-PCR'}
+
+stages = {
+    'egg': 'egg stage',
+    'E': 'embryonic stage',
+    'L': 'larval stage',
+    'PP': 'prepupal stage',
+    'P': 'pupal stage',
+    'PA': 'pharate adult stage',
+    'P-stage': 'P-stage',
+    'A': 'adult stage',
+    'O': 'oogenesis',
+    'S': 'spermatogenesis'}

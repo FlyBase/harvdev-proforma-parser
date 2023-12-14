@@ -10,11 +10,13 @@ import logging
 from datetime import datetime
 from typing import Union
 
+from chado_object.geneproduct.abbreviation import assays, stages
 from chado_object.chado_base import FIELD_VALUE
 from chado_object.feature.chado_feature import ChadoFeatureObject
 from harvdev_utils.production import (
     Feature, FeaturePub, FeatureRelationshipPub, FeatureRelationship,
-    FeatureCvterm, Organism, Pub
+    FeatureCvterm, Organism, Pub,
+    Expression, ExpressionCvterm, FeatureExpression
     # Featureprop, FeatureCvtermprop,
     # Cvterm, Cv, Synonym, Db, Dbxref
 )
@@ -51,10 +53,16 @@ class ChadoGeneProduct(ChadoFeatureObject):
         ##########################################
         self.type_dict = {'cvterm': self.load_cvterm,
                           'synonym': self.load_synonym,
-                          'ignore': self.ignore}
+                          'ignore': self.ignore,
+                          'prop': self.prop,
+                          'gene': self.ignore,
+                          'expression': self.expression}
 
         self.delete_dict = {'ignore': self.delete_ignore,
-                            'cvterm': self.delete_cvterm}
+                            'cvterm': self.delete_cvterm,
+                            'prop': self.delete_prop,
+                            'gene': self.delete_ignore,
+                            'expression': self.delete_ignore}
 
         self.proforma_start_line_number = params.get('proforma_start_line_number')
         self.reference = params.get('reference')
@@ -75,6 +83,81 @@ class ChadoGeneProduct(ChadoFeatureObject):
         # Populated self.process_data with all possible keys.
         self.process_data = self.load_reference_yaml(yml_file, params)
         self.log = log
+
+    def add_exp_cvterm(self, exp, exp_id, cv1, cvt1, cv2, cvt2):
+        cvterm = get_cvterm(self.session, cv1, cvt1)
+        if not cvterm:
+            message = f'Cvterm lookup failed for cv {cv1} cvterm {cvt1}?'
+            self.critical_error(exp, message)
+            return
+        cvterm_type = get_cvterm(self.session, cv2, cvt2)
+        if not cvterm_type:
+            message = f'Cvterm lookup failed for cv {cv2} cvterm {cvt2}?'
+            self.critical_error(exp, message)
+            return
+        get_or_create(self.session, ExpressionCvterm,
+                      expression_id=exp_id,
+                      cvterm_id=cvterm.cvterm_id,
+                      cvterm_type_id=cvterm_type.cvterm_id)
+
+    def create_exp(self):
+        exp, _ = get_or_create(self.session, Expression, uniquename='FBex:temp')
+        f_e = get_or_create(self.session, FeatureExpression,
+                            feature_id=self.feature.feature_id,
+                            expression_id=exp.expression_id,
+                            pub_id=self.pub.pub_id)
+        return exp.expression_id
+
+    def expression(self, key):
+        group_to_key = {1: '<e>',
+                        2: '<t>',
+                        3: '<a>',
+                        4: '<s>',
+                        5: '<note>'}
+        pattern = r"<e>(.*)<t>(.*)<a>(.*)<s>(.*)<note>(.*)"
+        self.log.debug(self.process_data[key]['cv_mappings']['<e>'])
+        self.log.debug(self.process_data[key]['cv_mappings']['<e>']['cv1'])
+        for exp in self.process_data[key]['data']:
+            self.log.debug(exp[FIELD_VALUE])
+            s_res = re.search(pattern, exp[FIELD_VALUE])
+            if not s_res:
+                self.log.critical(f"Could not breakup line using regex {pattern}")
+                continue
+            exp_id = self.create_exp()
+            for group in (1, 2, 3, 4):  # Notes are different do after
+                self.log.debug(self.process_data[key]['cv_mappings'][group_to_key[group]])
+                self.log.debug(self.process_data[key]['cv_mappings'][group_to_key[group]]['cv1'])
+                value = s_res.group(group).strip()
+                if value:
+                    if group_to_key[group] == '<e>':  # Do look up of abbr to cvterm
+                        value = assays[value]
+                    elif group_to_key[group] == '<t>':  # Do look up of abbr to cvterm
+                        value = stages[value]
+                    self.log.debug(f"{group_to_key[group]} value: {value}")
+                    cv1 = self.process_data[key]['cv_mappings'][group_to_key[group]]['cv1']
+                    cv2 = self.process_data[key]['cv_mappings'][group_to_key[group]]['cv2']
+                    cvt2 = self.process_data[key]['cv_mappings'][group_to_key[group]]['cvt2']
+                    if group_to_key[group] == '<a>':  # can be split with '|'
+                        values = value.split('|')
+                        if len(values) >= 2:
+                            self.add_exp_cvterm(exp, exp_id, cv1, values[0].strip(), cv2, cvt2)
+                            cv1 = self.process_data[key]['cv_mappings'][group_to_key[group]]['pipe_cv']
+                            self.add_exp_cvterm(exp, exp_id, cv1, values[1].strip(), cv2, cvt2)
+                        else:
+                            self.add_exp_cvterm(exp, exp_id, cv1, value, cv2, cvt2)
+                    else:
+                        self.add_exp_cvterm(exp, exp_id, cv1, value, cv2, cvt2)
+            self.log.debug(s_res)
+            if s_res:
+                self.log.debug(f"<e> is {s_res.group(1)}")
+            else:
+                self.log.debug(f"search failed for {exp[FIELD_VALUE]}")
+
+    def prop(self, key: str) -> None:
+        print(f"{key}: prop not programmed yet")
+
+    def delete_prop(self, key: str, bangc: str) -> None:
+        print(f"{key}: delete prop not programmed yet")
 
     def ignore(self, key: str) -> None:
         pass
@@ -114,10 +197,16 @@ class ChadoGeneProduct(ChadoFeatureObject):
         Load the cvterm.
         """
         if self.has_data(key):
-            cvterm = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data[key]['cvterm'])
+            log.warning(f"key is {key} loading cvterm")
+            cvterm_name = self.process_data[key]['cvterm']
+            name = None
+            if cvterm_name == 'in_field':
+                cvterm_name, name = self.process_data[key]['data'][FIELD_VALUE].split(';')
+                cvterm_name = cvterm_name.strip()
+            cvterm = get_cvterm(self.session, self.process_data[key]['cv'], cvterm_name)
             if not cvterm:
                 message = 'Cvterm lookup failed for cv {} cvterm {}?'.format(self.process_data[key]['cv'],
-                                                                             self.process_data[key]['cvterm'])
+                                                                             cvterm_name)
                 self.critical_error(self.process_data[key]['data'], message)
                 return
             get_or_create(self.session, FeatureCvterm,

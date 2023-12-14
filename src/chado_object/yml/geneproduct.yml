@@ -65,6 +65,7 @@ F9:
         cv1: 'FlyBase anatomy CV'
         cv2: 'expression slots'
         cvt2: 'anatomy'
+        pipe_cv: 'FlyBase miscellaneous CV'
       '<s>':
         cv1: 'cellular_component'
         cv2: 'expression slots'
@@ -80,12 +81,16 @@ F15:
 # ! F10. Used as bodypart marker for (term ; ID) [CV] :
 F10:
   type: cvterm
+  cv: FlyBase anatomy CV
+  cvterm: in_field
 # ! F11. Expression pattern ascribed to (gene symbol) :
 F11: # deal with 11a and 11b here.
   type: gene
 # ! F11a. Is subset of wild-type gene expression pattern (y/n) :
+F11a:
   type: ignore
 # ! F11b. Is pattern aberrant relative to wild-type (y/n) :
+F11b:
   type: ignore
 # ! F12. Antibody reported (monoclonal, polyclonal) :
 F12:

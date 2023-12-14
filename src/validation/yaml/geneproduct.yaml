@@ -60,8 +60,8 @@ F5:
 
 # ! F9. Expression pattern (<e>  <t>  <a>  <s>  <note>) :
 F9:
-  type: [string]
-
+  type: [string, list]
+  nullable: True
 # ! F15. General expression comment [free text] :
 F15:
   type: string
