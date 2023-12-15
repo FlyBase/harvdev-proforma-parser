@@ -107,9 +107,9 @@ class ChadoGeneProduct(ChadoFeatureObject):
 
     def create_feat_exp(self, exp_id):
         feat_exp, _ = get_or_create(self.session, FeatureExpression,
-                                       feature_id=self.feature.feature_id,
-                                       expression_id=exp_id,
-                                       pub_id=self.pub.pub_id)
+                                    feature_id=self.feature.feature_id,
+                                    expression_id=exp_id,
+                                    pub_id=self.pub.pub_id)
         return feat_exp.feature_expression_id
 
     def expression(self, key):
