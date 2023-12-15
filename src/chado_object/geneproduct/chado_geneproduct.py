@@ -16,7 +16,8 @@ from chado_object.feature.chado_feature import ChadoFeatureObject
 from harvdev_utils.production import (
     Feature, FeaturePub, FeatureRelationshipPub, FeatureRelationship,
     FeatureCvterm, Organism, Pub,
-    Expression, ExpressionCvterm, FeatureExpression
+    Expression, ExpressionCvterm, FeatureExpression,
+    FeatureExpressionprop
     # Featureprop, FeatureCvtermprop,
     # Cvterm, Cv, Synonym, Db, Dbxref
 )
@@ -102,11 +103,14 @@ class ChadoGeneProduct(ChadoFeatureObject):
 
     def create_exp(self):
         exp, _ = get_or_create(self.session, Expression, uniquename='FBex:temp')
-        get_or_create(self.session, FeatureExpression,
-                      feature_id=self.feature.feature_id,
-                      expression_id=exp.expression_id,
-                      pub_id=self.pub.pub_id)
         return exp.expression_id
+
+    def create_feat_exp(self, exp_id):
+        feat_exp, _ = get_or_create(self.session, FeatureExpression,
+                                       feature_id=self.feature.feature_id,
+                                       expression_id=exp_id,
+                                       pub_id=self.pub.pub_id)
+        return feat_exp.feature_expression_id
 
     def expression(self, key):
         group_to_key = {1: '<e>',
@@ -117,6 +121,8 @@ class ChadoGeneProduct(ChadoFeatureObject):
         pattern = r"<e>(.*)<t>(.*)<a>(.*)<s>(.*)<note>(.*)"
         self.log.debug(self.process_data[key]['cv_mappings']['<e>'])
         self.log.debug(self.process_data[key]['cv_mappings']['<e>']['cv1'])
+        curated_prop = get_cvterm(self.session, 'feature_expression property type', 'curated_as')
+        comment_prop = get_cvterm(self.session, 'feature_expression property type', 'comment')
         for exp in self.process_data[key]['data']:
             self.log.debug(exp[FIELD_VALUE])
             s_res = re.search(pattern, exp[FIELD_VALUE])
@@ -124,9 +130,8 @@ class ChadoGeneProduct(ChadoFeatureObject):
                 self.log.critical(f"Could not breakup line using regex {pattern}")
                 continue
             exp_id = self.create_exp()
+            feat_exp_id = self.create_feat_exp(exp_id)
             for group in (1, 2, 3, 4):  # Notes are different do after
-                self.log.debug(self.process_data[key]['cv_mappings'][group_to_key[group]])
-                self.log.debug(self.process_data[key]['cv_mappings'][group_to_key[group]]['cv1'])
                 value = s_res.group(group).strip()
                 if value:
                     if group_to_key[group] == '<e>':  # Do look up of abbr to cvterm
@@ -147,11 +152,12 @@ class ChadoGeneProduct(ChadoFeatureObject):
                             self.add_exp_cvterm(exp, exp_id, cv1, value, cv2, cvt2)
                     else:
                         self.add_exp_cvterm(exp, exp_id, cv1, value, cv2, cvt2)
-            self.log.debug(s_res)
-            if s_res:
-                self.log.debug(f"<e> is {s_res.group(1)}")
-            else:
-                self.log.debug(f"search failed for {exp[FIELD_VALUE]}")
+
+            # NOW DO the 'curated as' and 'comment' props
+            get_or_create(self.session, FeatureExpressionprop, feature_expression_id=feat_exp_id,
+                          type_id=comment_prop.cvterm_id, value=s_res.group(5).strip(), rank=0)
+            get_or_create(self.session, FeatureExpressionprop, feature_expression_id=feat_exp_id,
+                          type_id=curated_prop.cvterm_id, value=exp, rank=0)
 
     def prop(self, key: str) -> None:
         print(f"{key}: prop not programmed yet")
