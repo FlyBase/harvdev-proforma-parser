@@ -157,7 +157,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
             get_or_create(self.session, FeatureExpressionprop, feature_expression_id=feat_exp_id,
                           type_id=comment_prop.cvterm_id, value=s_res.group(5).strip(), rank=0)
             get_or_create(self.session, FeatureExpressionprop, feature_expression_id=feat_exp_id,
-                          type_id=curated_prop.cvterm_id, value=exp, rank=0)
+                          type_id=curated_prop.cvterm_id, value=exp[FIELD_VALUE], rank=0)
 
     def prop(self, key: str) -> None:
         print(f"{key}: prop not programmed yet")
