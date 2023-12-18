@@ -78,11 +78,15 @@ F9:
 F15:
   type: prop
   cvterm: bodypart_expression_text
+  cv: property type
+  value: F15
 # ! F10. Used as bodypart marker for (term ; ID) [CV] :
 F10:
   type: cvterm
   cv: FlyBase anatomy CV
   cvterm: in_field
+  prop_cvterm: bodypart_expression_marker
+  prop_cv: property type
 # ! F11. Expression pattern ascribed to (gene symbol) :
 F11: # deal with 11a and 11b here.
   type: gene
@@ -110,9 +114,15 @@ F17:
 # ! F13. Comment [free text] :
 F13:
   type: prop
+  cvterm: comment
+  cv: property type
+  value: F13
 # ! F14. Internal note [free text] :
 F14:
   type: prop
+  cvterm: internalnotes
+  cv: property type
+  value: F14
 # ! F91. From dataset/collection (symbol) :
 F91:
   type: relationship

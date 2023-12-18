@@ -15,7 +15,7 @@ from chado_object.chado_base import FIELD_VALUE
 from chado_object.feature.chado_feature import ChadoFeatureObject
 from harvdev_utils.production import (
     Feature, FeaturePub, FeatureRelationshipPub, FeatureRelationship,
-    FeatureCvterm, Organism, Pub,
+    FeatureCvterm, FeatureCvtermprop, Organism, Pub,
     Expression, ExpressionCvterm, FeatureExpression,
     FeatureExpressionprop
     # Featureprop, FeatureCvtermprop,
@@ -55,13 +55,13 @@ class ChadoGeneProduct(ChadoFeatureObject):
         self.type_dict = {'cvterm': self.load_cvterm,
                           'synonym': self.load_synonym,
                           'ignore': self.ignore,
-                          'prop': self.prop,
+                          'prop': self.load_featureprop,
                           'gene': self.ignore,
                           'expression': self.expression}
 
         self.delete_dict = {'ignore': self.delete_ignore,
                             'cvterm': self.delete_cvterm,
-                            'prop': self.delete_prop,
+                            'prop': self.delete_featureprop,
                             'gene': self.delete_ignore,
                             'expression': self.delete_ignore}
 
@@ -137,7 +137,10 @@ class ChadoGeneProduct(ChadoFeatureObject):
                     if group_to_key[group] == '<e>':  # Do look up of abbr to cvterm
                         value = assays[value]
                     elif group_to_key[group] == '<t>':  # Do look up of abbr to cvterm
-                        value = stages[value]
+                        try:
+                            value = stages[value]
+                        except KeyError:
+                            pass
                     self.log.debug(f"{group_to_key[group]} value: {value}")
                     cv1 = self.process_data[key]['cv_mappings'][group_to_key[group]]['cv1']
                     cv2 = self.process_data[key]['cv_mappings'][group_to_key[group]]['cv2']
@@ -179,6 +182,9 @@ class ChadoGeneProduct(ChadoFeatureObject):
             self.new = True
         self.feature: Union[Feature, None] = self.get_geneproduct()
 
+        if not self.feature:
+            self.log.critical("Unable to get geneproduct")
+            return
         # if self.Feature:  # Only proceed if we have a gp, Otherwise we had an error.
         #    self.extra_checks()
         # else:
@@ -215,10 +221,20 @@ class ChadoGeneProduct(ChadoFeatureObject):
                                                                              cvterm_name)
                 self.critical_error(self.process_data[key]['data'], message)
                 return
-            get_or_create(self.session, FeatureCvterm,
-                          feature_id=self.feature.feature_id,
-                          cvterm_id=cvterm.cvterm_id,
-                          pub_id=self.pub.pub_id)
+            feat_cvterm, _ = get_or_create(self.session, FeatureCvterm,
+                                           feature_id=self.feature.feature_id,
+                                           cvterm_id=cvterm.cvterm_id,
+                                           pub_id=self.pub.pub_id)
+            if 'prop_cvterm' in self.process_data[key]:
+                prop_cvterm = get_cvterm(self.session, self.process_data[key]['prop_cv'],
+                                         self.process_data[key]['prop_cvterm'])
+                if not prop_cvterm:
+                    message = 'Cvterm lookup failed for cv {} cvterm {}?'.format(self.process_data[key]['prop_cv'],
+                                                                                 self.process_data[key]['prop_cvterm'])
+                    self.critical_error(self.process_data[key]['data'], message)
+                    return
+                get_or_create(self.session, FeatureCvtermprop, feature_cvterm_id=feat_cvterm.feature_cvterm_id,
+                              type_id=prop_cvterm.cvterm_id)
 
     def delete_cvterm(self, key: str, bangc: str) -> None:
         pass
@@ -372,10 +388,10 @@ class ChadoGeneProduct(ChadoFeatureObject):
                 return
 
         for feat in feats:
-            feat = feature_name_lookup(self.session, name=feat, obsolete='f')
-            if feat:
+            feature = feature_name_lookup(self.session, name=feat, obsolete='f')
+            if feature:
                 log.debug(f"Feature lookup found: {feat}")
-                status['features'].append(feat.feature_id)
+                status['features'].append(feature.feature_id)
             else:
                 message = f"Could not find feature {feat} in the database to add the feature relationship"
                 self.critical_error(self.process_data['F1a']['data'], message)
@@ -450,6 +466,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
             # get type/uniquename from F3.
             status = self.get_uniquename_and_checks()
             if status['error']:
+                self.log.critical(f"Error get gene product {status['error']}")
                 return
             organism = self.get_org(status)
             gp, _ = get_or_create(self.session, Feature, name=self.process_data['F1a']['data'][FIELD_VALUE],
