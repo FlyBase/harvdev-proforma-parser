@@ -89,13 +89,19 @@ F10:
   prop_cv: property type
 # ! F11. Expression pattern ascribed to (gene symbol) :
 F11: # deal with 11a and 11b here.
-  type: gene
+  type: feat_relationship
+  cv: relationship type
+  cvterm: attributed_as_expression_of
 # ! F11a. Is subset of wild-type gene expression pattern (y/n) :
 F11a:
   type: ignore
+  cv: feature_relationshipprop type
+  cvterm: is_subset_expression
 # ! F11b. Is pattern aberrant relative to wild-type (y/n) :
 F11b:
   type: ignore
+  cv: feature_relationshipprop type
+  cvterm: is_relative_wildtype
 # ! F12. Antibody reported (monoclonal, polyclonal) :
 F12:
   type: relationship

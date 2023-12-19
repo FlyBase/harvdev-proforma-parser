@@ -14,14 +14,17 @@ from chado_object.geneproduct.abbreviation import assays, stages
 from chado_object.chado_base import FIELD_VALUE
 from chado_object.feature.chado_feature import ChadoFeatureObject
 from harvdev_utils.production import (
-    Feature, FeaturePub, FeatureRelationshipPub, FeatureRelationship,
+    Feature, FeaturePub, FeatureRelationshipPub, FeatureRelationship, FeatureRelationshipprop,
     FeatureCvterm, FeatureCvtermprop, Organism, Pub,
     Expression, ExpressionCvterm, FeatureExpression,
     FeatureExpressionprop
     # Featureprop, FeatureCvtermprop,
     # Cvterm, Cv, Synonym, Db, Dbxref
 )
-from harvdev_utils.chado_functions import get_or_create, get_cvterm, feature_name_lookup
+from harvdev_utils.chado_functions import (
+    get_or_create, get_cvterm,
+    feature_name_lookup, feature_symbol_lookup
+)
 from harvdev_utils.chado_functions.organism import get_organism
 # from error.error_tracking import CRITICAL_ERROR
 
@@ -56,7 +59,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
                           'synonym': self.load_synonym,
                           'ignore': self.ignore,
                           'prop': self.load_featureprop,
-                          'gene': self.ignore,
+                          'feat_relationship': self.load_feat_relationship,
                           'expression': self.expression}
 
         self.delete_dict = {'ignore': self.delete_ignore,
@@ -84,6 +87,29 @@ class ChadoGeneProduct(ChadoFeatureObject):
         # Populated self.process_data with all possible keys.
         self.process_data = self.load_reference_yaml(yml_file, params)
         self.log = log
+
+    def load_feat_relationship(self, key):
+        # lookup symbol
+        feat2 = feature_symbol_lookup(self.session, 'gene', self.process_data[key]['data'][FIELD_VALUE], ignore_org=True)
+        # get cvterm
+        cvterm = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data[key]['cvterm'])
+        fr, _ = get_or_create(self.session, FeatureRelationship,
+                              subject_id=self.feature.feature_id,
+                              object_id=feat2.feature_id,
+                              type_id=cvterm.cvterm_id)
+
+        frp, _ = get_or_create(self.session, FeatureRelationshipPub,
+                               feature_relationship_id=fr.feature_relationship_id,
+                               pub_id=self.pub.pub_id)
+        for postfix in ('a', 'b'):
+            new_key = f'{key}{postfix}'
+            if self.has_data(new_key) and self.process_data[new_key]['data'][FIELD_VALUE] == 'y':
+                cvterm = get_cvterm(self.session, self.process_data[new_key]['cv'],
+                                    self.process_data[new_key]['cvterm'])
+                p, _ = get_or_create(self.session, FeatureRelationshipprop,
+                                     feature_relationship_id=frp.feature_relationship_id,
+                                     type_id=cvterm.cvterm_id)
+                p.value = 'y'
 
     def add_exp_cvterm(self, exp, exp_id, cv1, cvt1, cv2, cvt2):
         cvterm = get_cvterm(self.session, cv1, cvt1)
@@ -119,8 +145,6 @@ class ChadoGeneProduct(ChadoFeatureObject):
                         4: '<s>',
                         5: '<note>'}
         pattern = r"<e>(.*)<t>(.*)<a>(.*)<s>(.*)<note>(.*)"
-        self.log.debug(self.process_data[key]['cv_mappings']['<e>'])
-        self.log.debug(self.process_data[key]['cv_mappings']['<e>']['cv1'])
         curated_prop = get_cvterm(self.session, 'feature_expression property type', 'curated_as')
         comment_prop = get_cvterm(self.session, 'feature_expression property type', 'comment')
         for exp in self.process_data[key]['data']:
@@ -141,7 +165,6 @@ class ChadoGeneProduct(ChadoFeatureObject):
                             value = stages[value]
                         except KeyError:
                             pass
-                    self.log.debug(f"{group_to_key[group]} value: {value}")
                     cv1 = self.process_data[key]['cv_mappings'][group_to_key[group]]['cv1']
                     cv2 = self.process_data[key]['cv_mappings'][group_to_key[group]]['cv2']
                     cvt2 = self.process_data[key]['cv_mappings'][group_to_key[group]]['cvt2']
@@ -209,7 +232,6 @@ class ChadoGeneProduct(ChadoFeatureObject):
         Load the cvterm.
         """
         if self.has_data(key):
-            log.warning(f"key is {key} loading cvterm")
             cvterm_name = self.process_data[key]['cvterm']
             name = None
             if cvterm_name == 'in_field':
