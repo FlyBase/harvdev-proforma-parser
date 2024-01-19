@@ -17,9 +17,9 @@ from harvdev_utils.production import (
     Feature, FeaturePub, FeatureRelationshipPub, FeatureRelationship, FeatureRelationshipprop,
     FeatureCvterm, FeatureCvtermprop, Organism, Pub,
     Expression, ExpressionCvterm, FeatureExpression,
-    FeatureExpressionprop
+    FeatureExpressionprop, FeatureSynonym,
     # Featureprop, FeatureCvtermprop,
-    # Cvterm, Cv, Synonym, Db, Dbxref
+    Cvterm, Cv ,Synonym  #, Db, Dbxref
 )
 from harvdev_utils.chado_functions import (
     get_or_create, get_cvterm,
@@ -60,7 +60,15 @@ class ChadoGeneProduct(ChadoFeatureObject):
                           'ignore': self.ignore,
                           'prop': self.load_featureprop,
                           'feat_relationship': self.load_feat_relationship,
-                          'expression': self.expression}
+                          'expression': self.expression,
+                          'gene': self.todo,
+                          'relationship': self.todo,  # diff from feat_relationship
+                          'merge': self.todo,
+                          'rename': self.rename,
+                          'disspub': self.dissociate_from_pub,
+                          'obsolete': self.make_obsolete,
+                          'no_idea_yet': self.todo,  # do not know what it does yet
+                          'size': self.todo}
 
         self.delete_dict = {'ignore': self.delete_ignore,
                             'cvterm': self.delete_cvterm,
@@ -87,6 +95,29 @@ class ChadoGeneProduct(ChadoFeatureObject):
         # Populated self.process_data with all possible keys.
         self.process_data = self.load_reference_yaml(yml_file, params)
         self.log = log
+
+    def todo(self, key):
+        print(f"{key}: not programmed yet")
+        pass
+
+    def rename(self, key):
+        # set current synonym is_current to False
+        cvterm = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data[key]['cvterm'])
+        fss = self.session.query(FeatureSynonym).join(Synonym).\
+            filter(FeatureSynonym.feature_id == self.feature.feature_id,
+                   FeatureSynonym.is_current == 't',
+                   Synonym.type_id == cvterm.cvterm_id).all()
+        for fs in fss:
+            fs.is_current = False
+
+        synonym, _ = get_or_create(self.session, Synonym,
+                                   name=self.process_data['F1a']['data'][FIELD_VALUE],
+                                   synonym_sgml=self.process_data['F1a']['data'][FIELD_VALUE],
+                                   type_id=cvterm.cvterm_id)
+        get_or_create(self.session, FeatureSynonym,
+                      feature_id=self.feature.feature_id,
+                      synonym_id=synonym.synonym_id,
+                      pub_id=self.pub.pub_id)
 
     def load_feat_relationship(self, key):
         # lookup symbol
@@ -259,7 +290,26 @@ class ChadoGeneProduct(ChadoFeatureObject):
                               type_id=prop_cvterm.cvterm_id)
 
     def delete_cvterm(self, key: str, bangc: str) -> None:
-        pass
+        cvterm_name = self.process_data[key]['cvterm']
+        cv_name = self.process_data[key]['cv']
+        if cvterm_name == 'in_field':
+            # need to delete all with that cv
+            fcvs = self.session.query(FeatureCvterm).join(Cvterm).join(Cv).\
+                filter(FeatureCvterm.feature_id == self.feature.feature_id,
+                       Cv.name == cv_name,
+                       FeatureCvterm.pub_id == self.pub.pub_id).all()
+            for fcv in fcvs:
+                self.session.delete(fcv)
+            return
+        # Delete those with cv and cvterm stated.
+        cvterm = get_cvterm(self.session, cv_name, cvterm_name)
+
+        fcvs = self.session.query(FeatureCvterm).join(Cvterm). \
+            filter(FeatureCvterm.feature_id == self.feature.feature_id,
+                   FeatureCvterm.cvterm_id == cvterm.cvterm_id,
+                   FeatureCvterm.pub_id == self.pub.pub_id).all()
+        for fcv in fcvs:
+            self.session.delete(fcv)
 
     def check_format(self, status: dict) -> None:
         """
