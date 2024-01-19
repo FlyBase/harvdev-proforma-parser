@@ -24,7 +24,7 @@ F2:
 F1b:
   type: rename
   cv: synonym type
-  cvterm: fullname
+  cvterm: symbol
   is_current: True
   remove_old: True
 # ! F1c. Action - merge these products(s) (symbols or FB#s) :
