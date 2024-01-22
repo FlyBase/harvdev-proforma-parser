@@ -43,7 +43,7 @@ class ChadoPub(ChadoObject):
                             'pubauthor': self.delete_author,
                             'relationship': self.delete_relationships,
                             'pubprop': self.delete_pubprops,
-                            'pubprop_flag': self.load_pubprop_flag,
+                            'pubprop_flag': self.bangc_load_pubprop_flag,
                             'dbxref': self.delete_dbxref,
                             'ignore': self.delete_ignore,
                             'obsolete': self.delete_obsolete}
@@ -472,6 +472,7 @@ class ChadoPub(ChadoObject):
                    Pubprop.type_id == cvterm.cvterm_id,
                    Pubprop.value.like(f'{flag_status[0]}%')).all()
         for pp in pubprops:
+            # self.warning_error(item, f"BOB: pp is {pp.value}")
             if pp.value == flag_status[0]:
                 flag_found = pp
             elif flag_done_found:
@@ -480,11 +481,11 @@ class ChadoPub(ChadoObject):
                 self.session.delete(pp)
             elif pp.value == f'{flag_status[0]}::DONE':
                 flag_done_found = pp
-
+        # self.warning_error(item, f"BOB: bangc:{bangc}, done_being_set:{done_being_set}, flag_found:{flag_found}, flag_done_found:{flag_done_found}")
         if done_being_set:
             if flag_done_found:
                 # already set message
-                self.warning_error(item, f'{item[FIELD_VALUE]} Already set for {self.pub.uniquename}. Will ignore.')
+                self.critical_error(item, f'{item[FIELD_VALUE]} Already set for {self.pub.uniquename}.')
                 return
             elif not flag_found:
                 self.warning_error(
@@ -498,7 +499,7 @@ class ChadoPub(ChadoObject):
                 )
             elif flag_found:
                 if not bangc:
-                    self.warning_error(item,
+                    self.critical_error(item,
                                        f'{flag_status[0]} found so cannot set to DONE without bangc')
                     return
                 flag_found.value = item[FIELD_VALUE]
@@ -506,7 +507,7 @@ class ChadoPub(ChadoObject):
             if flag_done_found:
                 mess = f'{item[FIELD_VALUE]} being set but {item[FIELD_VALUE]}::DONE already exist for '
                 mess += f'{self.pub.uniquename}. so cannot reset without bangc'
-                self.warning_error(item, mess)
+                self.critical_error(item, mess)
                 # flag_done_found.value = item[FIELD_VALUE]
                 return
             elif not flag_found:
@@ -517,7 +518,11 @@ class ChadoPub(ChadoObject):
                     type_id=cvterm.cvterm_id
                 )
             else:
-                self.warning_error(item, f'{item[FIELD_VALUE]} Already set for {self.pub.uniquename}. Will ignore.')
+                self.critical_error(item, f'{item[FIELD_VALUE]} Already set for {self.pub.uniquename}.')
+
+    def bangc_load_pubprop_flag(self, key, bangc=True):
+        self.load_pubprop_flag(key, bangc=True)
+        self.process_data[key]['data'] = None
 
     def load_pubprop_flag(self, key, bangc=False):
         """Load the pubprop or change value by splitting term by '::' and searching for start bit.
