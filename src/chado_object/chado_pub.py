@@ -43,7 +43,7 @@ class ChadoPub(ChadoObject):
                             'pubauthor': self.delete_author,
                             'relationship': self.delete_relationships,
                             'pubprop': self.delete_pubprops,
-                            'pubprop_flag': self.delete_load_pubprop_flag,
+                            'pubprop_flag': self.load_pubprop_flag,
                             'dbxref': self.delete_dbxref,
                             'ignore': self.delete_ignore,
                             'obsolete': self.delete_obsolete}
