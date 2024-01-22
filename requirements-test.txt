@@ -18,9 +18,9 @@ pylint==1.7.4
 PyYAML>=6.0.1
 requests==2.31.0
 retry
-six==1.11.0
+six
 sqlacodegen==1.1.6
-SQLAlchemy>=1.4.0
+SQLAlchemy>=1.4.0, <2.0
 sqlalchemy-repr==0.0.1
 texttable==0.9.1
 websocket-client==0.44.0

@@ -332,7 +332,6 @@ class ChadoChem(ChadoFeatureObject):
         if not self.feature:
             return
         _, plain_name, sgml = synonym_name_details(self.session, self.process_data['CH1e']['data'][FIELD_VALUE], nosup=True)
-        log.debug(f"BOB: {plain_name}, {sgml}")
         # set new feature name
         self.feature.name = plain_name
 
