@@ -504,8 +504,9 @@ class ChadoPub(ChadoObject):
                 flag_found.value = item[FIELD_VALUE]
         else:
             if flag_done_found:
-                self.warning_error(item,
-                                   f'{item[FIELD_VALUE]} being set but {item[FIELD_VALUE]}::DONE already exist for {self.pub.uniquename}. so cannot reset without bangc')
+                mess = f'{item[FIELD_VALUE]} being set but {item[FIELD_VALUE]}::DONE already exist for '
+                mess += f'{self.pub.uniquename}. so cannot reset without bangc'
+                self.warning_error(item, mess)
                 # flag_done_found.value = item[FIELD_VALUE]
                 return
             elif not flag_found:
