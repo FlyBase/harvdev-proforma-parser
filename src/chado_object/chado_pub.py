@@ -500,7 +500,7 @@ class ChadoPub(ChadoObject):
             elif flag_found:
                 if not bangc:
                     self.critical_error(item,
-                                       f'{flag_status[0]} found so cannot set to DONE without bangc')
+                                        f'{flag_status[0]} found so cannot set to DONE without bangc')
                     return
                 flag_found.value = item[FIELD_VALUE]
         else:
