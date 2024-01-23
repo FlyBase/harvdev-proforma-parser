@@ -19,7 +19,7 @@ from harvdev_utils.production import (
     Expression, ExpressionCvterm, FeatureExpression,
     FeatureExpressionprop, FeatureSynonym,
     # Featureprop, FeatureCvtermprop,
-    Cvterm, Cv ,Synonym  #, Db, Dbxref
+    Cvterm, Cv, Synonym  # , Db, Dbxref
 )
 from harvdev_utils.chado_functions import (
     get_or_create, get_cvterm,
