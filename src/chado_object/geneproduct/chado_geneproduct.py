@@ -26,6 +26,7 @@ from harvdev_utils.chado_functions import (
     feature_name_lookup, feature_symbol_lookup
 )
 from harvdev_utils.chado_functions.organism import get_organism
+from harvdev_utils.char_conversions import sgml_to_plain_text
 # from error.error_tracking import CRITICAL_ERROR
 
 
@@ -102,6 +103,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
 
     def rename(self, key):
         # set current synonym is_current to False
+        # BOB - need a step that updates feature.name as well.
         cvterm = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data[key]['cvterm'])
         fss = self.session.query(FeatureSynonym).join(Synonym).\
             filter(FeatureSynonym.feature_id == self.feature.feature_id,
@@ -114,6 +116,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
                                    name=self.process_data['F1a']['data'][FIELD_VALUE],
                                    synonym_sgml=self.process_data['F1a']['data'][FIELD_VALUE],
                                    type_id=cvterm.cvterm_id)
+        # BOB - if renaming to a previously associated synonym, then need to change is_current from False to True
         get_or_create(self.session, FeatureSynonym,
                       feature_id=self.feature.feature_id,
                       synonym_id=synonym.synonym_id,
@@ -315,11 +318,12 @@ class ChadoGeneProduct(ChadoFeatureObject):
         """For a new gene product, confirm there is not already a feature by that name."""
         gp_rgx = r'^FB[a-z][a-z][0-9]+$'
         fbog_rgx = r'^FBog[0-9]+$'
+        feature_name = sgml_to_plain_text(status['name'])
         filters = (
             Feature.is_obsolete.is_(False),
             Feature.uniquename.op('~')(gp_rgx),
             Feature.uniquename.op('!~')(fbog_rgx),
-            Feature.name == status['name'],
+            Feature.name == feature_name,
         )
         existing_feature = self.session.query(Feature).filter(*filters).one_or_none()
         if existing_feature:
@@ -572,8 +576,10 @@ class ChadoGeneProduct(ChadoFeatureObject):
             # self.load_synonym('F1a')                       # add fullname HAS NONE
         else:
             not_obsolete = False
+            feature_name = sgml_to_plain_text(self.process_data['F1a']['data'][FIELD_VALUE])
             gp = self.session.query(Feature).\
                 filter(Feature.uniquename == self.process_data['F1f']['data'][FIELD_VALUE],
+                       Feature.name == feature_name,
                        Feature.is_obsolete == not_obsolete).\
                 one_or_none()
             if not gp:
