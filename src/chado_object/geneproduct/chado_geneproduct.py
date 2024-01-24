@@ -311,10 +311,26 @@ class ChadoGeneProduct(ChadoFeatureObject):
         for fcv in fcvs:
             self.session.delete(fcv)
 
+    def check_for_existing_geneproduct(self, status: dict) -> None:
+        """For a new gene product, confirm there is not already a feature by that name."""
+        gp_rgx = r'^FB[a-z][a-z][0-9]+$'
+        fbog_rgx = r'^FBog[0-9]+$'
+        filters = (
+            Feature.is_obsolete.is_(False),
+            Feature.uniquename.op('~')(gp_rgx),
+            Feature.uniquename.op('!~')(fbog_rgx),
+            Feature.name == status['name'],
+        )
+        existing_feature = self.session.query(Feature).filter(*filters).one_or_none()
+        if existing_feature:
+            message = f"F1f says that {status['name']} is new, but a feature by this name already exists with ID {existing_feature.uniquename}"
+            self.critical_error(self.process_data['F1f']['data'], message)
+            status['error'] = True
+
     def check_format(self, status: dict) -> None:
         """
         Check the format of the new geneproduct name.
-        Create critical error  message on error and set the dict status['error'] to True.
+        Create critical error message on error and set the dict status['error'] to True.
         Code should check this at the end.
         """
         format_okay = False
@@ -481,6 +497,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
         """
         status = {'error': False,
                   'name': self.process_data['F1a']['data'][FIELD_VALUE]}
+        self.check_for_existing_geneproduct(status)
         self.check_format(status)
         self.check_type(status)
         self.check_type_name(status)
