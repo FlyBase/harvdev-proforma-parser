@@ -586,25 +586,30 @@ class ChadoPub(ChadoObject):
         """
         value = value_to_add_tuple[FIELD_VALUE]
 
-        cv_term_id = super(ChadoPub, self).cvterm_query(cv_name, cvterm_name)
+        cvterm_id = super(ChadoPub, self).cvterm_query(cv_name, cvterm_name)
 
         log.debug('Querying for FBrf \'%s\'.' % (value))
 
-        try:
+        # check if it exists already
+        pubprops = self.session.query(Pubprop). \
+            filter(Pubprop.pub_id == self.pub.pub_id,
+                   Pubprop.type_id == cvterm_id,
+                   Pubprop.value == value_to_add_tuple[FIELD_VALUE]).all()
+        found = False
+        for pp in pubprops:
+            found = pp
+        if not found:
             pub_prop, _ = get_or_create(
                 self.session, Pubprop,
                 pub_id=self.pub.pub_id,
                 value=value,
-                type_id=cv_term_id
+                type_id=cvterm_id
             )
-        except MultipleResultsFound:
-            if type(self.process_data[key]['data']) is list:
-                item = self.process_data[key]['data'][0]
-            else:
-                item = self.process_data[key]['data']
-            self.critical_error(item, f"More then one pub prop found for {key} {cv_term_id}")
+        else:
+            self.critical_error(value_to_add_tuple, f'{value_to_add_tuple[FIELD_VALUE]} Already set for {self.pub.uniquename}.')
             return None
         return pub_prop
+
 
     def load_pubdbxref(self, db_name, value_to_add_tuple):
         """Add dbxref to the pub (self.pub).
@@ -806,6 +811,12 @@ class ChadoPub(ChadoObject):
             count = self.session.query(Pubprop).filter(Pubprop.pub_id == self.pub.pub_id,
                                                        Pubprop.type_id == cv_term.cvterm_id).delete()
             log.debug("removed {} Pub Props for {}.".format(count, key))
+            if not count:
+                if type(self.process_data[key]['data']) is list:
+                    item = self.process_data[key]['data'][0]
+                else:
+                    item = self.process_data[key]['data']
+                self.critical_error(item, "No previous records found in database. Therefore cannot bangc it.")
         else:
             if type(self.process_data[key]['data']) is list:
                 for item in self.process_data[key]['data']:
