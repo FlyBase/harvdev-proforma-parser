@@ -581,13 +581,13 @@ class ChadoGeneProduct(ChadoFeatureObject):
                 filter(Feature.uniquename == self.process_data['F1f']['data'][FIELD_VALUE],
                        Feature.is_obsolete == not_obsolete).\
                 one_or_none()
-            if gp.name != f1a_name:
-                message = f'Feature {gp.uniquename} exists but Chado knows it as {gp.name}, whereas "F1a" calls it {f1a_name}.'
-                self.critical_error(self.process_data['F1f']['data'], message)
-                return
             if not gp:
                 self.critical_error(self.process_data['F1f']['data'],
                                     'Feature does not exist in the database or is obsolete.')
+            elif gp.name != f1a_name:
+                message = f'Feature {gp.uniquename} exists but Chado knows it as {gp.name}, whereas "F1a" calls it {f1a_name}.'
+                self.critical_error(self.process_data['F1f']['data'], message)
+                return
                 return
         # Add to pub to hh if it does not already exist.
         get_or_create(self.session, FeaturePub, pub_id=self.pub.pub_id, feature_id=gp.feature_id)
