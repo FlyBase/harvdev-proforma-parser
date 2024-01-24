@@ -14,7 +14,6 @@ from harvdev_utils.production import (
     Cv, Cvterm, Pub, Pubprop, Pubauthor, PubRelationship, Db, Dbxref, PubDbxref
 )
 from harvdev_utils.chado_functions import get_or_create
-from sqlalchemy.orm.exc import MultipleResultsFound
 
 import logging
 from datetime import datetime
@@ -609,7 +608,6 @@ class ChadoPub(ChadoObject):
             self.critical_error(value_to_add_tuple, f'{value_to_add_tuple[FIELD_VALUE]} Already set for {self.pub.uniquename}.')
             return None
         return pub_prop
-
 
     def load_pubdbxref(self, db_name, value_to_add_tuple):
         """Add dbxref to the pub (self.pub).
