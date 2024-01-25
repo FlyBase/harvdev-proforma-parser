@@ -384,7 +384,7 @@ class ChadoFeatureObject(ChadoObject):
            is_current:
            remove_old: <optional> defaults to False
         NOTE:
-          If is_current set to True and cvterm is symbol thensgml to plaintext is done.
+          If is_current set to True and cvterm is symbol then sgml to plaintext is done.
 
         Args:
             key (string): key/field of proforma to add synonym for.
@@ -405,12 +405,12 @@ class ChadoFeatureObject(ChadoObject):
             unattrib_pub_id = self.get_unattrib_pub().pub_id
             if pub_id != unattrib_pub_id:
                 pubs.append(unattrib_pub_id)
-        if 'add_unattributed_paper_only' in self.process_data[key]:
+        if 'add_unattributed_paper_only' in self.process_data[key] and self.process_data[key]['add_unattributed_paper_only'] is True:
             pubs = [self.get_unattrib_pub().pub_id]
         # remove the current symbol if is_current is set and yaml says remove old is_current
         # ecxcept if over rule is passed.
         if not overrule_removeold:
-            if 'remove_old' in self.process_data[key] and self.process_data[key]['remove_old']:
+            if 'remove_old' in self.process_data[key] and self.process_data[key]['remove_old'] is True:
                 fs_remove_current_symbol(self.session, self.feature.feature_id, cv_name, cvterm_name)
 
         # add the new synonym
@@ -424,7 +424,6 @@ class ChadoFeatureObject(ChadoObject):
             name = item[FIELD_VALUE]
             if not self.is_subscript_convert(key):
                 synonym_sgml = sgml_to_unicode(item[FIELD_VALUE])
-                name = sgml_to_plain_text(greek_to_sgml(item[FIELD_VALUE]))
 
             for pub_id in pubs:
                 fs = fs_add_by_synonym_name_and_type(self.session, self.feature.feature_id,
