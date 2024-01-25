@@ -36,7 +36,7 @@ log = logging.getLogger(__name__)
 class ChadoGeneProduct(ChadoFeatureObject):
     """Class object for Chado GeneProduct/Feature.
 
-    Main chado object is a  Feature.
+    Main chado object is a Feature.
     """
 
     def __init__(self, params):
@@ -62,13 +62,13 @@ class ChadoGeneProduct(ChadoFeatureObject):
                           'prop': self.load_featureprop,
                           'feat_relationship': self.load_feat_relationship,
                           'expression': self.expression,
-                          'gene': self.todo,
+                        #   'gene': self.todo,    # This seems not required?
                           'relationship': self.todo,  # diff from feat_relationship
                           'merge': self.todo,
                           'rename': self.rename,
                           'disspub': self.dissociate_from_pub,
                           'obsolete': self.make_obsolete,
-                          'no_idea_yet': self.todo,  # do not know what it does yet
+                          'no_idea': self.todo,  # do not know what it does yet
                           'size': self.todo}
 
         self.delete_dict = {'ignore': self.delete_ignore,
@@ -78,7 +78,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
                             'expression': self.delete_ignore}
 
         self.proforma_start_line_number = params.get('proforma_start_line_number')
-        self.reference = params.get('reference')
+        # self.reference = params.get('reference')    # Unused
 
         ###########################################################
         # Values queried later, placed here for reference purposes.
@@ -111,12 +111,12 @@ class ChadoGeneProduct(ChadoFeatureObject):
         for fs in fss:
             fs.is_current = False
 
-        # NB - need a step that updates feature.name as well?
+        # BILLY - need a step that updates feature.name as well?
         synonym, _ = get_or_create(self.session, Synonym,
                                    name=self.process_data['F1a']['data'][FIELD_VALUE],
                                    synonym_sgml=self.process_data['F1a']['data'][FIELD_VALUE],
                                    type_id=cvterm.cvterm_id)
-        # NB - if renaming to a previously associated synonym, then need to change is_current from False to True?
+        # BILLY - if renaming to a previously associated synonym, then need to change is_current from False to True?
         get_or_create(self.session, FeatureSynonym,
                       feature_id=self.feature.feature_id,
                       synonym_id=synonym.synonym_id,
@@ -233,19 +233,16 @@ class ChadoGeneProduct(ChadoFeatureObject):
 
     def load_content(self, references: dict) -> None:
         """Process the proforma data."""
+
         self.pub = references['ChadoPub']
 
         if self.process_data['F1f']['data'][FIELD_VALUE] == "new":
             self.new = True
-        self.feature: Union[Feature, None] = self.get_geneproduct()
+        self.feature = self.get_geneproduct()
 
         if not self.feature:
             self.log.critical("Unable to get geneproduct")
             return
-        # if self.Feature:  # Only proceed if we have a gp, Otherwise we had an error.
-        #    self.extra_checks()
-        # else:
-        #    return
 
         # bang c/d first as this supersedes all things
         if self.bang_c:
@@ -260,6 +257,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
         curated_by_string = f'Curator: {self.curator_fullname};Proforma: {self.filename_short};timelastmodified: {timestamp}'
         log.debug('Curator string assembled as:')
         log.debug(curated_by_string)
+        return self.feature
 
     def load_cvterm(self, key: str) -> None:
         """
@@ -398,35 +396,32 @@ class ChadoGeneProduct(ChadoFeatureObject):
     def check_type_name(self, status: dict) -> None:
         """
         Check the type name of the new geneproduct name.
-        Create critical error  message on error and set the dict status['error'] to True.
+        Create critical error message on error and set the dict status['error'] to True.
         Code should check this at the end.
         """
         if 'type_name' not in status:
             return
 
         name = status['name']
-
         type_name = status['type_name']
+
         if type_name == 'split system combination':
             status['fb_prefix'] = "FBco"
             if '&cap;' not in name:
                 message = f"new split system combination feature {name} must have '&cap;' in its name"
                 self.critical_error(self.process_data['F1a']['data'], message)
                 status["error"] = True
-
             pattern = "(XR|XP|R[A-Z]|P[A-Z])$"
             s_res = re.findall(pattern, name)
             if s_res:
                 message = f"new split system combination feature {name} must not have any XR/XP/RA/PA suffix in its name"
                 self.critical_error(self.process_data['F1a']['data'], message)
                 status["error"] = True
-
             pattern = "DBD.*AD"
             s_res = re.findall(pattern, name)
             if not s_res:
-                message = f"new split system combination feature {name} must list DBD before AD;"
-                self.critical_error(self.process_data['F1a']['data'], message)
-                status["error"] = True
+                message = f"new split system combination feature {name} typically lists a DBD before an AD;"
+                self.warning_error(self.process_data['F1a']['data'], message)
 
         elif type_name == 'polypeptide':
             status['fb_prefix'] = "FBpp"
@@ -436,6 +431,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
                 message = f"polypeptide {name} should be ended with -XP or PA"
                 self.critical_error(self.process_data['F1a']['data'], message)
                 status["error"] = True
+
         elif type_name.endswith('RNA'):
             status['fb_prefix'] = "FBtr"
             pattern = "(-XR|R[A-Z])$"
@@ -444,6 +440,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
                 message = f"transcript {name} should be ended with -XR or RA"
                 self.critical_error(self.process_data['F1a']['data'], message)
                 status["error"] = True
+
         else:
             message = f"unexpected F3 value: {type_name}"
             self.critical_error(self.process_data['F3']['data'], message)
@@ -497,7 +494,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
           error: [True/False]
           features : [features producing this new product]  # NOTE 2 of these for splits
           fb_prefix: string (FBxx)
-          feat_type: cvterm object
+          feat_type: Cvterm object
           type_name: string (type of geneproduct)
         """
         status = {'error': False,
@@ -552,12 +549,11 @@ class ChadoGeneProduct(ChadoFeatureObject):
     def get_geneproduct(self) -> Union[Feature, None]:
         """
         Lookup or create the gene product.
-        On error give critical error message and return None.
+        Or error give critical error message and return None.
         On success return the Feature object.
         """
         if self.new:
-
-            # get type/uniquename from F3.
+            # get uniquename type from F3.
             status = self.get_uniquename_and_checks()
             if status['error']:
                 self.log.critical(f"Error get gene product {status['error']}")
@@ -566,15 +562,10 @@ class ChadoGeneProduct(ChadoFeatureObject):
             gp, _ = get_or_create(self.session, Feature, name=self.process_data['F1a']['data'][FIELD_VALUE],
                                   organism_id=organism.organism_id, uniquename=f'{status["fb_prefix"]}:temp_0',
                                   type_id=status['feat_type'].cvterm_id)
-
-            # db has correct FBhh0000000x in it but here still has 'FBhh:temp_0'. ???
-            # presume triggers start after hh is returned. Maybe worth getting form db again
             log.debug(f"New gene product created {gp.uniquename} id={gp.feature_id}.")
-
             self.feature = gp
             self.add_feat_relationships(status)
             self.load_synonym('F1a')  # add symbol
-            # self.load_synonym('F1a')                       # add fullname HAS NONE
         else:
             not_obsolete = False
             f1a_name = self.process_data['F1a']['data'][FIELD_VALUE]
@@ -592,6 +583,5 @@ class ChadoGeneProduct(ChadoFeatureObject):
                 message += f' as {gp.name} in Chado, but the name given in F1a is {f1a_name}.'
                 self.critical_error(self.process_data['F1f']['data'], message)
                 return
-        # Add to pub to hh if it does not already exist.
         get_or_create(self.session, FeaturePub, pub_id=self.pub.pub_id, feature_id=gp.feature_id)
         return gp
