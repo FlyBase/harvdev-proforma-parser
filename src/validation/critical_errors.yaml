@@ -1,8 +1,6 @@
 # Important note:
 # The value doesn't need to *exactly* match the entire Cerberus error.
 # It just needs to match part of the error text.
-F2:
-  - unallowed value
 CH1a:
  - required field
 CH1g:
