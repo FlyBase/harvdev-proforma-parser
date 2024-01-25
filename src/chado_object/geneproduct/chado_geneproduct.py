@@ -327,7 +327,8 @@ class ChadoGeneProduct(ChadoFeatureObject):
         )
         existing_feature = self.session.query(Feature).filter(*filters).one_or_none()
         if existing_feature:
-            message = f"F1f says that {status['name']} is new, but a feature by this name already exists with ID {existing_feature.uniquename}"
+            message = f"Name {status['name']} has been used in the database; "
+            message += f"F1f claims that {status['name']} is new, but Chado knows it as {existing_feature.uniquename}"
             self.critical_error(self.process_data['F1f']['data'], message)
             status['error'] = True
 
@@ -576,7 +577,8 @@ class ChadoGeneProduct(ChadoFeatureObject):
             # self.load_synonym('F1a')                       # add fullname HAS NONE
         else:
             not_obsolete = False
-            f1a_name = sgml_to_plain_text(self.process_data['F1a']['data'][FIELD_VALUE])
+            f1a_name = self.process_data['F1a']['data'][FIELD_VALUE]
+            f1a_name_plain_text = sgml_to_plain_text(f1a_name)
             gp = self.session.query(Feature).\
                 filter(Feature.uniquename == self.process_data['F1f']['data'][FIELD_VALUE],
                        Feature.is_obsolete == not_obsolete).\
@@ -585,8 +587,9 @@ class ChadoGeneProduct(ChadoFeatureObject):
                 self.critical_error(self.process_data['F1f']['data'],
                                     'Feature does not exist in the database or is obsolete.')
                 return
-            elif gp.name != f1a_name:
-                message = f'Feature {gp.uniquename} exists but Chado knows it as {gp.name}, whereas "F1a" calls it {f1a_name}.'
+            elif gp.name != f1a_name_plain_text:
+                message = f'Symbol-ID mismatch: the ID given in F1f ({gp.uniquename}) exists'
+                message += f' as {gp.name} in Chado, but the name given in F1a is {f1a_name}.'
                 self.critical_error(self.process_data['F1f']['data'], message)
                 return
         # Add to pub to hh if it does not already exist.
