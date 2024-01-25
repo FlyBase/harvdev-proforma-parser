@@ -263,13 +263,27 @@ class ChadoGeneProduct(ChadoFeatureObject):
         """
         Load the cvterm.
         """
-        if self.has_data(key):
-            cvterm_name = self.process_data[key]['cvterm']
-            name = None
-            if cvterm_name == 'in_field':
-                cvterm_name, name = self.process_data[key]['data'][FIELD_VALUE].split(';')
-                cvterm_name = cvterm_name.strip()
+        if self.has_data(key) is False:
+            return
+        print(f'BOB: {self.process_data[key]["data"][FIELD_VALUE]}')
+        CVTERM_NAME = 0
+        CVTERM_CURIE = 1
+        # Process CV term entries as tuples (CVTERM_NAME, CVTERM_CURIE).
+        cvterm_entry_list = []
+        cvterm_to_use = self.process_data[key]['cvterm']
+        if cvterm_to_use == 'in_field':
+            for curated_entry in self.process_data[key]['data']:
+                cvterm_name, cvterm_curie = curated_entry.split(';')
+                cvterm_entry_list.append((cvterm_name.strip(), cvterm_curie.strip()))
+        else:
+            cvterm_name, cvterm_curie = cvterm_to_use.split(';')
+            cvterm_entry_list.append((cvterm_name.strip(), cvterm_curie.strip()))
+        for cvterm_entry in cvterm_entry_list:
+            # BILLY BOB - must allow for two diff CVs here.
             cvterm = get_cvterm(self.session, self.process_data[key]['cv'], cvterm_name)
+
+
+
             if not cvterm:
                 message = 'Cvterm lookup failed for cv {} cvterm {}?'.format(self.process_data[key]['cv'],
                                                                              cvterm_name)
