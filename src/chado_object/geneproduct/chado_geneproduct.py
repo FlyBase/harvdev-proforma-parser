@@ -111,10 +111,12 @@ class ChadoGeneProduct(ChadoFeatureObject):
         for fs in fss:
             fs.is_current = False
 
+        # NB - need a step that updates feature.name as well?
         synonym, _ = get_or_create(self.session, Synonym,
                                    name=self.process_data['F1a']['data'][FIELD_VALUE],
                                    synonym_sgml=self.process_data['F1a']['data'][FIELD_VALUE],
                                    type_id=cvterm.cvterm_id)
+        # NB - if renaming to a previously associated synonym, then need to change is_current from False to True?
         get_or_create(self.session, FeatureSynonym,
                       feature_id=self.feature.feature_id,
                       synonym_id=synonym.synonym_id,
@@ -312,6 +314,23 @@ class ChadoGeneProduct(ChadoFeatureObject):
         for fcv in fcvs:
             self.session.delete(fcv)
 
+    def check_for_existing_geneproduct(self, status: dict) -> None:
+        """For a new gene product, confirm there is not already a feature by that name."""
+        gp_rgx = r'^FB[a-z][a-z][0-9]+$'
+        fbog_rgx = r'^FBog[0-9]+$'
+        feature_name = sgml_to_plain_text(status['name'])
+        filters = (
+            Feature.is_obsolete.is_(False),
+            Feature.uniquename.op('~')(gp_rgx),
+            Feature.uniquename.op('!~')(fbog_rgx),
+            Feature.name == feature_name,
+        )
+        existing_feature = self.session.query(Feature).filter(*filters).one_or_none()
+        if existing_feature:
+            message = f"F1f says that {status['name']} is new, but a feature by this name already exists with ID {existing_feature.uniquename}"
+            self.critical_error(self.process_data['F1f']['data'], message)
+            status['error'] = True
+
     def check_format(self, status: dict) -> None:
         """
         Check the format of the new geneproduct name.
@@ -482,6 +501,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
         """
         status = {'error': False,
                   'name': self.process_data['F1a']['data'][FIELD_VALUE]}
+        self.check_for_existing_geneproduct(status)
         self.check_format(status)
         self.check_type(status)
         self.check_type_name(status)
@@ -556,6 +576,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
             # self.load_synonym('F1a')                       # add fullname HAS NONE
         else:
             not_obsolete = False
+            f1a_name = sgml_to_plain_text(self.process_data['F1a']['data'][FIELD_VALUE])
             gp = self.session.query(Feature).\
                 filter(Feature.uniquename == self.process_data['F1f']['data'][FIELD_VALUE],
                        Feature.is_obsolete == not_obsolete).\
@@ -563,6 +584,10 @@ class ChadoGeneProduct(ChadoFeatureObject):
             if not gp:
                 self.critical_error(self.process_data['F1f']['data'],
                                     'Feature does not exist in the database or is obsolete.')
+                return
+            elif gp.name != f1a_name:
+                message = f'Feature {gp.uniquename} exists but Chado knows it as {gp.name}, whereas "F1a" calls it {f1a_name}.'
+                self.critical_error(self.process_data['F1f']['data'], message)
                 return
         # Add to pub to hh if it does not already exist.
         get_or_create(self.session, FeaturePub, pub_id=self.pub.pub_id, feature_id=gp.feature_id)
