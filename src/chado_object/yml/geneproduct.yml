@@ -45,9 +45,9 @@ F4:
   is_current: False
 # ! F6. FlyExpress image number(s) (FBim) :
 F6:
-  type: noidea_yet
+  type: no_idea
 # ! F5. Molecule size(s) (wb, nb, sa) :
-F7:
+F5:
   type: size
 # ! F9. Expression pattern (<e>  <t>  <a>  <s>  <note>) :
 F9:
