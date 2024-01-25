@@ -31,7 +31,7 @@ F1b:
 
 #! F1c. Action - merge these products(s) (symbols or FB#s) :
 F1c:
-    type: [string]
+    type: [string, list]
     regex: ^(FBtr\d+|FBpp\d+)$
 
 # ! F1d. Action - delete gene product record (“y”/blank) :
@@ -46,16 +46,16 @@ F1e:
 
 # ! F4. Names(s) used in paper [free text] :
 F4:
-  type: [string]
+  type: [string, list]
 
 # ! F6. FlyExpress image number(s) (FBim) :
 F6:
-  type: [string]
+  type: [string, list]
   regex: ^(FBim\d+)$
 
 # ! F5. Molecule size(s) (wb, nb, sa) :
 F5:
-  type: [string]
+  type: [string, list]
   allowed: ['?']
 
 # ! F9. Expression pattern (<e>  <t>  <a>  <s>  <note>) :
@@ -86,7 +86,7 @@ F11b:
 
 # ! F12. Antibody reported (monoclonal, polyclonal) :
 F12:
-  type: [string]
+  type: [string, list]
   allowed: ['monoclonal', 'polyclonal']
 
 # ! F16a. Nucleotide probe (cDNA, cDNA fragment, genomic fragment, synthetic) :
@@ -104,7 +104,7 @@ F16c:
 
 # ! F17. Alleles or genotypes used :
 F17:
-  type: [string]
+  type: [string, list]
 
 # ! F13. Comment [free text] :
 F13:
