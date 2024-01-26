@@ -298,10 +298,10 @@ class ChadoGeneProduct(ChadoFeatureObject):
         cvterm_curie_regex = r'^(\w+):(\d+)$'
         for curated_entry in self.process_data[key]['data']:
             try:
-                cvterm_name, cvterm_curie = curated_entry.split(';')
+                cvterm_name, cvterm_curie = curated_entry[FIELD_VALUE].split(';')
                 cvterm_entry_list.append((cvterm_name.strip(), cvterm_curie.strip()))
             except ValueError:
-                message = f'Curated entry {curated_entry} did not meet expected format of CV term name ; CV term ID'
+                message = f'Curated entry {curated_entry[FIELD_VALUE]} did not meet expected format of CV term name ; CV term ID'
                 self.critical_error(self.process_data[key]['data'], message)
         for cvterm_entry in cvterm_entry_list:
             cvterm_name = cvterm_entry[CVTERM_NAME]
