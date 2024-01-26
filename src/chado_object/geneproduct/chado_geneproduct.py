@@ -282,7 +282,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
         """
         if self.has_data(key) is False:
             return
-        print(f'BILLY BOB: {self.process_data[key]["data"][FIELD_VALUE]}')
+        print(f'BILLY BOB: {self.process_data[key]["data"]}')
         # Support for various possible CVs.
         cvs_to_use = self.process_data[key]['cv']
         if type(cvs_to_use) == str:
