@@ -2,6 +2,7 @@
 """Chado Feature/Feature main module.
 
 .. moduleauthor:: Ian Longden <ilongden@morgan.harvard.edu>
+                  Gil dos Santos <dossantos@morgan.harvard.edu>
 """
 
 import os
@@ -51,10 +52,8 @@ class ChadoGeneProduct(ChadoFeatureObject):
         super(ChadoGeneProduct, self).__init__(params)
 
         ##########################################
-        #
         # Set up how to process each type of input
-        #
-        # This is set in the Feature.yml file.
+        # This is set in the geneproduct.yml file.
         ##########################################
         self.type_dict = {'cvterm': self.load_cvterm,
                           'marker_cvterms': self.load_marker_cvterms,
@@ -63,13 +62,12 @@ class ChadoGeneProduct(ChadoFeatureObject):
                           'prop': self.load_featureprop,
                           'feat_relationship': self.load_feat_relationship,
                           'expression': self.expression,
-                        #   'gene': self.todo,    # This seems not required?
-                          'relationship': self.todo,  # diff from feat_relationship
+                          'relationship': self.todo,    # diff from feat_relationship
                           'merge': self.todo,
                           'rename': self.rename,
                           'disspub': self.dissociate_from_pub,
                           'obsolete': self.make_obsolete,
-                          'no_idea': self.todo,  # do not know what it does yet
+                          'no_idea': self.todo,    # do not know what it does yet
                           'size': self.todo}
 
         self.delete_dict = {'ignore': self.delete_ignore,
@@ -79,13 +77,11 @@ class ChadoGeneProduct(ChadoFeatureObject):
                             'expression': self.delete_ignore}
 
         self.proforma_start_line_number = params.get('proforma_start_line_number')
-        # self.reference = params.get('reference')    # Unused
 
         ###########################################################
         # Values queried later, placed here for reference purposes.
         ############################################################
         self.pub: Union[Pub, None] = None   # All other proforma need a reference to a pub
-
         self.new: bool = False
         self.feature: Union[Feature, None] = None
 
@@ -572,17 +568,15 @@ class ChadoGeneProduct(ChadoFeatureObject):
         if status['type_name'] == 'split system combination':
             cvterm_name = 'partially_produced_by'
         cvterm = get_cvterm(self.session, cv_name=cv_name, cvterm_name=cvterm_name)
-
         pub_id = self.get_unattrib_pub().pub_id
+
         for feat_id in status['features']:
             fr, _ = get_or_create(self.session, FeatureRelationship,
                                   subject_id=self.feature.feature_id,
                                   object_id=feat_id,
                                   type_id=cvterm.cvterm_id)
-
-            frp, _ = get_or_create(self.session, FeatureRelationshipPub,
-                                   feature_relationship_id=fr.feature_relationship_id,
-                                   pub_id=pub_id)
+            get_or_create(self.session, FeatureRelationshipPub, pub_id=pub_id,
+                          feature_relationship_id=fr.feature_relationship_id)
 
     def get_org(self: ChadoFeatureObject, status: dict) -> Organism:
         """
