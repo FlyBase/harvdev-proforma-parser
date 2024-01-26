@@ -295,22 +295,13 @@ class ChadoGeneProduct(ChadoFeatureObject):
         CVTERM_NAME = 0
         CVTERM_CURIE = 1
         cvterm_entry_list = []
-        cvterm_directions = self.process_data[key]['cvterm']
         cvterm_curie_regex = r'^(\w+):(\d+)$'
-        if cvterm_directions == 'in_field':
-            for curated_entry in self.process_data[key]['data']:
-                try:
-                    cvterm_name, cvterm_curie = curated_entry.split(';')
-                    cvterm_entry_list.append((cvterm_name.strip(), cvterm_curie.strip()))
-                except ValueError:
-                    message = f'Curated entry {curated_entry} did not meet expected format of CV term name ; CV term ID'
-                    self.critical_error(self.process_data[key]['data'], message)
-        else:
+        for curated_entry in self.process_data[key]['data']:
             try:
-                cvterm_name, cvterm_curie = cvterm_directions.split(';')
+                cvterm_name, cvterm_curie = curated_entry.split(';')
                 cvterm_entry_list.append((cvterm_name.strip(), cvterm_curie.strip()))
             except ValueError:
-                message = f'YML specified entry {cvterm_directions} did not meet expected format of CV term name ; CV term ID'
+                message = f'Curated entry {curated_entry} did not meet expected format of CV term name ; CV term ID'
                 self.critical_error(self.process_data[key]['data'], message)
         for cvterm_entry in cvterm_entry_list:
             cvterm_name = cvterm_entry[CVTERM_NAME]
