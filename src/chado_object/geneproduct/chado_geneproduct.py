@@ -302,14 +302,14 @@ class ChadoGeneProduct(ChadoFeatureObject):
                 cvterm_entry_list.append((cvterm_name.strip(), cvterm_curie.strip()))
             except ValueError:
                 message = f'Curated entry {curated_entry[FIELD_VALUE]} did not meet expected format of CV term name ; CV term ID'
-                self.critical_error(self.process_data[key]['data'], message)
+                self.critical_error(curated_entry, message)
         for cvterm_entry in cvterm_entry_list:
             cvterm_name = cvterm_entry[CVTERM_NAME]
             curated_cvterm_curie = cvterm_entry[CVTERM_CURIE]
             # Check that the CV term ID (curie) is of the expected format.
             if not re.search(cvterm_curie_regex, curated_cvterm_curie):
                 message = f'CV term curie {curated_cvterm_curie} does not match expected format of DB:ACCESSION'
-                self.critical_error(self.process_data[key]['data'], message)
+                self.critical_error(curated_entry, message)
                 continue
             cvterm_db = re.search(cvterm_curie_regex, curated_cvterm_curie).group(1)
             # Check that the CV term ID (curie) is for an allowed ID/curie set.
@@ -317,19 +317,19 @@ class ChadoGeneProduct(ChadoFeatureObject):
                 cvterm_cv = db_cv_lookup[cvterm_db]
             except KeyError:
                 message = f'CV term curie {curated_cvterm_curie} given is not from the allowed list: {db_cv_lookup.keys()}'
-                self.critical_error(self.process_data[key]['data'], message)
+                self.critical_error(curated_entry, message)
                 continue
             cvterm = get_cvterm(self.session, cvterm_cv, cvterm_name)
             # Check that a CV term was found in chado.
             if not cvterm:
                 message = f'CV term lookup failed for cv {cvterm_cv}, cvterm {cvterm_name}.'
-                self.critical_error(self.process_data[key]['data'], message)
+                self.critical_error(curated_entry, message)
                 continue
             # Check that the CV term curie/ID in chado matches the ID/curie that was curated.
             chado_cvterm_curie = f'{cvterm.dbxref.db.name}:{cvterm.dbxref.accession}'
             if chado_cvterm_curie != curated_cvterm_curie:
                 message = f'For {cvterm_name}, the curated ID {curated_cvterm_curie} does not match the chado ID {chado_cvterm_curie}.'
-                self.critical_error(self.process_data[key]['data'], message)
+                self.critical_error(curated_entry, message)
                 continue
             # Create the feature_cvterm entry.
             feat_cvterm, _ = get_or_create(self.session, FeatureCvterm,
@@ -340,7 +340,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
             if not prop_cvterm:
                 message = f"CV term lookup failed for cv {self.process_data[key]['prop_cv']}, "
                 message += f"cvterm {self.process_data[key]['prop_cvterm']}."
-                self.critical_error(self.process_data[key]['data'], message)
+                self.critical_error(curated_entry, message)
                 continue
             get_or_create(self.session, FeatureCvtermprop, feature_cvterm_id=feat_cvterm.feature_cvterm_id,
                           type_id=prop_cvterm.cvterm_id)
