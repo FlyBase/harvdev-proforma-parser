@@ -19,7 +19,7 @@ F3:  # process on creation of feature
 F2:
   type: cvterm
   cv: SO
-  cvterm: 'synthetic_sequence SO:0000351'
+  cvterm: 'synthetic_sequence'
 # ! F1b. Action - rename this gene product (symbol) :
 F1b:
   type: rename
