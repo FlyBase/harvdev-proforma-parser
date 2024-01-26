@@ -57,6 +57,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
         # This is set in the Feature.yml file.
         ##########################################
         self.type_dict = {'cvterm': self.load_cvterm,
+                          'marker_cvterms': self.load_marker_cvterms,
                           'synonym': self.load_synonym,
                           'ignore': self.ignore,
                           'prop': self.load_featureprop,
@@ -111,12 +112,12 @@ class ChadoGeneProduct(ChadoFeatureObject):
         for fs in fss:
             fs.is_current = False
 
-        # BILLY - need a step that updates feature.name as well?
+        # BILLY BOB- need a step that updates feature.name as well?
         synonym, _ = get_or_create(self.session, Synonym,
                                    name=self.process_data['F1a']['data'][FIELD_VALUE],
                                    synonym_sgml=self.process_data['F1a']['data'][FIELD_VALUE],
                                    type_id=cvterm.cvterm_id)
-        # BILLY - if renaming to a previously associated synonym, then need to change is_current from False to True?
+        # BILLY BOB- if renaming to a previously associated synonym, then need to change is_current from False to True?
         get_or_create(self.session, FeatureSynonym,
                       feature_id=self.feature.feature_id,
                       synonym_id=synonym.synonym_id,
@@ -261,48 +262,98 @@ class ChadoGeneProduct(ChadoFeatureObject):
 
     def load_cvterm(self, key: str) -> None:
         """
-        Load the cvterm.
+        Load a single cvterm by name (ignoring the curated ID): e.g., fields F2 and F3.
+        """
+        if self.has_data(key):
+            cvterm_name = self.process_data[key]['cvterm']
+            cvterm = get_cvterm(self.session, self.process_data[key]['cv'], cvterm_name)
+            if not cvterm:
+                message = f'Cvterm lookup failed for cv {self.process_data[key]["cv"]} cvterm {cvterm_name}.'
+                self.critical_error(self.process_data[key]['data'], message)
+                return
+            _, _ = get_or_create(self.session, FeatureCvterm,
+                                 feature_id=self.feature.feature_id,
+                                 cvterm_id=cvterm.cvterm_id,
+                                 pub_id=self.pub.pub_id)
+
+    def load_marker_cvterms(self, key: str) -> None:
+        """
+        Load the marker cvterms, ensuring for each curated CV term name and ID pair that the values match up.
         """
         if self.has_data(key) is False:
             return
-        print(f'BOB: {self.process_data[key]["data"][FIELD_VALUE]}')
+        print(f'BILLY BOB: {self.process_data[key]["data"][FIELD_VALUE]}')
+        # Support for various possible CVs.
+        cvs_to_use = self.process_data[key]['cv']
+        if type(cvs_to_use) == str:
+            cvs_to_use = [cvs_to_use]
+        db_cv_lookup = {
+            'FBbt': 'FlyBase anatomy CV',
+            'GO': 'cellular_component'
+        }
+        # Process CV term entries as a list of tuples (CVTERM_NAME, CVTERM_CURIE).
         CVTERM_NAME = 0
         CVTERM_CURIE = 1
-        # Process CV term entries as tuples (CVTERM_NAME, CVTERM_CURIE).
         cvterm_entry_list = []
-        cvterm_to_use = self.process_data[key]['cvterm']
-        if cvterm_to_use == 'in_field':
+        cvterm_directions = self.process_data[key]['cvterm']
+        cvterm_curie_regex = r'^(\w+):(\d+)$'
+        if cvterm_directions == 'in_field':
             for curated_entry in self.process_data[key]['data']:
-                cvterm_name, cvterm_curie = curated_entry.split(';')
-                cvterm_entry_list.append((cvterm_name.strip(), cvterm_curie.strip()))
+                try:
+                    cvterm_name, cvterm_curie = curated_entry.split(';')
+                    cvterm_entry_list.append((cvterm_name.strip(), cvterm_curie.strip()))
+                except ValueError:
+                    message = f'Curated entry {curated_entry} did not meet expected format of CV term name ; CV term ID'
+                    self.critical_error(self.process_data[key]['data'], message)
         else:
-            cvterm_name, cvterm_curie = cvterm_to_use.split(';')
-            cvterm_entry_list.append((cvterm_name.strip(), cvterm_curie.strip()))
-        for cvterm_entry in cvterm_entry_list:
-            # BILLY BOB - must allow for two diff CVs here.
-            cvterm = get_cvterm(self.session, self.process_data[key]['cv'], cvterm_name)
-
-
-
-            if not cvterm:
-                message = 'Cvterm lookup failed for cv {} cvterm {}?'.format(self.process_data[key]['cv'],
-                                                                             cvterm_name)
+            try:
+                cvterm_name, cvterm_curie = cvterm_directions.split(';')
+                cvterm_entry_list.append((cvterm_name.strip(), cvterm_curie.strip()))
+            except ValueError:
+                message = f'YML specified entry {cvterm_directions} did not meet expected format of CV term name ; CV term ID'
                 self.critical_error(self.process_data[key]['data'], message)
-                return
+        for cvterm_entry in cvterm_entry_list:
+            cvterm_name = cvterm_entry[CVTERM_NAME]
+            curated_cvterm_curie = cvterm_entry[CVTERM_CURIE]
+            # Check that the CV term ID (curie) is of the expected format.
+            if not re.search(cvterm_curie_regex, curated_cvterm_curie):
+                message = f'CV term curie {curated_cvterm_curie} does not match expected format of DB:ACCESSION'
+                self.critical_error(self.process_data[key]['data'], message)
+                continue
+            cvterm_db = re.search(cvterm_curie_regex, curated_cvterm_curie).group(1)
+            # Check that the CV term ID (curie) is for an allowed ID/curie set.
+            try:
+                cvterm_cv = db_cv_lookup[cvterm_db]
+            except KeyError:
+                message = f'CV term curie {curated_cvterm_curie} given is not from the allowed list: {db_cv_lookup.keys()}'
+                self.critical_error(self.process_data[key]['data'], message)
+                continue
+            cvterm = get_cvterm(self.session, cvterm_cv, cvterm_name)
+            # Check that a CV term was found in chado.
+            if not cvterm:
+                message = f'CV term lookup failed for cv {cvterm_cv}, cvterm {cvterm_name}.'
+                self.critical_error(self.process_data[key]['data'], message)
+                continue
+            # Check that the CV term curie/ID in chado matches the ID/curie that was curated.
+            chado_cvterm_curie = f'{cvterm.dbxref.db.name}:{cvterm.dbxref.accession}'
+            if chado_cvterm_curie != curated_cvterm_curie:
+                message = f'For {cvterm_name}, the curated ID {curated_cvterm_curie} does not match the chado ID {chado_cvterm_curie}.'
+                self.critical_error(self.process_data[key]['data'], message)
+                continue
+            # Create the feature_cvterm entry.
             feat_cvterm, _ = get_or_create(self.session, FeatureCvterm,
                                            feature_id=self.feature.feature_id,
                                            cvterm_id=cvterm.cvterm_id,
                                            pub_id=self.pub.pub_id)
-            if 'prop_cvterm' in self.process_data[key]:
-                prop_cvterm = get_cvterm(self.session, self.process_data[key]['prop_cv'],
-                                         self.process_data[key]['prop_cvterm'])
-                if not prop_cvterm:
-                    message = 'Cvterm lookup failed for cv {} cvterm {}?'.format(self.process_data[key]['prop_cv'],
-                                                                                 self.process_data[key]['prop_cvterm'])
-                    self.critical_error(self.process_data[key]['data'], message)
-                    return
-                get_or_create(self.session, FeatureCvtermprop, feature_cvterm_id=feat_cvterm.feature_cvterm_id,
-                              type_id=prop_cvterm.cvterm_id)
+            prop_cvterm = get_cvterm(self.session, self.process_data[key]['prop_cv'], self.process_data[key]['prop_cvterm'])
+            if not prop_cvterm:
+                message = f"CV term lookup failed for cv {self.process_data[key]['prop_cv']}, "
+                message += f"cvterm {self.process_data[key]['prop_cvterm']}."
+                self.critical_error(self.process_data[key]['data'], message)
+                continue
+            get_or_create(self.session, FeatureCvtermprop, feature_cvterm_id=feat_cvterm.feature_cvterm_id,
+                          type_id=prop_cvterm.cvterm_id)
+        return
 
     def delete_cvterm(self, key: str, bangc: str) -> None:
         cvterm_name = self.process_data[key]['cvterm']
