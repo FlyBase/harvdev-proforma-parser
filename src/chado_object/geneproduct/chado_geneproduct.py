@@ -316,7 +316,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
             try:
                 cvterm_cv = db_cv_lookup[cvterm_db]
             except KeyError:
-                message = f'CV term curie "{curated_cvterm_curie}" given is not from the allowed list: {db_cv_lookup.keys()}'
+                message = f'CV term curie "{curated_cvterm_curie}" given is not from the allowed list: {list(db_cv_lookup.keys())}'
                 self.critical_error(curated_entry, message)
                 continue
             cvterm = get_cvterm(self.session, cvterm_cv, cvterm_name)
