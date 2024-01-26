@@ -19,7 +19,7 @@ F3:  # process on creation of feature
 F2:
   type: cvterm
   cv: SO
-  cvterm: 'synthetic_sequence ; SO:0000351'
+  cvterm: 'synthetic_sequence SO:0000351'
 # ! F1b. Action - rename this gene product (symbol) :
 F1b:
   type: rename
@@ -82,9 +82,8 @@ F15:
   value: F15
 # ! F10. Used as bodypart marker for (term ; ID) [CV] :
 F10:
-  type: cvterm
+  type: marker_cvterms
   cv: ['FlyBase anatomy CV', 'cellular_component']
-  cvterm: in_field
   prop_cvterm: bodypart_expression_marker
   prop_cv: property type
 # ! F11. Expression pattern ascribed to (gene symbol) :
