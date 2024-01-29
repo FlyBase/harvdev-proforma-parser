@@ -24,6 +24,7 @@ F2:
   if_new_required: F1f   #NOTE:  Only required if F1f is new and expression is from a transgene.
   type: string
   allowed: ['synthetic_sequence SO:0000351']
+  no_bangc: True
 
 # ! F1b. Action - rename this gene product (symbol) :
 F1b:
