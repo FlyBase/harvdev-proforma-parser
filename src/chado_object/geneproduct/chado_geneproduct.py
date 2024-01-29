@@ -620,6 +620,12 @@ class ChadoGeneProduct(ChadoFeatureObject):
             not_obsolete = False
             f1a_name = self.process_data['F1a']['data'][FIELD_VALUE]
             f1a_name_plain_text = sgml_to_plain_text(f1a_name)
+            try:
+                f1b_name = self.process_data['F1b']['data'][FIELD_VALUE]
+                f1b_name_plain_text = sgml_to_plain_text(f1b_name)
+            except KeyError:
+                f1b_name = None
+                f1b_name_plain_text = None
             gp = self.session.query(Feature).\
                 filter(Feature.uniquename == self.process_data['F1f']['data'][FIELD_VALUE],
                        Feature.is_obsolete == not_obsolete).\
@@ -628,9 +634,16 @@ class ChadoGeneProduct(ChadoFeatureObject):
                 self.critical_error(self.process_data['F1f']['data'],
                                     'Feature does not exist in the database or is obsolete.')
                 return
-            elif gp.name != f1a_name_plain_text:
+            # If not renaming, compare feature.name to F1a entry.
+            elif f1b_name_plain_text is None and gp.name != f1a_name_plain_text:
                 message = f'Symbol-ID mismatch: the ID given in F1f ({gp.uniquename}) exists'
                 message += f' as {gp.name} in Chado, but the name given in F1a is {f1a_name}.'
+                self.critical_error(self.process_data['F1f']['data'], message)
+                return
+            # If renaming, compare feature.name to F1b entry.
+            elif f1b_name_plain_text is not None and gp.name != f1b_name_plain_text:
+                message = f'Symbol-ID mismatch: the ID given in F1f ({gp.uniquename}) exists'
+                message += f' as {gp.name} in Chado, but the name given in F1b is {f1b_name}.'
                 self.critical_error(self.process_data['F1f']['data'], message)
                 return
         get_or_create(self.session, FeaturePub, pub_id=self.pub.pub_id, feature_id=gp.feature_id)
