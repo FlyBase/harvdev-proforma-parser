@@ -71,7 +71,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
                           'size': self.todo}
 
         self.delete_dict = {'ignore': self.delete_ignore,
-                            'cvterm': self.delete_cvterm,
+                            'marker_cvterms': self.delete_marker_cvterms,
                             'prop': self.delete_featureprop,
                             'gene': self.delete_ignore,
                             'expression': self.delete_ignore}
@@ -341,27 +341,22 @@ class ChadoGeneProduct(ChadoFeatureObject):
                           type_id=prop_cvterm.cvterm_id)
         return
 
-    def delete_cvterm(self, key: str, bangc: str) -> None:
-        cvterm_name = self.process_data[key]['cvterm']
-        cv_name = self.process_data[key]['cv']
-        if cvterm_name == 'in_field':
-            # need to delete all with that cv
-            fcvs = self.session.query(FeatureCvterm).join(Cvterm).join(Cv).\
-                filter(FeatureCvterm.feature_id == self.feature.feature_id,
-                       Cv.name == cv_name,
-                       FeatureCvterm.pub_id == self.pub.pub_id).all()
-            for fcv in fcvs:
-                self.session.delete(fcv)
-            return
-        # Delete those with cv and cvterm stated.
-        cvterm = get_cvterm(self.session, cv_name, cvterm_name)
-
-        fcvs = self.session.query(FeatureCvterm).join(Cvterm). \
-            filter(FeatureCvterm.feature_id == self.feature.feature_id,
-                   FeatureCvterm.cvterm_id == cvterm.cvterm_id,
-                   FeatureCvterm.pub_id == self.pub.pub_id).all()
+    def delete_marker_cvterms(self, key: str, bangc: str) -> None:
+        """Delete marker CV terms for a given pub."""
+        filters = (
+            Cvterm.name == 'bodypart_expression_marker',
+            Pub.pub_id == self.pub.pub_id,
+        )
+        fcvs = self.session.query(FeatureCvterm).\
+            select_from(FeatureCvterm).\
+            join(Pub, (Pub.pub_id == FeatureCvterm.pub_id)).\
+            join(FeatureCvtermprop, (FeatureCvtermprop.feature_cvterm_id == FeatureCvterm.feature_cvterm_id)).\
+            join(Cvterm, (Cvterm.cvterm_id == FeatureCvtermprop.type_id)).\
+            filter(*filters).\
+            all()
         for fcv in fcvs:
             self.session.delete(fcv)
+        return
 
     def check_for_existing_geneproduct(self, status: dict) -> None:
         """For a new gene product, confirm there is not already a feature by that name."""
