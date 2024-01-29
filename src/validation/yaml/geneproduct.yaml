@@ -70,6 +70,7 @@ F15:
 # ! F10. Used as bodypart marker for (term ; ID) [CV] :
 F10:
   type: [string, list]
+  nullable: True
 
 # ! F11. Expression pattern ascribed to (gene symbol) :
 F11:
