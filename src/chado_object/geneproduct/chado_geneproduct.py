@@ -354,6 +354,12 @@ class ChadoGeneProduct(ChadoFeatureObject):
             join(Cvterm, (Cvterm.cvterm_id == FeatureCvtermprop.type_id)).\
             filter(*filters).\
             all()
+        if not fcvs:
+            gp_name = self.process_data['F1a']['data'][FIELD_VALUE]
+            gp_id = self.process_data['F1f']['data'][FIELD_VALUE]
+            message = f'No bodypart expression markers curated for {gp_name} ({gp_id}) in {self.pub.uniquename}.'
+            self.critical_error(self.process_data[key]['data'], message)
+            return
         for fcv in fcvs:
             self.session.delete(fcv)
         return
