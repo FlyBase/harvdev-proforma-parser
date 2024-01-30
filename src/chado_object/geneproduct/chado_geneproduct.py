@@ -100,7 +100,9 @@ class ChadoGeneProduct(ChadoFeatureObject):
         self.log = log
 
     def todo(self, key):
-        print(f"{key}: not programmed yet")
+        message = f"{key}: not programmed yet"
+        print(message)
+        self.critical_error(self.process_data[key]['data'], message)
         pass
 
     def rename(self, key):
