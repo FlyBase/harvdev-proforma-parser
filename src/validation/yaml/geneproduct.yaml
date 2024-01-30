@@ -58,15 +58,16 @@ F6:
 # ! F5. Molecule size(s) (wb, nb, sa) :
 F5:
   type: [string, list]
-  allowed: ['?']
 
 # ! F9. Expression pattern (<e>  <t>  <a>  <s>  <note>) :
 F9:
   type: [string, list]
   nullable: True
+
 # ! F15. General expression comment [free text] :
 F15:
   type: string
+  nullable: True
 
 # ! F10. Used as bodypart marker for (term ; ID) [CV] :
 F10:
@@ -112,10 +113,12 @@ F17:
 # ! F13. Comment [free text] :
 F13:
   type: string
+  nullable: True
 
 # ! F14. Internal note [free text] :
 F14:
   type: string
+  nullable: True
 
 # ! F91. From dataset/collection (symbol) :
 F91:
