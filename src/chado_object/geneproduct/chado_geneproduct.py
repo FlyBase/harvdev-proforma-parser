@@ -410,7 +410,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
                     features_to_merge.append(datum[FIELD_VALUE])
                 else:
                     message = f'{datum[FIELD_VALUE]} is not an FB ID.'
-                    self.critical_error(self.process_data['F1c']['data'], message)
+                    self.critical_error(datum, message)
                     status['error'] = True
         try:
             existing_feature = self.session.query(Feature).filter(*filters).one_or_none()
