@@ -533,7 +533,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
             self.critical_error(self.process_data['F3']['data'], message)
             status["error"] = True
 
-    def get_feats(self, status: dict) -> None:
+    def get_parental_feats(self, status: dict) -> None:
         r"""
         Lookup the features from the base name/s and store the feature_id's in the array
         status['features'].
@@ -565,7 +565,8 @@ class ChadoGeneProduct(ChadoFeatureObject):
                 return
 
         for feat in feats:
-            feature = feature_name_lookup(self.session, name=feat, obsolete='f')
+            ascii_name = sgml_to_plain_text(feat)
+            feature = feature_name_lookup(self.session, name=ascii_name, obsolete='f')
             if feature:
                 log.debug(f"Feature lookup found: {feat}")
                 status['features'].append(feature.feature_id)
@@ -590,7 +591,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
         self.check_format(status)
         self.check_type(status)
         self.check_type_name(status)
-        self.get_feats(status)
+        self.get_parental_feats(status)
 
         return status
 
