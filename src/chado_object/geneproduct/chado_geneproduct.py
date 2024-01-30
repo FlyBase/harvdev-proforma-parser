@@ -11,6 +11,7 @@ import logging
 from datetime import datetime
 from typing import Union
 
+
 from chado_object.geneproduct.abbreviation import assays, stages
 from chado_object.chado_base import FIELD_VALUE
 from chado_object.feature.chado_feature import ChadoFeatureObject
@@ -27,7 +28,10 @@ from harvdev_utils.chado_functions import (
     feature_name_lookup, feature_symbol_lookup
 )
 from harvdev_utils.chado_functions.organism import get_organism
-from harvdev_utils.char_conversions import sgml_to_plain_text
+from harvdev_utils.char_conversions import (
+    sgml_to_plain_text, sgml_to_unicode, sub_sup_to_sgml
+)
+from sqlalchemy.orm.exc import MultipleResultsFound
 # from error.error_tracking import CRITICAL_ERROR
 
 
@@ -99,25 +103,41 @@ class ChadoGeneProduct(ChadoFeatureObject):
         pass
 
     def rename(self, key):
-        # set current synonym is_current to False
-        cvterm = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data[key]['cvterm'])
-        fss = self.session.query(FeatureSynonym).join(Synonym).\
-            filter(FeatureSynonym.feature_id == self.feature.feature_id,
-                   FeatureSynonym.is_current == 't',
-                   Synonym.type_id == cvterm.cvterm_id).all()
+        """Rename the geneproduct."""
+        # Determine the ASCII and Unicode versions of the symbol to use for the rename.
+        ascii_name = sgml_to_plain_text(self.process_data['F1a']['data'][FIELD_VALUE])
+        unicode_name = sgml_to_unicode(sub_sup_to_sgml(self.process_data['F1a']['data'][FIELD_VALUE]))
+        # Check that the new symbol specified is available for use.
+        status = self.check_for_existing_geneproduct({'name': ascii_name})
+        if status['error'] is True:
+            return
+        # Set all current feature_synonym entries to be non-current.
+        symbol_cvterm = get_cvterm(self.session, self.process_data[key]['cv'], self.process_data[key]['cvterm'])
+        filters = (
+            FeatureSynonym.feature_id == self.feature.feature_id,
+            FeatureSynonym.is_current.is_(True),
+            Synonym.type_id == symbol_cvterm.cvterm_id
+        )
+        fss = self.session.query(FeatureSynonym).\
+            join(Synonym).\
+            filter(*filters).all()
         for fs in fss:
             fs.is_current = False
-
-        # BILLY BOB- need a step that updates feature.name as well?
-        synonym, _ = get_or_create(self.session, Synonym,
-                                   name=self.process_data['F1a']['data'][FIELD_VALUE],
-                                   synonym_sgml=self.process_data['F1a']['data'][FIELD_VALUE],
-                                   type_id=cvterm.cvterm_id)
-        # BILLY BOB- if renaming to a previously associated synonym, then need to change is_current from False to True?
-        get_or_create(self.session, FeatureSynonym,
-                      feature_id=self.feature.feature_id,
-                      synonym_id=synonym.synonym_id,
-                      pub_id=self.pub.pub_id)
+        # Update the Feature itself.
+        self.feature.name = ascii_name
+        # Get/create the new symbol synonym.
+        synonym, _ = get_or_create(self.session, Synonym, type_id=symbol_cvterm.cvterm_id,
+                                   name=ascii_name, synonym_sgml=unicode_name)
+        # Update the feature_synonym table.
+        pub_ids = [self.pub.pub_id]
+        pub_ids.append(self.get_unattrib_pub().pub_id)
+        for pub_id in pub_ids:
+            feat_syno, created = get_or_create(self.session, FeatureSynonym, feature_id=self.feature.feature_id,
+                synonym_id=synonym.synonym_id, pub_id=pub_id)
+        # Catch cases where the geneproduct is renamed to a previously existing symbol.
+        if created is False:
+            feat_syno.is_current = True
+        return
 
     def load_feat_relationship(self, key):
         # lookup symbol
@@ -365,7 +385,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
         return
 
     def check_for_existing_geneproduct(self, status: dict) -> None:
-        """For a new gene product, confirm there is not already a feature by that name."""
+        """For a new or renamed gene product, confirm there is not already a feature by that name."""
         gp_rgx = r'^FB[a-z][a-z][0-9]+$'
         fbog_rgx = r'^FBog[0-9]+$'
         feature_name = sgml_to_plain_text(status['name'])
@@ -375,11 +395,21 @@ class ChadoGeneProduct(ChadoFeatureObject):
             Feature.uniquename.op('!~')(fbog_rgx),
             Feature.name == feature_name,
         )
-        existing_feature = self.session.query(Feature).filter(*filters).one_or_none()
-        if existing_feature:
-            message = f"Name {status['name']} has been used in the database; "
-            message += f"F1f claims that {status['name']} is new, but Chado knows it as {existing_feature.uniquename}"
-            self.critical_error(self.process_data['F1f']['data'], message)
+        try:
+            existing_feature = self.session.query(Feature).filter(*filters).one_or_none()
+            if existing_feature:
+                message = f"Name {status['name']} has been used in the database; "
+                # For new geneproducts.
+                if self.new is True:
+                    message += f"F1f claims that {status['name']} is new, but Chado knows it as {existing_feature.uniquename}"
+                # For renamed geneproducts.
+                else:
+                    message += f"Rename to an existing chado feature symbol ({status['name']}, {existing_feature.uniquename}) is not allowed."
+                self.critical_error(self.process_data['F1a']['data'], message)
+                status['error'] = True
+        except MultipleResultsFound:
+            message = f"Name {status['name']} has been used in the database multiple times."
+            self.critical_error(self.process_data['F1a']['data'], message)
             status['error'] = True
 
     def check_format(self, status: dict) -> None:
