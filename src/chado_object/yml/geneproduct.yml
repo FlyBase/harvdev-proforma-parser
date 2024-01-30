@@ -91,7 +91,6 @@ F15:
   cvterm: bodypart_expression_text
   cv: property type
   value: F15
-  wrapping_values: True
 
 # ! F10. Used as bodypart marker for (term ; ID) [CV] :
 F10:
@@ -144,7 +143,6 @@ F13:
   cvterm: comment
   cv: property type
   value: F13
-  wrapping_values: True
 
 # ! F14. Internal note [free text] :
 F14:
@@ -152,7 +150,6 @@ F14:
   cvterm: internalnotes
   cv: property type
   value: F14
-  wrapping_values: True
 
 # ! F91. From dataset/collection (symbol) :
 F91:
