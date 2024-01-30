@@ -76,6 +76,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
 
         self.delete_dict = {'ignore': self.delete_ignore,
                             'marker_cvterms': self.delete_marker_cvterms,
+                            'synonym': self.delete_synonym,
                             'prop': self.delete_featureprop,
                             'gene': self.delete_ignore,
                             'expression': self.delete_ignore}
