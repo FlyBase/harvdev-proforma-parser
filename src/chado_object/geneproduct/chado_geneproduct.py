@@ -400,7 +400,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
             Feature.uniquename.op('!~')(fbog_rgx),
             Feature.name == feature_name,
         )
-        if 'data' in self.process_data['F1f'] and self.process_data['F1f']['data']:
+        if 'data' in self.process_data['F1c'] and self.process_data['F1c']['data']:
             merge = True
         else:
             merge = False
