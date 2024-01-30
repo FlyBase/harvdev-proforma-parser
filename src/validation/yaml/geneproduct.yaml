@@ -28,7 +28,8 @@ F2:
 
 # ! F1b. Action - rename this gene product (symbol) :
 F1b:
-   type: string
+  type: string
+  no_bangc: True
 
 #! F1c. Action - merge these products(s) (symbols or FB#s) :
 F1c:
