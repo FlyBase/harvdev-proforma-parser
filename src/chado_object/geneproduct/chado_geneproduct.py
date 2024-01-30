@@ -400,22 +400,36 @@ class ChadoGeneProduct(ChadoFeatureObject):
             Feature.uniquename.op('!~')(fbog_rgx),
             Feature.name == feature_name,
         )
+        # Determine if a merge is involved, and the features being merged, as this affects the check.
+        merge = False
+        features_to_merge = []
         if 'data' in self.process_data['F1c'] and self.process_data['F1c']['data']:
             merge = True
-        else:
-            merge = False
+            for datum in self.process_data['F1c']['data']:
+                features_to_merge.append(datum[FIELD_VALUE])
         try:
             existing_feature = self.session.query(Feature).filter(*filters).one_or_none()
             if existing_feature:
-                message = f"Name {status['name']} has been used in the database; "
-                # For new geneproducts (excepting merges, which can re-use a name).
-                if self.new is True and merge is False:
-                    message += f"F1f claims that {status['name']} is new, but Chado knows it as {existing_feature.uniquename}"
+                message = f"Name {status['name']} has been used in the database for {existing_feature.uniquename}; "
+                # For merges, where a new feature is given the name of a feature involved in the merge.
+                if self.new is True and merge is True and existing_feature.uniquename in features_to_merge:
+                    message += "existing feature is involved in the merge."
+                    self.warning_error(self.process_data['F1a']['data'], message)
+                # For merges, where a new feature is given the name of a feature not involved in the merge.
+                elif self.new is True and merge is True and existing_feature.uniquename not in features_to_merge:
+                    message += "existing feature is NOT involved in the merge."
+                    self.critical_error(self.process_data['F1a']['data'], message)
+                    status['error'] = True
+                # For new geneproducts (not merges).
+                elif self.new is True and merge is False:
+                    message += "Cannot re-use a symbol of an existing feature for a new feature."
+                    self.critical_error(self.process_data['F1a']['data'], message)
+                    status['error'] = True
                 # For renamed geneproducts.
-                else:
-                    message += f"Rename to an existing chado feature symbol ({status['name']}, {existing_feature.uniquename}) is not allowed."
-                self.critical_error(self.process_data['F1a']['data'], message)
-                status['error'] = True
+                elif self.new is False and 'data' in self.process_data['F1b'] and self.process_data['F1b']['data']:
+                    message += "Cannot rename to the symbol of an existing feature."
+                    self.critical_error(self.process_data['F1a']['data'], message)
+                    status['error'] = True
         except MultipleResultsFound:
             message = f"Name {status['name']} has been used in the database multiple times."
             self.critical_error(self.process_data['F1a']['data'], message)
