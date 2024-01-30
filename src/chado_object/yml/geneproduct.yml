@@ -36,7 +36,7 @@ F1d:
 # ! F1e. Action - dissociate F1f from FBrf (“y”/blank) :
 F1e:
   type: disspub
-  obsolete_feature_on_last_ref: True
+  obsolete_feature_on_last_ref: False
 # ! F4. Names(s) used in paper [free text] :
 F4:
   type: synonym
