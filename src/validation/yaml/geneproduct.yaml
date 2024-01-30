@@ -68,6 +68,7 @@ F9:
 F15:
   type: string
   nullable: True
+  wrapping_values: True
 
 # ! F10. Used as bodypart marker for (term ; ID) [CV] :
 F10:
@@ -114,11 +115,13 @@ F17:
 F13:
   type: string
   nullable: True
+  wrapping_values: True
 
 # ! F14. Internal note [free text] :
 F14:
   type: string
   nullable: True
+  wrapping_values: True
 
 # ! F91. From dataset/collection (symbol) :
 F91:
