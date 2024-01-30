@@ -401,12 +401,12 @@ class ChadoGeneProduct(ChadoFeatureObject):
             Feature.name == feature_name,
         )
         # Determine if a merge is involved, and the features being merged, as this affects the check.
-        merge = False
+        merge = self.has_data('F1c')
         features_to_merge = []
-        if 'data' in self.process_data['F1c'] and self.process_data['F1c']['data']:
-            merge = True
+        if merge is True:
             for datum in self.process_data['F1c']['data']:
                 features_to_merge.append(datum[FIELD_VALUE])
+                print(f'BILLY BOB: Merging these features: {features_to_merge}')
         try:
             existing_feature = self.session.query(Feature).filter(*filters).one_or_none()
             if existing_feature:
