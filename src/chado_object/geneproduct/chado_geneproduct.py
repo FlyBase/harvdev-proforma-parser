@@ -400,12 +400,16 @@ class ChadoGeneProduct(ChadoFeatureObject):
             Feature.uniquename.op('!~')(fbog_rgx),
             Feature.name == feature_name,
         )
+        if 'data' in self.process_data['F1f'] and self.process_data['F1f']['data']:
+            merge = True
+        else:
+            merge = False
         try:
             existing_feature = self.session.query(Feature).filter(*filters).one_or_none()
             if existing_feature:
                 message = f"Name {status['name']} has been used in the database; "
-                # For new geneproducts.
-                if self.new is True:
+                # For new geneproducts (excepting merges, which can re-use a name).
+                if self.new is True and merge is False:
                     message += f"F1f claims that {status['name']} is new, but Chado knows it as {existing_feature.uniquename}"
                 # For renamed geneproducts.
                 else:
