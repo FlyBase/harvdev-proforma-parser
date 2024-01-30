@@ -403,10 +403,15 @@ class ChadoGeneProduct(ChadoFeatureObject):
         # Determine if a merge is involved, and the features being merged, as this affects the check.
         merge = self.has_data('F1c')
         features_to_merge = []
+        gene_product_regex = r'^FB(tr|pp|co)[0-9]{7}$'
         if merge is True:
             for datum in self.process_data['F1c']['data']:
-                features_to_merge.append(datum[FIELD_VALUE])
-                print(f'BILLY BOB: Merging these features: {features_to_merge}')
+                if re.match(gene_product_regex, datum[FIELD_VALUE]):
+                    features_to_merge.append(datum[FIELD_VALUE])
+                else:
+                    message = f'{datum[FIELD_VALUE]} is not an FB ID.'
+                    self.critical_error(self.process_data['F1c']['data'], message)
+                    status['error'] = True
         try:
             existing_feature = self.session.query(Feature).filter(*filters).one_or_none()
             if existing_feature:
