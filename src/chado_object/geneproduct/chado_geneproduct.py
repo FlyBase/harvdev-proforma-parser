@@ -108,7 +108,11 @@ class ChadoGeneProduct(ChadoFeatureObject):
         ascii_name = sgml_to_plain_text(self.process_data['F1a']['data'][FIELD_VALUE])
         unicode_name = sgml_to_unicode(sub_sup_to_sgml(self.process_data['F1a']['data'][FIELD_VALUE]))
         # Check that the new symbol specified is available for use.
-        status = self.check_for_existing_geneproduct({'name': ascii_name})
+        status = {
+            'name': ascii_name,
+            'error': False,
+        }
+        self.check_for_existing_geneproduct(status)
         if status['error'] is True:
             return
         # Set all current feature_synonym entries to be non-current.
