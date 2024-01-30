@@ -102,7 +102,7 @@ class ChadoGeneProduct(ChadoFeatureObject):
     def todo(self, key):
         message = f"{key}: not programmed yet"
         print(message)
-        if self.process_data[key]['data'] is list:
+        if type(self.process_data[key]['data']) is list:
             self.critical_error(self.process_data[key]['data'][0], message)
         else:
             self.critical_error(self.process_data[key]['data'], message)
