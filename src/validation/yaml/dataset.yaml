@@ -1,0 +1,244 @@
+LC1f:
+  type: string
+  required: False
+  nullable: True
+LC1a:
+  type: string
+  required: False
+  nullable: True
+LC1b:
+  type: string
+  required: False
+  nullable: True
+LC1d:
+  type: string
+  required: False
+  nullable: True
+LC6g:
+  type: string
+  required: False
+  nullable: True
+LC6a:
+  type: string
+  required: False
+  nullable: True
+LC2a:
+  type: string
+  required: False
+  nullable: True
+LC2b:
+  type: string
+  required: False
+  nullable: True
+LC3:
+  type: string
+  required: False
+  nullable: True
+LC14a:
+  type: string
+  required: False
+  nullable: True
+LC14b:
+  type: string
+  required: False
+  nullable: True
+LC14c:
+  type: string
+  required: False
+  nullable: True
+LC14d:
+  type: string
+  required: False
+  nullable: True
+LC14e:
+  type: string
+  required: False
+  nullable: True
+LC14f:
+  type: string
+  required: False
+  nullable: True
+LC14g:
+  type: string
+  required: False
+  nullable: True
+LC14h:
+  type: string
+  required: False
+  nullable: True
+LC3a:
+  type: string
+  required: False
+  nullable: True
+LC3b:
+  type: string
+  required: False
+  nullable: True
+LC3c:
+  type: string
+  required: False
+  nullable: True
+LC3d:
+  type: string
+  required: False
+  nullable: True
+LC3e:
+  type: string
+  required: False
+  nullable: True
+LC13a:
+  type: string
+  required: False
+  nullable: True
+LC13b:
+  type: string
+  required: False
+  nullable: True
+LC13c:
+  type: string
+  required: False
+  nullable: True
+LC13d:
+  type: string
+  required: False
+  nullable: True
+LC4a:
+  type: string
+  required: False
+  nullable: True
+LC4i:
+  type: string
+  required: False
+  nullable: True
+LC4h:
+  type: string
+  required: False
+  nullable: True
+LC4b:
+  type: string
+  required: False
+  nullable: True
+LC4f:
+  type: string
+  required: False
+  nullable: True
+LC4g:
+  type: string
+  required: False
+  nullable: True
+LC4j:
+  type: string
+  required: False
+  nullable: True
+LC4k:
+  type: string
+  required: False
+  nullable: True
+LC4e:
+  type: string
+  required: False
+  nullable: True
+LC12a:
+  type: string
+  required: False
+  nullable: True
+LC12b:
+  type: string
+  required: False
+  nullable: True
+LC12c:
+  type: string
+  required: False
+  nullable: True
+LC6d:
+  type: string
+  required: False
+  nullable: True
+LC6e:
+  type: string
+  required: False
+  nullable: True
+LC6f:
+  type: string
+  required: False
+  nullable: True
+LC11m:
+  type: string
+  required: False
+  nullable: True
+LC11j:
+  type: string
+  required: False
+  nullable: True
+LC11a:
+  type: string
+  required: False
+  nullable: True
+LC6b:
+  type: string
+  required: False
+  nullable: True
+LC11c:
+  type: string
+  required: False
+  nullable: True
+LC11e:
+  type: string
+  required: False
+  nullable: True
+LC7a:
+  type: string
+  required: False
+  nullable: True
+LC7f:
+  type: string
+  required: False
+  nullable: True
+LC7c:
+  type: string
+  required: False
+  nullable: True
+LC99a:
+  type: string
+  required: False
+  nullable: True
+LC99b:
+  type: string
+  required: False
+  nullable: True
+LC99c:
+  type: string
+  required: False
+  nullable: True
+LC99d:
+  type: string
+  required: False
+  nullable: True
+LC8a:
+  type: string
+  required: False
+  nullable: True
+LC8c:
+  type: string
+  required: False
+  nullable: True
+LC8b:
+  type: string
+  required: False
+  nullable: True
+LC8d:
+  type: string
+  required: False
+  nullable: True
+LC9:
+  type: string
+  required: False
+  nullable: True
+LC9a:
+  type: string
+  required: False
+  nullable: True
+LC10:
+  type: string
+  required: False
+  nullable: True

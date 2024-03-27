@@ -208,6 +208,8 @@ def validation_file_schema_lookup(proforma_type, fields_values):
     except KeyError:
         log.critical('Proforma type not recognized for validation.')
         log.critical('Type: {}'.format(proforma_type))
+        if fields.group(1):
+            log.critical(f'Failed to lookup {proforma_type_name}')
         log.critical('Please contact Harvdev with this error.')
         log.critical('Exiting.')
         sys.exit(-1)

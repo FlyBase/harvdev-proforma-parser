@@ -24,6 +24,7 @@ from chado_object.chado_molecular import ChadoMolecular
 from chado_object.chado_geneproduct import ChadoGeneproduct
 from chado_object.chado_interaction import ChadoInteraction
 from chado_object.exptool.chado_exptool import ChadoExpTool
+from chado_object.chado_dataset import ChadoDataset
 
 import logging
 import sys
@@ -107,6 +108,7 @@ def process_data_input(proforma_object):
         'MULTIPUBLICATION': (ChadoMultipub),
         'SPECIES': (ChadoSpecies),
         'DATABASE': (ChadoDb),
+        'DATASET': (ChadoDataset),
         'SEQUENCE': (ChadoSeqFeat),
         'CULTURED': (ChadoCellLine),
         'TRANSPOSON': (ChadoTransposon),
