@@ -7,6 +7,7 @@
 import sys
 import logging
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy import event
 import traceback
 
@@ -64,6 +65,9 @@ def process_entry(entry, session, filename, references):
         ErrorTracking(filename, None, None, 'Unexpected internal parser error. Please contact Harvdev. \n{} '
                                             'Last query below:'.format(traceback.format_exc()), last_query, None, CRITICAL_ERROR)
         error_occurred = True
+    except ProgrammingError:
+        ErrorTracking(filename, None, None, 'Database is down, or there is an external problem, please try again later. Noitify Harvdev if it persists". \n{} '
+                                            'Last query below:'.format(traceback.format_exc()), last_query, None, CRITICAL_ERROR)
     return chado_object, error_occurred
 
 

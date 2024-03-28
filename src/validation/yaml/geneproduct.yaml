@@ -1,130 +1,133 @@
 # ! F1f. Database id (default ‘new’) :
 F1f:
-  required: False
-  nullable: True
+  required: True
+  nullable: False
   type: string
+  no_bangc: True
+
+
 # ! F1a. Gene product symbol :
 F1a:
-  required: False
-  nullable: True
+  required: True
+  nullable: False
   type: string
+  no_bangc: True
+
 # ! F3. Gene product type [CV] :
 F3:
-  required: False
-  nullable: True
-  type: string
+  if_new_required: F1f
+  regex: ^([a-zA-Z0-9_ ]*[cS][vO][:]\d+)$
+  no_bangc: True
+
 # ! F2. Sequence attribute [CV] :
 F2:
-  required: False
-  nullable: True
+  if_new_required: F1f   #NOTE:  Only required if F1f is new and expression is from a transgene.
   type: string
+  allowed: ['synthetic_sequence SO:0000351']
+  no_bangc: True
+
 # ! F1b. Action - rename this gene product (symbol) :
 F1b:
-  required: False
-  nullable: True
   type: string
-# ! F1c. Action - merge these products(s) (symbols or FB#s) :
+  no_bangc: True
+
+#! F1c. Action - merge these products(s) (symbols or FB#s) :
 F1c:
-  required: False
-  nullable: True
-  type: [list, string]
+    type: [string, list]
+    regex: ^(FBtr\d+|FBpp\d+)$
+
 # ! F1d. Action - delete gene product record (“y”/blank) :
 F1d:
-  required: False
-  nullable: True
   type: string
+  allowed: ['y']
+
 # ! F1e. Action - dissociate F1f from FBrf (“y”/blank) :
 F1e:
-  required: False
-  nullable: True
   type: string
+  allowed: ['y']
+
 # ! F4. Names(s) used in paper [free text] :
 F4:
-  required: False
-  nullable: True
-  type: [list, string]
+  type: [string, list]
+
 # ! F6. FlyExpress image number(s) (FBim) :
 F6:
-  required: False
-  nullable: True
-  type: string
+  type: [string, list]
+  regex: ^(FBim\d+)$
+
 # ! F5. Molecule size(s) (wb, nb, sa) :
 F5:
-  required: False
-  nullable: True
-  type: [list, string]
+  type: [string, list]
+
 # ! F9. Expression pattern (<e>  <t>  <a>  <s>  <note>) :
 F9:
-  required: False
+  type: [string, list]
   nullable: True
-  type: [list, string]
+
 # ! F15. General expression comment [free text] :
 F15:
-  required: False
-  nullable: True
   type: string
+  nullable: True
+  wrapping_values: True
+
 # ! F10. Used as bodypart marker for (term ; ID) [CV] :
 F10:
-  required: False
+  type: [string, list]
   nullable: True
-  type: [list, string]
+
 # ! F11. Expression pattern ascribed to (gene symbol) :
 F11:
-  required: False
-  nullable: True
   type: string
+
 # ! F11a. Is subset of wild-type gene expression pattern (y/n) :
 F11a:
-  required: False
-  nullable: True
   type: string
+  allowed: [y, n]
+
 # ! F11b. Is pattern aberrant relative to wild-type (y/n) :
 F11b:
-  required: False
-  nullable: True
   type: string
+  allowed: [y, n]
+
 # ! F12. Antibody reported (monoclonal, polyclonal) :
 F12:
-  required: False
-  nullable: True
-  type: [list, string]
+  type: [string, list]
+  allowed: ['monoclonal', 'polyclonal']
+
 # ! F16a. Nucleotide probe (cDNA, cDNA fragment, genomic fragment, synthetic) :
 F16a:
-  required: False
-  nullable: True
   type: string
+  allowed: [cDNA, cDNA fragment, genomic fragment, synthetic]
+
 # ! F16b. Sequence coordinates for F16a :
 F16b:
-  required: False
-  nullable: True
   type: string
+
 # ! F16c. Description of F16a [free text] :
 F16c:
-  required: False
-  nullable: True
   type: string
+
 # ! F17. Alleles or genotypes used :
 F17:
-  required: False
-  nullable: True
-  type: [list, string]
+  type: [string, list]
+
 # ! F13. Comment [free text] :
 F13:
-  required: False
-  nullable: True
   type: string
+  nullable: True
+  wrapping_values: True
+
 # ! F14. Internal note [free text] :
 F14:
-  required: False
-  nullable: True
   type: string
+  nullable: True
+  wrapping_values: True
+
 # ! F91. From dataset/collection (symbol) :
 F91:
-  required: False
-  nullable: True
   type: string
+
 # ! F91a. Type of relationship to dataset/collection [member_of_reagent_collection/experimental_result] :
 F91a:
-  required: False
-  nullable: True
   type: string
+  allowed: ['member_of_reagent_collection', 'experimental_result']

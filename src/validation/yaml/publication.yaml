@@ -169,7 +169,7 @@ P41:
   allowed: [
     wt_exp, wt_exp::DONE,
     neur_exp, neur_exp::DONE,
-    gene_model, gene_model::DONE
+    gene_model, gene_model::DONE,
     phys_int, phys_int::DONE,
     cis_reg, cis_reg::DONE,
     genom_feat, genom_feat::DONE,

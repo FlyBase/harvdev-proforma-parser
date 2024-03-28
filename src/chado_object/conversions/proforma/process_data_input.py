@@ -21,7 +21,7 @@ from chado_object.general.chado_cell_line import ChadoCellLine
 from chado_object.seqfeat.chado_seqfeat import ChadoSeqFeat
 from chado_object.chado_transposon import ChadoTransposon
 from chado_object.chado_molecular import ChadoMolecular
-from chado_object.chado_geneproduct import ChadoGeneproduct
+from chado_object.geneproduct.chado_geneproduct import ChadoGeneProduct
 from chado_object.chado_interaction import ChadoInteraction
 from chado_object.exptool.chado_exptool import ChadoExpTool
 from chado_object.chado_dataset import ChadoDataset
@@ -113,7 +113,7 @@ def process_data_input(proforma_object):
         'CULTURED': (ChadoCellLine),
         'TRANSPOSON': (ChadoTransposon),
         'MOLECULAR': (ChadoMolecular),
-        'GENEPRODUCT': (ChadoGeneproduct),
+        'GENEPRODUCT': (ChadoGeneProduct),
         'INTERACTION': (ChadoInteraction),
         'EXPERIMENTAL': (ChadoExpTool),
     }
