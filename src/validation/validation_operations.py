@@ -103,6 +103,11 @@ def get_validate_transposon_schema(fields_values):
     return "transposon.yaml"
 
 
+def get_validate_dataset_schema(fields_values):
+    log.critical("DATASET Not coded yet.")
+    return "dataset.yaml"
+
+
 def get_validate_molecular_schema(fields_values):
     log.critical("MOLECULAR Not coded yet.")
     return "molecular.yaml"
@@ -150,6 +155,7 @@ def validation_file_schema_lookup(proforma_type, fields_values):
                        "DISEASE": get_validate_div_schema,
                        "HUMAN": get_validate_humanhealth_schema,
                        "DATABASE": get_validate_db_schema,
+                       "DATASET": get_validate_dataset_schema,
                        "SPECIES": get_validate_species_schema,
                        "GENEGROUP": get_validate_grp_schema,
                        "SEQUENCE": get_validate_seqfeat_schema,
@@ -169,6 +175,7 @@ def validation_file_schema_lookup(proforma_type, fields_values):
                        "DISEASE": ValidatorBase,
                        "HUMAN": ValidatorBase,
                        "DATABASE": ValidatorBase,
+                       "DATASET": ValidatorBase,
                        "SPECIES": ValidatorBase,
                        "SEQUENCE": ValidatorBase,
                        "GENEGROUP": ValidatorBase,
@@ -201,6 +208,8 @@ def validation_file_schema_lookup(proforma_type, fields_values):
     except KeyError:
         log.critical('Proforma type not recognized for validation.')
         log.critical('Type: {}'.format(proforma_type))
+        if fields.group(1):
+            log.critical(f'Failed to lookup {proforma_type_name}')
         log.critical('Please contact Harvdev with this error.')
         log.critical('Exiting.')
         sys.exit(-1)
