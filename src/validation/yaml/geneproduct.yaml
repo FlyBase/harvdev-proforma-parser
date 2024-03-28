@@ -24,14 +24,16 @@ F2:
   if_new_required: F1f   #NOTE:  Only required if F1f is new and expression is from a transgene.
   type: string
   allowed: ['synthetic_sequence SO:0000351']
+  no_bangc: True
 
 # ! F1b. Action - rename this gene product (symbol) :
 F1b:
-   type: string
+  type: string
+  no_bangc: True
 
 #! F1c. Action - merge these products(s) (symbols or FB#s) :
 F1c:
-    type: [string]
+    type: [string, list]
     regex: ^(FBtr\d+|FBpp\d+)$
 
 # ! F1d. Action - delete gene product record (“y”/blank) :
@@ -46,29 +48,32 @@ F1e:
 
 # ! F4. Names(s) used in paper [free text] :
 F4:
-  type: [string]
+  type: [string, list]
 
 # ! F6. FlyExpress image number(s) (FBim) :
 F6:
-  type: [string]
+  type: [string, list]
   regex: ^(FBim\d+)$
 
 # ! F5. Molecule size(s) (wb, nb, sa) :
 F5:
-  type: [string]
-  allowed: ['?']
+  type: [string, list]
 
 # ! F9. Expression pattern (<e>  <t>  <a>  <s>  <note>) :
 F9:
   type: [string, list]
   nullable: True
+
 # ! F15. General expression comment [free text] :
 F15:
   type: string
+  nullable: True
+  wrapping_values: True
 
 # ! F10. Used as bodypart marker for (term ; ID) [CV] :
 F10:
-  type: [string]
+  type: [string, list]
+  nullable: True
 
 # ! F11. Expression pattern ascribed to (gene symbol) :
 F11:
@@ -86,7 +91,7 @@ F11b:
 
 # ! F12. Antibody reported (monoclonal, polyclonal) :
 F12:
-  type: [string]
+  type: [string, list]
   allowed: ['monoclonal', 'polyclonal']
 
 # ! F16a. Nucleotide probe (cDNA, cDNA fragment, genomic fragment, synthetic) :
@@ -104,15 +109,19 @@ F16c:
 
 # ! F17. Alleles or genotypes used :
 F17:
-  type: [string]
+  type: [string, list]
 
 # ! F13. Comment [free text] :
 F13:
   type: string
+  nullable: True
+  wrapping_values: True
 
 # ! F14. Internal note [free text] :
 F14:
   type: string
+  nullable: True
+  wrapping_values: True
 
 # ! F91. From dataset/collection (symbol) :
 F91:
