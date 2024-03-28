@@ -304,66 +304,74 @@ class ChadoGeneProduct(ChadoFeatureObject):
                                  cvterm_id=cvterm.cvterm_id,
                                  pub_id=self.pub.pub_id)
 
+    def check_get_cvterm(self, curated_entry: str) -> Union[None, Cvterm]:
+        db_cv_lookup = {
+            'FBbt': 'FlyBase anatomy CV',
+            'GO': 'cellular_component'
+        }
+
+        try:
+            cvterm_name, cvterm_curie = curated_entry[FIELD_VALUE].split(';')
+            cvterm_name = cvterm_name.strip()
+            curated_cvterm_curie = cvterm_curie.strip()
+        except ValueError:
+            message = f'Curated entry "{curated_entry[FIELD_VALUE]}" did not meet expected format of CV term name ; CV term ID'
+            self.critical_error(curated_entry, message)
+            return None
+
+        # Check that the CV term ID (curie) is of the expected format.
+        cvterm_curie_regex = r'^(\w+):(\d+)$'
+        if not re.search(cvterm_curie_regex, curated_cvterm_curie):
+            message = f'CV term curie "{curated_cvterm_curie}" does not match expected format of DB:ACCESSION'
+            self.critical_error(curated_entry, message)
+            return None
+
+        # Check that the CV term ID (curie) is for an allowed ID/curie set.
+        cvterm_db = re.search(cvterm_curie_regex, curated_cvterm_curie).group(1)
+        try:
+            cvterm_cv = db_cv_lookup[cvterm_db]
+        except KeyError:
+            message = f'CV term curie "{curated_cvterm_curie}" given is not from the allowed list: {list(db_cv_lookup.keys())}'
+            self.critical_error(curated_entry, message)
+            return None
+
+        # Check that a CV term was found in chado.
+        cvterm = get_cvterm(self.session, cvterm_cv, cvterm_name)
+        if not cvterm:
+            message = f'CV term lookup failed for cv="{cvterm_cv}", cvterm="{cvterm_name}".'
+            self.critical_error(curated_entry, message)
+            return None
+
+        # Check that the CV term curie/ID in chado matches the ID/curie that was curated.
+        chado_cvterm_curie = f'{cvterm.dbxref.db.name}:{cvterm.dbxref.accession}'
+        if chado_cvterm_curie != curated_cvterm_curie:
+            message = f'For "{cvterm_name}", the curated ID "{curated_cvterm_curie}" does not match the chado ID "{chado_cvterm_curie}".'
+            self.critical_error(curated_entry, message)
+            return None
+        return cvterm
+
     def load_marker_cvterms(self, key: str) -> None:
         """
         Load the marker cvterms, ensuring for each curated CV term name and ID pair that the values match up.
         """
         if self.has_data(key) is False:
             return
-        # Support for various possible CVs.
-        cvs_to_use = self.process_data[key]['cv']
-        if type(cvs_to_use) == str:
-            cvs_to_use = [cvs_to_use]
-        db_cv_lookup = {
-            'FBbt': 'FlyBase anatomy CV',
-            'GO': 'cellular_component'
-        }
-        # Process CV term entries as a list of tuples (CVTERM_NAME, CVTERM_CURIE).
-        CVTERM_NAME = 0
-        CVTERM_CURIE = 1
-        cvterm_entry_list = []
-        cvterm_curie_regex = r'^(\w+):(\d+)$'
+        # # Support for various possible CVs.
+        # cvs_to_use = self.process_data[key]['cv']
+        # if type(cvs_to_use) == str:
+        #     cvs_to_use = [cvs_to_use]
+
         for curated_entry in self.process_data[key]['data']:
-            try:
-                cvterm_name, cvterm_curie = curated_entry[FIELD_VALUE].split(';')
-                cvterm_entry_list.append((cvterm_name.strip(), cvterm_curie.strip()))
-            except ValueError:
-                message = f'Curated entry "{curated_entry[FIELD_VALUE]}" did not meet expected format of CV term name ; CV term ID'
-                self.critical_error(curated_entry, message)
-        for cvterm_entry in cvterm_entry_list:
-            cvterm_name = cvterm_entry[CVTERM_NAME]
-            curated_cvterm_curie = cvterm_entry[CVTERM_CURIE]
-            # Check that the CV term ID (curie) is of the expected format.
-            if not re.search(cvterm_curie_regex, curated_cvterm_curie):
-                message = f'CV term curie "{curated_cvterm_curie}" does not match expected format of DB:ACCESSION'
-                self.critical_error(curated_entry, message)
-                continue
-            cvterm_db = re.search(cvterm_curie_regex, curated_cvterm_curie).group(1)
-            # Check that the CV term ID (curie) is for an allowed ID/curie set.
-            try:
-                cvterm_cv = db_cv_lookup[cvterm_db]
-            except KeyError:
-                message = f'CV term curie "{curated_cvterm_curie}" given is not from the allowed list: {list(db_cv_lookup.keys())}'
-                self.critical_error(curated_entry, message)
-                continue
-            cvterm = get_cvterm(self.session, cvterm_cv, cvterm_name)
-            # Check that a CV term was found in chado.
+            cvterm = self.check_get_cvterm(curated_entry)
             if not cvterm:
-                message = f'CV term lookup failed for cv="{cvterm_cv}", cvterm="{cvterm_name}".'
-                self.critical_error(curated_entry, message)
-                continue
-            # Check that the CV term curie/ID in chado matches the ID/curie that was curated.
-            chado_cvterm_curie = f'{cvterm.dbxref.db.name}:{cvterm.dbxref.accession}'
-            if chado_cvterm_curie != curated_cvterm_curie:
-                message = f'For "{cvterm_name}", the curated ID "{curated_cvterm_curie}" does not match the chado ID "{chado_cvterm_curie}".'
-                self.critical_error(curated_entry, message)
                 continue
             # Create the feature_cvterm entry.
             feat_cvterm, _ = get_or_create(self.session, FeatureCvterm,
                                            feature_id=self.feature.feature_id,
                                            cvterm_id=cvterm.cvterm_id,
                                            pub_id=self.pub.pub_id)
-            prop_cvterm = get_cvterm(self.session, self.process_data[key]['prop_cv'], self.process_data[key]['prop_cvterm'])
+            prop_cvterm = get_cvterm(self.session, self.process_data[key]['prop_cv'],
+                                     self.process_data[key]['prop_cvterm'])
             if not prop_cvterm:
                 message = f'CV term lookup failed for cv="{self.process_data[key]["prop_cv"]}", '
                 message += f'cvterm="{self.process_data[key]["prop_cvterm"]}.'
@@ -421,29 +429,30 @@ class ChadoGeneProduct(ChadoFeatureObject):
                     status['error'] = True
         try:
             existing_feature = self.session.query(Feature).filter(*filters).one_or_none()
-            if existing_feature:
-                message = f"Name {status['name']} has been used in the database for {existing_feature.uniquename}; "
-                # For merges, where a new feature is given the name of a feature involved in the merge.
-                if self.new is True and merge is True and existing_feature.uniquename in features_to_merge:
-                    message += "existing feature is involved in the merge."
-                    self.warning_error(self.process_data['F1a']['data'], message)
-                # For merges, where a new feature is given the name of a feature not involved in the merge.
-                elif self.new is True and merge is True and existing_feature.uniquename not in features_to_merge:
-                    message += "existing feature is NOT involved in the merge."
-                    self.critical_error(self.process_data['F1a']['data'], message)
-                    status['error'] = True
-                # For new geneproducts (not merges).
-                elif self.new is True and merge is False:
-                    message += "Cannot re-use a symbol of an existing feature for a new feature."
-                    self.critical_error(self.process_data['F1a']['data'], message)
-                    status['error'] = True
-                # For renamed geneproducts.
-                elif self.new is False and 'data' in self.process_data['F1b'] and self.process_data['F1b']['data']:
-                    message += "Cannot rename to the symbol of an existing feature."
-                    self.critical_error(self.process_data['F1a']['data'], message)
-                    status['error'] = True
         except MultipleResultsFound:
             message = f"Name {status['name']} has been used in the database multiple times."
+            self.critical_error(self.process_data['F1a']['data'], message)
+            status['error'] = True
+            return
+
+        message = f"Name {status['name']} has been used in the database for {existing_feature.uniquename}; "
+        # For merges, where a new feature is given the name of a feature involved in the merge.
+        if self.new is True and merge is True and existing_feature.uniquename in features_to_merge:
+            message += "existing feature is involved in the merge."
+            self.warning_error(self.process_data['F1a']['data'], message)
+        # For merges, where a new feature is given the name of a feature not involved in the merge.
+        elif self.new is True and merge is True and existing_feature.uniquename not in features_to_merge:
+            message += "existing feature is NOT involved in the merge."
+            self.critical_error(self.process_data['F1a']['data'], message)
+            status['error'] = True
+        # For new geneproducts (not merges).
+        elif self.new is True and merge is False:
+            message += "Cannot re-use a symbol of an existing feature for a new feature."
+            self.critical_error(self.process_data['F1a']['data'], message)
+            status['error'] = True
+        # For renamed geneproducts.
+        elif self.new is False and 'data' in self.process_data['F1b'] and self.process_data['F1b']['data']:
+            message += "Cannot rename to the symbol of an existing feature."
             self.critical_error(self.process_data['F1a']['data'], message)
             status['error'] = True
 
