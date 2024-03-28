@@ -28,10 +28,12 @@ from harvdev_utils.chado_functions import (
     feature_name_lookup, feature_symbol_lookup
 )
 from harvdev_utils.chado_functions.organism import get_organism
+
 from harvdev_utils.char_conversions import (
     sgml_to_plain_text, sgml_to_unicode, sub_sup_to_sgml
 )
 from sqlalchemy.orm.exc import MultipleResultsFound
+
 # from error.error_tracking import CRITICAL_ERROR
 
 
